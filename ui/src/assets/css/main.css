@@ -1,0 +1,51 @@
+html,
+body {
+    height: 100%;
+    font-family: "Open Sans";
+    font-size: 13px;
+}
+
+#app {
+    height: 100vh;
+}
+
+.content {
+    height: 100%;
+}
+  
+.avaimg > img {
+    border-radius: 5px !important;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+.prewrap {
+    white-space: pre-wrap;
+}
+
+.min-w-1000 {
+    min-width: 1000px;
+}
+.max-w-1000 {
+    max-width: 1000px;
+}
+.min-w-1280 {
+    min-width: 1280px;
+}
+.max-w-1280 {
+    max-width: 1280px;
+}
+.max-w-400 {
+    max-width: 400px;
+}
+.min-w-400 {
+    min-width: 400px;
+}
+.max-w-190 {
+    max-width: 190px;
+}
+.min-w-190 {
+    min-width: 190px;
+}

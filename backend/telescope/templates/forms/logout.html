@@ -1,0 +1,22 @@
+{% extends "auth.html" %}
+{% block style %}
+
+{% endblock %}
+{% block body %}
+<div style="height: 100vh; width: 100wh; background: linear-gradient(135deg, rgb(5, 7, 10), rgb(40, 60, 80));">
+  <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
+    <div style="max-width: 500px; width: 500px; min-width: 500px;display: flex; align-items: left;">
+      <img src="/static/namedlogo.png" style="margin-bottom: 10px; padding-left: 10px;" />
+    </div>
+    <div class="form-box">
+      <div class="form-label">Sign out. Are you sure?</div>
+      <form action="/logout" method="post">
+        {% csrf_token %}
+        <input class="btn-submit"  type="submit" value="Continue">
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

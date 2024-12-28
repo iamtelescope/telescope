@@ -1,0 +1,45 @@
+{
+  "name": "telescope",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build"
+  },
+  "dependencies": {
+    "@fontsource/open-sans": "^5.0.28",
+    "@fortawesome/fontawesome-svg-core": "^6.7.1",
+    "@fortawesome/free-solid-svg-icons": "^6.7.1",
+    "@fortawesome/vue-fontawesome": "^3.0.8",
+    "@gravity-ui/yagr": "^4.3.5",
+    "@primevue/themes": "^4.0.2",
+    "@vueuse/components": "^10.10.1",
+    "@vueuse/core": "^10.10.1",
+    "air-datepicker": "^3.5.3",
+    "axios": "^1.7.3",
+    "bootstrap": "^5.3.3",
+    "bootstrap-icons": "^1.11.3",
+    "chart.js": "^4.4.7",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "core-js": "^3.8.3",
+    "date-fns": "^3.6.0",
+    "luxon": "^3.5.0",
+    "pinia": "^2.1.7",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.2.4",
+    "tailwindcss-primeui": "^0.3.4",
+    "vue": "^3.5.12",
+    "vue-router": "^4.0.3"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-plugin-router": "~5.0.0",
+    "@vue/cli-service": "^5.0.8",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "postcss-import": "^16.1.0",
+    "sass": "^1.76.0",
+    "sass-loader": "^14.2.1",
+    "tailwindcss": "^3.4.14"
+  }
+}

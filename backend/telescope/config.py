@@ -1,0 +1,142 @@
+import os
+import collections.abc
+
+import yaml
+import jsonschema
+
+
+class ConfigValidationError(RuntimeError):
+    def __init__(
+        self,
+        message,
+        errors=None,
+    ):
+        self.message = message
+        self.errors = errors or []
+
+    def __str__(self):
+        return self.message + ": " + ", ".join([f"{i[0]}: {i[1]}" for i in self.errors])
+
+    def __repr__(self):
+        return str(self)
+
+
+JSONSchemaValidator = jsonschema.Draft7Validator
+
+
+SCHEMA = {
+    "type": "object",
+    "properties": {
+        "gunicorn": {
+            "type": "object",
+        },
+        "auth": {
+            "type": "object",
+            "properties": {
+                "providers": {
+                    "type": "object",
+                }
+            },
+        },
+        "django": {
+            "type": "object",
+            "properties": {
+                "SECRET_KEY": {
+                    "type": "string",
+                },
+            },
+            "required": ["SECRET_KEY"],
+            "additionalProperties": True,
+        },
+        "additionalProperties": True,
+    },
+}
+
+
+class YamlLoader(yaml.SafeLoader):
+    @classmethod
+    def init_constructors(cls):
+        cls.add_constructor("!env", cls.env)
+
+    def __init__(self, stream):
+        super(YamlLoader, self).__init__(stream)
+
+    def env(self, node):
+        env_var = self.construct_scalar(node)
+        env_value = os.getenv(env_var)
+        return env_value
+
+
+YamlLoader.init_constructors()
+
+
+def validate(config, schema):
+    errors = []
+    errors_generator = JSONSchemaValidator(schema).iter_errors(config)
+    for error in sorted(errors_generator, key=jsonschema.exceptions.relevance):
+        path = ".".join(map(str, error.absolute_path))
+        errors.append((path, error.message))
+
+    if errors:
+        raise ConfigValidationError(message="Malformed configuration", errors=errors)
+
+
+def merge_dicts(first, second):
+    def _update(orig, update):
+        for key, value in update.items():
+            if isinstance(value, collections.abc.Mapping):
+                orig[key] = _update(orig.get(key, {}), value)
+            else:
+                orig[key] = update[key]
+        return orig
+
+    _result = {}
+    _update(_result, first)
+    _update(_result, second)
+    return _result
+
+
+def get_default_config():
+    return {
+        "gunicorn": {
+            "bind": "127.0.0.1:9898",
+            "workers": 8,
+            "timeout": 120,
+            "max_requests": 50,
+            "max_requests_jitter": 50,
+        },
+        "django": {
+            "CSRF_TRUSTED_ORIGINS": [
+                "http://localhost:9898",
+            ],
+            "DEBUG": False,
+            "DATABASES": {
+                "default": {
+                    "ENGINE": "django.db.backends.sqlite3",
+                    "NAME": "telescope-default-db.sqlite3",
+                },
+            },
+        },
+        "auth": {
+            "providers": {
+                "github": {
+                    "enabled": False,
+                    "key": "",
+                    "organizations": [],
+                },
+            },
+        },
+    }
+
+
+def get_config():
+    config_file = os.environ.get("TELESCOPE_CONFIG_FILE")
+    config = {}
+    default_config = get_default_config()
+
+    if config_file:
+        with open(config_file) as fd:
+            config = yaml.load(fd, Loader=YamlLoader)
+    config = merge_dicts(default_config, config)
+    validate(config, SCHEMA)
+    return config

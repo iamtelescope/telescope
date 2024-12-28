@@ -1,0 +1,40 @@
+{% extends "auth.html" %}
+{% block style %}
+
+{% endblock %}
+{% block body %}
+<div style="height: 100vh; width: 100wh; background: linear-gradient(135deg, rgb(5, 7, 10), rgb(40, 60, 80));">
+  <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
+    <div style="max-width: 500px; width: 500px; min-width: 500px;display: flex; align-items: left;">
+      <img src="/static/namedlogo.png" style="margin-bottom: 10px; padding-left: 10px;" />
+    </div>
+    <div class="form-box">
+      <div class="form-label">Sign in to your account</div>
+      <form action="/login" method="post">
+        {% csrf_token %}
+
+        {% for field in form %}
+        <div class="field">
+          <div class="field-errors">{{ field.errors }}</div>
+          <div class="field-label">{{ field.name|capfirst }}</div>
+          {{ field }}
+        </div>
+        {% endfor %}
+        <div class="form-errors">
+        {% for err in form.non_field_errors %}
+          {{ err }}
+        {% endfor %}
+        </div>
+        <input class="btn-submit"  type="submit" value="Log in">
+      </form>
+      <div style="display: flex; justify-content: center; align-items:center; margin-top: 10px;"> or </div>
+      <form action="/login/github/login/" method="post">
+        {% csrf_token %}
+        <input class="btn-thirdparty" type="submit" value="Log in using GitHub">
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+

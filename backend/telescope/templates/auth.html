@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Telescope</title>
+  </head>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+  body {
+    background-color: #141919;
+    color: #333;
+    font-size: 13px;
+    font-family: "Open Sans";
+  }
+  input {
+    border: 1px solid #dbdbdb;
+    border-radius: 5px;
+    min-heigth: 35px;
+    height: 35px;
+    width: 100%;
+    min-widht: 100%;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+    box-sizing: border-box;
+  }
+  input:focus {
+    border-color: #385DAB;
+    outline: none;
+  }
+  form {
+    width: 100%;
+    min-width: 100%;
+  }
+  .field {
+    margin-bottom: 10px;
+  }
+  .field-label {
+    margin-bottom: 3px;
+    font-size: 13px;
+  }
+  .field-errors {
+    colro: red;
+  }
+  .form-label {
+    margin-bottom: 15px;
+    font-size: 26px;
+    font-weight: 600;
+  }
+  .form-box {
+    padding: 40px;
+    border-radius: 20px;
+    width: 400px;
+    max-width: 400px;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    background-color: white;
+  }
+  .form-errors {
+    color: red;
+    margin-bottom: 10px;
+  }
+  .btn-submit {
+    margin-top: 10px;
+    background-color: #385DAB;
+    color: white;
+  }
+  .btn-submit:hover {
+    cursor: pointer;
+    background-color: #2e4e8d;
+  }
+  .btn-thirdparty {
+    margin-top: 10px;
+    color: #333;
+  }
+  .btn-thirdparty:hover {
+    cursor: pointer;
+    background-color: #dbdbdb;
+  }
+  {% block style %}
+  {% endblock %}
+  </style>
+  <body>
+    {% block body %}
+    {% endblock %}
+  </body>
+</html>
