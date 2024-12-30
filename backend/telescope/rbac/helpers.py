@@ -16,12 +16,11 @@ def roles_to_permissions(roles, kind):
     return result
 
 
-def get_user_global_permissions(user):
+def get_user_global_permissions(user, groups=None):
+    groups = groups if groups is not None else user.groups.all()
     if not user.is_superuser:
         roles = (
-            GlobalRoleBinding.objects.filter(
-                Q(group__in=user.groups.all()) | Q(user=user)
-            )
+            GlobalRoleBinding.objects.filter(Q(group__in=groups) | Q(user=user))
             .values_list("role", flat=True)
             .distinct()
         )
@@ -98,15 +97,24 @@ def revoke_source_role(source, role, user=None, group=None):
     return deleted
 
 
-def require_source_permissions(user, source_slug, required_permissions, raise_exception=True):
-    global_user_permissions = get_user_global_permissions(user)
-    global_source_permissions = global_permissions_to_source_permissions(global_user_permissions)
+def require_source_permissions(
+    user, source_slug, required_permissions, raise_exception=True
+):
+    groups = user.groups.all()
+    global_user_permissions = get_user_global_permissions(user, groups=groups)
+    global_source_permissions = global_permissions_to_source_permissions(
+        global_user_permissions
+    )
 
     if all([perm in global_source_permissions for perm in required_permissions]):
         return True
 
-    bindings = SourceRoleBinding.objects.filter(user=user, source__slug=source_slug)
-    existing_permissions = roles_to_permissions([b.role for b in bindings], kind='source')
+    bindings = SourceRoleBinding.objects.filter(
+        (Q(user=user) | Q(group__in=groups)), source__slug=source_slug
+    )
+    existing_permissions = roles_to_permissions(
+        [b.role for b in bindings], kind="source"
+    )
 
     if all([perm in existing_permissions for perm in required_permissions]):
         return True
@@ -118,7 +126,9 @@ def require_source_permissions(user, source_slug, required_permissions, raise_ex
 
 
 def user_has_source_permissions(user, source_slug, required_permissions):
-    return require_source_permissions(user, source_slug, required_permissions, raise_exception=False)
+    return require_source_permissions(
+        user, source_slug, required_permissions, raise_exception=False
+    )
 
 
 def get_sources(user, source_slug=None, source_filter=None, required_permissions=None):
