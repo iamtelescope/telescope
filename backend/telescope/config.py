@@ -123,6 +123,7 @@ def get_default_config():
                     "enabled": False,
                     "key": "",
                     "organizations": [],
+                    "default_group": None,
                 },
             },
         },
