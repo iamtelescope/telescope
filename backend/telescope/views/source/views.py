@@ -89,9 +89,13 @@ class SourceView(APIView):
                 source = get_source(
                     request.user,
                     slug=slug,
-                    required_permissions=[permissions.Source.READ.value]
+                    required_permissions=[permissions.Source.READ.value],
                 )
-                if user_has_source_permissions(request.user, source_slug=slug, required_permissions=[permissions.Source.EDIT.value]):
+                if user_has_source_permissions(
+                    request.user,
+                    source_slug=slug,
+                    required_permissions=[permissions.Source.EDIT.value],
+                ):
                     serializer_class = SourceWithConnectionSerializer
                 else:
                     serializer_class = SourceSerializer
@@ -338,13 +342,15 @@ class SourceLogsView(APIView):
             response.validation["result"] = False
             response.validation["fields"]["fields"] = err.message
 
-        flyql_validation_result, help_text = validate_flyql_query(source, serializer.validated_data["query"])
+        flyql_validation_result, help_text = validate_flyql_query(
+            source, serializer.validated_data["query"]
+        )
 
         if not flyql_validation_result:
             response.validation["result"] = False
             response.validation["fields"]["query"] = help_text
 
-        if not response.validation['result']:
+        if not response.validation["result"]:
             return JsonResponse(response.as_dict())
 
         time_from, time_to = get_times(

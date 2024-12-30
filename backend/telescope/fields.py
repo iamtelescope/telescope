@@ -504,7 +504,9 @@ def parse(source, text):
     for field in parser.fields:
         source_field_name = field["name"].split(":")[0]
         if source_field_name not in source._fields:
-            raise ParserError(message=f"Source have no '{source_field_name}' field", errno=100)
+            raise ParserError(
+                message=f"Source have no '{source_field_name}' field", errno=100
+            )
 
         source_field = source._fields[source_field_name]
         titled_name = (

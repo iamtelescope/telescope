@@ -27,9 +27,7 @@ def validate_flyql_query(source, query):
         return False, err.message
     else:
         try:
-            to_sql(
-                parser.root, fields=flyql_clickhouse_fields(source._fields)
-            )
+            to_sql(parser.root, fields=flyql_clickhouse_fields(source._fields))
         except FlyqlError as err:
             return False, err.message
 
@@ -76,9 +74,7 @@ def fetch_logs(
         else:
             stats_time_selector = f"toUnixTimestamp({source.time_field})*1000"
 
-    with clickhouse.Client(
-        **get_source_database_conn_kwargs(source)
-    ) as client:
+    with clickhouse.Client(**get_source_database_conn_kwargs(source)) as client:
         selected_fields = [source._record_pseuod_id_field] + fields_names
         for item in client.execute(select_query):
             rows.append(
