@@ -20,7 +20,7 @@ pycparser==2.22
 python3-openid==3.2.0
 pytz==2024.1
 requests-oauthlib==2.0.0
-requests==2.31.0
+requests==2.32.0
 sqlparse==0.5.0
 typing_extensions==4.11.0
 tzlocal==5.2
