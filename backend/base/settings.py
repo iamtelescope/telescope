@@ -136,6 +136,8 @@ STORAGES = {
 
 # Provider specific settings
 SOCIALACCOUNT_PROVIDERS = {}
+ACCOUNT_EMAIL_VERIFICATION = "none"
+ACCOUNT_EMAIL_REQUIRED = False
 
 if CONFIG["auth"]["providers"]["github"]["enabled"]:
     github_config = {
