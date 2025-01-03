@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from telescope.config import get_config
+from telescope.log import LogConfig
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -164,57 +165,4 @@ STATIC_ROOT = BASE_DIR / "static"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-SEP = "-" * 60
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "default": {
-            "format": (
-                "%(asctime)s "
-                "%(process)d "
-                "%(threadName)s"
-                "%(name)s "
-                "%(funcName)s "
-                "%(levelname)-8s\n"
-                "%(message)s\n"
-                f"{SEP}"
-            )
-        },
-    },
-    "filters": {},
-    "handlers": {
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
-            "formatter": "default",
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["console"],
-            "level": "DEBUG",
-            "propagate": False,
-        },
-        "django.utils.autoreload": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "django.request": {
-            "handlers": ["console"],
-            "level": "DEBUG",
-            "propagate": False,
-        },
-        "django.template": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "": {
-            "handlers": ["console"],
-            "level": "DEBUG",
-            "propagate": False,
-        },
-    },
-}
+LOGGING = LogConfig(config=CONFIG['logging']).as_dict()

@@ -48,6 +48,9 @@ SCHEMA = {
             "required": ["SECRET_KEY"],
             "additionalProperties": True,
         },
+        "logging": {
+            "type": "object",
+        },
         "additionalProperties": True,
     },
 }
@@ -125,6 +128,17 @@ def get_default_config():
                     "organizations": [],
                     "default_group": None,
                 },
+            },
+        },
+        "logging": {
+            "format": "default",
+            "levels": {
+                "django": "DEBUG",
+                "django.request": "DEBUG",
+                "django.template": "INFO",
+                "django.utils.autoreload": "INFO",
+                "telescope": "DEBUG",
+                "all": "DEBUG",
             },
         },
     }
