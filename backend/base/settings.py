@@ -154,7 +154,6 @@ if CONFIG["auth"]["providers"]["github"]["enabled"]:
 LOGIN_REDIRECT_URL = "/"
 
 STATIC_URL = "/static/"
-# STATICFILES_DIRS = [ '', 'css']
 STATIC_ROOT = BASE_DIR / "static"
 
 

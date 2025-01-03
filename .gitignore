@@ -1,7 +1,7 @@
+backend/static/
 backend/telescope/static/
 backend/telescope/templates/index.html
 **.pyc
 .envrc
 .DS_Store
-deploy.sh
 **.sqlite3
