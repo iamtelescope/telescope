@@ -51,7 +51,7 @@ class User {
         }
     }
     canCreateSource() {
-        if (this.permissions.includes('create_source')) {
+        if (this.permissions.includes('global_create_source')) {
             return true
         } else {
             return false
