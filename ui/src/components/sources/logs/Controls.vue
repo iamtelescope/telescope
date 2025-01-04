@@ -1,10 +1,11 @@
 <template>
   <Toolbar class="toolbar-slim">
     <template #start>
-      <Button icon="pi pi-search" class="mr-2" severity="primary" label="Search" size="small" @click="handleSearch"
-        :loading="loading" />
-      <Button icon="pi pi-share-alt" class="mr-2" severity="primary" label="Share URL" size="small" @click="handleShareURL" />
-      <Button icon="pi pi-download" class="mr-2" severity="primary" label="Download" size="small" disabled />
+      <Button icon="pi pi-search" class="mr-2" severity="primary" label="Search" size="small" @click="handleSearch" />
+      <Button icon="pi pi-share-alt" class="mr-2" severity="primary" label="Share URL" size="small"
+        @click="handleShareURL" :disabled="loading" />
+      <Button icon="pi pi-download" class="mr-2" severity="primary" label="Download" size="small"
+        @click="handleDownload" :disabled="loading" />
       <Select v-model="limit" :options="limits" optionLabel="value" placeholder="Limit" :size="'small'" class="mr-2" />
       <DatetimePicker @rangeSelect="onRangeSelect" :from="props.from" :to="props.to" />
     </template>
@@ -26,7 +27,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 import Button from 'primevue/button'
@@ -39,14 +40,13 @@ import ErrorText from '@/components/common/ErrorText.vue'
 import { getLimits } from '@/utils/limits.js'
 
 const props = defineProps(['source', 'loading', 'from', 'to', 'validation'])
-const emit = defineEmits(['searchRequest', 'shareURL'])
+const emit = defineEmits(['searchRequest', 'shareURL', 'download'])
 
 const route = useRoute()
 
 const from = ref(null)
 const to = ref(null)
 const source = ref(props.source)
-const loading = ref(props.loading)
 const query = ref(route.query.query ?? '')
 const fields = ref(route.query.fields ?? source.value.defaultChosenFields.join(', '))
 let queryLimit = 50
@@ -60,15 +60,6 @@ if (route.query.limit) {
 
 const limit = ref({ "value": queryLimit })
 const limits = ref(getLimits(queryLimit))
-
-const queryValid = computed(() => {
-  if (props.validation != null) {
-    if ('query' in props.validation.fields) {
-      return false
-    }
-  }
-  return true
-})
 
 const onRangeSelect = (params) => {
   from.value = params.from
@@ -87,19 +78,22 @@ const getSearchParams = () => {
     source: source.value,
   }
 }
+
 const handleSearch = () => {
   emit('searchRequest', getSearchParams())
+}
+
+const handleDownload = () => {
+  emit('download')
 }
 
 const handleShareURL = () => {
   emit('shareURL', getSearchParams())
 }
 
-
 onMounted(() => {
   handleSearch()
 })
-
 
 defineExpose({ onRangeSelect, handleSearch })
 
@@ -108,6 +102,7 @@ watch(props, () => {
     from.value = props.from
     to.value = props.to
   }
+  console.log(props.loading)
 })
 
 </script>

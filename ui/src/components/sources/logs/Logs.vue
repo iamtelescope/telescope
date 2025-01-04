@@ -1,6 +1,6 @@
 <template>
-    <Controls ref="controlsRef" @searchRequest="onSearchRequest" @shareURL="onShareURL" :source="source"
-        :loading="loading" :from="from" :to="to" :validation="validation" />
+    <Controls ref="controlsRef" @searchRequest="onSearchRequest" @shareURL="onShareURL" @download="onDownload"
+        :source="source" :loading="loading" :from="from" :to="to" :validation="validation" />
     <div class="flex justify-content-center	w-full">
         <Loader v-if="loading" />
         <div v-else style="padding: 0px; width: 100%;">
@@ -66,6 +66,19 @@ const onShareURL = (params) => {
         .catch(err => {
             toast.add({ severity: 'error', summary: 'Error', detail: "Failed to copy URL to clipboard", life: 6000 });
         });
+}
+
+const onDownload = () => {
+    const data = JSON.stringify(rows.value, null, 2)
+    const blob = new Blob([data], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "telescope_data.json"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
 }
 
 const onHistogrammRangeSelected = (params) => {
