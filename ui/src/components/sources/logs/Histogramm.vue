@@ -48,7 +48,6 @@ const onChartTypeSelect = (e) => {
 const calcRenderOptions = (type) => {
     let options = {}
     if (type == 'column') {
-        return options
         let columns = props.timestamps.length
         // left-rigth padding of graph
         let padding = 70
