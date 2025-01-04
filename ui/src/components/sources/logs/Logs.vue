@@ -1,6 +1,6 @@
 <template>
-    <Controls ref="controlsRef" @searchRequest="onSearchRequest" :source="source" :loading="loading" :from="from"
-        :to="to" :validation="validation"/>
+    <Controls ref="controlsRef" @searchRequest="onSearchRequest" @shareURL="onShareURL" :source="source"
+        :loading="loading" :from="from" :to="to" :validation="validation" />
     <div class="flex justify-content-center	w-full">
         <Loader v-if="loading" />
         <div v-else style="padding: 0px; width: 100%;">
@@ -21,6 +21,8 @@
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { useToast } from 'primevue'
+
 import { useNavStore } from '@/stores/nav'
 
 import { useGetLogs } from '@/composables/sources/logs/useLogsService'
@@ -35,6 +37,7 @@ const controlsRef = ref(null)
 
 const navStore = useNavStore()
 const route = useRoute()
+const toast = useToast()
 
 const from = ref()
 const to = ref()
@@ -50,6 +53,19 @@ const onSearchRequest = (params) => {
     let url = route.path + "?" + queryString
     window.history.pushState('', 'telescope', url)
     load(props.source.slug, params.searchParams)
+}
+
+const onShareURL = (params) => {
+    let queryString = new URLSearchParams(params.searchParams).toString()
+    let url = window.location.origin + route.path + "?" + queryString
+
+    navigator.clipboard.writeText(url)
+        .then(() => {
+            toast.add({ severity: 'success', summary: 'Success', detail: "URL copied to clipboard", life: 3000 });
+        })
+        .catch(err => {
+            toast.add({ severity: 'error', summary: 'Error', detail: "Failed to copy URL to clipboard", life: 6000 });
+        });
 }
 
 const onHistogrammRangeSelected = (params) => {

@@ -3,20 +3,22 @@
     <template #start>
       <Button icon="pi pi-search" class="mr-2" severity="primary" label="Search" size="small" @click="handleSearch"
         :loading="loading" />
-      <Button icon="pi pi-share-alt" class="mr-2" severity="primary" label="Share URL" size="small" disabled />
+      <Button icon="pi pi-share-alt" class="mr-2" severity="primary" label="Share URL" size="small" @click="handleShareURL" />
       <Button icon="pi pi-download" class="mr-2" severity="primary" label="Download" size="small" disabled />
       <Select v-model="limit" :options="limits" optionLabel="value" placeholder="Limit" :size="'small'" class="mr-2" />
       <DatetimePicker @rangeSelect="onRangeSelect" :from="props.from" :to="props.to" />
     </template>
   </Toolbar>
   <div class="mb-2">
-    <InputText v-model="fields" fluid :invalid="validation != null && !validation.result && validation.fields.fields" @keyup.enter="handleSearch"></InputText>
+    <InputText v-model="fields" fluid :invalid="validation != null && !validation.result && validation.fields.fields"
+      @keyup.enter="handleSearch"></InputText>
     <ErrorText v-if="validation != null && !validation.result && validation.fields.fields"
       :text="validation.fields.fields">
     </ErrorText>
   </div>
   <div class="mb-3">
-    <InputText v-model="query" fluid :invalid="validation != null && !validation.result && validation.fields.query" @keyup.enter="handleSearch"></InputText>
+    <InputText v-model="query" fluid :invalid="validation != null && !validation.result && validation.fields.query"
+      @keyup.enter="handleSearch"></InputText>
     <ErrorText v-if="validation != null && !validation.result && validation.fields.query"
       :text="validation.fields.query">
     </ErrorText>
@@ -37,7 +39,7 @@ import ErrorText from '@/components/common/ErrorText.vue'
 import { getLimits } from '@/utils/limits.js'
 
 const props = defineProps(['source', 'loading', 'from', 'to', 'validation'])
-const emit = defineEmits(['searchRequest'])
+const emit = defineEmits(['searchRequest', 'shareURL'])
 
 const route = useRoute()
 
@@ -73,8 +75,8 @@ const onRangeSelect = (params) => {
   to.value = params.to
 }
 
-const handleSearch = () => {
-  emit('searchRequest', {
+const getSearchParams = () => {
+  return {
     searchParams: {
       query: query.value,
       fields: fields.value,
@@ -83,8 +85,16 @@ const handleSearch = () => {
       to: new Date(`${to.value}`).valueOf() || to.value,
     },
     source: source.value,
-  })
+  }
 }
+const handleSearch = () => {
+  emit('searchRequest', getSearchParams())
+}
+
+const handleShareURL = () => {
+  emit('shareURL', getSearchParams())
+}
+
 
 onMounted(() => {
   handleSearch()
