@@ -102,7 +102,6 @@ watch(props, () => {
     from.value = props.from
     to.value = props.to
   }
-  console.log(props.loading)
 })
 
 </script>
