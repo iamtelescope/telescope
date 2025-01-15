@@ -209,7 +209,7 @@ def get_telescope_field(name, _type):
         "values": "",
         "type": _type,
         "autocomplete": False,
-        "suggest": False,
+        "suggest": True,
     }
     if _type.startswith("DateTime64") or _type.startswith("Nullable(DateTime64"):
         data["type"] = "datetime64"

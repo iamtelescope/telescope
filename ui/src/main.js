@@ -19,14 +19,17 @@ import '@/assets/css/main.css'
 import 'primeicons/primeicons.css'
 import '@gravity-ui/yagr/dist/index.css';
 
-
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChartArea, faChartLine, faChartColumn } from '@fortawesome/free-solid-svg-icons'
 
 library.add(faChartArea, faChartLine, faChartColumn)
 
+import { initMonacoSetup } from '@/utils/monaco'
+
 import { useAuthStore } from '@/stores/auth.js'
+
+initMonacoSetup()
 
 let appMounted = false
 const app = createApp(App)

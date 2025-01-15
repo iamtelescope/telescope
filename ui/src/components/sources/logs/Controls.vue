@@ -1,5 +1,5 @@
 <template>
-  <Toolbar class="toolbar-slim">
+  <Toolbar class="toolbar-slim border-none p-0 pb-2">
     <template #start>
       <Button icon="pi pi-search" class="mr-2" severity="primary" label="Search" size="small" @click="handleSearch" />
       <Button icon="pi pi-share-alt" class="mr-2" severity="primary" label="Share URL" size="small"
@@ -11,15 +11,14 @@
     </template>
   </Toolbar>
   <div class="mb-2">
-    <InputText v-model="fields" fluid :invalid="validation != null && !validation.result && validation.fields.fields"
-      @keyup.enter="handleSearch"></InputText>
+    <FieldsEditor @change="onFieldsChange" :source="source" :value="route.query.fields ?? source.defaultChosenFields.join(', ')"
+      @submit="handleSearch" />
     <ErrorText v-if="validation != null && !validation.result && validation.fields.fields"
       :text="validation.fields.fields">
     </ErrorText>
   </div>
   <div class="mb-3">
-    <InputText v-model="query" fluid :invalid="validation != null && !validation.result && validation.fields.query"
-      @keyup.enter="handleSearch"></InputText>
+    <QueryEditor @change="onQueryChange" :value="route.query.query ?? ''" @submit="handleSearch" />
     <ErrorText v-if="validation != null && !validation.result && validation.fields.query"
       :text="validation.fields.query">
     </ErrorText>
@@ -33,9 +32,10 @@ import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
 import Toolbar from 'primevue/toolbar'
-import InputText from 'primevue/inputtext'
 
 import DatetimePicker from '@/components/sources/logs/DatetimePicker.vue'
+import FieldsEditor from '@/components/sources/logs/FieldsEditor.vue'
+import QueryEditor from '@/components/sources/logs/QueryEditor.vue'
 import ErrorText from '@/components/common/ErrorText.vue'
 import { getLimits } from '@/utils/limits.js'
 
@@ -79,6 +79,14 @@ const getSearchParams = () => {
   }
 }
 
+const onFieldsChange = (value) => {
+  fields.value = value
+}
+
+const onQueryChange = (value) => {
+  query.value = value
+}
+
 const handleSearch = () => {
   emit('searchRequest', getSearchParams())
 }
@@ -103,38 +111,4 @@ watch(props, () => {
     to.value = props.to
   }
 })
-
 </script>
-
-<style scoped>
-.toolbar-slim {
-  border: none;
-  padding: 0px;
-  padding-bottom: 10px;
-}
-
-input {
-  font-family: monospace;
-}
-
-.form-control:focus {
-  box-shadow: none;
-}
-
-select:focus {
-  box-shadow: none;
-}
-
-.limit-selector {
-  max-width: 150px;
-  margin-right: 5px;
-}
-
-.limit-label {
-  font-size: 13px;
-  vertical-align: middle;
-  padding-top: 6px;
-  margin-bottom: 0px;
-  padding-right: 5px;
-}
-</style>

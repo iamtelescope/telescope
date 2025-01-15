@@ -66,6 +66,10 @@ function flat_json(result, value, path) {
                 p.push(k)
                 flat_json(result, v, p)
             }
+        } else {
+            if (value === null) {
+                result.push({ path: path, value: value })
+            }
         }
     } else {
         result.push({ path: path, value: value })

@@ -8,8 +8,8 @@
         <thead>
             <tr>
                 <th></th>
-                <th scope="col">Time</th>
-                <th scope="col" v-for="field in metadata.fields" :key="field.name">{{ field.display_name }}
+                <th class="pl-2 pr-2">Time</th>
+                <th class="pl-2 pr-2" v-for="field in metadata.fields" :key="field.name">{{ field.display_name }}
                 </th>
             </tr>
         </thead>
@@ -24,11 +24,11 @@
                 </td>
                 <td class="nowrap" v-for="field in metadata.fields" :key="field.name">
                     <pre v-if="field.type != 'jsonstring'" class="logs-value-field"
-                        :class="{ prewrap: row.data[field.root_name].length > 50 }">{{
-                            row.data[field.name] || '&dash;' }}</pre>
-                    <pre v-else></pre>
-                    <pre v-else="field.type != 'jsonstring'" class="logs-value-field"
-                        :class="{ prewrap: extractJsonPathLength(field, row.data) > 50 }">{{ extractJsonPath(field, row.data) }}</pre>
+                        :class="{ prewrap: String(row.data[field.root_name]).length > 50 }">{{
+                            getRowValue(field, row.data[field.root_name]) || '&dash;' }}</pre>
+                    <pre v-else class="logs-value-field"
+                        :class="{ prewrap: extractJsonPathLength(field, row.data) > 50 }">
+                    {{ extractJsonPath(field, row.data) }}</pre>
                 </td>
             </tr>
         </tbody>
@@ -44,6 +44,7 @@ import Drawer from "primevue/drawer"
 import Row from "@/components/sources/logs/Row.vue"
 
 import { getColor } from '@/utils/colors.js'
+import { MODIFIERS } from '@/utils/modifiers.js'
 
 const props = defineProps(['source', 'rows', 'metadata', 'timezone'])
 const selectedRow = ref(null)
@@ -63,14 +64,24 @@ const getRowColor = (row) => {
     return getColor(row.data[props.source.severityField])
 }
 
+const getRowValue = (field, data) => {
+    let value = data
+    for (const modifier of field.modifiers) {
+        let func = MODIFIERS[modifier.name]
+        value = func(value, ...modifier.arguments)
+    }
+    return value
+}
+
 const extractJsonPathLength = (field, data) => {
     let value = extractJsonPath(field, data)
-    if (value === undefined ) {
+    if (value === undefined || value === null) {
         return 0
     } else {
-        return String(value).lentgh
+        return String(value).length
     }
 }
+
 const extractJsonPath = (field, data) => {
     const path = field.name.split(':')
     let value = data
@@ -81,11 +92,14 @@ const extractJsonPath = (field, data) => {
             return undefined
         }
     }
-    if (typeof(value) === 'object') {
-        return JSON.stringify(value)
-    } else {
-        return value
+    if (typeof (value) === 'object') {
+        value = JSON.stringify(value)
     }
+    for (const modifier of field.modifiers) {
+        let func = MODIFIERS[modifier.name]
+        value = func(value, ...modifier.arguments)
+    }
+    return value
 }
 
 onMounted(() => {

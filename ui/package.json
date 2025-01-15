@@ -12,12 +12,15 @@
     "@fortawesome/free-solid-svg-icons": "^6.7.1",
     "@fortawesome/vue-fontawesome": "^3.0.8",
     "@gravity-ui/yagr": "^4.3.5",
+    "@guolao/vue-monaco-editor": "^1.5.4",
     "@primevue/themes": "^4.0.2",
     "@vueuse/components": "^10.10.1",
     "@vueuse/core": "^10.10.1",
     "core-js": "^3.8.3",
     "date-fns": "^3.6.0",
     "luxon": "^3.5.0",
+    "monaco-editor": "^0.52.2",
+    "monaco-editor-webpack-plugin": "^7.1.0",
     "pinia": "^2.1.7",
     "primeicons": "^7.0.0",
     "primevue": "^4.2.4",
@@ -26,6 +29,7 @@
     "vue-router": "^4.0.3"
   },
   "devDependencies": {
+    "@babel/plugin-transform-class-static-block": "^7.26.0",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-router": "~5.0.0",
     "@vue/cli-service": "^5.0.8",

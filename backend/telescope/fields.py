@@ -14,7 +14,20 @@ BACKSLASH = "\\"
 BRACKET_OPEN = "("
 BRACKET_CLOSE = ")"
 UNDERSCORE = "_"
+NEWLINE = "\n"
 VALID_ALIAS_OPERATOR = "as"
+
+
+KNOWN_MODIFIERS = [
+    "chars",
+    "slice",
+    "lines",
+    "firstline",
+    "lastline",
+    "oneline",
+    "lower",
+    "upper",
+]
 
 
 class ParserError(Exception):
@@ -59,9 +72,13 @@ class Char:
         self,
         value,
         pos,
+        line,
+        line_pos,
     ):
         self.value = value
         self.pos = pos
+        self.line = line
+        self.line_pos = line_pos
 
     def is_field_value(self):
         return (
@@ -121,13 +138,18 @@ class Char:
     def is_backslash(self):
         return self.value == BACKSLASH
 
+    def is_newline(self):
+        return self.value == NEWLINE
+
 
 class Parser:
     def __init__(
         self,
     ):
         self.pos = 0
-        self.char = Char("", -1)
+        self.line = 0
+        self.line_pos = 0
+        self.char = None
         self.state = State.EXPECT_FIELD
         self.error_text = ""
         self.errno = 0
@@ -239,7 +261,12 @@ class Parser:
         for c in text:
             if self.state == State.ERROR:
                 break
-            self.set_char(Char(c, self.pos))
+            self.set_char(Char(c, self.pos, self.line, self.line_pos))
+            if self.char.is_newline():
+                self.line += 1
+                self.line_pos = 0
+                self.pos += 1
+                continue
 
             match self.state:
                 case State.EXPECT_FIELD:
@@ -271,6 +298,7 @@ class Parser:
                 case _:
                     self.set_error_state(f"unknown state: {self.state}", 1)
             self.pos += 1
+            self.line_pos += 1
 
         if self.state == State.ERROR:
             raise ParserError(
@@ -358,6 +386,7 @@ class Parser:
             self.store_modifier()
             self.set_state(State.EXPECT_MODIFIER)
         elif self.char.is_space():
+            self.store_modifier()
             self.set_state(State.EXPECT_ALIAS_OPERATOR)
         elif self.char.is_bracket_open():
             self.set_state(State.EXPECT_MODIFIER_ARGUMENT)
@@ -508,6 +537,12 @@ def parse(source, text):
                 message=f"Source have no '{source_field_name}' field", errno=100
             )
 
+        for modifier in field["modifiers"]:
+            if modifier["name"] not in KNOWN_MODIFIERS:
+                raise ParserError(
+                    message=f"Unknown modifier {modifier['name']} for field {field['name']}",
+                    errno=101,
+                )
         source_field = source._fields[source_field_name]
         titled_name = (
             field["name"].title() if not ":" in field["name"] else field["name"]
