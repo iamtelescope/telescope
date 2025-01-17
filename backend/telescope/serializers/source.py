@@ -3,6 +3,9 @@ from django.contrib.auth.models import User, Group
 from rest_framework import serializers
 
 from telescope.models import Source, Connection, SourceRoleBinding
+from telescope.utils import parse_time
+from telescope.fields import parse as parse_fields, ParserError as FieldsParserError
+from telescope.query import validate_flyql_query
 
 
 class SourceAdminSerializer(serializers.ModelSerializer):
@@ -158,3 +161,28 @@ class SourceLogsRequestSerializer(serializers.Serializer):
         _from = fields.pop("_from")
         fields["from"] = _from
         return fields
+
+    def validate_from(self, value):
+        value, error = parse_time(value)
+        if error:
+            raise serializers.ValidationError(error)
+        return value
+
+    def validate_to(self, value):
+        value, error = parse_time(value)
+        if error:
+            raise serializers.ValidationError(error)
+        return value
+
+    def validate_fields(self, value):
+        try:
+            value = parse_fields(self.context["source"], value)
+        except FieldsParserError as err:
+            raise serializers.ValidationError(err.message)
+        return value
+
+    def validate_query(self, value):
+        result, help_text = validate_flyql_query(self.context["source"], value)
+        if not result:
+            raise serializers.ValidationError(help_text)
+        return value

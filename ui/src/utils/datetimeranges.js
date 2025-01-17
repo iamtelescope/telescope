@@ -1,6 +1,14 @@
-import { format } from 'date-fns'
+import { format, parse, isValid } from 'date-fns'
+
+const dateTimeFormat = 'yyyy-MM-dd HH:mm:ss.SSS'
+
+const humanRelatedTimeRegex = new RegExp('^now(?:-(?<value>[0-9]+)(?<unit>[dhms]))?$')
 
 const datetimeRanges = {
+    'Last 1 minute': {
+        'from': 'now-1m',
+        'to': 'now',
+    },
     'Last 5 minutes': {
         'from': 'now-5m',
         'to': 'now',
@@ -15,6 +23,22 @@ const datetimeRanges = {
     },
     'Last 1 hour': {
         'from': 'now-1h',
+        'to': 'now',
+    },
+    'Last 2 hours': {
+        'from': 'now-2h',
+        'to': 'now',
+    },
+    'Last 6 hours': {
+        'from': 'now-6h',
+        'to': 'now',
+    },
+    'Last 12 hours': {
+        'from': 'now-12h',
+        'to': 'now',
+    },
+    'Last 24 hours': {
+        'from': 'now-24h',
         'to': 'now',
     }
 }
@@ -48,6 +72,7 @@ function getRelativeOptions() {
 function getDateIfTimestamp(value) {
     let result = {
         parsed: false,
+        relative: false,
         date: value,
     }
     if (value instanceof Date) {
@@ -57,13 +82,44 @@ function getDateIfTimestamp(value) {
         if (!isNaN(intValue)) {
             result.parsed = true
             result.date = new Date(intValue)
+        } else {
+            result.date = parse(value, dateTimeFormat, new Date())
+            result.parsed = isValid(result.date)
+            if (!result.parsed) {
+                if (humanRelatedTimeRegex.exec(value)) {
+                    result.relative = true
+                }
+            }
         }
     }
     return result
 }
 
+function getStrDateOrStrRelative(value) {
+    // value is date obj
+    if (value instanceof Date) {
+        return fmt(value)
+    }
+    // value is relative like 'now-1h'
+    if (humanRelatedTimeRegex.exec(value)) {
+        return value
+    }
+    // value is int timestamp
+    const intValue = parseInt(value)
+    if (!isNaN(intValue)) {
+        return fmt(new Date(intValue))
+    }
+    // value is str date like '2024-12-12 00:00:00.000'
+    const parsedDate = parse(value, dateTimeFormat, new Date())
+    if (isValid(parsedDate)) {
+        return fmt(parsedDate)
+    }
+    // invalid value
+    return null
+}
+
 function fmt(date) {
-    return format(date, 'yyyy-MM-dd HH:mm:ss')
+    return format(date, dateTimeFormat)
 }
 
 function getDatetimeRangeText(from, to) {
@@ -74,14 +130,27 @@ function getDatetimeRangeText(from, to) {
     } else {
         let fromResult = getDateIfTimestamp(from)
         let toResult = getDateIfTimestamp(to)
-        if (fromResult.parsed && toResult.parsed) {
+        if (fromResult.parsed) {
             from = fmt(fromResult.date)
-            to = fmt(toResult.date)
-            return `${from} - ${to}`
-        } else {
-            return key
         }
+        if (toResult.parsed) {
+            to = fmt(toResult.date)
+        }
+        return `${from} - ${to}`
     }
 }
 
-export { datetimeRanges, getDatetimeRangeText, getRelativeOption, getRelativeOptions, getDateIfTimestamp, fmt }
+function dateIsValid(dateString) {
+    let parsedDate = parse(dateString, dateTimeFormat, new Date())
+    let valid = isValid(parsedDate)
+    if (!valid) {
+        if (humanRelatedTimeRegex.exec(dateString)) {
+            valid = true
+            parsedDate = dateString
+        }
+    }
+
+    return [parsedDate, valid]
+}
+
+export { datetimeRanges, dateTimeFormat, humanRelatedTimeRegex, getStrDateOrStrRelative, getDatetimeRangeText, getRelativeOption, getRelativeOptions, getDateIfTimestamp, fmt, dateIsValid }

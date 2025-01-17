@@ -1,13 +1,18 @@
 <template>
     <Button icon="pi pi-calendar" class="mr-2" :label="daterangelabel" text size="small" @click="toggleRangeSelect" />
     <Popover ref="dropdown" :pt="{ content: { class: 'pr-0' } }">
-        <div class="flex w-full">``
+        <div class="flex w-full">
             <div class="flex flex-col mr-3">
                 <label for="From" class="font-bold block mb-2">From</label>
-                <InputText label="From" v-model="fromInputText" />
+                <InputText label="From" v-model="fromInputText" @update:model-value="onFromInputUpdate"
+                    :invalid="!fromInputValid" />
+                <ErrorText v-if="!fromInputValid" :text="fromInputValidError" />
                 <br>
                 <label for="To" class="font-bold block mb-2">To</label>
-                <InputText label="To" v-model="toInputText" /><br>
+                <InputText label="To" v-model="toInputText" @update:model-value="onToInputUpdate"
+                    :invalid="!toInputValid" />
+                <ErrorText v-if="!toInputValid" :text="toInputValidError" />
+                <br>
                 <label for="Timezone" class="font-bold block mb-2">Timezone</label>
                 <Select v-model="selectedZone" :options="zones" optionLabel="name" placeholder="Timezone"
                     class="w-full md:w-56" filter autoFilterFocus /><br>
@@ -21,7 +26,8 @@
             </div>
             <div class="flex flex-col">
                 <Listbox :options="ranges" v-model="selectedRelative" optionLabel="label" @change="handleSelectRelative"
-                    fluid :pt="{ root: { style: { border: 'none', minWidth:'200px' } }, list: { style: { padding: '0', boxShadow: 'none' } } }" />
+                    fluid scroll-height="21rem"
+                    :pt="{ root: { style: { border: 'none', minWidth: '200px' } }, list: { style: { padding: '0', boxShadow: 'none' } } }" />
             </div>
         </div>
     </Popover>
@@ -40,8 +46,10 @@ import InputText from 'primevue/inputtext'
 import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
 
-import { getRelativeOption, getRelativeOptions, getDateIfTimestamp, getDatetimeRangeText, fmt } from '@/utils/datetimeranges.js'
+import ErrorText from '@/components/common/ErrorText.vue'
+import { getRelativeOption, getRelativeOptions, getDateIfTimestamp, getDatetimeRangeText, fmt, dateIsValid, dateTimeFormat, humanRelatedTimeRegex, getStrDateOrStrRelative } from '@/utils/datetimeranges.js'
 import { tzOptions } from '@/utils/timezones.js'
+
 
 const route = useRoute()
 
@@ -57,8 +65,23 @@ const to = ref(route.query.to ?? 'now')
 
 const fromInputText = ref('')
 const toInputText = ref('')
+const fromInputManually = ref(false)
+const toInputManually = ref(false)
+const fromInputValid = ref(true)
+const fromInputValidError = ref('')
+const toInputValidError = ref('')
+const toInputValid = ref(true)
 const ranges = ref(getRelativeOptions())
 const selectedRelative = ref(getRelativeOption(from.value, to.value))
+
+
+const onFromInputUpdate = () => {
+    fromInputManually.value = true
+}
+
+const onToInputUpdate = () => {
+    toInputManually.value = true
+}
 
 const initValues = () => {
     if (props.from) {
@@ -67,22 +90,13 @@ const initValues = () => {
     if (props.to) {
         to.value = props.to
     }
+    fromInputText.value = getStrDateOrStrRelative(from.value)
+    toInputText.value = getStrDateOrStrRelative(to.value)
     let fromResult = getDateIfTimestamp(from.value)
     let toResult = getDateIfTimestamp(to.value)
 
     if (fromResult.parsed && toResult.parsed) {
         dates.value = [fromResult.date, toResult.date]
-        fromInputText.value = fmt(fromResult.date)
-        toInputText.value = fmt(toResult.date)
-    } else {
-        if (from.value instanceof Date && to.value instanceof Date) {
-            dates.value = [from.value, to.value]
-            fromInputText.value = fmt(from.value)
-            toInputText.value = fmt(to.value)
-        } else {
-            fromInputText.value = from.value
-            toInputText.value = to.value
-        }
     }
     emit('rangeSelect', {
         from: from.value,
@@ -109,11 +123,47 @@ const getUtcTimestamp = (value) => {
 }
 
 const handleApply = () => {
-    emit('rangeSelect', {
-        from: from.value,
-        to: to.value,
-    })
-    dropdown.value.toggle()
+    let isValid = true
+    let manualFrom = null
+    let manualTo = null
+
+    if (fromInputManually.value) {
+        const [parsedFrom, fromIsValid] = dateIsValid(fromInputText.value)
+        fromInputValid.value = fromIsValid
+        if (fromIsValid) {
+            manualFrom = parsedFrom
+        } else {
+            fromInputValidError.value = `Invalid date: expect ${dateTimeFormat}  or regex ${humanRelatedTimeRegex.toString()}`
+        }
+    }
+    if (toInputManually.value) {
+        const [parsedTo, toIsValid] = dateIsValid(toInputText.value)
+        toInputValid.value = toIsValid
+        if (toIsValid) {
+            manualTo = parsedTo
+        } else {
+            toInputValidError.value = `Invalid date: expect date ${dateTimeFormat} or regex ${humanRelatedTimeRegex.toString()}`
+        }
+    }
+    if (fromInputValid.value && toInputValid.value) {
+        if (fromInputManually.value) {
+            from.value = manualFrom
+
+        }
+        if (toInputManually.value) {
+            to.value = manualTo
+        }
+    } else {
+        isValid = false
+    }
+
+    if (isValid) {
+        emit('rangeSelect', {
+            from: from.value,
+            to: to.value,
+        })
+        dropdown.value.toggle()
+    }
 }
 
 const handleSelectRelative = (event) => {
@@ -122,6 +172,8 @@ const handleSelectRelative = (event) => {
         to.value = event.value.to
         fromInputText.value = event.value.from
         toInputText.value = event.value.to
+        fromInputManually.value = false
+        toInputManually.value = false
         dates.value = []
     }
     emit('rangeSelect', {
@@ -136,6 +188,8 @@ const onDateSelect = () => {
         to.value = dates.value[1]
         fromInputText.value = fmt(dates.value[0])
         toInputText.value = fmt(dates.value[1])
+        fromInputManually.value = false
+        toInputManually.value = false
         selectedRelative.value = null
     }
 }

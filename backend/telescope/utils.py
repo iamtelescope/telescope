@@ -4,7 +4,7 @@ from datetime import timezone
 from datetime import timedelta
 
 
-HUMAN_RELATED_TIME_REGEX = re.compile("^now-(?P<value>[0-9]+)(?P<unit>[dhms])$")
+HUMAN_RELATED_TIME_REGEX = re.compile(r"^now(?:-(?P<value>[0-9]+)(?P<unit>[dhms]))?$")
 UNIT_TO_SECONDS = {
     "d": 24 * 60 * 60,
     "h": 60 * 60,
@@ -23,26 +23,20 @@ def get_source_database_conn_kwargs(source):
     }
 
 
-def get_times(time_from, time_to):
-    parsed_related = parse_related_time(time_from)
-    if parsed_related:
-        time_from = parsed_related
-    else:
-        time_from = int(time_from)
-
-    if time_to == "now":
-        time_to = int(datetime.now(timezone.utc).timestamp()) * 1000
-    else:
-        time_to = int(time_to)
-    return time_from, time_to
-
-
-def parse_related_time(related_time):
-    m = HUMAN_RELATED_TIME_REGEX.match(related_time)
-    if m:
-        value = int(m.group("value"))
-        seconds = UNIT_TO_SECONDS[m.group("unit")]
-        time_from = datetime.utcnow() - timedelta(seconds=value * seconds)
-        return int(time_from.timestamp()) * 1000
-    else:
-        return None
+def parse_time(value):
+    timestamp = None
+    error = None
+    try:
+        timestamp = int(value)
+    except ValueError:
+        match = HUMAN_RELATED_TIME_REGEX.match(value)
+        if not match:
+            error = "Invalid value given. Expect int timestamp or related str"
+        else:
+            if value == "now":
+                timestamp = int(datetime.now(timezone.utc).timestamp()) * 1000
+            else:
+                count = int(match.group("value"))
+                seconds = UNIT_TO_SECONDS[match.group("unit")]
+                timestamp = int((datetime.utcnow() - timedelta(seconds=count * seconds)).timestamp() * 1000)
+    return timestamp, error

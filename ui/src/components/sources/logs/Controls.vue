@@ -11,27 +11,25 @@
     </template>
   </Toolbar>
   <div class="mb-2">
-    <FieldsEditor @change="onFieldsChange" :source="source" :value="route.query.fields ?? source.defaultChosenFields.join(', ')"
-      @submit="handleSearch" />
-    <ErrorText v-if="validation != null && !validation.result && validation.fields.fields"
-      :text="validation.fields.fields">
-    </ErrorText>
+    <FieldsEditor @change="onFieldsChange" :source="source"
+      :value="route.query.fields ?? source.defaultChosenFields.join(', ')" @submit="handleSearch" />
   </div>
   <div class="mb-3">
     <QueryEditor @change="onQueryChange" :value="route.query.query ?? ''" @submit="handleSearch" />
-    <ErrorText v-if="validation != null && !validation.result && validation.fields.query"
-      :text="validation.fields.query">
-    </ErrorText>
   </div>
+  <Message severity="error" v-if="validation != null && !validation.result">
+    <span class="text-2xl">Invalid parameters given</span><br>
+    <span v-if="validation.non_fields">{{ validation.non_field }}<br></span>
+    <span v-for="name in Object.keys(validation.fields)" :key="name"><span class="font-bold">{{ name }}</span>: {{
+      validation.fields[name].join(', ') }}<br></span>
+  </Message>
 </template>
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
-import Button from 'primevue/button'
-import Select from 'primevue/select'
-import Toolbar from 'primevue/toolbar'
+import { Message, Button, Select, Toolbar } from 'primevue'
 
 import DatetimePicker from '@/components/sources/logs/DatetimePicker.vue'
 import FieldsEditor from '@/components/sources/logs/FieldsEditor.vue'

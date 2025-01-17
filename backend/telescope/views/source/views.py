@@ -26,7 +26,6 @@ from telescope.rbac.helpers import (
 )
 
 from telescope.query import fetch_logs, validate_flyql_query
-from telescope.utils import get_times
 from telescope.rbac.roles import SourceRole
 from telescope.rbac import permissions
 from telescope.auth.decorators import global_permission_required
@@ -330,43 +329,27 @@ class SourceLogsView(APIView):
             source_slug=slug,
             required_permissions=[permissions.Source.USE.value],
         )
-
-        serializer = SourceLogsRequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
         source = Source.objects.select_related("connection").get(slug=slug)
 
-        try:
-            fields = parse_fields(source, serializer.validated_data["fields"])
-        except FieldsParserError as err:
-            response.validation["result"] = False
-            response.validation["fields"]["fields"] = err.message
-
-        flyql_validation_result, help_text = validate_flyql_query(
-            source, serializer.validated_data["query"]
+        serializer = SourceLogsRequestSerializer(
+            data=request.data, context={"source": source}
         )
-
-        if not flyql_validation_result:
+        if not serializer.is_valid():
             response.validation["result"] = False
-            response.validation["fields"]["query"] = help_text
-
-        if not response.validation["result"]:
+            response.validation["fields"] = serializer.errors
             return JsonResponse(response.as_dict())
 
-        time_from, time_to = get_times(
-            serializer.validated_data["from"], serializer.validated_data["to"]
-        )
         rows, total, stats = fetch_logs(
             source=source,
             query=serializer.validated_data["query"],
-            time_from=time_from,
-            time_to=time_to,
+            time_from=serializer.validated_data["from"],
+            time_to=serializer.validated_data["to"],
             limit=serializer.validated_data["limit"],
             timezone=ZoneInfo("UTC"),
         )
         response.data = {
             "metadata": {
-                "fields": fields,
+                "fields": serializer.validated_data["fields"],
                 "stats": stats,
             },
             "rows": [row.as_dict() for row in rows],
