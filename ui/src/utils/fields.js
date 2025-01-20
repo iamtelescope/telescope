@@ -691,7 +691,7 @@ class Parser {
             this.storeTypedChar(CharType.OPERATOR)
         } else if (this.char.isModifierOperator()) {
             this.storeModifier()
-            this.storeTypedChar(CharType.MODIFIER)
+            this.storeTypedChar(CharType.OPERATOR)
             this.setState(State.EXPECT_MODIFIER)
         } else {
             this.storeTypedChar(CharType.ERROR)
