@@ -84,7 +84,7 @@ const calcPlotLines = () => {
     let plotLines = []
 
     if (props.meta.rows < props.meta.total) {
-        let color = 'rgba(0, 0, 255, 0.05)'
+        let color = 'rgba(0, 0, 255, 0.2)'
         let plotSize = props.meta.newest_row - props.meta.oldest_row
         let totalSize = props.timestamps[props.timestamps.length - 1] - props.timestamps[0]
         let plotPercent = (plotSize * 100) / totalSize

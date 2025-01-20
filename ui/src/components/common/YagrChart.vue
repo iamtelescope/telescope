@@ -17,7 +17,6 @@ onMounted(() => {
 })
 
 watch(props, () => {
-    console.log(props.settings.chart.appearance)
     chart.value.dispose()
     chart.value = new Yagr(yaggrChart, props.settings)
     chart.value.setTheme(props.theme)
