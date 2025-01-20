@@ -60,11 +60,3 @@ navStore.update([
 
 const { users, error, loading } = useGetUsers()
 </script>
-
-<style scoped>
-.content {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-}
-</style>

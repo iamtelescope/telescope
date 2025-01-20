@@ -12,16 +12,15 @@ import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 import ConfirmationService from 'primevue/confirmationservice'
 
-import '@/assets/css/tailwind.css'
-import '@/assets/css/primetheme.css'
 import '@/assets/css/main.css'
 
 import 'primeicons/primeicons.css'
-import '@gravity-ui/yagr/dist/index.css';
+import '@gravity-ui/yagr/dist/index.css'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChartArea, faChartLine, faChartColumn } from '@fortawesome/free-solid-svg-icons'
+import Aura from '@primevue/themes/aura'
 
 library.add(faChartArea, faChartLine, faChartColumn)
 
@@ -36,7 +35,18 @@ const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
-app.use(PrimeVue, { theme: 'none' })
+app.use(PrimeVue, {
+    theme: {
+        preset: Aura,
+        options: {
+            darkModeSelector: '.dark',
+            cssLayer: {
+                name: 'primevue',
+                order: 'tailwind-base, primevue, tailwind-utilities',
+            }
+        }
+    }
+})
 app.use(ConfirmationService)
 app.use(ToastService)
 app.component('font-awesome-icon', FontAwesomeIcon)

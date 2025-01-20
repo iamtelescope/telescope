@@ -4,29 +4,33 @@
             <Row :source="source" :row="selectedRow"></Row>
         </template>
     </Drawer>
-    <table class="logs-table" v-if="rows && dateFormat">
+    <table class="w-full min-w-full text-sm logs-table" v-if="rows && dateFormat">
         <thead>
             <tr>
-                <th></th>
-                <th class="pl-2 pr-2">Time</th>
-                <th class="pl-2 pr-2" v-for="field in metadata.fields" :key="field.name">{{ field.display_name }}
+                <th class="border-b border-neutral-200 dark:border-neutral-700"></th>
+                <th class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700">Time</th>
+                <th class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700" v-for="field in metadata.fields" :key="field.name">{{ field.display_name
+                    }}
                 </th>
             </tr>
         </thead>
         <tbody>
-            <tr v-for="row in rows" :key="row.record_id" @click="handleRowClick(row)">
-                <td>
-                    <div class="logs-severity-box" :style="{ 'background-color': getRowColor(row) }"></div>
+            <tr class="hover:bg-slate-100 dark:hover:bg-neutral-800 hover:cursor-pointer" v-for="row in rows"
+                :key="row.record_id" @click="handleRowClick(row)">
+                <td class="pl-1 pr-2 w-1 m-w-1 border-b border-neutral-200 dark:border-neutral-700">
+                    <div class="rounded w-2 h-6" :style="{ 'background-color': getRowColor(row) }"></div>
                 </td>
-                <td class="nowrap">
-                    <pre class="logs-value-field">{{ getTime(row.time) }}.<span class="text-xs text-gray-400">{{
+                <td
+                    class="nowrap pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300 hover:cursor-pointer hover:bg-slate-300 dark:hover:bg-neutral-900">
+                    <pre class="logs-value-field">{{ getTime(row.time) }}.<span class="text-xs text-neutral-300">{{
                         row.time.microseconds }}</span></pre>
                 </td>
-                <td class="nowrap" v-for="field in metadata.fields" :key="field.name">
-                    <pre v-if="field.type != 'jsonstring'" class="logs-value-field"
+                <td class="nowrap pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300 hover:cursor-pointer hover:bg-slate-300 dark:hover:bg-neutral-900"
+                    v-for="field in metadata.fields" :key="field.name">
+                    <pre v-if="field.type != 'jsonstring'" class="border-0 p-0 m-0 break-all"
                         :class="{ prewrap: String(row.data[field.root_name]).length > 50 }">{{
                             getRowValue(field, row.data[field.root_name]) || '&dash;' }}</pre>
-                    <pre v-else class="logs-value-field"
+                    <pre v-else class="border-0 p-0 m-0 break-all"
                         :class="{ prewrap: extractJsonPathLength(field, row.data) > 50 }">
                     {{ extractJsonPath(field, row.data) }}</pre>
                 </td>
@@ -133,113 +137,3 @@ onMounted(() => {
 
 })
 </script>
-
-<style scoped>
-.logs-severity-box {
-    border-radius: 3px;
-    width: 5px;
-    height: 16px;
-}
-
-.logs-value-field {
-    background-color: transparent;
-    border: none;
-    padding-top: 0px;
-    padding-left: 0px;
-    padding-right: 0px;
-    padding-bottom: 0px;
-    margin: 0px;
-    word-break: break-all;
-    word-wrap: break-word;
-}
-
-.logs-table {
-    width: 100%;
-    min-width: 100%;
-}
-
-.logs-table>tbody>tr:hover {
-    background-color: #f3f3f3
-}
-
-.logs-table>thead>tr>th {
-    text-align: left;
-}
-
-.logs-table>tbody>tr>td {
-    padding: 3px 5px;
-    border-left: 1px solid #f2f2f2;
-    border-bottom: 1px solid #f2f2f2;
-    font-family: monospace;
-}
-
-.logs-table>tbody>tr>td>pre {
-    font-size: 13px;
-}
-
-.logs-table>tbody>tr>td:hover {
-    background-color: #f6f6f6;
-    cursor: pointer;
-}
-
-.logs-table>tbody>tr>td:first-child {
-    max-width: 5px;
-    width: 5px;
-    padding-right: 10px;
-    padding-left: 0px;
-}
-
-.logs-table>tbody>tr>td:first-child:hover {
-    background-color: transparent;
-}
-
-.logs-table>thead>tr>th:first-child {
-    padding-left: 0px;
-    padding-right: 0px;
-}
-
-.logs-table>tbody>tr>td:first-child:hover {
-    color: #333333;
-}
-
-.logs-table>tbody>tr.detailed-row>td {
-    display: none;
-}
-
-.logs-table>tbody>tr.detailed-row>td:hover {
-    background-color: white;
-}
-
-.logs-table>tbody>tr.detailed-row>td:first-child {
-    padding-left: 0px;
-    cursor: auto;
-}
-
-.logs-table>tbody>tr>td:hover {
-    background-color: #dbdbdb;
-}
-
-.logs-table>thead>tr>th {
-    font-size: 13px;
-    border-left: 1px solid #f2f2f2;
-    border-bottom: none;
-}
-
-.dl-info-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.dl-info-table>tbody>tr>th {
-    width: 200px;
-    min-width: 200px;
-}
-
-.dl-info-table>tbody>tr>th,
-.dl-info-table>tbody>tr>td {
-    text-align: left;
-    padding: 10px;
-    border-bottom: 1px solid #cad9d5;
-    vertical-align: top;
-}
-</style>

@@ -18,11 +18,12 @@
                 <DataView :loading="loading" :error="error">
                     <div class="flex flex-wrap w-full gap-2">
                         <Card v-for="(source, index) in filteredSources" :key="index" @click="handleSourceClick(source)"
-                            class="max-w-400 min-w-400 cursor-pointer hover:drop-shadow-md"
+                            class="max-w-400 min-w-400 cursor-pointer hover:drop-shadow-md dark:drop-shadow-md dark:hover:drop-shadow-xl"
                             style="max-width:420px;min-width:420px;">
                             <template #title>
                                 <div class="flex flex-row items-start">
-                                    <img src="@/assets/clickhouse.png" class="mr-3" height="24px" width="24px">
+                                    <img v-if="isDark" src="@/assets/clickhouse-dark.png" class="mr-3" height="24px" width="24px">
+                                    <img v-else src="@/assets/clickhouse.png" class="mr-3" height="24px" width="24px">
                                     <div class="flex flex-col w-full">
                                         <span>{{ source.name }}</span>
                                         <span class="text-gray-500 text-sm">{{ source.slug }}</span>
@@ -58,6 +59,7 @@ import Button from 'primevue/button'
 import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 
+import { useDark } from '@vueuse/core'
 import { useNavStore } from '@/stores/nav'
 import { useAuthStore } from '@/stores/auth'
 import { useGetSources } from '@/composables/sources/useSourceService'
@@ -67,6 +69,7 @@ import DataView from '@/components/common/DataView'
 const router = useRouter()
 const navStore = useNavStore()
 const filterValue = ref('')
+const isDark = useDark()
 
 const { user } = storeToRefs(useAuthStore())
 const { sources, error, loading } = useGetSources()

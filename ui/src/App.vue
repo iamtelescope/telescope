@@ -3,32 +3,34 @@
   <Drawer v-model:visible="sidebarVisible" v-if="isLoggedIn" position="right">
     <template #container>
       <div class="flex flex-col h-full">
-        <div class="flex flex-col sidebar">
-          <div v-if="user.avatarUrl" class="flex flex-row items-center telescope-avatar">
-            <Avatar :image="user.avatarUrl" class="avaimg" /> <span class="telescope-sidebar-username"><i
+        <div class="flex flex-col ">
+          <div v-if="user.avatarUrl" class="flex flex-row items-center pl-4 mb-4 pt-3.5 telescope-avatar">
+            <Avatar :image="user.avatarUrl" class="avaimg" /> <span class="font-bold text-xl pl-2.5"><i
                 v-if="user.type == 'github'" class="pi pi-github text-gray-300"></i> {{ user.username }}</span>
           </div>
-          <div v-else class="flex flex-row items-center telescope-avatar">
-            <Avatar icon="pi pi-user" /> <span class="telescope-sidebar-username">{{ user.username }}</span>
+          <div v-else class="flex flex-row items-center  pl-4 mb-4 pt-3.5 telescope-avatar">
+            <Avatar icon="pi pi-user" /> <span class="font-bold text-xl pl-2.5">{{ user.username }}</span>
           </div>
-          <div class="flex flex-col sidebar-items" style="height:100%; padding-top: 15px;">
+          <div class="flex flex-col " style="height:100%; padding-top: 15px;">
             <Menu :model="sidebarItems" pt:root:style="border-left:none;border-right: none; border-radius: 0px;" />
           </div>
         </div>
       </div>
     </template>
   </Drawer>
-  <div class="flex flex-row align-items-stretch	w-full h-full content" v-if="isLoggedIn">
+  <div class="flex flex-row align-items-stretch	w-full h-full" v-if="isLoggedIn">
     <div class="flex flex-col items-start w-full h-full">
-      <div class="data-header flex flex-row w-full items-center">
-        <div class="flex flex-row justify-start align-items-top telescope-logo" @click="toHome">
-          <img src="@/assets/logo.png" height="26px" width="26px"> <span id="logo" class="mr-9">Telescope</span>
+      <div class="flex flex-row w-full items-center pl-2 pt-2 pb-2 border-b border-neutral-300 dark:border-neutral-600">
+        <div class="flex flex-row justify-start align-items-top cursor-pointer" @click="toHome">
+          <img src="@/assets/logo.png" height="26px" width="26px"> <span id="logo" class="mr-9 pl-2.5 text-2xl font-bold">Telescope</span>
         </div>
         <div class="flex flex-row w-full justify-start items-center">
-          <Breadcrumb :home="home" :model="navStore.items" />
+          <Breadcrumb :home="home" :model="navStore.items" class="p-2 ml-4"/>
         </div>
-        <div class="flex flex-row w-full justify-end items-center mr-6">
-          <Button v-if="user.hasAccessToSettings()" label="Manage" severity="secondary" icon="pi pi-cog" class="mr-6"
+        <div class="flex flex-row w-full justify-end items-center mr-4">
+          <Button :icon="themeIcon" outlined severity="secondary" size="small" class="mr-3"
+            @click="toggleDark()"></Button>
+          <Button v-if="user.hasAccessToSettings()" label="Manage" severity="secondary" icon="pi pi-cog" class="mr-4"
             size="small" outlined @click="toggleManageMenu" aria-haspopup="true" aria-controls="overlay_manage_menu" />
           <Avatar v-if="user.avatarUrl" :image="user.avatarUrl" style="cursor: pointer" class="avaimg"
             @click="sidebarVisible = true"></Avatar>
@@ -36,21 +38,17 @@
         </div>
         <Menu ref="manageMenu" id="overlay_manage_menu" :model="manageMenuItems" :popup="true" />
       </div>
-      <div class="data-content">
+      <div class="w-full h-full pt-2 pl-2 pr-2 overflow-auto">
         <router-view />
       </div>
     </div>
   </div>
-  <div class="flex h-full w-full items-center justify-center login-content" v-else>
-    <router-view />
-  </div>
-
 </template>
 
 <script setup>
 
 import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Toast from 'primevue/toast'
 import Avatar from 'primevue/avatar'
@@ -92,18 +90,15 @@ const home = ref({
   url: '/',
 });
 
+const themeIcon = computed(() => {
+  if (isDark.value) {
+    return 'pi pi-sun'
+  } else {
+    return 'pi pi-moon'
+  }
+})
+
 const sidebarItems = ref([
-  //  {
-  //    label: 'Settings',
-  //    items: [
-  //      {
-  //        'label': 'Theme',
-  //        command: () => {
-  //          toggleDark()
-  //        }
-  //      }
-  //    ]
-  //  },
   {
     label: 'Account',
     items: [
@@ -116,101 +111,7 @@ const sidebarItems = ref([
       },
     ]
   },
-]);
+])
 
 const sidebarVisible = ref(false)
 </script>
-
-<style scoped>
-.content {
-  height: 100%;
-}
-
-.p-breadcrumb {
-  padding: 5px;
-  margin-left: 10px;
-}
-
-.data-header {
-  width: 100%;
-  height: 30xp;
-  border-top-left-radius: 10px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  padding-left: 15px;
-  border-bottom: 1px solid #dbdbdb;
-}
-
-.router-content {
-  width: 100%;
-}
-
-.login-content {
-  background-color: #141919;
-}
-
-.data-content {
-  padding-top: 10px;
-  width: 100%;
-  height: 100%;
-  padding-left: 5px;
-  padding-right: 5px;
-  overflow-y: auto;
-}
-
-.telescope-avatar {
-  padding-left: 16px;
-  padding-top: 13px;
-  margin-bottom: 15px;
-}
-
-.dropdown-menu[data-bs-popper] {
-  top: 90%;
-}
-
-#logo {
-  font-size: 18px;
-  font-weight: bold;
-  padding-left: 10px;
-}
-
-.telescope-sidebar-username {
-  font-size: 18px;
-  font-weight: bold;
-  padding-left: 10px;
-}
-
-.sidebar {
-  height: 100%;
-  min-height: 100%;
-  width: 100%;
-  display: flex;
-}
-
-.sidebar>.sidebar-items>.item-header {
-  color: rgb(99, 99, 99);
-  font-weight: 600;
-  padding-top: 15px;
-  padding-bottom: 15px;
-  padding-right: 15px;
-  padding-left: 20px;
-  font-size: 15px;
-}
-
-.sidebar>.sidebar-items>a {
-  text-decoration: none;
-  color: black;
-  padding-top: 15px;
-  padding-bottom: 15px;
-  padding-right: 15px;
-  padding-left: 20px;
-}
-
-.sidebar>.sidebar-items>a:hover {
-  background-color: #E3EAE8;
-}
-
-.telescope-logo {
-  cursor: pointer
-}
-</style>

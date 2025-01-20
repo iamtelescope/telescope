@@ -198,8 +198,3 @@ const toggleRangeSelect = (event) => {
     dropdown.value.toggle(event)
 }
 </script>
-<style scoped>
-.custom-panel {
-    border: none;
-}
-</style>

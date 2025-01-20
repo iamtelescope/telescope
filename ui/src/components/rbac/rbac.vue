@@ -9,7 +9,7 @@
                          in your organization</span>
                 </div>
             </div>
-            <Card class="max-w-400 cursor-pointer hover:drop-shadow-md" @click="handleRolesClick">
+            <Card class="max-w-400 cursor-pointer hover:drop-shadow-md dark:drop-shadow-md dark:hover:drop-shadow-xl" @click="handleRolesClick">
                 <template #title>
                     <i class="pi pi-key"></i> Roles
                 </template>
@@ -18,7 +18,7 @@
                     enabling control over actions within your organization
                 </template>
             </Card>
-            <Card class="max-w-400 cursor-pointer hover:drop-shadow-md" @click="handleGroupsClick">
+            <Card class="max-w-400 cursor-pointer hover:drop-shadow-md dark:drop-shadow-md dark:hover:drop-shadow-xl" @click="handleGroupsClick">
                 <template #title>
                     <i class="pi pi-users"></i> Groups
                 </template>
@@ -27,7 +27,7 @@
                     your organization more efficiently
                 </template>
             </Card>
-            <Card class="max-w-400 cursor-pointer hover:drop-shadow-md" @click="handleUsersClick">
+            <Card class="max-w-400 cursor-pointer hover:drop-shadow-md dark:drop-shadow-md dark:hover:drop-shadow-xl" @click="handleUsersClick">
                 <template #title>
                     <i class="pi pi-user"></i> Users
                 </template>

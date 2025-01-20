@@ -9,7 +9,7 @@ import { ref, onMounted, watch } from 'vue'
 
 import Yagr from '@gravity-ui/yagr'
 
-const props = defineProps(['settings'])
+const props = defineProps(['settings', 'theme'])
 const chart = ref(null)
 
 onMounted(() => {
@@ -17,7 +17,10 @@ onMounted(() => {
 })
 
 watch(props, () => {
+    console.log(props.settings.chart.appearance)
     chart.value.dispose()
     chart.value = new Yagr(yaggrChart, props.settings)
+    chart.value.setTheme(props.theme)
+
 })
 </script>

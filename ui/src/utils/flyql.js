@@ -24,6 +24,7 @@ const CharType = Object.freeze({
     OPERATOR: "flyqlOperator",
     NUMBER: "number",
     STRING: "string",
+    SPACE: "space",
 })
 
 const tokenTypes = [
@@ -424,6 +425,7 @@ class Parser {
             this.setState(State.INITIAL)
             this.storeTypedChar(CharType.OPERATOR)
         } else if (this.char.isDelimiter()) {
+            this.storeTypedChar(CharType.SPACE)
             this.setState(State.BOOL_OP_DELIMITER)
         } else if (this.char.isKey()) {
             this.extendKey()
@@ -436,6 +438,7 @@ class Parser {
     }
     inStateKey() {
         if (this.char.isDelimiter()) {
+            this.storeTypedChar(CharType.SPACE)
             this.setErrorState("unexpected delimiter in key", 2)
             return
         } else if (this.char.isKey()) {
@@ -452,6 +455,7 @@ class Parser {
     }
     inStateKeyValueOperator() {
         if (this.char.isDelimiter()) {
+            this.storeTypedChar(CharType.SPACE)
             this.setErrorState("unexpected delimiter in operator", 4)
         } else if (this.char.isOp()) {
             this.extendKeyValueOperator()
@@ -487,6 +491,7 @@ class Parser {
             this.extendValue()
             this.storeTypedChar(CharType.VALUE)
         } else if (this.char.isDelimiter()) {
+            this.storeTypedChar(CharType.SPACE)
             this.setState(State.EXPECT_BOOL_OP)
             this.extendTree()
             this.resetData()
@@ -551,6 +556,7 @@ class Parser {
     }
     inStateBoolOpDelimiter() {
         if (this.char.isDelimiter()) {
+            this.storeTypedChar(CharType.SPACE)
             return
         } else if (this.char.isKey()) {
             this.setState(State.KEY)
@@ -578,6 +584,7 @@ class Parser {
     }
     inStateExpectBoolOp() {
         if (this.char.isDelimiter()) {
+            this.storeTypedChar(CharType.SPACE)
             return
         } else if (this.char.isGroupClose()) {
             if (!this.nodesStack.length) {
@@ -675,7 +682,6 @@ class Parser {
             } else {
                 prevToken = token
             }
-
             data.push(deltaLine, deltaStart, tokenLength, typeIndex, tokenModifier)
         }
         return data
@@ -705,7 +711,7 @@ class Parser {
             } else if (this.state === State.DOUBLE_QUOTED_VALUE) {
                 this.inStateDoubleQuotedValue()
             } else if (this.state === State.KEY_VALUE_OPERATOR) {
-                this.inStateKeyValueOperator()
+                this.inStateKeyValueOperator()                   
             } else if (this.state === State.BOOL_OP_DELIMITER) {
                 this.inStateBoolOpDelimiter()
             } else if (this.state === State.EXPECT_BOOL_OP) {

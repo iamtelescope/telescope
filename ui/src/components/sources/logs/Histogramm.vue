@@ -1,29 +1,31 @@
 <template>
-    <BorderCard>
+    <BorderCard class="border-neutral-300 dark:border-neutral-600">
         <div class="flex flex-row">
-        <FloatLabel variant="on" class="mr-2">
-            <Select v-model="groupBy" :options="groupByOptions" placeholder="&#8211;" filter autoFilterFocus />
-            <label>Group by</label>
-        </FloatLabel>
-        <SelectButton v-model="chartType" :defaultValue="chartDefaultType" :allowEmpty="false" :options="options"
-            @change="onChartTypeSelect">
-            <template #option="slotProps">
-                <font-awesome-icon :icon="`fa-solid fa-chart-${slotProps.option}`" />
-            </template>
-        </SelectButton>
-    </div>
+            <FloatLabel variant="on" class="mr-2">
+                <Select v-model="groupBy" :options="groupByOptions" placeholder="&#8211;" filter autoFilterFocus />
+                <label>Group by</label>
+            </FloatLabel>
+            <SelectButton v-model="chartType" :defaultValue="chartDefaultType" :allowEmpty="false" :options="options"
+                @change="onChartTypeSelect">
+                <template #option="slotProps">
+                    <font-awesome-icon :icon="`fa-solid fa-chart-${slotProps.option}`" />
+                </template>
+            </SelectButton>
+        </div>
         <div class="flex flex-col" id="histogramm">
-            <YagrChart v-if="chartSettings" :settings="chartSettings"></YagrChart>
+            <YagrChart v-if="chartSettings" :theme="theme" :settings="chartSettings" />
         </div>
     </BorderCard>
 </template>
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { format } from "date-fns"
 
 import SelectButton from 'primevue/selectbutton'
 import FloatLabel from 'primevue/floatlabel'
 import Select from 'primevue/select'
+
+import { useDark } from '@vueuse/core'
 
 import BorderCard from '@/components/common/BorderCard.vue'
 import YagrChart from '@/components/common/YagrChart.vue'
@@ -38,12 +40,21 @@ const groupBy = ref(props.source.severityField)
 const groupByOptions = ref([props.source.severityField])
 const chartDefaultType = ref('column')
 const options = ref(['column', 'area', 'line'])
+const isDark = useDark()
 
 const onChartTypeSelect = (e) => {
     let type = e.value ?? chartDefaultType.value
     chartType.value = type
     chartSettings.value = getChartSettings(type)
 }
+
+const theme = computed(() => {
+    if (isDark.value) {
+        return 'dark'
+    } else {
+        return 'light'
+    }
+})
 
 const calcRenderOptions = (type) => {
     let options = {}
@@ -71,7 +82,7 @@ const calcRenderOptions = (type) => {
 
 const calcPlotLines = () => {
     let plotLines = []
-    
+
     if (props.meta.rows < props.meta.total) {
         let color = 'rgba(0, 0, 255, 0.05)'
         let plotSize = props.meta.newest_row - props.meta.oldest_row
@@ -90,13 +101,13 @@ const calcPlotLines = () => {
 }
 
 const tooltipRender = (data) => {
-    let html = `<div class="font-bold">${format(new Date(data.x), "yyyy-MM-dd HH:mm:ss.SSS")}</div><table class='tooltip-table w-full'>`
+    let html = `<div class="font-bold pb-2 dark:text-neutral-300">${format(new Date(data.x), "yyyy-MM-dd HH:mm:ss.SSS")}</div><table class='p-0 m-0 w-full'>`
     let rows = []
     for (const item of data.scales[0].rows.sort((a, b) => b.originalValue - a.originalValue)) {
         html += '<tr>'
-        html += `<td><i style="color:${item.color};" class="pi pi-circle-fill"></i></td>`
-        html += `<td>${item.name}</td>`
-        html += `<td class="text-right"> ${item.dataValue}</td>`
+        html += `<td class="p-0 border-0"><i style="color:${item.color};" class="pi pi-circle-fill"></i></td>`
+        html += `<td class="p-0 border-0">${item.name}</td>`
+        html += `<td class="p-0 border-0 text-right"> ${item.dataValue}</td>`
         html += '</tr>'
     }
     html += '</table>'
@@ -139,6 +150,7 @@ const getChartSettings = (type) => {
         chart: {
             appearance: {
                 drawOrder: ['plotLines', 'axes', 'series'],
+                theme: theme.value,
             },
             series: {
                 type: type,
@@ -174,20 +186,3 @@ onMounted(() => {
 })
 
 </script>
-<style scoped>
-.tooltip-table {
-    font-family: 'monospace';
-    padding: 0px;
-    margin: 0px;
-}
-
-.tooltip-table>tbody>tr>td {
-    padding: 0px;
-    border: none;
-    font-size: 10px;
-}
-
-.yagr-chart text {
-    font-family: 'Open Sans';
-}
-</style>

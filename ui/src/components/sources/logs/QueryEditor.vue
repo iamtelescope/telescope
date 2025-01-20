@@ -1,7 +1,7 @@
 <template>
-    <div :style="{ height: `${editorHeight}px` }" class="editor border rounded pl-2 pr-2 mb-2"
-        :class="{ 'border-sky-800': editorFocused }">
-        <vue-monaco-editor v-model:value="code" theme="telescope" language="flyql" :options="getDefaultMonacoOptions()"
+    <div :style="{ height: `${editorHeight}px` }" class="editor border rounded pl-2 pr-2 mb-2 dark:border-neutral-600"
+        :class="{ 'border-sky-800 dark:border-sky-700': editorFocused }">
+        <vue-monaco-editor v-model:value="code" :theme="theme" language="flyql" :options="getDefaultMonacoOptions()"
             @mount="handleMount" @change="onChange" />
     </div>
 </template>
@@ -11,6 +11,7 @@ import { ref, computed, shallowRef, nextTick } from 'vue'
 
 import * as monaco from "monaco-editor"
 
+import { useDark } from '@vueuse/core'
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 
 import { getDefaultMonacoOptions } from '@/utils/monaco.js'
@@ -18,11 +19,21 @@ import { getDefaultMonacoOptions } from '@/utils/monaco.js'
 const emit = defineEmits(['change', 'submit'])
 const props = defineProps(['value'])
 
+const isDark = useDark()
+
 const editorFocused = ref(false)
 
 const editorHeight = computed(() => {
     const lines = (code.value.match(/\n/g) || '').length + 1
     return 14 + (lines * 20)
+})
+
+const theme = computed(() => {
+    if (isDark.value) {
+        return 'telescope-dark'
+    } else {
+        return 'telescope'
+    }
 })
 
 const code = ref(props.value)

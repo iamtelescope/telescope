@@ -1,6 +1,6 @@
 <template>
-    <div :style="{ height: `${editorHeight}px` }" class="editor border rounded mt-1 pl-2 pr-2 mb-2"
-        :class="{ 'border-sky-800': editorFocused }">
+    <div :style="{ height: `${editorHeight}px` }" class="editor border rounded mt-1 pl-2 pr-2 mb-2 dark:border-neutral-600"
+        :class="{ 'border-sky-800 dark:border-sky-700': editorFocused }">
         <vue-monaco-editor v-model:value="code" theme="telescope" language="fields" :options="getDefaultMonacoOptions()"
             @mount="handleMount" @change="onChange" />
     </div>
