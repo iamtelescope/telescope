@@ -143,7 +143,6 @@ ACCOUNT_EMAIL_REQUIRED = False
 if CONFIG["auth"]["providers"]["github"]["enabled"]:
     github_config = {
         "SCOPE": [
-            "user",
             "read:org",
         ],
         "APP": {
