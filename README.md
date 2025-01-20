@@ -20,6 +20,7 @@ _A handy tool that manages to make close what once was far_
 > - Certain components might not work as expected or could behave inconsistently.
 > - Bugs or issues may occur during usage.
 > - From a development and operational perspective, the system may not yet offer full convenience or polish.
+> - Was not used in production, so it might encounter some performance issues on real installations.
 
 ### Live installation
 An live instance is available at [https://telescope.humanuser.net](https://telescope.humanuser.net).
