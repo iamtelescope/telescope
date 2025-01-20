@@ -142,15 +142,15 @@ ACCOUNT_EMAIL_REQUIRED = False
 
 if CONFIG["auth"]["providers"]["github"]["enabled"]:
     github_config = {
-        "SCOPE": [
-            "read:org",
-        ],
         "APP": {
             "client_id": CONFIG["auth"]["providers"]["github"]["client_id"],
             "secret": CONFIG["auth"]["providers"]["github"]["secret"],
             "key": CONFIG["auth"]["providers"]["github"].get("key", ""),
         },
     }
+    if CONFIG["auth"]["providers"]["github"].get("organizations"):
+        github_config["SCOPE"] = ["read:org"]
+
     SOCIALACCOUNT_PROVIDERS["github"] = github_config
 
 LOGIN_REDIRECT_URL = "/"
@@ -164,4 +164,4 @@ STATIC_ROOT = BASE_DIR / "static"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-LOGGING = LogConfig(config=CONFIG['logging']).as_dict()
+LOGGING = LogConfig(config=CONFIG["logging"]).as_dict()
