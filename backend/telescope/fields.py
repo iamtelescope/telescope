@@ -17,16 +17,28 @@ UNDERSCORE = "_"
 NEWLINE = "\n"
 VALID_ALIAS_OPERATOR = "as"
 
+ESCAPE_SEQUENSES = {
+    "b": "\b",
+    "f": "\f",
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
+    "v": "\v",
+    "\\": "\\",
+}
 
 KNOWN_MODIFIERS = [
     "chars",
     "slice",
+    "split",
     "lines",
     "firstline",
     "lastline",
     "oneline",
     "lower",
     "upper",
+    "join",
+    "json",
 ]
 
 
@@ -146,7 +158,6 @@ class Parser:
     def __init__(
         self,
     ):
-        self.pos = 0
         self.line = 0
         self.line_pos = 0
         self.char = None
@@ -258,14 +269,28 @@ class Parser:
 
     def parse(self, text):
         self.set_text(text)
-        for c in text:
+
+        i = 0
+        while i < len(text):
             if self.state == State.ERROR:
                 break
-            self.set_char(Char(c, self.pos, self.line, self.line_pos))
+
+            self.set_char(Char(text[i], i, self.line, self.line_pos))
+            if self.char.is_backslash():
+                if i + 1 < len(text):
+                    next_char = text[i + 1]
+                    if next_char and ESCAPE_SEQUENSES.get(next_char):
+                        self.set_char(
+                            Char(
+                                ESCAPE_SEQUENSES[next_char], i, self.line, self.line_pos
+                            )
+                        )
+                        i += 1
+
             if self.char.is_newline():
                 self.line += 1
                 self.line_pos = 0
-                self.pos += 1
+                i += 1
                 continue
 
             match self.state:
@@ -297,7 +322,7 @@ class Parser:
                     self.in_state_expect_modifier_argument_delimiter()
                 case _:
                     self.set_error_state(f"unknown state: {self.state}", 1)
-            self.pos += 1
+            i += 1
             self.line_pos += 1
 
         if self.state == State.ERROR:

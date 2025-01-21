@@ -47,6 +47,18 @@ function upper(value) {
     return value.toUpperCase()
 }
 
+function split(value, splitter) {
+    return value.split(splitter)
+}
+
+function join(value, joiner) {
+    return value.join(joiner)
+}
+
+function json(value) {
+    return JSON.parse(value)
+}
+
 const MODIFIERS = {
     chars: chars,
     lines: lines,
@@ -56,6 +68,9 @@ const MODIFIERS = {
     lower: lower,
     upper: upper,
     slice: slice,
+    split: split,
+    join: join,
+    json: json,
 }
 
 export { MODIFIERS }

@@ -52,6 +52,16 @@ class ParserError extends Error {
     }
 }
 
+const escapeSequences = Object.freeze({
+    'b': '\b',
+    'f': '\f',
+    'n': '\n',
+    'r': '\r',
+    't': '\t',
+    'v': '\v',
+    '\\': '\\',
+})
+
 const CharType = Object.freeze({
     FIELD: "field",
     ARGUMENT: "argument",
@@ -197,7 +207,6 @@ class Char {
 
 class Parser {
     constructor() {
-        this.pos = 0
         this.line = 0
         this.linePos = 0
         this.char = null
@@ -236,6 +245,7 @@ class Parser {
     }
     storeArgument() {
         let value = this.modifierArgument
+        
         if (this.modifierArgumentType === "auto") {
             try {
                 value = parseInt(value)
@@ -243,6 +253,7 @@ class Parser {
                 try {
                     value = parseFloat(value)
                 } catch (e) {
+                    
                     // value remains as it is
                 }
             }
@@ -405,20 +416,30 @@ class Parser {
     }
     parse(text, raiseError) {
         this.setText(text)
-        for (let c of text) {
+        let i = 0
+        while (i < text.length) {
             if (this.state === State.ERROR) {
                 break
             }
-
-            this.setChar(new Char(c, this.pos, this.line, this.linePos))
-
+            this.setChar(new Char(text[i], i, this.line, this.linePos))
+            if (this.char.isBackslash()) {
+                const nextChar = text[i + 1]
+                if (nextChar && escapeSequences.hasOwnProperty(nextChar)) {
+                    this.setChar(new Char(escapeSequences[nextChar], i, this.line, this.linePos))
+                    i++
+                } else {
+                    this.setChar(new Char(text[i], i, this.line, this.linePos))
+                }
+            } else {
+                this.setChar(new Char(text[i], i, this.line, this.linePos))
+            }
+            
             if (this.char.isNewline()) {
                 this.line += 1
                 this.linePos = 0
-                this.pos += 1
+                i++
                 continue
             }
-
             if (this.state === State.EXPECT_NAME) {
                 this.inStateExpectField()
             } else if (this.state === State.NAME) {
@@ -449,8 +470,8 @@ class Parser {
                 this.setErrorState(`unknown state: ${this.state}`, 1)
             }
 
-            this.pos += 1
             this.linePos += 1
+            i++
         }
 
         if (this.state === State.ERROR) {
@@ -655,7 +676,7 @@ class Parser {
         this.storeTypedChar(CharType.ARGUMENT)
         if (this.char.isBackslash()) {
             const nextPos = this.char.pos + 1
-            let nextChar
+            let nextChar = this.text[nextPos]
             try {
                 nextChar = this.text[nextPos]
             } catch (e) {
