@@ -1,62 +1,116 @@
 function chars(value, from, to) {
     let args
-    if (to === undefined) {
-        args = [0, from]
-    } else {
-        args = [from, to]
+    try {
+        if (to === undefined) {
+            args = [0, from]
+        } else {
+            args = [from, to]
+        }
+        return value.slice(...args)
+    } catch (e) {
+        return value
     }
-    return value.slice(...args)
+
 }
 
 function lines(value, from, to) {
     let args
-    if (to === undefined) {
-        args = [0, from]
-    } else {
-        args = [from, to]
+    try {
+        if (to === undefined) {
+            args = [0, from]
+        } else {
+            args = [from, to]
+        }
+        return value.split(/\r?\n/).slice(...args).join('\n')
+    } catch (e) {
+        return value
     }
-    return value.split(/\r?\n/).slice(...args).join('\n')
+
 }
 
 function slice(value, from, to) {
     let args = [from]
-    if (to !== undefined) {
-        args.push(to)
+    try {
+        if (to !== undefined) {
+            args.push(to)
+        }
+        return value.slice(...args)
+    } catch (e) {
+        return value
     }
-    return value.slice(...args)
+
 }
 
 function firstline(value) {
-    return value.split(/\r?\n/)[0]
+    try {
+        return value.split(/\r?\n/)[0]
+    } catch (e) {
+        return value
+    }
+
 }
 
 function lastline(value) {
-    let spl = value.split(/\r?\n/)
-    return spl[spl.length - 1]
+    try {
+        let spl = value.split(/\r?\n/)
+        return spl[spl.length - 1]
+    } catch (e) {
+        return value
+    }
+
 }
 
 function oneline(value) {
-    return value.replace(/(?:\r\n|\r|\n)/g, '')
+    try {
+        return value.replace(/(?:\r\n|\r|\n)/g, '')
+    } catch (e) {
+        return value
+    }
+
 }
 
 function lower(value) {
-    return value.toLowerCase()
+    try {
+        return value.toLowerCase()
+    } catch (e) {
+        return value
+    }
+
 }
 
 function upper(value) {
-    return value.toUpperCase()
+    try {
+        return value.toUpperCase()
+    } catch (e) {
+        return value
+    }
+
 }
 
 function split(value, splitter) {
-    return value.split(splitter)
+    try {
+        return value.split(splitter)
+    } catch (e) {
+        return value
+    }
+
 }
 
 function join(value, joiner) {
-    return value.join(joiner)
+    try {
+        return value.join(joiner)
+    } catch (e) {
+        return value
+    }
+
 }
 
 function json(value) {
-    return JSON.parse(value)
+    try {
+        return JSON.parse(value)
+    } catch (e) {
+        return value
+    }
 }
 
 const MODIFIERS = {

@@ -427,11 +427,7 @@ class Parser {
                 if (nextChar && escapeSequences.hasOwnProperty(nextChar)) {
                     this.setChar(new Char(escapeSequences[nextChar], i, this.line, this.linePos))
                     i++
-                } else {
-                    this.setChar(new Char(text[i], i, this.line, this.linePos))
                 }
-            } else {
-                this.setChar(new Char(text[i], i, this.line, this.linePos))
             }
             
             if (this.char.isNewline()) {
