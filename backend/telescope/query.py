@@ -34,6 +34,20 @@ def validate_flyql_query(source, query):
     return True, None
 
 
+def autocomplete(source, field, time_from, time_to, value):
+    incomplete = False
+    items = []
+    from_db_table = f"{source.connection.database}.{source.connection.table}"
+    time_clause = f"{source.time_field} BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
+    query = f"SELECT DISTINCT {field} FROM {from_db_table} WHERE {time_clause} and {field} LIKE %(value)s ORDER BY {field} LIMIT 500"
+    with clickhouse.Client(**get_source_database_conn_kwargs(source)) as client:
+        result = client.execute(query, {"value": f"%{value}%"})
+        items = [str(x[0]) for x in result]
+    if len(items) >= 500:
+        incomplete = True
+    return items, incomplete
+
+
 def fetch_logs(
     source, query, time_from, time_to, limit, timezone, desc=True, get_stats=True
 ):

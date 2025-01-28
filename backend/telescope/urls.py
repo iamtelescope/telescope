@@ -28,6 +28,10 @@ urlpatterns = [
     path("ui/v1/sources/<slug:slug>", source.SourceView.as_view()),
     path("ui/v1/sources/<slug:slug>/logs", source.SourceLogsView.as_view()),
     path(
+        "ui/v1/sources/<slug:slug>/autocomplete",
+        source.SourceLogsAutocompleteView.as_view(),
+    ),
+    path(
         "ui/v1/sources/<slug:slug>/roleBindings", source.SourceRoleBindingView.as_view()
     ),
     path("ui/v1/sources/<slug:slug>/grantRole", source.SourceGrantRoleView.as_view()),

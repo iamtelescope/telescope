@@ -25,7 +25,7 @@ from telescope.rbac.helpers import (
     user_has_source_permissions,
 )
 
-from telescope.query import fetch_logs, validate_flyql_query
+from telescope.query import autocomplete, fetch_logs, validate_flyql_query
 from telescope.rbac.roles import SourceRole
 from telescope.rbac import permissions
 from telescope.auth.decorators import global_permission_required
@@ -47,6 +47,7 @@ from telescope.serializers.source import (
     NewSourceSerializer,
     UpdateSourceSerializer,
     SourceLogsRequestSerializer,
+    SourceAutocompleteRequestSerializer,
 )
 
 
@@ -317,6 +318,36 @@ class SourceRevokeRoleView(SourceRoleView):
         except Exception as err:
             response.mark_failed(f"failed to revoke role: {err}")
         return Response(response.as_dict())
+
+
+class SourceLogsAutocompleteView(APIView):
+    @method_decorator(login_required)
+    def post(self, request, slug):
+        response = UIResponse()
+
+        require_source_permissions(
+            user=request.user,
+            source_slug=slug,
+            required_permissions=[permissions.Source.USE.value],
+        )
+        source = Source.objects.select_related("connection").get(slug=slug)
+        serializer = SourceAutocompleteRequestSerializer(
+            data=request.data,
+        )
+        if not serializer.is_valid():
+            response.validation["result"] = False
+            response.validation["fields"] = serializer.errors
+            return JsonResponse(response.as_dict())
+        items, incomplete = autocomplete(
+            source=source,
+            field=serializer.validated_data["field"],
+            time_from=serializer.validated_data["from"],
+            time_to=serializer.validated_data["to"],
+            value=serializer.validated_data["value"],
+        )
+        response.data["items"] = items
+        response.data["incomplete"] = incomplete
+        return JsonResponse(response.as_dict())
 
 
 class SourceLogsView(APIView):

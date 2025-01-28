@@ -12,7 +12,7 @@ import { ref, computed, shallowRef } from 'vue'
 
 import * as monaco from 'monaco-editor'
 
-import { Parser, State, CHARS } from '@/utils/fields.js'
+import { Parser, State } from '@/utils/fields.js'
 import { MODIFIERS } from '@/utils/modifiers'
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 import { getDefaultMonacoOptions } from '@/utils/monaco.js'

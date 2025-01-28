@@ -58,6 +58,7 @@ const theme = computed(() => {
 
 const calcRenderOptions = (type) => {
     let options = {}
+    return options
     if (type == 'column') {
         let columns = props.timestamps.length
         // left-rigth padding of graph
@@ -68,12 +69,12 @@ const calcRenderOptions = (type) => {
         // calculate expected graph width
         let width = document.getElementById('histogramm').getBoundingClientRect().width - padding - totalSpacing
 
-        let min = Math.floor(width / columns)
+        let min = Math.floor(width / columns / 2)
         if (min <= 0 || columns > 200) {
             min = 1
         }
-        let max = 20
-        let factor = 0.8
+        let max = 15
+        let factor = 0.3
         options['size'] = [factor, max, min]
         options['radius'] = 0.2
     }

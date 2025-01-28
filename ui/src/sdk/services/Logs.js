@@ -7,6 +7,10 @@ class LogsService {
         let response = await http.Post(`/ui/v1/sources/${slug}/logs`, params)
         return response
     }
+    autocomplete = async (slug, params) => {
+        let response = await http.Post(`/ui/v1/sources/${slug}/autocomplete`, params)
+        return response
+    }
 }
 
 export { LogsService }

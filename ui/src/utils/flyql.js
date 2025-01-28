@@ -574,7 +574,7 @@ class Parser {
                 return
             } else {
                 this.resetData()
-                this.extendTreeFromStack({ boolOperator: this.boolOpStack.pop() })
+                this.extendTreeFromStack(this.boolOpStack.pop())
                 this.setState(State.EXPECT_BOOL_OP)
             }
         } else {
@@ -596,7 +596,7 @@ class Parser {
                 }
                 this.resetData()
                 this.resetBoolOperator()
-                this.extendTreeFromStack({ boolOperator: this.boolOpStack.pop() })
+                this.extendTreeFromStack(this.boolOpStack.pop())
                 this.setState(State.EXPECT_BOOL_OP)
                 this.storeTypedChar(CharType.OPERATOR)
             }
@@ -686,7 +686,7 @@ class Parser {
         }
         return data
     }
-    parse(text, raiseError) {
+    parse(text, raiseError, ignoreLastChar) {
         this.setText(text)
         for (let c of text) {
             if (this.state === State.ERROR) {
@@ -734,9 +734,10 @@ class Parser {
                 return
             }
         }
-
-        this.inStateLastChar()
-
+        if (!ignoreLastChar) {
+            this.inStateLastChar()
+        }
+        
         if (this.state === State.ERROR) {
             if (raiseError) {
                 throw new ParserError({
@@ -752,4 +753,4 @@ class Parser {
     }
 }
 
-export { Parser, tokenTypes }
+export { Parser, tokenTypes, State, Operator, VALID_KEY_VALUE_OPERATORS}

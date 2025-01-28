@@ -58,7 +58,7 @@ class ConnectionSerializer(serializers.Serializer):
     host = serializers.CharField()
     port = serializers.IntegerField()
     user = serializers.CharField()
-    password = serializers.CharField()
+    password = serializers.CharField(allow_blank=True)
     database = serializers.CharField()
     table = serializers.CharField()
     ssl = serializers.BooleanField()
@@ -146,6 +146,31 @@ class NewSourceSerializer(serializers.Serializer):
 
 class UpdateSourceSerializer(NewSourceSerializer):
     def validate_slug(self, value):
+        return value
+
+
+class SourceAutocompleteRequestSerializer(serializers.Serializer):
+    field = serializers.CharField()
+    value = serializers.CharField(allow_blank=True)
+    _from = serializers.CharField()
+    to = serializers.CharField()
+
+    def get_fields(self):
+        fields = super().get_fields()
+        _from = fields.pop("_from")
+        fields["from"] = _from
+        return fields
+
+    def validate_from(self, value):
+        value, error = parse_time(value)
+        if error:
+            raise serializers.ValidationError(error)
+        return value
+
+    def validate_to(self, value):
+        value, error = parse_time(value)
+        if error:
+            raise serializers.ValidationError(error)
         return value
 
 

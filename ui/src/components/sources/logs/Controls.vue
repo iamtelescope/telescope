@@ -15,7 +15,7 @@
       :value="route.query.fields ?? source.defaultChosenFields.join(', ')" @submit="handleSearch" />
   </div>
   <div class="mb-3">
-    <QueryEditor @change="onQueryChange" :value="route.query.query ?? ''" @submit="handleSearch" />
+    <QueryEditor @change="onQueryChange" :source="source" :value="route.query.query ?? ''" :from="from" :to="to" @submit="handleSearch" />
   </div>
   <Message severity="error" v-if="validation != null && !validation.result">
     <span class="text-2xl">Invalid parameters given</span><br>
@@ -34,7 +34,6 @@ import { Message, Button, Select, Toolbar } from 'primevue'
 import DatetimePicker from '@/components/sources/logs/DatetimePicker.vue'
 import FieldsEditor from '@/components/sources/logs/FieldsEditor.vue'
 import QueryEditor from '@/components/sources/logs/QueryEditor.vue'
-import ErrorText from '@/components/common/ErrorText.vue'
 import { getLimits } from '@/utils/limits.js'
 
 const props = defineProps(['source', 'loading', 'from', 'to', 'validation'])
