@@ -6,6 +6,7 @@ from django.utils.decorators import method_decorator
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views import View
+from django.conf import settings
 
 from allauth.socialaccount.models import SocialAccount
 from rest_framework.response import Response
@@ -20,6 +21,9 @@ class LoginView(views.LoginView):
     template_name = "forms/login.html"
     form_class = LoginForm
     next_page = "/"
+    extra_context = {
+        "github_enabled": settings.CONFIG["auth"]["providers"]["github"]["enabled"]
+    }
 
     def dispatch(self, request, *args, **kwargs):
         if User.objects.filter(is_superuser=True).count() == 0:

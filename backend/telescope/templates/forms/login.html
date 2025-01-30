@@ -27,11 +27,13 @@
         </div>
         <input class="btn-submit"  type="submit" value="Log in">
       </form>
+      {% if github_enabled %}
       <div style="display: flex; justify-content: center; align-items:center; margin-top: 10px;"> or </div>
       <form action="/login/github/login/" method="post">
         {% csrf_token %}
         <input class="btn-thirdparty" type="submit" value="Log in using GitHub">
       </form>
+      {% endif %}
     </div>
   </div>
 </div>
