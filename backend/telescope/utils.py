@@ -38,5 +38,8 @@ def parse_time(value):
             else:
                 count = int(match.group("value"))
                 seconds = UNIT_TO_SECONDS[match.group("unit")]
-                timestamp = int((datetime.utcnow() - timedelta(seconds=count * seconds)).timestamp() * 1000)
+                timestamp = int(
+                    (datetime.utcnow() - timedelta(seconds=count * seconds)).timestamp()
+                    * 1000
+                )
     return timestamp, error

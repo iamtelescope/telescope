@@ -1,4 +1,6 @@
 from django.contrib.auth import views, logout
+from django.contrib.auth.models import User
+from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.shortcuts import render, redirect
@@ -10,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from telescope.response import UIResponse
-from telescope.auth.forms import LoginForm
+from telescope.auth.forms import LoginForm, SuperuserForm
 from telescope.rbac.helpers import get_user_global_permissions
 
 
@@ -18,6 +20,11 @@ class LoginView(views.LoginView):
     template_name = "forms/login.html"
     form_class = LoginForm
     next_page = "/"
+
+    def dispatch(self, request, *args, **kwargs):
+        if User.objects.filter(is_superuser=True).count() == 0:
+            return redirect("/setup")
+        return super().dispatch(request, *args, **kwargs)
 
 
 class LogoutView(View):
@@ -29,6 +36,36 @@ class LogoutView(View):
     def post(self, request):
         logout(request)
         return redirect("/")
+
+
+class SuperuserView(View):
+    def dispatch(self, request, *args, **kwargs):
+        if User.objects.filter(is_superuser=True).count() > 0:
+            return redirect("/login")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request):
+        form = SuperuserForm
+        return render(request, "forms/superuser.html", {"form": form})
+
+    def post(self, request):
+        form = SuperuserForm(request.POST)
+        print("before validation")
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    user = User.objects.create(
+                        username=form.cleaned_data["username"],
+                        is_superuser=True,
+                    )
+                    user.set_password(form.cleaned_data["password"])
+                    user.save()
+            except Exception as err:
+                form.add_error(f"Unhandled exception: {err}")
+            else:
+                return redirect("/login")
+        print("after validation")
+        return render(request, "forms/superuser.html", {"form": form})
 
 
 class WhoAmIView(APIView):
