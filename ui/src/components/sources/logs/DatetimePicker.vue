@@ -15,7 +15,7 @@
                 <br>
                 <label for="Timezone" class="font-bold block mb-2">Timezone</label>
                 <Select v-model="selectedZone" :options="zones" optionLabel="name" placeholder="Timezone"
-                    class="w-full md:w-56" filter autoFilterFocus /><br>
+                    class="w-full md:w-56" filter autoFilterFocus disabled /><br>
                 <Button label="Apply" severity="primary" @click="handleApply" />
             </div>
             <div class="border-r border-l pt-0 pb-0 p-2">
