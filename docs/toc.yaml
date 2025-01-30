@@ -1,0 +1,8 @@
+name: {{product-name}}
+items:
+  - name: Overview
+    href: index.yaml
+  - name: Get started
+    href: getting_started.md
+  - name: Concepts
+    href: concepts.md

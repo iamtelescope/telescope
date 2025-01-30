@@ -1,0 +1,12 @@
+title: "{{product-name}}"
+description:
+  - Hello
+meta:
+  title: "{{product-name}}"
+links:
+  - title: Get started
+    description: How to start?
+    href: "getting_started.md"
+  - title: Concepts
+    description: Familiarize yourself with {{product-name}} concepts.
+    href: "concepts.md"
