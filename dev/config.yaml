@@ -1,0 +1,11 @@
+gunicorn:
+  bind: 0.0.0.0:9898
+django:
+  ALLOWED_HOSTS:
+    - "127.0.0.1"
+    - "localhost"
+  SECRET_KEY: "local_dev_key_do_not_use_in_production"
+  DATABASES:
+    default:
+      ENGINE: "django.db.backends.sqlite3"
+      NAME: "/db.sqlite3"
