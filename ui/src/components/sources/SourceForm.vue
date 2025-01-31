@@ -21,7 +21,7 @@
             </div>
         </div>
     </div>
-    <ConnectionStep :source="source" @connectionDataValidated="onConnectionDataValidated"
+    <ConnectionStep :source="source" :startConnectionTest="startConnectionTest" @connectionDataValidated="onConnectionDataValidated"
         @connectionTestStarted="onConnectionTestStarted" @connectionDataChanged="onConnectionDataChanged">
     </ConnectionStep>
     <div v-if="connectionTestPassed">
@@ -48,7 +48,7 @@ import SourceStep from '@/components/sources/new/SourceStep.vue'
 import ConnectionStep from '@/components/sources/new/ConnectionStep.vue'
 import { SourceService } from '@/sdk/services/Source'
 
-const props = defineProps(['source'])
+const props = defineProps(['source', 'startConnectionTest'])
 const toast = useToast()
 const router = useRouter()
 
@@ -75,7 +75,7 @@ const getInitialSourceFormErrors = () => {
         'name': '',
         'description': '',
         'time_field': '',
-        'uniq_field': '',
+        // 'uniq_field': '',
         'severity_field': '',
         'default_chosen_fields': '',
         'fields': {},
@@ -127,7 +127,14 @@ const onSourceDynamicFieldRemoved = (fieldName) => {
     delete sourceFormErrors.value.fields[fieldName]
 }
 
+const resetErrors = () => {
+    for (const field in sourceFormErrors.value) {
+        sourceFormErrors.value[field] = ""
+    }
+}
+
 const handleFormSubmit = async () => {
+    resetErrors()
     submitButtonLoading.value = true
 
     let data = Object.assign({}, sourceFormData.value)
@@ -156,8 +163,9 @@ const handleFormSubmit = async () => {
             }
         } else {
             router.push({ name: 'source', params: { sourceSlug: response.data.slug } }).then(() => response.sendToastMessages(toast))
-
         }
+    } else {
+        console.log(response)
     }
 }
 </script>

@@ -91,7 +91,7 @@ class NewSourceSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=64)
     description = serializers.CharField(allow_blank=True)
     time_field = serializers.CharField()
-    uniq_field = serializers.CharField()
+    # uniq_field = serializers.CharField()
     severity_field = serializers.CharField()
     default_chosen_fields = serializers.ListField(child=serializers.CharField())
     fields = serializers.DictField(child=SourceFieldSerializer())
@@ -120,7 +120,8 @@ class NewSourceSerializer(serializers.Serializer):
     def validate(self, data):
         errors = {}
 
-        for field_name in ["time_field", "uniq_field", "severity_field"]:
+        # for field_name in ["time_field", "uniq_field", "severity_field"]:
+        for field_name in ["time_field", "severity_field"]:
             value = data[field_name]
             if value not in data["fields"]:
                 errors[field_name] = f"field {value} was not found in fields list"

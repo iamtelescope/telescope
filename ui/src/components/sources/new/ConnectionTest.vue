@@ -50,10 +50,10 @@ const props = defineProps(['data', 'loading', 'show'])
 
 const bgClass = computed(() => {
     if (props.data) {
-        if (props.data.reachability.result && props.data.schema.result) {
-            return 'bg-green-50'
+        if (props.data.reachability?.result && props.data.schema?.result) {
+            return 'text-green-600'
         } else {
-            return 'bg-yellow-50'
+            return 'text-orange-400'
         }
     } else {
         return ''

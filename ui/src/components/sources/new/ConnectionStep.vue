@@ -91,7 +91,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 
 import { useToast } from 'primevue/usetoast'
 import Select from 'primevue/select'
@@ -109,7 +109,7 @@ import { SourceService } from '@/sdk/services/Source'
 import { SourceKinds } from '@/sdk/models/source'
 
 const emit = defineEmits(['connectionDataValidated', 'connectionTestStarted', 'connectionDataChanged'])
-const props = defineProps(['source'])
+const props = defineProps(['source', 'startConnectionTest'])
 
 const toast = useToast()
 const sourceSrv = new SourceService()
@@ -123,13 +123,13 @@ const connectionTestPassed = ref(false)
 const getInitialConnectionData = () => {
     let data = {
         'kind': "clickhouse",
-        'host': "",
+        'host': "localhost",
         'port': 9000,
-        'user': "",
+        'user': "default",
         'password': "",
         'database': "",
         'table': "",
-        'ssl': true,
+        'ssl': false,
     }
     if (props.source) {
         data = props.source.connection
@@ -190,5 +190,12 @@ const handleTestConnection = async () => {
 watch(connectionData, () => {
     emit('connectionDataChanged')
 })
+
+onMounted(() => {
+    if (props.startConnectionTest) {
+        handleTestConnection()
+    }
+})
+
 
 </script>

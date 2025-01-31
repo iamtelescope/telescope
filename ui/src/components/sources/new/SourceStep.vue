@@ -46,7 +46,7 @@
                     </FloatLabel>
                     <ErrorText :text="sourceFormErrors['time_field']" />
                 </div>
-                <div class="flex flex-col w-full mt-4">
+                <!--<div class="flex flex-col w-full mt-4">
                     <FloatLabel variant="on">
                         <Select id="uniq_field" optionLabel="name" v-model="sourceFormData['uniq_field']"
                             :invalid="sourceFormErrors['uniq_field'] != ''" fluid editable
@@ -54,7 +54,7 @@
                         <label for="uniq_field">Uniq field</label>
                     </FloatLabel>
                     <ErrorText :text="sourceFormErrors['uniq_field']" />
-                </div>
+                </div>-->
                 <div class="flex flex-col w-full mt-4">
                     <FloatLabel variant="on">
                         <Select id="severity_field" optionLabel="name" v-model="sourceFormData['severity_field']"
@@ -185,7 +185,7 @@ const getInitialFormData = () => {
         'name': '',
         'description': '',
         'time_field': '',
-        'uniq_field': '',
+        // 'uniq_field': '',
         'severity_field': '',
         'default_chosen_fields': '',
         'fields': {},
@@ -195,7 +195,7 @@ const getInitialFormData = () => {
         data.name = props.source.name
         data.description = props.source.description
         data.time_field = props.source.timeField
-        data.uniq_field = props.source.uniqField
+        // data.uniq_field = props.source.uniqField
         data.severity_field = props.source.severityField
         data.default_chosen_fields = props.source.defaultChosenFields?.join(', ')
 
@@ -246,7 +246,7 @@ const slugEditable = computed(() => {
 
 const sourceStaticFieldChoices = computed(() => {
     let timeFieldChoices = []
-    let uniqFieldChoices = []
+    // let uniqFieldChoices = []
     let severityChoices = []
 
     for (const [fieldName, fieldData] of Object.entries(sourceFormData.fields)) {
@@ -254,13 +254,13 @@ const sourceStaticFieldChoices = computed(() => {
         if (item.type.toLowerCase().includes('datetime')) {
             timeFieldChoices.push(item)
         } else {
-            uniqFieldChoices.push(item)
+            // uniqFieldChoices.push(item)
             severityChoices.push(item)
         }
     }
     return {
         time_field: timeFieldChoices,
-        uniq_field: uniqFieldChoices,
+        // uniq_field: uniqFieldChoices,
         severity_field: severityChoices,
     }
 })
