@@ -1,6 +1,7 @@
 title: "{{product-name}}"
 description:
-  - Hello
+  - >-
+    <strong>Telescope</strong> is a web application designed to facilitate log exploration and analysis for logs stored in <strong>ClickHouse</strong>. It enables users to create and configure <strong>sources</strong> to ClickHouse databases and subsequently use these sources to query logs data.
 meta:
   title: "{{product-name}}"
 links:
