@@ -3,10 +3,10 @@ navigation:
   logo:
     url: '/'
     dark:
-      icon: '../_assets/icon.png'
+      icon: '_assets/icon.png'
       text: 'Telescope'
     light:
-      icon: '../_assets/icon.png'
+      icon: '_assets/icon.png'
       text: 'Telescope'
 items:
   - name: Overview
