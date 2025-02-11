@@ -5,15 +5,18 @@
                 <div class="flex flex-row w-full mb-14 align-middle">
                     <div class="flex flex-col w-full">
                         <span class="font-bold text-3xl"><i class="pi pi-database text-3xl"></i> Sources</span>
-                        <span class="text-gray-400">Sources define where logs are accessed for reading
-                            and searching within your system</span>
+                        <span class="text-gray-400">Sources define how to connect to your data and the access policy for
+                            that data.
+                        </span>
                     </div>
                     <div v-if="user.canCreateSource()" class="flex items-center w-full justify-end">
-                        <Button size="small" severity="primary" icon="pi pi-plus" label="Create" @click="handleSourceCreate" />
+                        <Button size="small" severity="primary" icon="pi pi-plus" label="Create"
+                            @click="handleSourceCreate" />
                     </div>
                 </div>
                 <div class="mb-9">
-                    <InputText placeholder="Filter by slug or name" v-model="filterValue" fluid class="placeholder-gray-300" />
+                    <InputText placeholder="Filter by slug or name" v-model="filterValue" fluid
+                        class="placeholder-gray-300" />
                 </div>
                 <DataView :loading="loading" :error="error">
                     <div class="flex flex-wrap w-full gap-2">
@@ -22,14 +25,16 @@
                             style="max-width:420px;min-width:420px;">
                             <template #title>
                                 <div class="flex flex-row items-start">
-                                    <img v-if="isDark" src="@/assets/clickhouse-dark.png" class="mr-3" height="24px" width="24px">
+                                    <img v-if="isDark" src="@/assets/clickhouse-dark.png" class="mr-3" height="24px"
+                                        width="24px">
                                     <img v-else src="@/assets/clickhouse.png" class="mr-3" height="24px" width="24px">
                                     <div class="flex flex-col w-full">
                                         <span>{{ source.name }}</span>
                                         <span class="text-gray-500 text-sm">{{ source.slug }}</span>
                                     </div>
                                     <div class="flex justify-end">
-                                        <Button v-if="source.isEditable()" type="button" severity="secondary" icon="pi pi-cog" label="Manage" size="small"
+                                        <Button v-if="source.isEditable()" type="button" severity="secondary"
+                                            icon="pi pi-cog" label="Manage" size="small"
                                             @click.stop="handleSourceViewClick(source)" />
                                     </div>
                                 </div>
@@ -79,7 +84,7 @@ const filteredSources = computed(() => {
 })
 
 const handleSourceClick = (source) => {
-    router.push({ name: 'logs', params: { sourceSlug: source.slug, source: source } })
+    router.push({ name: 'explore', params: { sourceSlug: source.slug, source: source } })
 }
 
 const handleSourceCreate = () => {

@@ -48,7 +48,7 @@ def autocomplete(source, field, time_from, time_to, value):
     return items, incomplete
 
 
-def fetch_logs(
+def fetch_data(
     source, query, time_from, time_to, limit, timezone, desc=True, get_stats=True
 ):
     if query:

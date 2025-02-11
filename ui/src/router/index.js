@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.js'
 import { storeToRefs } from 'pinia'
 
-import LogsView from '../views/sources/LogsView.vue'
+import ExploreView from '../views/sources/ExploreView.vue'
 import HomeView from '../views/RootView.vue'
 
 const routes = [
@@ -20,9 +20,9 @@ const routes = [
     component: () => import('@/components/sources/Sources.vue')
   },
   {
-    path: '/sources/:sourceSlug/logs',
-    name: 'logs',
-    component: LogsView,
+    path: '/sources/:sourceSlug/explore',
+    name: 'explore',
+    component: ExploreView,
   },
   {
     path: '/sources/new',

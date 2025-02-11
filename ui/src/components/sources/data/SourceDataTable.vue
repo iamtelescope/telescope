@@ -4,12 +4,13 @@
             <Row :source="source" :row="selectedRow"></Row>
         </template>
     </Drawer>
-    <table class="w-full min-w-full text-sm logs-table" v-if="rows && dateFormat">
+    <table class="w-full min-w-full text-sm" v-if="rows && dateFormat">
         <thead>
             <tr>
                 <th class="border-b border-neutral-200 dark:border-neutral-700"></th>
                 <th class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700">Time</th>
-                <th class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700" v-for="field in metadata.fields" :key="field.name">{{ field.display_name
+                <th class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700"
+                    v-for="field in metadata.fields" :key="field.name">{{ field.display_name
                     }}
                 </th>
             </tr>
@@ -22,7 +23,7 @@
                 </td>
                 <td
                     class="nowrap pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300 hover:cursor-pointer hover:bg-slate-300 dark:hover:bg-neutral-900">
-                    <pre class="logs-value-field">{{ getTime(row.time) }}.<span class="text-xs text-neutral-300">{{
+                    <pre>{{ getTime(row.time) }}.<span class="text-xs text-neutral-300">{{
                         row.time.microseconds }}</span></pre>
                 </td>
                 <td class="nowrap pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300 hover:cursor-pointer hover:bg-slate-300 dark:hover:bg-neutral-900"
@@ -45,7 +46,7 @@ import { format } from "date-fns"
 
 import Drawer from "primevue/drawer"
 
-import Row from "@/components/sources/logs/Row.vue"
+import Row from "@/components/sources/data/Row.vue"
 
 import { getColor } from '@/utils/colors.js'
 import { MODIFIERS } from '@/utils/modifiers.js'

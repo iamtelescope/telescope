@@ -31,9 +31,9 @@ import { useRoute } from 'vue-router'
 
 import { Message, Button, Select, Toolbar } from 'primevue'
 
-import DatetimePicker from '@/components/sources/logs/DatetimePicker.vue'
-import FieldsEditor from '@/components/sources/logs/FieldsEditor.vue'
-import QueryEditor from '@/components/sources/logs/QueryEditor.vue'
+import DatetimePicker from '@/components/sources/data/DatetimePicker.vue'
+import FieldsEditor from '@/components/sources/data/FieldsEditor.vue'
+import QueryEditor from '@/components/sources/data/QueryEditor.vue'
 import { getLimits } from '@/utils/limits.js'
 
 const props = defineProps(['source', 'loading', 'from', 'to', 'validation'])

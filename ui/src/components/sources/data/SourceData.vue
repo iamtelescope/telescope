@@ -10,7 +10,7 @@
                     :meta="metadata.stats.meta" :source="source" class="mb-3"
                     @rangeSelected="onHistogrammRangeSelected" />
                 <LimitMessage v-if="metadata" :meta="metadata.stats.meta"></LimitMessage>
-                <LogsTable v-if="rows && source" :source="source" :rows="rows" :metadata="metadata"
+                <SourceDataTable v-if="rows && source" :source="source" :rows="rows" :metadata="metadata"
                     :timezone="timezone" />
             </div>
         </div>
@@ -25,13 +25,13 @@ import { useToast } from 'primevue'
 
 import { useNavStore } from '@/stores/nav'
 
-import { useGetLogs } from '@/composables/sources/logs/useLogsService'
-import Controls from '@/components/sources/logs/Controls.vue'
+import { useGetSourceData } from '@/composables/sources/useSourceService'
+import Controls from '@/components/sources/data/Controls.vue'
 import Loader from '@/components/common/Loader.vue'
 import Error from '@/components/common/Error.vue'
-import LogsTable from '@/components/sources/logs/LogsTable.vue'
-import Histogramm from "@/components/sources/logs/Histogramm.vue"
-import LimitMessage from '@/components/sources/logs/LimitMessage.vue'
+import SourceDataTable from '@/components/sources/data/SourceDataTable.vue'
+import Histogramm from "@/components/sources/data/Histogramm.vue"
+import LimitMessage from '@/components/sources/data/LimitMessage.vue'
 
 const controlsRef = ref(null)
 
@@ -45,7 +45,7 @@ const timezone = ref('UTC')
 
 const props = defineProps(['source'])
 
-const { rows, metadata, error, loading, validation, load } = useGetLogs()
+const { rows, metadata, error, loading, validation, load } = useGetSourceData()
 
 const onSearchRequest = (params) => {
     rows.value = null

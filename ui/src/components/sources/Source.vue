@@ -8,8 +8,8 @@
                             <i class="pi pi-database text-3xl"></i>
                             <span class="text-gray-400"> Sources: </span>
                             {{ source.slug }}</span>
-                        <span class="text-gray-400">Sources define where logs are accessed for reading and searching
-                            within your system
+                        <span class="text-gray-400">Sources define how to connect to your data and the access policy for
+                            that data.
                         </span>
                     </div>
                     <div class="flex flex-row w-full justify-end items-center">

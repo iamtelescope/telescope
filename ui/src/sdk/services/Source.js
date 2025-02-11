@@ -65,5 +65,14 @@ class SourceService {
         let response = await http.Post(`/ui/v1/sources/${sourceSlug}/revokeRole`, data)
         return response
     }
+    getData = async (sourceSlug, params) => {
+        let response = await http.Post(`/ui/v1/sources/${sourceSlug}/data`, params)
+        return response
+    }
+    autocomplete = async (sourceSlug, params) => {
+        let response = await http.Post(`/ui/v1/sources/${sourceSlug}/autocomplete`, params)
+        return response
+    }
 }
+
 export { SourceService }

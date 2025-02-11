@@ -175,7 +175,7 @@ class SourceAutocompleteRequestSerializer(serializers.Serializer):
         return value
 
 
-class SourceLogsRequestSerializer(serializers.Serializer):
+class SourceDataRequestSerializer(serializers.Serializer):
     fields = serializers.CharField()
     query = serializers.CharField(allow_blank=True)
     _from = serializers.CharField()

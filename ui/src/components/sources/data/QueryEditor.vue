@@ -17,9 +17,9 @@ import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 import { Parser, State, Operator, VALID_KEY_VALUE_OPERATORS } from '@/utils/flyql.js'
 import { isNumeric } from "@/utils/utils.js"
 import { getDefaultMonacoOptions } from '@/utils/monaco.js'
-import { LogsService } from '@/sdk/services/Logs'
+import { SourceService } from '@/sdk/services/Source.js'
 
-const logsSrv = new LogsService()
+const sourceSrv = new SourceService()
 
 const emit = defineEmits(['change', 'submit'])
 const props = defineProps(['source', 'value', 'from', 'to'])
@@ -164,7 +164,7 @@ const getValueSuggestions = async (key, value, range, quoteChar) => {
             if (props.source.fields[key].values.length > 0) {
                 items = prepareSuggestionValues(props.source.fields[key].values, quoteChar)
             } else {
-                let resp = await logsSrv.autocomplete(
+                let resp = await sourceSrv.autocomplete(
                     props.source.slug,
                     {
                         field: key,

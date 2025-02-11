@@ -25,7 +25,7 @@ from telescope.rbac.helpers import (
     user_has_source_permissions,
 )
 
-from telescope.query import autocomplete, fetch_logs, validate_flyql_query
+from telescope.query import autocomplete, fetch_data, validate_flyql_query
 from telescope.rbac.roles import SourceRole
 from telescope.rbac import permissions
 from telescope.auth.decorators import global_permission_required
@@ -46,7 +46,7 @@ from telescope.serializers.source import (
     SourceFieldSerializer,
     NewSourceSerializer,
     UpdateSourceSerializer,
-    SourceLogsRequestSerializer,
+    SourceDataRequestSerializer,
     SourceAutocompleteRequestSerializer,
 )
 
@@ -321,7 +321,7 @@ class SourceRevokeRoleView(SourceRoleView):
         return Response(response.as_dict())
 
 
-class SourceLogsAutocompleteView(APIView):
+class SourceDataAutocompleteView(APIView):
     @method_decorator(login_required)
     def post(self, request, slug):
         response = UIResponse()
@@ -351,7 +351,7 @@ class SourceLogsAutocompleteView(APIView):
         return JsonResponse(response.as_dict())
 
 
-class SourceLogsView(APIView):
+class SourceDataView(APIView):
     @method_decorator(login_required)
     def post(self, request, slug):
         response = UIResponse()
@@ -363,7 +363,7 @@ class SourceLogsView(APIView):
         )
         source = Source.objects.select_related("connection").get(slug=slug)
 
-        serializer = SourceLogsRequestSerializer(
+        serializer = SourceDataRequestSerializer(
             data=request.data, context={"source": source}
         )
         if not serializer.is_valid():
@@ -371,7 +371,7 @@ class SourceLogsView(APIView):
             response.validation["fields"] = serializer.errors
             return JsonResponse(response.as_dict())
 
-        rows, total, stats = fetch_logs(
+        rows, total, stats = fetch_data(
             source=source,
             query=serializer.validated_data["query"],
             time_from=serializer.validated_data["from"],

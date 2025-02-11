@@ -58,4 +58,25 @@ const useGetSourceRoleBidings = (sourceSlug) => {
     return { bindings, error, loading, load }
 }
 
-export { useGetSource, useGetSources, useGetSourceRoleBidings }
+const useGetSourceData = () => {
+    const rows = ref(null)
+    const metadata = ref(null)
+    const error = ref(null)
+    const loading = ref(null)
+    const validation = ref(null)
+
+    const load = async (sourceSlug, params) => {
+        loading.value = true
+        let response = await srv.getData(sourceSlug, params)
+        if (response.result) {
+            rows.value = response.data.rows
+            metadata.value = response.data.metadata
+        }
+        error.value = response.errors.join(', ')
+        validation.value = response.validation
+        loading.value = false
+    }
+    return { rows, metadata, error, loading, validation, load}
+}
+
+export { useGetSource, useGetSources, useGetSourceRoleBidings, useGetSourceData }
