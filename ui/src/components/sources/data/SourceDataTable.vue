@@ -32,8 +32,8 @@
                         :class="{ 'whitespace-pre-wrap break-all': String(row.data[field.root_name]).length > 50 }">{{
                             getRowValue(field, row.data[field.root_name]) || '&dash;' }}</pre>
                     <pre v-else class="border-0 p-0 m-0 break-all whitespace-pre-wrap"
-                        :class="{ 'whitespace-pre-wrap break-all': extractJsonPathLength(field, row.data) > 50 }">
-                    {{ extractJsonPath(field, row.data) }}</pre>
+                        :class="{ 'whitespace-pre-wrap break-all': extractJsonPathLength(field, row.data) > 50 }">{{
+                            extractJsonPath(field, row.data) }}</pre>
                 </td>
             </tr>
         </tbody>
