@@ -38,11 +38,15 @@ jobs:
         with:
           src-root: './docs'
           build-root: './docs-html'
+      - name: Prepare
+        run: |
+          mkdir -p _web_data
+          cp -r ./_docs-lint/ ./_web_data/docs
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
-          path: './_docs-lint'
+          path: './_web_data'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
