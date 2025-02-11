@@ -7,6 +7,8 @@ _A handy tool that manages to make close what once was far_
 
 **Telescope** is a web application designed to facilitate log exploration and analysis for logs stored in **ClickHouse**. It enables users to create and configure **sources** to ClickHouse databases and subsequently use these sources to query logs data.
 
+**[Read the Documentation](https://iamtelescope.github.io/telescope/docs/)**
+
 ### Key Features
 
 - **Source management**: Create and manage connections to [ClickHouse](https://github.com/ClickHouse/ClickHouse) databases for log analysis.
