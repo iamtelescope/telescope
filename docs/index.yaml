@@ -1,13 +1,16 @@
-title: "{{product-name}}"
+title: Telescope
 description:
   - >-
     <strong>Telescope</strong> is a web application designed to facilitate log exploration and analysis for logs stored in <strong>ClickHouse</strong>. It enables users to create and configure <strong>sources</strong> to ClickHouse databases and subsequently use these sources to query logs data.
 meta:
-  title: "{{product-name}}"
+  title: Telescope docs
 links:
-  - title: Get started
-    description: How to start?
-    href: "getting_started.md"
-  - title: Concepts
-    description: Familiarize yourself with {{product-name}} concepts.
-    href: "concepts.md"
+  - title: Quickstart
+    description: Quickly set up and run Telescope locally using Docker with a preconfigured SQLite database and config template.
+    href: setup/quickstart.md
+  - title: Quering data
+    description: Securely and effortlessly access your data through Telescope’s FlyQL-based interface - offering a consistent experience (currently with ClickHouse) without the complexity of raw SQL or varied API queries.
+    href: concepts/querying.md
+  - title: Auth
+    description: This section explains how users log in to Telescope and how access permissions are managed through predefined roles.
+    href: concepts/auth.md

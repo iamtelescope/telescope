@@ -1,4 +1,4 @@
-name: {{product-name}}
+name: Telescope
 navigation:
   logo:
     url: '/'
@@ -11,7 +11,33 @@ navigation:
 items:
   - name: Overview
     href: index.yaml
-  - name: Get started
-    href: getting_started.md
   - name: Concepts
-    href: concepts.md
+    items:
+    - name: Auth
+      href: concepts/auth.md
+    - name: Source
+      href: concepts/source.md
+    - name: Querying data
+      href: concepts/querying.md
+  - name: Setup
+    href: setup/index.md
+    items:
+    - name: Quickstart
+      href: setup/quickstart.md
+    - name: Configuration
+      href: setup/config.md
+  - name: UI
+    items:
+      - name: Source
+        href: ui/source.md
+      - name: Explorer
+        href: ui/explorer/index.md
+        items:
+        - name: Fields input
+          href: ui/explorer/fields.md
+        - name: Query input
+          href: ui/explorer/query.md
+  - name: How-to
+    items:
+      - name: Demo logs setup
+        href: howto/demologs.md
