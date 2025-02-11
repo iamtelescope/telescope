@@ -3,7 +3,7 @@
 Explorer page consist of 2 big sections: [Controls](#controls) & [Results](#results)
 
 ## Controls
-![Controls](_assets/ui/explorer/controls.png "Controls")
+![Controls](_assets/controls.png "Controls")
 
 ### Buttons
 - **Search**: Initiates a query to retrieve data.
@@ -14,7 +14,7 @@ Explorer page consist of 2 big sections: [Controls](#controls) & [Results](#resu
 Specifies how many rows of data should be retrieved from the server and displayed on page.
 
 ### Time Range Selector
-![Time range](_assets/ui/explorer/timerange.png "Time range")
+![Time range](_assets/timerange.png "Time range")
 Defines the time range for data retrieval, allowing either exact dates or a relative time period.
 
 ### Fields Input
@@ -24,7 +24,7 @@ A detailed description of the `fields input` is located on a separate [page](./f
 A detailed description of the `query input` is located on a separate [page](./query.md).
 
 ## Results
-![Results](_assets/ui/explorer/results.png "Results")
+![Results](_assets/results.png "Results")
 
 ### Graph Representation
 The graph is currently built based on the severity field, which is specified in the source and this is the only available behavior at the moment. In the future, there will be an option to build the graph based on any arbitrary key.
@@ -32,7 +32,7 @@ The graph is currently built based on the severity field, which is specified in 
 If the number of rows displayed on the screen does not match the range of the graph, the visible area of the retrieved and displayed rows is highlighted on the graph. This allows users to easily correlate the data in the table with its graphical representation, ensuring that they do not lose track of which rows have been loaded and displayed.
 
 This visualization mechanism improves data navigation, especially when dealing with large log volumes where the full range of values may exceed the current viewable window. Example below.
-![Graph](_assets/ui/explorer/graph.png "Graph")
+![Graph](_assets/graph.png "Graph")
 
 ### Result Table
 The resulting table **always contains a time field**, which is defined in the source. Row colors are determined based on the severity field from the source. This ensures that rows with the same severity have the same color. Also, row colors are match to graph colors.
@@ -48,5 +48,5 @@ This informs the user that additional matching data exists but is not currently 
 {% endnote %}
 
 ### Detailed View
-![Detailed](_assets/ui/explorer/detailed.png "Detailed")
+![Detailed](_assets/detailed.png "Detailed")
 Clicking on a row opens a detailed view in a modal window that takes up half of the screen. This detailed view displays all keys and values for the selected log entry. **JSON paths are automatically flattened** for easier readability (as seen in the screenshot). There is also an option to view the entry in raw JSON format.
