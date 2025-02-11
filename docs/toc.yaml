@@ -8,6 +8,11 @@ navigation:
     light:
       icon: '_assets/icon.png'
       text: 'Telescope'
+  header:
+    rightItems:
+      - text: 'GitHub'
+        url: 'https://github.com/iamtelescope/telescope'
+      - type: 'controls'
 items:
   - name: Overview
     href: index.yaml
