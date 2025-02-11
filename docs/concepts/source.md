@@ -1,6 +1,7 @@
 # Source
 
-A source is an object that defines how to connect to a ClickHouse instance (host, database, username, etc.) and specifies which fields of specified table should be used and how.
-Additionally, a source serves as an RBAC instance for binding roles to user and groups.
+A Source is an object that defines connection parameters for an external data source, such as a database, API, or file. It also specifies which fields from the given source should be used and how.
 
-The Python library [clickhouse-driver](https://clickhouse-driver.readthedocs.io/en/latest/) is used for connecting to ClickHouse and executing queries.
+Additionally, a source acts as an RBAC entity, allowing roles to be assigned to users and groups.
+
+Currently, only ClickHouse sources are supported. The [clickhouse-driver](https://clickhouse-driver.readthedocs.io/en/latest/) python library is used for connecting and executing queries.
