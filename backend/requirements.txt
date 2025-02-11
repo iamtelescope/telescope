@@ -1,4 +1,4 @@
-Django==5.1.4
+Django==5.1.5
 MarkupSafe==2.1.5
 PyJWT==2.8.0
 PyYAML==6.0.1
@@ -6,7 +6,7 @@ asgiref==3.8.1
 certifi==2024.7.4
 cffi==1.16.0
 charset-normalizer==3.3.2
-cryptography==43.0.1
+cryptography==44.0.1
 defusedxml==0.7.1
 django-allauth==65.2.0
 django-cors-headers==4.3.1
