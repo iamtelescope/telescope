@@ -1,7 +1,7 @@
 name: Telescope
 navigation:
   logo:
-    url: '/'
+    url: '/telescope/docs'
     dark:
       icon: '_assets/icon.png'
       text: 'Telescope'
