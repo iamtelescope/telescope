@@ -9,7 +9,9 @@ _A handy tool that manages to make close what once was far_
 
 ![Source data](screenshots/main.png?raw=true "Source data")
 
-**[Read the Documentation](https://iamtelescope.github.io/telescope/docs/)**
+:framed_picture: **[More Screenshots](screenshots/README.md)**
+
+:blue_book: **[Read the Documentation](https://iamtelescope.github.io/telescope/docs/)**
 
 ### Key Features
 
