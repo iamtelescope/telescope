@@ -1,6 +1,6 @@
 <template>
   <div class="d-flex justify-center">
-    <Message severity="error">{{ error }}</Message>
+    <pre><Message severity="error">{{ error }}</Message></pre>
   </div>
 </template>
 

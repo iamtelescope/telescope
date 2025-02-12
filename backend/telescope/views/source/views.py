@@ -371,21 +371,25 @@ class SourceDataView(APIView):
             response.validation["fields"] = serializer.errors
             return JsonResponse(response.as_dict())
 
-        rows, total, stats = fetch_data(
-            source=source,
-            query=serializer.validated_data["query"],
-            time_from=serializer.validated_data["from"],
-            time_to=serializer.validated_data["to"],
-            limit=serializer.validated_data["limit"],
-            timezone=ZoneInfo("UTC"),
-        )
-        response.data = {
-            "metadata": {
-                "fields": serializer.validated_data["fields"],
-                "stats": stats,
-            },
-            "rows": [row.as_dict() for row in rows],
-        }
+        try:
+            rows, total, stats = fetch_data(
+                source=source,
+                query=serializer.validated_data["query"],
+                time_from=serializer.validated_data["from"],
+                time_to=serializer.validated_data["to"],
+                limit=serializer.validated_data["limit"],
+                timezone=ZoneInfo("UTC"),
+            )
+        except Exception as err:
+            response.mark_failed(str(err))
+        else:
+            response.data = {
+                "metadata": {
+                    "fields": serializer.validated_data["fields"],
+                    "stats": stats,
+                },
+                "rows": [row.as_dict() for row in rows],
+            }
         return JsonResponse(response.as_dict())
 
 
