@@ -29,6 +29,8 @@ items:
     items:
     - name: Quickstart
       href: setup/quickstart.md
+    - name: Development
+      href: setup/development.md
     - name: Configuration
       href: setup/config.md
   - name: UI
