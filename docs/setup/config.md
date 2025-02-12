@@ -38,6 +38,13 @@ gunicorn:
   timeout: 120
   workers: 8
 
+# Options provided to vuejs app after loading config via `/ui/v1/config` handler
+frontend:
+    show_github_url: true  # show or not github url on top panel
+    github_url: ""
+    show_docs_url: true  # show or not docs url on top panel
+    docs_url: ""
+
 # Logging configuration (https://github.com/iamtelescope/telescope/blob/main/backend/telescope/log.py#L59)
 logging:
   # Options: default, dev, or json

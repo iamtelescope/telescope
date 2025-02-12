@@ -11,6 +11,7 @@ urlpatterns = [
     path("login", auth.LoginView.as_view(), name="login"),
     path("logout", auth.LogoutView.as_view(), name="logout"),
     path("setup", auth.SuperuserView.as_view(), name="setup"),
+    path("ui/v1/config", index.ConfigView.as_view()),
     path("ui/v1/auth/whoami", auth.WhoAmIView.as_view()),
     path("ui/v1/rbac/simpleusers", rbac.SimpleUserListView.as_view()),
     path("ui/v1/rbac/users", rbac.UserView.as_view()),

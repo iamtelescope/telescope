@@ -51,6 +51,23 @@ SCHEMA = {
         "logging": {
             "type": "object",
         },
+        "frontend": {
+            "type": "object",
+            "properties": {
+                "github_url": {
+                    "type": "string",
+                },
+                "show_github_url": {
+                    "type": "boolean",
+                },
+                "docs_url": {
+                    "type": "string",
+                },
+                "show_docs_url": {
+                    "type": "boolean",
+                },
+            },
+        },
         "additionalProperties": True,
     },
 }
@@ -129,6 +146,11 @@ def get_default_config():
                     "default_group": None,
                 },
             },
+        },
+        "frontend": {
+            "github_url": "https://github.com/iamtelescope/telescope",
+            "docs_url": "https://iamtelescope.github.io/telescope/docs",
+            "show_docs_url": True,
         },
         "logging": {
             "format": "default",

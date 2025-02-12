@@ -28,6 +28,8 @@
           <Breadcrumb :home="home" :model="navStore.items" class="p-2 ml-4"/>
         </div>
         <div class="flex flex-row w-full justify-end items-center mr-4">
+          <Button v-if="configStore.config.show_docs_url" icon="pi pi-book" outlined severity="secondary" size="small" class="mr-3" as="a" :href="configStore.config.docs_url" target="_blank" rel="noopener" label="Docs"></Button>
+          <Button v-if="configStore.config.show_github_url" icon="pi pi-github" outlined severity="secondary" size="small" class="mr-3" as="a" :href="configStore.config.github_url" target="_blank" rel="noopener" label="GitHub"></Button>
           <Button :icon="themeIcon" outlined severity="secondary" size="small" class="mr-3"
             @click="toggleDark()"></Button>
           <Button v-if="user.hasAccessToSettings()" label="Manage" severity="secondary" icon="pi pi-cog" class="mr-4"
@@ -59,6 +61,7 @@ import Breadcrumb from 'primevue/breadcrumb'
 
 import { useAuthStore } from '@/stores/auth'
 import { useNavStore } from '@/stores/nav'
+import { useConfigStore } from '@/stores/config'
 import { useDark, useToggle } from '@vueuse/core'
 
 const isDark = useDark()
@@ -66,6 +69,8 @@ const toggleDark = useToggle(isDark)
 
 const router = useRouter()
 const navStore = useNavStore()
+const configStore = useConfigStore()
+configStore.load()
 
 const { user, isLoggedIn } = storeToRefs(useAuthStore())
 const manageMenu = ref();
