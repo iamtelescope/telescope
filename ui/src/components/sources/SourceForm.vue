@@ -129,7 +129,11 @@ const onSourceDynamicFieldRemoved = (fieldName) => {
 
 const resetErrors = () => {
     for (const field in sourceFormErrors.value) {
-        sourceFormErrors.value[field] = ""
+        if (field == 'fields') {
+            sourceFormErrors.value[field] = {}
+        } else {
+            sourceFormErrors.value[field] = ""
+        }
     }
 }
 
@@ -164,8 +168,6 @@ const handleFormSubmit = async () => {
         } else {
             router.push({ name: 'source', params: { sourceSlug: response.data.slug } }).then(() => response.sendToastMessages(toast))
         }
-    } else {
-        console.log(response)
     }
 }
 </script>
