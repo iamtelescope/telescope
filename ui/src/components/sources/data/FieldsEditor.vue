@@ -5,10 +5,10 @@
         <vue-monaco-editor v-model:value="code" theme="telescope" language="fields" :options="getDefaultMonacoOptions()"
             @mount="handleMount" @change="onChange" />
     </div>
-</template>s
+</template>
 
 <script setup>
-import { ref, computed, shallowRef } from 'vue'
+import { ref, computed, shallowRef, watch } from 'vue'
 
 import * as monaco from 'monaco-editor'
 
@@ -155,4 +155,8 @@ const handleMount = editor => {
 const onChange = () => {
     emit('change', code.value)
 }
+
+watch(props, () => {
+    code.value = props.value
+})
 </script>

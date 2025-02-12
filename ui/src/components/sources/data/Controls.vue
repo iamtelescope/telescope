@@ -11,11 +11,10 @@
     </template>
   </Toolbar>
   <div class="mb-2">
-    <FieldsEditor @change="onFieldsChange" :source="source"
-      :value="route.query.fields ?? source.defaultChosenFields.join(', ')" @submit="handleSearch" />
+    <FieldsEditor @change="onFieldsChange" :source="source" :value="fields" @submit="handleSearch" />
   </div>
   <div class="mb-3">
-    <QueryEditor @change="onQueryChange" :source="source" :value="route.query.query ?? ''" :from="from" :to="to" @submit="handleSearch" />
+    <QueryEditor @change="onQueryChange" :source="source" :value="query" :from="from" :to="to" @submit="handleSearch" />
   </div>
   <Message severity="error" v-if="validation != null && !validation.result">
     <span class="text-2xl">Invalid parameters given</span><br>
@@ -36,10 +35,13 @@ import FieldsEditor from '@/components/sources/data/FieldsEditor.vue'
 import QueryEditor from '@/components/sources/data/QueryEditor.vue'
 import { getLimits } from '@/utils/limits.js'
 
+import { useSourceControlsStore } from '@/stores/sourceControls'
+
 const props = defineProps(['source', 'loading', 'from', 'to', 'validation'])
 const emit = defineEmits(['searchRequest', 'shareURL', 'download'])
 
 const route = useRoute()
+const sourceControlsStore = useSourceControlsStore()
 
 const from = ref(null)
 const to = ref(null)
@@ -47,6 +49,8 @@ const source = ref(props.source)
 const query = ref(route.query.query ?? '')
 const fields = ref(route.query.fields ?? source.value.defaultChosenFields.join(', '))
 let queryLimit = 50
+sourceControlsStore.setQuery(query.value)
+sourceControlsStore.setFields(fields.value)
 
 if (route.query.limit) {
   let intLimit = parseInt(route.query.limit)
@@ -78,10 +82,12 @@ const getSearchParams = () => {
 
 const onFieldsChange = (value) => {
   fields.value = value
+  sourceControlsStore.setFields(value)
 }
 
 const onQueryChange = (value) => {
   query.value = value
+  sourceControlsStore.setQuery(value)
 }
 
 const handleSearch = () => {
@@ -107,5 +113,9 @@ watch(props, () => {
     from.value = props.from
     to.value = props.to
   }
+})
+watch(sourceControlsStore, () => {
+  fields.value = sourceControlsStore.fields
+  query.value = sourceControlsStore.query
 })
 </script>

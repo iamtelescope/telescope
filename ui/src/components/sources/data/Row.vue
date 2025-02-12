@@ -2,10 +2,10 @@
     <div class="flex flex-col h-full w-full overflow-y-auto border-t-4"
         :style="{ borderColor: getColor(row.data[source.severityField]) }">
         <div class="flex flex-col">
-            <div class="p-4 font-mono">
-                <Tag value="Primary" :style="{ backgroundColor: getColor(row.data[source.severityField]) }">{{
+            <div class="p-4">
+                <Tag value="Primary" :style="{ backgroundColor: getColor(row.data[source.severityField]), color: getContrastColor(getColor(row.data[source.severityField])) }" class="text-gray-900 mr-2 text-bold">{{
                     row.data[source.severityField] }}</Tag>
-                {{ row.time.datetime }}.{{ row.time.microseconds }}
+                <span class="font-mono">{{ row.time.datetime }}.{{ row.time.microseconds }}</span>
             </div>
             <Tabs value="0">
                 <TabList>
@@ -17,6 +17,13 @@
                         <DataTable :value="flattenRow" :row-hover="true" removableSort>
                             <Column field="path" header="PATH" sortable class="font-bold">
                                 <template #body="slotProps">
+                                    <Button size="small" class="mr-2" :label="FlyQLOperator.EQUALS" severity="secondary"
+                                        @click="updateQuery(FlyQLOperator.EQUALS, slotProps.data.path.join(':'), slotProps.data.value)"></Button>
+                                    <Button size="small" class="mr-2" :label="FlyQLOperator.NOT_EQUALS"
+                                        severity="secondary"
+                                        @click="updateQuery(FlyQLOperator.NOT_EQUALS, slotProps.data.path.join(':'), slotProps.data.value)"></Button>
+                                    <span class="pr-2 cursor-pointer text-xl"
+                                        :class="{ 'text-blue-400': selectedFields.includes(slotProps.data.path.join(':')) }"></span>
                                     <span class="font-mono">{{ slotProps.data.path.join(':') }}</span>
                                 </template>
                             </Column>
@@ -44,6 +51,7 @@
 <script setup>
 import { computed } from 'vue'
 
+import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Tabs from 'primevue/tabs'
@@ -51,12 +59,24 @@ import TabList from 'primevue/tablist'
 import Tab from 'primevue/tab'
 import TabPanels from 'primevue/tabpanels'
 import TabPanel from 'primevue/tabpanel'
+import { useSourceControlsStore } from '@/stores/sourceControls'
+import { Operator as FlyQLOperator } from '@/utils/flyql.js'
 
 
-import { getColor } from '@/utils/colors.js'
+import { getColor, getContrastColor } from '@/utils/colors.js'
 import Tag from 'primevue/tag'
 
+const sourceControlsStore = useSourceControlsStore()
+
 const props = defineProps(['source', 'row'])
+
+const selectedFields = computed(() => {
+    return sourceControlsStore.parsedFields(props.source)
+})
+
+const updateQuery = (operator, field, value) => {
+    sourceControlsStore.addQueryExpression(field, operator, value)
+}
 
 function flat_json(result, value, path) {
     if (typeof value === 'object') {

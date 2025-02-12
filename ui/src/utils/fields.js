@@ -245,7 +245,7 @@ class Parser {
     }
     storeArgument() {
         let value = this.modifierArgument
-        
+
         if (this.modifierArgumentType === "auto") {
             try {
                 value = parseInt(value)
@@ -253,7 +253,7 @@ class Parser {
                 try {
                     value = parseFloat(value)
                 } catch (e) {
-                    
+
                     // value remains as it is
                 }
             }
@@ -407,10 +407,11 @@ class Parser {
         })
         return data
     }
-    getFieldsNames(source, raiseError) {
+    getFieldsNames(source, raiseError, nameProperty) {
+        nameProperty = nameProperty ?? 'root_name'
         const names = []
         for (const field of this.getFields(source, raiseError)) {
-            names.push(field.root_name)
+            names.push(field[nameProperty])
         }
         return names
     }
@@ -429,7 +430,7 @@ class Parser {
                     i++
                 }
             }
-            
+
             if (this.char.isNewline()) {
                 this.line += 1
                 this.linePos = 0

@@ -65,4 +65,16 @@ function getColor(value) {
     return color
 }
 
-export { getColor }
+function getContrastColor(backgroundColor) {
+    backgroundColor = backgroundColor.replace(/^#/, '')
+
+    let r = parseInt(backgroundColor.substr(0, 2), 16)
+    let g = parseInt(backgroundColor.substr(2, 2), 16)
+    let b = parseInt(backgroundColor.substr(4, 2), 16)
+
+    let luma = 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    return luma > 150 ? 'black' : 'white'
+}
+
+export { getColor, getContrastColor }

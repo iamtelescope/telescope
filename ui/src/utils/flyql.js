@@ -654,8 +654,8 @@ class Parser {
                 }
             }
         }
-        if (token !== null) { 
-            tokens.push(token) 
+        if (token !== null) {
+            tokens.push(token)
         }
         for (const token of tokens) {
             if (token.type === CharType.VALUE) {
@@ -711,7 +711,7 @@ class Parser {
             } else if (this.state === State.DOUBLE_QUOTED_VALUE) {
                 this.inStateDoubleQuotedValue()
             } else if (this.state === State.KEY_VALUE_OPERATOR) {
-                this.inStateKeyValueOperator()                   
+                this.inStateKeyValueOperator()
             } else if (this.state === State.BOOL_OP_DELIMITER) {
                 this.inStateBoolOpDelimiter()
             } else if (this.state === State.EXPECT_BOOL_OP) {
@@ -737,7 +737,7 @@ class Parser {
         if (!ignoreLastChar) {
             this.inStateLastChar()
         }
-        
+
         if (this.state === State.ERROR) {
             if (raiseError) {
                 throw new ParserError({
@@ -753,4 +753,4 @@ class Parser {
     }
 }
 
-export { Parser, tokenTypes, State, Operator, VALID_KEY_VALUE_OPERATORS}
+export { Parser, tokenTypes, State, Operator, BoolOperator, VALID_KEY_VALUE_OPERATORS }

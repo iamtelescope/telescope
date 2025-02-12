@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import { ref, computed, shallowRef, nextTick } from 'vue'
+import { ref, computed, shallowRef, nextTick, watch } from 'vue'
 
 import * as monaco from "monaco-editor"
 
@@ -297,4 +297,8 @@ const handleMount = editor => {
 const onChange = () => {
     emit('change', code.value)
 }
+
+watch(props, () => {
+    code.value = props.value
+})
 </script>
