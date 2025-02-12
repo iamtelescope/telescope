@@ -1,11 +1,13 @@
 # Telescope
 _A handy tool that manages to make close what once was far_
 
-![telescope](https://github.com/iamtelescope/telescope/blob/main/ui/src/assets/logo.png?raw=true)
+![telescope](ui/src/assets/logo.png?raw=true)
 
 ## Introduction
 
 **Telescope** is a web application designed to facilitate log exploration and analysis for logs stored in **ClickHouse**. It enables users to create and configure **sources** to ClickHouse databases and subsequently use these sources to query logs data.
+
+![Source data](screenshots/main.png?raw=true "Source data")
 
 **[Read the Documentation](https://iamtelescope.github.io/telescope/docs/)**
 
