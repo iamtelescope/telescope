@@ -14,3 +14,6 @@ links:
   - title: Auth
     description: This section explains how users log in to Telescope and how access permissions are managed through predefined roles.
     href: concepts/auth.md
+  - title: Releases
+    description: Learn about Telescope’s versioning approach, how updates are structured, and what to expect from each release.
+    href: concepts/releases.md

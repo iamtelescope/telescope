@@ -24,6 +24,8 @@ items:
       href: concepts/source.md
     - name: Querying data
       href: concepts/querying.md
+    - name: Releases
+      href: concepts/releases.md
   - name: Setup
     href: setup/index.md
     items:
