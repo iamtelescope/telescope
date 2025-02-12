@@ -15,7 +15,7 @@
                 <TabPanels :pt="{ root: { className: 'p-0' } }">
                     <TabPanel value="0">
                         <DataTable :value="flattenRow" :row-hover="true" removableSort>
-                            <Column field="path" header="PATH" sortable class="font-bold">
+                            <Column field="path" header="PATH" sortable class="font-bold text-nowrap">
                                 <template #body="slotProps">
                                     <Button size="small" class="mr-2" :label="FlyQLOperator.EQUALS" severity="secondary"
                                         @click="updateQuery(FlyQLOperator.EQUALS, slotProps.data.path.join(':'), slotProps.data.value)"></Button>
