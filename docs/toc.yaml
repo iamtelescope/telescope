@@ -50,3 +50,5 @@ items:
     items:
       - name: Demo logs setup
         href: howto/demologs.md
+  - name: Changelog
+    href: changelog.md
