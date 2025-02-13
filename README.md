@@ -1,11 +1,9 @@
 # Telescope
 _A handy tool that manages to make close what once was far_
 
-![telescope](ui/src/assets/logo.png?raw=true)
-
 ## Introduction
 
-**Telescope** is a web application designed to facilitate log exploration and analysis for logs stored in **ClickHouse**. It enables users to create and configure **sources** to ClickHouse databases and subsequently use these sources to query logs data.
+**Telescope** is a web application designed to provide an intuitive interface for exploring log data. It is built to work with any type of logs, as long as they are stored in [**ClickHouse**](https://github.com/ClickHouse/ClickHouse). Users can easily configure connections to their ClickHouse databases and run queries to filter, search, and analyze logs efficiently. While ClickHouse is the primary supported storage backend, future versions of Telescope may introduce support for additional data sources.
 
 ![Source data](screenshots/main.png?raw=true "Source data")
 
@@ -13,11 +11,31 @@ _A handy tool that manages to make close what once was far_
 
 :blue_book: **[Read the Documentation](https://iamtelescope.github.io/telescope/docs/)**
 
-### Key Features
+## 🚀 Live installation
+An live instance is available at [https://telescope.humanuser.net](https://telescope.humanuser.net).
+You can log in via GitHub to explore the core features of the system from an end-user perspective.
+> [!NOTE]
+> The live version is intended for demonstration purposes and does not showcase administrative features of the system.
 
-- **Source management**: Create and manage connections to [ClickHouse](https://github.com/ClickHouse/ClickHouse) databases for log analysis.
-- **Logs exploration**: Select which columns to display, customize how data is presented, and apply filters to refine results.
-- **Role-Based Access Control (RBAC)**: Define and manage user permissions to control access to specific sources.
+## Key Features
+
+### 🔗 Source Management
+- 🖥️ Create and manage multiple connections to different ClickHouse clusters.
+- 📑 Choose which fields of a table to use and configure which should be suggested, hidden, or support autocompletion.
+- 🔐 Configure which users and groups have access to a source and define their permissions.
+
+### 📊 Data Explorer
+- 📈 Gain insights into your logs with dynamic visualizations and interactive graphs.
+- 🛠️ Customize your view by selecting relevant columns, adjusting data presentation, and applying filters to focus on what matters most.
+- ⏳ Use a time and date selector with support for relative time ranges to refine your log queries effortlessly.
+- 🎨 Enjoy a clean, minimalist design that keeps the focus on your log data, ensuring a seamless and distraction-free analysis experience.
+
+### 🔒 Role-Based Access Control (RBAC) and Authentication Support
+- 🔑 Authenticate with GitHub, with the ability to enforce organization membership requirements for access control.
+- 👥 Define and manage user and group permissions to control access to specific sources based on their roles.
+
+
+## βeta notion
 
 > [!CAUTION]
 > Telescope is currently in its $${\color{red}βeta}$$ stage, which means:
@@ -28,13 +46,7 @@ _A handy tool that manages to make close what once was far_
 > - From a development and operational perspective, the system may not yet offer full convenience or polish.
 > - Was not used in production, so it might encounter some performance issues on real installations.
 
-### Live installation
-An live instance is available at [https://telescope.humanuser.net](https://telescope.humanuser.net).
-You can log in via GitHub to explore the core features of the system from an end-user perspective.
-> [!NOTE]
-> The live version is intended for demonstration purposes and does not showcase administrative features of the system.
-
-### Beyond βeta
+## Beyond βeta
 Features planned for future implementation:
 
 - Ability to store fields and query presets for easier log searches.

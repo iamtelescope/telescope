@@ -3,10 +3,10 @@
 ## Login
 ![Login](login_view.png)
 
-## Source data
+## Data Explorer
 ![main.png](main.png)
 
-## Source data (dark theme)
+## Data Explorer (dark theme)
 ![main_dark.png](main_dark.png)
 
 # Row detailed view
