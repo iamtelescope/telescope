@@ -114,7 +114,7 @@ const handleMount = editor => {
         },
         triggerCharacters: [',', '|'],
     })
-
+    editor.updateOptions({placeholder: props.source.generateFieldsExample()})
     editorRef.value = editor
     editor.addAction({
         id: 'submit',

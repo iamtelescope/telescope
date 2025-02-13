@@ -253,6 +253,7 @@ const handleMount = editor => {
         triggerCharacters: ["=", "!=", ">", "<", "=~", "!~", " "],
     })
     editorRef.value = editor
+    editor.updateOptions({placeholder: props.source.generateFlyQLExample()})
     editor.addAction({
         id: 'submit',
         label: 'submit',

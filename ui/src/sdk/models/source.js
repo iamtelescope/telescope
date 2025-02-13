@@ -33,6 +33,31 @@ class Source {
             return false
         }
     }
+    generateFieldsExample() {
+        let fields = []
+        for (const field in this.fields) {
+            fields.push(field)
+        }
+        return fields.join(', ')
+    }
+    generateFlyQLExample() {
+        let text = ''
+        let fields = []
+        for (const [field, data] of Object.entries(this.fields)) {
+            if (data.type == 'string' && fields.length < 4) {
+                fields.push(field)
+            }
+        }
+        if (fields.length == 1) {
+            text += `${fields[0]}=*value*`
+        } else if (fields.length == 2 || fields.length == 3) {
+            text += `${fields[0]}=*value* and ${fields[1]!="value"}`
+        }
+        if (fields.length == 4) {
+            text += `${fields[0]}="*like value*" and ${fields[1]}!=value or (${fields[2]}=~".*rege[xX]$" and ${fields[3]}!~"reg ex$")`
+        }
+        return text
+    }
 }
 
 class SourceRoleBiding {
