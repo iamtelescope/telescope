@@ -77,6 +77,9 @@ TEMPLATES = [
 LOGIN_URL = "/login"
 
 REST_FRAMEWORK = {
+    "DEFAULT_RENDERER_CLASSES": [
+        "telescope.utils.DefaultJSONRenderer",
+    ],
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.SessionAuthentication",
     ),

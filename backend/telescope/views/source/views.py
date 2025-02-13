@@ -8,7 +8,6 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User, Group
-from django.http import JsonResponse
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -338,7 +337,7 @@ class SourceDataAutocompleteView(APIView):
         if not serializer.is_valid():
             response.validation["result"] = False
             response.validation["fields"] = serializer.errors
-            return JsonResponse(response.as_dict())
+            return Response(response.as_dict())
         items, incomplete = autocomplete(
             source=source,
             field=serializer.validated_data["field"],
@@ -348,7 +347,7 @@ class SourceDataAutocompleteView(APIView):
         )
         response.data["items"] = items
         response.data["incomplete"] = incomplete
-        return JsonResponse(response.as_dict())
+        return Response(response.as_dict())
 
 
 class SourceDataView(APIView):
@@ -369,7 +368,7 @@ class SourceDataView(APIView):
         if not serializer.is_valid():
             response.validation["result"] = False
             response.validation["fields"] = serializer.errors
-            return JsonResponse(response.as_dict())
+            return Response(response.as_dict())
 
         try:
             rows, total, stats = fetch_data(
@@ -390,7 +389,7 @@ class SourceDataView(APIView):
                 },
                 "rows": [row.as_dict() for row in rows],
             }
-        return JsonResponse(response.as_dict())
+        return Response(response.as_dict())
 
 
 class SourceTestConnectionView(APIView):
