@@ -31,7 +31,7 @@ from telescope.auth.decorators import global_permission_required
 from telescope.fields import parse as parse_fields
 from telescope.fields import ParserError as FieldsParserError
 from telescope.response import UIResponse
-from telescope.models import Source, Connection, SourceRoleBinding
+from telescope.models import Source, SourceRoleBinding
 from telescope.serializers.source import (
     SourceAdminSerializer,
     SourceSerializer,
@@ -144,7 +144,6 @@ class SourceView(APIView):
 
         try:
             source = Source.objects.get(slug=slug)
-            connection = source.connection
             serializer = UpdateSourceSerializer(data=request.data)
             if not serializer.is_valid():
                 response.validation["result"] = False
@@ -152,9 +151,7 @@ class SourceView(APIView):
             else:
                 with transaction.atomic():
                     for key, value in serializer.data["connection"].items():
-                        if key != "kind":
-                            setattr(connection, key, value)
-                    connection.save()
+                        source.connection[key] = value
 
                     for key, value in serializer.data.items():
                         if key != "connection" and key != "slug":
@@ -179,10 +176,7 @@ class SourceView(APIView):
 
         try:
             with transaction.atomic():
-                source = Source.objects.select_related("connection").get(slug=slug)
-                if source.connection:
-                    source.connection.delete()
-                source.delete()
+                Source.objects.get(slug=slug).delete()
         except Exception as err:
             logger.exception("unhandled exception: %s", err)
             response.mark_failed(f"failed to delete source: {err}")
@@ -330,7 +324,7 @@ class SourceDataAutocompleteView(APIView):
             source_slug=slug,
             required_permissions=[permissions.Source.USE.value],
         )
-        source = Source.objects.select_related("connection").get(slug=slug)
+        source = Source.objects.get(slug=slug)
         serializer = SourceAutocompleteRequestSerializer(
             data=request.data,
         )
@@ -360,7 +354,7 @@ class SourceDataView(APIView):
             source_slug=slug,
             required_permissions=[permissions.Source.USE.value],
         )
-        source = Source.objects.select_related("connection").get(slug=slug)
+        source = Source.objects.get(slug=slug)
 
         serializer = SourceDataRequestSerializer(
             data=request.data, context={"source": source}

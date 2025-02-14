@@ -5,16 +5,6 @@
         </template>
         <div class="flex flex-col w-full flex-wrap gap-4">
             <div class="flex flex-row">
-                <div class="flex flex-col w-full">
-                    <FloatLabel variant="on">
-                        <Select id="connection_kind" v-model="connectionData.kind" :options="sourceKinds" class="w-full"
-                            :invalid="false" :disabled="true"></Select>
-                        <label for="connection_kind">Kind</label>
-                    </FloatLabel>
-                    <ErrorText :text="connectionFieldErrors.kind" />
-                </div>
-            </div>
-            <div class="flex flex-row">
                 <div class="flex flex-col w-full mr-2">
                     <FloatLabel variant="on">
                         <InputText id="connection_host" v-model="connectionData.host" fluid
@@ -106,7 +96,6 @@ import ConnectionTest from '@/components/sources/new/ConnectionTest.vue'
 
 import ErrorText from '@/components/common/ErrorText.vue'
 import { SourceService } from '@/sdk/services/Source'
-import { SourceKinds } from '@/sdk/models/source'
 
 const emit = defineEmits(['connectionDataValidated', 'connectionTestStarted', 'connectionDataChanged'])
 const props = defineProps(['source', 'startConnectionTest'])
@@ -114,7 +103,6 @@ const props = defineProps(['source', 'startConnectionTest'])
 const toast = useToast()
 const sourceSrv = new SourceService()
 
-const sourceKinds = ref(SourceKinds)
 const connectionTestIsActive = ref(false)
 const connectionTestCalled = ref(false)
 const connectionTestData = ref(null)
@@ -122,7 +110,6 @@ const connectionTestPassed = ref(false)
 
 const getInitialConnectionData = () => {
     let data = {
-        'kind': "clickhouse",
         'host': "localhost",
         'port': 9000,
         'user': "default",
@@ -140,7 +127,6 @@ const getInitialConnectionData = () => {
 const connectionData = reactive(getInitialConnectionData())
 
 const connectionFieldErrors = reactive({
-    'kind': "",
     'host': "",
     'port': "",
     'user': "",

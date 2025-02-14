@@ -143,6 +143,7 @@ const handleFormSubmit = async () => {
 
     let data = Object.assign({}, sourceFormData.value)
     data['connection'] = connectionData.value
+    data['kind'] = 'clickhouse'
     let response
     if (props.source) {
         response = await sourceSrv.updateSource(props.source.slug, data)

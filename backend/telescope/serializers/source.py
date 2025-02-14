@@ -2,7 +2,7 @@ from django.contrib.auth.models import User, Group
 
 from rest_framework import serializers
 
-from telescope.models import Source, Connection, SourceRoleBinding
+from telescope.models import Source, SourceRoleBinding
 from telescope.utils import parse_time
 from telescope.fields import parse as parse_fields, ParserError as FieldsParserError
 from telescope.query import validate_flyql_query
@@ -54,7 +54,6 @@ class SourceRoleBindingSerializer(serializers.ModelSerializer):
 
 
 class ConnectionSerializer(serializers.Serializer):
-    kind = serializers.CharField()
     host = serializers.CharField()
     port = serializers.IntegerField()
     user = serializers.CharField()
@@ -66,7 +65,6 @@ class ConnectionSerializer(serializers.Serializer):
 
 class SourceWithConnectionSerializer(serializers.ModelSerializer):
     permissions = serializers.ListField(child=serializers.CharField())
-    connection = ConnectionSerializer()
 
     class Meta:
         model = Source
@@ -87,6 +85,7 @@ class SourceFieldSerializer(serializers.Serializer):
 
 
 class NewSourceSerializer(serializers.Serializer):
+    kind = serializers.CharField()
     slug = serializers.SlugField(max_length=64, required=True)
     name = serializers.CharField(max_length=64)
     description = serializers.CharField(allow_blank=True)
@@ -96,6 +95,11 @@ class NewSourceSerializer(serializers.Serializer):
     default_chosen_fields = serializers.ListField(child=serializers.CharField())
     fields = serializers.DictField(child=SourceFieldSerializer())
     connection = ConnectionSerializer()
+
+    def validate_kind(self, value):
+        if value != "clickhouse":
+            raise serializers.ValidationError("only clickhouse kind is supported atm")
+        return value
 
     def to_internal_value(self, data):
         data["default_chosen_fields"] = [

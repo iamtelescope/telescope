@@ -37,7 +37,7 @@ def validate_flyql_query(source, query):
 def autocomplete(source, field, time_from, time_to, value):
     incomplete = False
     items = []
-    from_db_table = f"{source.connection.database}.{source.connection.table}"
+    from_db_table = f"{source.connection['database']}.{source.connection['table']}"
     time_clause = f"{source.time_field} BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
     query = f"SELECT DISTINCT {field} FROM {from_db_table} WHERE {time_clause} and {field} LIKE %(value)s ORDER BY {field} LIMIT 500"
     with clickhouse.Client(**get_source_database_conn_kwargs(source)) as client:
@@ -63,7 +63,7 @@ def fetch_data(
 
     total = 0
     time_clause = f"{source.time_field} BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
-    from_db_table = f"{source.connection.database}.{source.connection.table}"
+    from_db_table = f"{source.connection['database']}.{source.connection['table']}"
 
     fields_names = sorted(source._fields.keys())
     fields_to_select = ", ".join(sorted(fields_names))
@@ -89,7 +89,7 @@ def fetch_data(
             stats_time_selector = f"toUnixTimestamp({source.time_field})*1000"
 
     with clickhouse.Client(**get_source_database_conn_kwargs(source)) as client:
-        selected_fields = [source._record_pseuod_id_field] + fields_names
+        selected_fields = [source._record_pseudo_id_field] + fields_names
         for item in client.execute(select_query):
             rows.append(
                 Row(

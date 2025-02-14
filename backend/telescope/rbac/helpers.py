@@ -153,15 +153,13 @@ def get_sources(user, source_slug=None, source_filter=None, required_permissions
         global_source_permissions = global_permissions_to_source_permissions(
             global_user_permissions
         )
-        for source in Source.objects.select_related("connection").filter(
-            **_global_filter
-        ):
+        for source in Source.objects.filter(**_global_filter):
             source.add_perms(global_source_permissions)
             sources_map[source.pk] = {"source": source, "roles": []}
 
-    bindings = SourceRoleBinding.objects.select_related(
-        "source", "source__connection"
-    ).filter((Q(user=user) | Q(group__in=user.groups.all())) & Q(**_filter))
+    bindings = SourceRoleBinding.objects.select_related("source").filter(
+        (Q(user=user) | Q(group__in=user.groups.all())) & Q(**_filter)
+    )
 
     for binding in bindings:
         if binding.source.pk not in sources_map:

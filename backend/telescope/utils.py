@@ -6,9 +6,7 @@ from datetime import timedelta
 
 
 from rest_framework.renderers import JSONRenderer
-from rest_framework.compat import (
-    INDENT_SEPARATORS, LONG_SEPARATORS, SHORT_SEPARATORS
-)
+from rest_framework.compat import INDENT_SEPARATORS, LONG_SEPARATORS, SHORT_SEPARATORS
 
 
 class DefaultJSONRenderer(JSONRenderer):
@@ -37,7 +35,7 @@ class DefaultJSONRenderer(JSONRenderer):
             ensure_ascii=self.ensure_ascii,
             allow_nan=not self.strict,
             separators=separators,
-            default=str,      # the only change for telescope
+            default=str,  # the only change for telescope
         )
 
         # We always fully escape \u2028 and \u2029 to ensure we output JSON
@@ -58,11 +56,11 @@ UNIT_TO_SECONDS = {
 
 def get_source_database_conn_kwargs(source):
     return {
-        "host": source.connection.host,
-        "port": source.connection.port,
-        "user": source.connection.user,
-        "password": source.connection.password,
-        "secure": source.connection.ssl,
+        "host": source.connection["host"],
+        "port": source.connection["port"],
+        "user": source.connection["user"],
+        "password": source.connection["password"],
+        "secure": source.connection["ssl"],
     }
 
 

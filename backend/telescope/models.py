@@ -7,43 +7,6 @@ from django.contrib.auth.models import User, Group
 from telescope.constants import UTC_ZONE
 
 
-class AuditEvent(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    username = models.CharField(max_length=255, db_index=True)
-    message = models.TextField(null=True, db_index=True)
-    type = models.CharField(max_length=32, db_index=True)
-    obj_pk = models.CharField(max_length=255, null=True, db_index=True)
-    obj_model = models.CharField(max_length=255, null=True, db_index=True)
-    obj_action = models.CharField(max_length=255, null=True, db_index=True)
-    obj_changes = models.JSONField(null=True)
-
-    @classmethod
-    def write(
-        self, username, message, type, obj_pk, obj_model, obj_action, obj_changes=None
-    ):
-        AuditEvent.objects.create(
-            username=username,
-            message=message,
-            type=type,
-            obj_pk=obj_pk,
-            obj_model=obj_model,
-            obj_action=obj_action,
-            obj_changes=obj_changes,
-        )
-
-
-class Connection(models.Model):
-    name = models.CharField(max_length=128)
-    host = models.CharField(max_length=256)
-    port = models.IntegerField()
-    database = models.CharField(max_length=256)
-    table = models.CharField(max_length=256)
-    user = models.CharField(max_length=256)
-    password = models.CharField(max_length=256)
-    ssl = models.BooleanField()
-    kind = models.CharField(max_length=32)
-
-
 class Source(models.Model):
     kind = models.CharField(max_length=32)
     slug = models.CharField(max_length=64, unique=True)
@@ -56,7 +19,7 @@ class Source(models.Model):
     modifiers = models.JSONField()
     table = models.CharField(max_length=128)
     default_chosen_fields = models.JSONField()
-    connection = models.ForeignKey(Connection, on_delete=models.SET_NULL, null=True)
+    connection = models.JSONField()
 
     def __init__(self, *args, **kwargs):
         super(Source, self).__init__(*args, **kwargs)
@@ -64,24 +27,10 @@ class Source(models.Model):
 
     @classmethod
     def create(self, data, username):
-        conn = Connection.objects.create(**data.pop("connection"))
-        source_data = {"modifiers": [], "connection": conn, "kind": conn.kind}
-        for key, value in data.items():
-            source_data[key] = value
-        source = Source.objects.create(**source_data)
-        AuditEvent.write(
-            username=username,
-            message="Source has been created",
-            type="new",
-            obj_pk=source.pk,
-            obj_model="Source",
-            obj_action="create",
-            obj_changes=None,
-        )
-        return source
+        return Source.objects.create(**data, modifiers=[])
 
     @property
-    def _record_pseuod_id_field(self):
+    def _record_pseudo_id_field(self):
         return "_____record_pseudo_id"
 
     @property
@@ -129,7 +78,7 @@ class Row:
             self.data[key] = value
 
         self.record_id = self.data.get(source.uniq_field) or self.data.get(
-            source._record_pseuod_id_field
+            source._record_pseudo_id_field
         )
         self.time = {
             "unixtime": int(self.data[source.time_field].timestamp() * 1000),
