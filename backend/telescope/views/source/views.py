@@ -201,22 +201,13 @@ def get_telescope_field(name, _type):
         "display_name": "",
         "values": "",
         "type": _type,
+        "jsonstring": False,
         "autocomplete": True,
         "suggest": True,
     }
-    if _type.startswith("DateTime64") or _type.startswith("Nullable(DateTime64"):
-        data["type"] = "datetime64"
+    if "datetime" in _type.lower():
         data["autocomplete"] = False
-    if _type.startswith("Datetime") or _type.startswith("Nullable(DateTime"):
-        data["type"] = "datetime"
-    elif _type in ["String", "LowCardinality(String)", "Nullable(String)"]:
-        data["type"] = "string"
-    elif _type.startswith("UInt") or _type.startswith("Nullable(UInt"):
-        data["type"] = "number"
-    elif _type in ["UUID", "Nullable(UUID)"]:
-        data["type"] = "uuid"
     elif _type.startswith("Enum"):
-        data["type"] = "enum"
         try:
             data["values"] = ",".join(
                 [

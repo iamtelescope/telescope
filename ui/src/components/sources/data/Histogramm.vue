@@ -1,5 +1,5 @@
 <template>
-    <BorderCard class="border-neutral-300 dark:border-neutral-600">
+    <BorderCard>
         <div class="flex flex-row">
             <FloatLabel variant="on" class="mr-2">
                 <Select v-model="groupBy" :options="groupByOptions" placeholder="&#8211;" filter autoFilterFocus />

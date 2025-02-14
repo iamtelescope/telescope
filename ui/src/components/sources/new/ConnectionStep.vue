@@ -114,8 +114,8 @@ const getInitialConnectionData = () => {
         'port': 9000,
         'user': "default",
         'password': "",
-        'database': "",
-        'table': "",
+        'database': "logs",
+        'table': "logs",
         'ssl': false,
     }
     if (props.source) {

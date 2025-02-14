@@ -11,7 +11,9 @@ from telescope.utils import get_source_database_conn_kwargs
 def flyql_clickhouse_fields(source_fields):
     return {
         data["name"]: Field(
-            name=data["name"], _type=data["type"], values=data["values"]
+            name=data["name"],
+            values=data["values"],
+            jsonstring=data["jsonstring"],
         )
         for _, data in source_fields.items()
     }

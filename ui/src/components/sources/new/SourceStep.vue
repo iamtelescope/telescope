@@ -72,7 +72,7 @@
                     </FloatLabel>
                     <ErrorText :text="sourceFormErrors['default_chosen_fields']" />
                 </div>
-                <div class="flex flex-row justify-end mb-2 mt-7">
+                <div class="flex flex-row justify-end mb-6 mt-7">
                     <Button class="mr-2" severity="primary" icon="pi pi-download" label="Load fields from schema"
                         size="small" @click="handleLoadSourceDynamicFieldsFromSchema"
                         :disabled="schemaFields.length == 0" />
@@ -80,59 +80,78 @@
                         @click="newSourceDynamicFieldDialogData.visible = true" />
                 </div>
 
-                <DataTable :value="sourceDynamicFieldsList">
-                    <Column field="name" sortable header="NAME" />
-                    <Column field="display_name" sortable header="DISPLAY NAME" class="text-nowrap">
-                        <template #body="slotProps">
-                            <InputText :id="slotProps.data.name + '_display_name'"
-                                v-model="sourceFormData['fields'][slotProps.data.name]['display_name']"
-                                :invalid="dynamicFieldHasError(slotProps.data.name, 'display_name')" fluid />
-                            <ErrorText :text="sourceFormErrors['fields'][slotProps.data.name]['display_name']" />
-                        </template>
-                    </Column>
-                    <Column field="type" sortable header="TYPE">
-                        <template #body="slotProps">
-                            <Select :id="slotProps.data.name + '_type'" fluid
-                                v-model="sourceFormData['fields'][slotProps.data.name]['type']"
-                                :options="sourceDynamicFieldTypes"
-                                :invalid="dynamicFieldHasError(slotProps.data.name, 'type')"
-                                @change="handleSourceDynamicFieldTypeChange(slotProps.data.name)" />
-                            <ErrorText :text="sourceFormErrors['fields'][slotProps.data.name]['type']" />
-                        </template>
-                    </Column>
-                    <Column field="autocomplete" sortable header="AUTOCOMPLETE">
-                        <template #body="slotProps">
-                            <ToggleSwitch :id="slotProps.data.name + '_autocomplete'"
-                                v-model="sourceFormData['fields'][slotProps.data.name]['autocomplete']" />
-                        </template>
-                    </Column>
-                    <Column field="suggest" sortable header="SUGGEST">
-                        <template #body="slotProps">
-                            <ToggleSwitch :id="slotProps.data.name + '_suggest'"
-                                v-model="sourceFormData['fields'][slotProps.data.name]['suggest']" />
-                        </template>
-                    </Column>
-                    <Column field="values" sortable header="VALUES">
-                        <template #body="slotProps">
-                            <InputText :id="slotProps.data.name + '_values'"
-                                v-model="sourceFormData['fields'][slotProps.data.name]['values']"
-                                :disabled="sourceFormData['fields'][slotProps.data.name]['type'] !== 'enum'"
-                                :invalid="dynamicFieldHasError(slotProps.data.name, 'values')" fluid />
-                            <ErrorText :text="sourceFormErrors['fields'][slotProps.data.name]['values']" />
-                        </template>
-                    </Column>
-                    <Column headerStyle="width: 3rem">
-                        <template #body="slotProps">
-                            <span class="cursor-pointer hover:text-gray-500"
-                                @click="handleRemoveSourceDynamicField(slotProps.data.name)">
-                                <i class="pi pi-trash"></i>
+                <BorderCard v-for="field in sourceDynamicFieldsList" :key="field.name" class="mb-4 pb-2 pl-4 pr-4">
+                    <div class="flex flex-row w-full pb-6">
+                        <div class="flex w-full justify-start">
+                            <span class="font-bold text-lg">{{ field.name }}</span>
+                        </div>
+                        <div class="flex w-full justify-end">
+                            <span class="cursor-pointer text-gray-400 hover:text-gray-900"
+                                @click="handleRemoveSourceDynamicField(field.name)">
+                                <i class="pi pi-times"></i>
                             </span>
-                        </template>
-                    </Column>
-                </DataTable>
+                        </div>
+                    </div>
+                    <div class="flex flex-row w-full items-center mb-4">
+                        <div class="flex">
+                            <span>Autocomplete</span>
+                        </div>
+                        <div class="flex pl-2">
+                            <ToggleSwitch :id="field.name + '_autocomplete'"
+                                v-model="sourceFormData['fields'][field.name]['autocomplete']" />
+                        </div>
+                        <div class="flex pl-6">
+                            <span>Suggest</span>
+                        </div>
+                        <div class="flex pl-2">
+                            <ToggleSwitch :id="field.name + '_suggest'"
+                                v-model="sourceFormData['fields'][field.name]['suggest']" />
+                        </div>
+                        <div class="flex pl-6">
+                            <span>Treat as JSON String</span>
+                        </div>
+                        <div class="flex pl-2">
+                            <ToggleSwitch :id="field.name + '_jsonstring'"
+                                v-model="sourceFormData['fields'][field.name]['jsonstring']" />
+                        </div>
+                    </div>
+                    <div class="flex flex-row w-full items-center mb-4">
+                        <div class="flex w-32">
+                            <span>Display Name</span>
+                        </div>
+                        <div class="flex flex-col pl-6 w-96">
+                            <InputText :id="field.name + '_display_name'"
+                                v-model="sourceFormData['fields'][field.name]['display_name']"
+                                :invalid="dynamicFieldHasError(field.name, 'display_name')" fluid />
+                            <ErrorText :text="sourceFormErrors['fields'][field.name]['display_name']" />
+                        </div>
+                    </div>
+                    <div class="flex flex-row w-full items-center mb-4">
+                        <div class="flex w-32">
+                            <span>Type</span>
+                        </div>
+                        <div class="flex flex-col pl-6 w-96">
+                            <Select :id="field.name + '_type'" fluid
+                                v-model="sourceFormData['fields'][field.name]['type']"
+                                :options="sourceDynamicFieldTypes" :invalid="dynamicFieldHasError(field.name, 'type')"
+                                editable filter autoFilterFocus />
+                            <ErrorText :text="sourceFormErrors['fields'][field.name]['type']" />
+                        </div>
+                    </div>
+                    <div class="flex flex-row w-full items-center mb-4">
+                        <div class="flex w-32">
+                            <span>Values</span>
+                        </div>
+                        <div class="flex flex-col pl-6 w-96">
+                            <InputText :id="field.name + '_values'"
+                                v-model="sourceFormData['fields'][field.name]['values']"
+                                :invalid="dynamicFieldHasError(field.name, 'values')" fluid />
+                            <ErrorText :text="sourceFormErrors['fields'][field.name]['values']" />
+                        </div>
+                    </div>
+                </BorderCard>
             </div>
         </Fieldset>
-
         <Dialog v-model:visible="newSourceDynamicFieldDialogData.visible" modal header="Add field"
             :style="{ width: '25rem' }">
             <div class="flex items-center mb-4">
@@ -159,16 +178,17 @@ import { ref, reactive, watch, computed } from 'vue'
 
 import { useToast } from 'primevue/usetoast'
 import ToggleSwitch from 'primevue/toggleswitch'
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
 import FloatLabel from 'primevue/floatlabel'
 import Fieldset from 'primevue/fieldset'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import Dialog from 'primevue/dialog'
+import BorderCard from '@/components/common/BorderCard.vue'
 
 import ErrorText from '@/components/common/ErrorText.vue'
+
+import { ClickhouseTypes } from '@/utils/clickhousetypes'
 
 const emit = defineEmits(['sourceFormDataChanged', 'sourceDynamicFieldAdded', 'sourceDynamicFieldRemoved'])
 const props = defineProps([
@@ -222,19 +242,12 @@ const getSourceDynamicFieldDefaultData = () => {
         type: '',
         autocomplete: false,
         suggest: false,
+        jsonstring: false,
         values: '',
     }
 }
 
-const sourceDynamicFieldTypes = ref([
-    'datetime',
-    'datetime64',
-    'string',
-    'number',
-    'jsonstring',
-    'uuid',
-    'enum',
-])
+const sourceDynamicFieldTypes = ref(ClickhouseTypes)
 
 const slugEditable = computed(() => {
     if (props.source) {
@@ -333,12 +346,6 @@ const handleLoadSourceDynamicFieldsFromSchema = () => {
         toast.add({ severity: 'success', summary: 'Success', detail: message, life: 3000 });
     } else {
         toast.add({ severity: 'warn', summary: 'Warning', detail: 'no fields were added', life: 3000 });
-    }
-}
-
-const handleSourceDynamicFieldTypeChange = (fieldName) => {
-    if (sourceFormData['fields'][fieldName]['type'] != 'enum') {
-        sourceFormData['fields'][fieldName]['values'] = ''
     }
 }
 

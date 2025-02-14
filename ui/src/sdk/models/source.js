@@ -44,7 +44,7 @@ class Source {
         let text = ''
         let fields = []
         for (const [field, data] of Object.entries(this.fields)) {
-            if (data.type == 'string' && fields.length < 4) {
+            if (data.type.toLowerCase().includes('string') && fields.length < 4) {
                 fields.push(field)
             }
         }

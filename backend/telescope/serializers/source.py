@@ -76,6 +76,7 @@ class SourceFieldSerializer(serializers.Serializer):
     type = serializers.CharField()
     autocomplete = serializers.BooleanField()
     suggest = serializers.BooleanField()
+    jsonstring = serializers.BooleanField()
     values = serializers.ListField(child=serializers.CharField())
 
     def to_internal_value(self, data):
@@ -130,10 +131,8 @@ class NewSourceSerializer(serializers.Serializer):
             if value not in data["fields"]:
                 errors[field_name] = f"field {value} was not found in fields list"
             elif field_name == "time_field":
-                if not data["fields"][value]["type"].startswith("datetime"):
-                    errors["time_field"] = (
-                        f"filed should have corret type (e.g. datetime)"
-                    )
+                if "datetime" not in data["fields"][value]["type"].lower():
+                    errors["time_field"] = f"filed should have corret type"
 
         chosen_errors = []
         for field_name in data["default_chosen_fields"]:

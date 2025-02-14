@@ -28,7 +28,7 @@
                 </td>
                 <td class="nowrap pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300 hover:cursor-pointer hover:bg-slate-300 dark:hover:bg-neutral-900"
                     v-for="field in metadata.fields" :key="field.name">
-                    <pre v-if="field.type != 'jsonstring'" class="border-0 p-0 m-0"
+                    <pre v-if="!field.jsonstring" class="border-0 p-0 m-0"
                         :class="{ 'whitespace-pre-wrap break-all': String(row.data[field.root_name]).length > 50 }">{{
                             getRowValue(field, row.data[field.root_name]) || '&dash;' }}</pre>
                     <pre v-else class="border-0 p-0 m-0 break-all whitespace-pre-wrap"

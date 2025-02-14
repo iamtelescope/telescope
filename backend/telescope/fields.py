@@ -561,6 +561,12 @@ def parse(source, text):
             raise ParserError(
                 message=f"Source have no '{source_field_name}' field", errno=100
             )
+        if ":" in field["name"]:
+            if not source._fields[source_field_name]["jsonstring"]:
+                raise ParserError(
+                    message=f"Attempt to treat field '{source_field_name}' as a JSON field when it is not.",
+                    errno=100,
+                )
 
         for modifier in field["modifiers"]:
             if modifier["name"] not in KNOWN_MODIFIERS:
@@ -578,6 +584,7 @@ def parse(source, text):
                 "name": field["name"],
                 "root_name": source_field["name"],
                 "type": source_field["type"],
+                "jsonstring": source_field["jsonstring"],
                 "display_name": display_name,
                 "modifiers": field["modifiers"],
             }

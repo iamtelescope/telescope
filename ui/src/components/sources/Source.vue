@@ -64,6 +64,11 @@
                                             <ToggleSwitch v-model="slotProps.data.suggest" readonly />
                                         </template>
                                     </Column>
+                                    <Column sortable header="JSONSTRING">
+                                        <template #body="slotProps">
+                                            <ToggleSwitch v-model="slotProps.data.jsonstring" readonly />
+                                        </template>
+                                    </Column>
                                     <Column sortable header="VALUES">
                                         <template #body="slotProps">
                                             <span v-if="slotProps.data.values.length">{{

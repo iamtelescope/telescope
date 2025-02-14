@@ -38,7 +38,8 @@ Each field has several properties:
 
 - **`Name`** – This name is mapped to the field name in the database table.
 - **`Display Name`** – This name is used in the table as alias when querying logs.
-- **`Type`** – The field type (Telescope uses its own types to simplify log handling, ensure consistency in the UI, and separate display logic from ClickHouse. In some cases, they match ClickHouse types, while in others, they do not). Only fields with type `datetime` or `datetime64` are visible in `Time field` selector.
+**`Type`** – The field type, based on the ClickHouse data type. If the schema is loaded automatically, this type is derived directly from ClickHouse. When adding fields manually, users can select a type from a predefined list or enter it manually. Currently, the type is primarily used to determine which fields can be selected as the **`Time field`** (only fields containing `datetime` are eligible).
+- **`Treat as JSON String`** – A boolean property that defines whether this field should be treated as a JSON object in the result. If set to `true`, the server will convert the string into a JSON object. If set to `false`, the value will remain a string and will be displayed as such in the UI.
 - **`Autocomplete`** – A boolean property that defines whether this field should use autocompletion in the query input.
 - **`Suggest`** – A boolean property that defines whether this field should be suggested in the query input.
-- **`Values`** – A comma-separated list of field values. Used only for the `enum` type.
+- **`Values`** – A comma-separated list of predefined field values. This field is used only for the `enum` type. It allows specifying a fixed set of values for a particular field, ensuring that only valid options are used. This is particularly useful for `enum` types, as it helps prevent sending requests with incorrect data.

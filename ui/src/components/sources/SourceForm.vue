@@ -21,8 +21,9 @@
             </div>
         </div>
     </div>
-    <ConnectionStep :source="source" :startConnectionTest="startConnectionTest" @connectionDataValidated="onConnectionDataValidated"
-        @connectionTestStarted="onConnectionTestStarted" @connectionDataChanged="onConnectionDataChanged">
+    <ConnectionStep :source="source" :startConnectionTest="startConnectionTest"
+        @connectionDataValidated="onConnectionDataValidated" @connectionTestStarted="onConnectionTestStarted"
+        @connectionDataChanged="onConnectionDataChanged">
     </ConnectionStep>
     <div v-if="connectionTestPassed">
         <SourceStep :schemaFields="schemaFields" :connectionData="connectionData" :sourceFormErrors="sourceFormErrors"
@@ -93,6 +94,7 @@ const getSourceDynamicFieldDefaultErrors = () => {
         display_name: '',
         type: '',
         autocomplete: '',
+        jsonstring: '',
         suggest: '',
         values: '',
     }
@@ -130,7 +132,9 @@ const onSourceDynamicFieldRemoved = (fieldName) => {
 const resetErrors = () => {
     for (const field in sourceFormErrors.value) {
         if (field == 'fields') {
-            sourceFormErrors.value[field] = {}
+            for (const key in sourceFormErrors.value[field]) {
+                sourceFormErrors.value[field][key] = getSourceDynamicFieldDefaultErrors()
+            }
         } else {
             sourceFormErrors.value[field] = ""
         }
@@ -159,12 +163,13 @@ const handleFormSubmit = async () => {
                 if (field == 'fields') {
                     for (const name in response.validation.fields.fields) {
                         for (const [key, value] of Object.entries(response.validation.fields.fields[name])) {
-                            sourceFormErrors.value.fields[field][key] = value.join(', ')
+                            sourceFormErrors.value.fields[name][key] = value.join(', ')
                         }
                     }
 
+                } else {
+                    sourceFormErrors.value[field] = response.validation.fields[field].join(', ')
                 }
-                sourceFormErrors.value[field] = response.validation.fields[field].join(', ')
             }
         } else {
             router.push({ name: 'source', params: { sourceSlug: response.data.slug } }).then(() => response.sendToastMessages(toast))

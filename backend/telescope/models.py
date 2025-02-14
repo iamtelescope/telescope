@@ -1,10 +1,14 @@
 import json
+import logging
 from datetime import datetime
 
 from django.db import models
 from django.contrib.auth.models import User, Group
 
 from telescope.constants import UTC_ZONE
+
+
+logger = logging.getLogger("telescope.models")
 
 
 class Source(models.Model):
@@ -40,6 +44,7 @@ class Source(models.Model):
             fields[key] = {
                 "name": key,
                 "type": value["type"],
+                "jsonstring": value["jsonstring"],
                 "display_name": value.get("display_name"),
                 "modifier": value.get("modifier"),
                 "values": value.get("values"),
@@ -95,8 +100,14 @@ class Row:
     def as_dict(self):
         data = {}
         for name, source_field in self.source._fields.items():
-            if source_field["type"] == "jsonstring":
-                value = json.loads(self.data[name])
+            if source_field["jsonstring"]:
+                try:
+                    value = json.loads(self.data[name])
+                except Exception as err:
+                    value = self.data[name]
+                    logger.error(
+                        "Failed to json.loads(value) for JSON-treated field '%s'", name
+                    )
             else:
                 value = self.data[name]
             data[name] = value
