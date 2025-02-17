@@ -11,7 +11,7 @@ defusedxml==0.7.1
 django-allauth==65.2.0
 django-cors-headers==4.3.1
 djangorestframework==3.15.2
-flyql_generators @ git+https://github.com/iamtelescope/flyql-generators.git#subdirectory=python
+flyql_generators @ git+https://github.com/iamtelescope/flyql-generators.git@74b158bbda5ea3d4c4e7cc769eb3dd78ef5ae4e2#subdirectory=python
 gunicorn==23.0.0
 idna==3.7
 jsonschema==4.23.0

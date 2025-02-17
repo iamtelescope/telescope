@@ -193,7 +193,7 @@ function mod_href(value, urlTemplate, urlValue) {
         if (!/^[a-zA-Z0-9]+?:\/\//.test(url)) {
             return safeValue
         }
-        return `<a class="text-prm hover:underline" href="${he.encode(url)}" target="_blank" title="${he.encode(url)}">${safeUrlValue}</a>`
+        return `<a class="text-primary hover:underline hover:cursor-pointer" href="${he.encode(url)}" target="_blank" title="${he.encode(url)}">${safeUrlValue}</a>`
     } catch (e) {
         return value
     }
@@ -238,7 +238,6 @@ const MODIFIERS = {
     hl: { func: mod_highlight, type: 'html' },
     highlight: { func: mod_highlight, type: 'html' },
     href: { func: mod_href, type: 'html' },
-
 }
 
 export { MODIFIERS }

@@ -80,6 +80,13 @@ const getRowValue = (field, data) => {
     if (field.jsonstring) {
         // data contains object
         value = extractJsonPath(field, data)
+    } else if (field.name.includes(':')) {
+        if (Array.isArray(data[field.root_name])) {
+            const index = Number(field.name.split(':')[1])
+            value = data[field.root_name][index]
+        } else {
+            value = extractJsonPath(field, data)
+        }
     } else {
         data = data[field.root_name]
         value = data

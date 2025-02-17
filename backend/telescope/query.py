@@ -12,8 +12,9 @@ def flyql_clickhouse_fields(source_fields):
     return {
         data["name"]: Field(
             name=data["name"],
-            values=data["values"],
             jsonstring=data["jsonstring"],
+            _type=data["type"],
+            values=data["values"],
         )
         for _, data in source_fields.items()
     }

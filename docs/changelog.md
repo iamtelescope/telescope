@@ -5,7 +5,8 @@ Version: **0.0.5**
 
 Changes:
 - Fixed a bug inside fields parser.
-- Updated modifiers docs
+- Updated modifiers docs.
+- Added naive support for Map & Array ClickHouse types.
 - Added new modifiers:
     - [href](./ui/explorer/fields.md#href), for dynamically creating HTML links.
     - [format](./ui/explorer/fields.md#format), for pretty formatting of SQL or JSON data.
