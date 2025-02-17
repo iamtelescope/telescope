@@ -22,18 +22,15 @@
                     <div class="rounded w-2 h-6" :style="{ 'background-color': getRowColor(row) }"></div>
                 </td>
                 <td
-                    class="nowrap pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300 hover:cursor-pointer hover:bg-slate-300 dark:hover:bg-neutral-900">
+                    class="text-nowrap pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300 hover:cursor-pointer hover:bg-slate-300 dark:hover:bg-neutral-900">
                     <pre>{{ getTime(row.time) }}.<span class="text-xs text-neutral-300">{{
                         row.time.microseconds }}</span></pre>
                 </td>
-                <td class="nowrap pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300 hover:cursor-pointer hover:bg-slate-300 dark:hover:bg-neutral-900"
+                <td class="text-nowrap pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300 hover:cursor-pointer hover:bg-slate-300 dark:hover:bg-neutral-900"
                     v-for="field in metadata.fields" :key="field.name">
-                    <pre v-if="!field.jsonstring" class="border-0 p-0 m-0"
-                        :class="{ 'whitespace-pre-wrap break-all': String(row.data[field.root_name]).length > 50 }">{{
-                            getRowValue(field, row.data[field.root_name]) || '&dash;' }}</pre>
-                    <pre v-else class="border-0 p-0 m-0 break-all whitespace-pre-wrap"
-                        :class="{ 'whitespace-pre-wrap break-all': extractJsonPathLength(field, row.data) > 50 }">{{
-                            extractJsonPath(field, row.data) }}</pre>
+                    <div v-if="containsHtmlModifiers(field)" :class="{ 'whitespace-pre-wrap break-all': getRowValueLength(field, row.data) > 50 }" v-html="getRowValue(field, row.data)" />
+                    <pre v-else :class="{ 'whitespace-pre-wrap break-all': getRowValueLength(field, row.data) > 50 }">{{
+                        getRowValue(field, row.data) || '&dash;' }}</pre>
                 </td>
             </tr>
         </tbody>
@@ -69,22 +66,45 @@ const getRowColor = (row) => {
     return getColor(row.data[props.source.severityField])
 }
 
-const getRowValue = (field, data) => {
-    let value = data
+const containsHtmlModifiers = (field) => {
     for (const modifier of field.modifiers) {
-        let func = MODIFIERS[modifier.name]
-        value = func(value, ...modifier.arguments)
+        if (MODIFIERS[modifier.name].type == 'html') {
+            return true
+        }
+    }
+    return false
+}
+
+const getRowValue = (field, data) => {
+    let value = ''
+    if (field.jsonstring) {
+        // data contains object
+        value = extractJsonPath(field, data)
+    } else {
+        data = data[field.root_name]
+        value = data
+    }
+    for (const modifier of field.modifiers) {
+        if (MODIFIERS[modifier.name].type == 'value') {
+            let func = MODIFIERS[modifier.name].func
+            value = func(value, ...modifier.arguments)
+        }
+    }
+    for (const modifier of field.modifiers) {
+        if (MODIFIERS[modifier.name].type == 'html') {
+            let func = MODIFIERS[modifier.name].func
+            value = func(value, ...modifier.arguments)
+        }
     }
     return value
 }
 
-const extractJsonPathLength = (field, data) => {
-    let value = extractJsonPath(field, data)
-    if (value === undefined || value === null) {
-        return 0
-    } else {
-        return String(value).length
+const getRowValueLength = (field, data) => {
+    let value = getRowValue(field, data)
+    if (typeof(value) === 'object') {
+        return JSON.stringify(value).length
     }
+    return String(value).length
 }
 
 const extractJsonPath = (field, data) => {
@@ -96,13 +116,6 @@ const extractJsonPath = (field, data) => {
         } else {
             return undefined
         }
-    }
-    if (typeof (value) === 'object') {
-        value = JSON.stringify(value)
-    }
-    for (const modifier of field.modifiers) {
-        let func = MODIFIERS[modifier.name]
-        value = func(value, ...modifier.arguments)
     }
     return value
 }

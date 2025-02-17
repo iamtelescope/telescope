@@ -1,5 +1,16 @@
 # Changelog
 
+## 2024.02.17
+Version: **0.0.5**
+
+Changes:
+- Fixed a bug inside fields parser.
+- Updated modifiers docs
+- Added new modifiers:
+    - [href](./ui/explorer/fields.md#href), for dynamically creating HTML links.
+    - [format](./ui/explorer/fields.md#format), for pretty formatting of SQL or JSON data.
+    - [highlight](./ui/explorer/fields.md#highlight), for syntax highlighting of SQL or JSON data.
+
 ## 2024.02.13
 Version: **0.0.4**
 

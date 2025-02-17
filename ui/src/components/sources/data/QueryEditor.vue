@@ -111,11 +111,12 @@ const getKeySuggestions = (range) => {
     const suggestions = []
     for (const name of sourceFieldsNames) {
         if (props.source.fields[name].suggest) {
+            let documentation = "Field (" + props.source.fields[name].type + ")"
             suggestions.push({
                 label: name,
                 kind: monaco.languages.CompletionItemKind.Keyword,
                 range: range,
-                documentation: "Field (" + props.source.fields[name].type + ")",
+                documentation: documentation,
                 insertText: name,
                 command: {
                     id: 'editor.action.triggerSuggest',

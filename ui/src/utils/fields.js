@@ -608,6 +608,11 @@ class Parser {
             this.extendModifierArgument()
             this.setState(State.MODIFIER_ARGUMENT)
             this.storeTypedChar(CharType.ARGUMENT)
+        } else if (this.char.isBracketClose()) {
+            if (this.modifierArgument) {
+                this.storeArgument()
+            }
+            this.setState(State.MODIFIER_COMPLETE)
         }
     }
     inStateModifierArgument() {

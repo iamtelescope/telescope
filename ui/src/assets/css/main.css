@@ -127,3 +127,10 @@ body:where(.dark, .dark *) {
     border: 1px solid var(--p-surface-600) !important;
     color: gray !important;
 }
+a {
+    color: var(--p-primary-color);
+}
+a:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}

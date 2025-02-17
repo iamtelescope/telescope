@@ -16,6 +16,7 @@ import '@/assets/css/main.css'
 
 import 'primeicons/primeicons.css'
 import '@gravity-ui/yagr/dist/index.css'
+import 'highlight.js/styles/github.css'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'

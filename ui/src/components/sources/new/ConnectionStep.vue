@@ -84,7 +84,6 @@
 import { ref, reactive, watch, onMounted } from 'vue'
 
 import { useToast } from 'primevue/usetoast'
-import Select from 'primevue/select'
 import FloatLabel from 'primevue/floatlabel'
 import Fieldset from 'primevue/fieldset'
 import ToggleSwitch from 'primevue/toggleswitch'

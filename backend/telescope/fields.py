@@ -39,6 +39,13 @@ KNOWN_MODIFIERS = [
     "upper",
     "join",
     "json",
+    "str",
+    "href",
+    "hl",
+    "highlight",
+    "fmt",
+    "format",
+    "type",
 ]
 
 
@@ -272,6 +279,7 @@ class Parser:
 
         i = 0
         while i < len(text):
+            parsed_newline = False
             if self.state == State.ERROR:
                 break
 
@@ -280,6 +288,7 @@ class Parser:
                 if i + 1 < len(text):
                     next_char = text[i + 1]
                     if next_char and ESCAPE_SEQUENSES.get(next_char):
+                        parsed_newline = True
                         self.set_char(
                             Char(
                                 ESCAPE_SEQUENSES[next_char], i, self.line, self.line_pos
@@ -287,7 +296,7 @@ class Parser:
                         )
                         i += 1
 
-            if self.char.is_newline():
+            if self.char.is_newline() and not parsed_newline:
                 self.line += 1
                 self.line_pos = 0
                 i += 1
@@ -434,6 +443,10 @@ class Parser:
         elif self.char.is_modifier_argument_value():
             self.extend_modifier_argument()
             self.set_state(State.MODIFIER_ARGUMENT)
+        elif self.char.is_bracket_close():
+            if self.modifier_argument:
+                self.store_argument()
+            self.set_state(State.MODIFIER_COMPLETE)
 
     def in_state_modifier_argument(self):
         if self.char.is_modifier_argument_delimiter():

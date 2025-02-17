@@ -58,7 +58,6 @@ const theme = computed(() => {
 
 const calcRenderOptions = (type) => {
     let options = {}
-    return options
     if (type == 'column') {
         let columns = props.timestamps.length
         // left-rigth padding of graph
