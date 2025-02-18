@@ -1,5 +1,11 @@
 # Changelog
 
+## 2024.02.18
+Version: **0.0.6**
+
+Changes:
+- Fixed monaco editor static files
+
 ## 2024.02.17
 Version: **0.0.5**
 
