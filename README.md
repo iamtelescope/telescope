@@ -1,4 +1,4 @@
-# Telescope
+# Telescope - web-based log viewer UI
 _A handy tool that manages to make close what once was far_
 
 ## Introduction
@@ -13,6 +13,8 @@ _A handy tool that manages to make close what once was far_
 
 :speech_balloon: **[Discord](https://discord.gg/rXpjDnEc)**
 
+:whale:	**[Run locally using Docker](https://iamtelescope.github.io/telescope/docs/setup/quickstart.html)**
+
 ## 🚀 Live installation
 An live instance is available at [https://telescope.humanuser.net](https://telescope.humanuser.net).
 You can log in via GitHub to explore the core features of the system from an end-user perspective.
@@ -22,24 +24,28 @@ You can log in via GitHub to explore the core features of the system from an end
 ## Key Features
 
 ### 🔗 Source Management
-- 🖥️ Create and manage multiple connections to different ClickHouse clusters.
-- 📑 Choose which fields of a table to use and configure which should be suggested, hidden, or support autocompletion.
-- 🔐 Configure which users and groups have access to a source and define their permissions.
+- Create and manage multiple connections to different ClickHouse clusters.
+- Choose which fields of a table to use and configure which should be suggested, hidden, or support autocompletion.
+- Configure which users and groups have access to a source and define their permissions.
 
 ### 📊 Data Explorer
-- 📈 Gain insights into your logs with dynamic visualizations and interactive graphs.
-- 🛠️ Customize your view by selecting relevant columns, adjusting data presentation, and applying filters to focus on what matters most.
-- ⏳ Use a time and date selector with support for relative time ranges to refine your log queries effortlessly.
-- 🎨 Enjoy a clean, minimalist design that keeps the focus on your log data, ensuring a seamless and distraction-free analysis experience.
+- Gain insights into your logs with dynamic visualizations and interactive graphs.
+- Customize your view by selecting relevant columns, adjusting data presentation, and applying filters to focus on what matters most.
+- Use a time and date selector with support for relative time ranges to refine your log queries effortlessly.
+- Enjoy a clean, minimalist design that keeps the focus on your log data, ensuring a seamless and distraction-free analysis experience.
 
 ### 🔒 Role-Based Access Control (RBAC) and Authentication Support
-- 🔑 Authenticate with GitHub, with the ability to enforce organization membership requirements for access control.
-- 👥 Define and manage user and group permissions to control access to specific sources based on their roles.
+- Authenticate with GitHub, with the ability to enforce organization membership requirements for access control.
+- Define and manage user and group permissions to control access to specific sources based on their roles.
 
+## Contributing
+
+Patches are welcome! Feel free to open a pull request.
+If you encounter any issues, please create an issue.
 
 ## βeta notion
 
-> [!CAUTION]
+> [!WARNING]
 > Telescope is currently in its $${\color{red}βeta}$$ stage, which means:
 >
 > - Some features may be incomplete or missing.
