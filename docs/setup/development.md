@@ -97,4 +97,24 @@ Before using the frontend, you must log in via the Django server once. This is n
 2. Log in using your credentials.
 3. Once logged in, you can start using the Vue.js application (`http://localhost:8080`).
 
-After this initial login, authentication cookies will be set, and you can work seamlessly with the frontend.
+#### Note on Static Files in Django
+
+By default, the Django backend serves static files that are generated using NPM. On a fresh repository clone, these static files will be missing from the backend directory. As a result, after logging in, you may encounter an error:
+
+```
+TemplateDoesNotExist at /
+index.html
+```
+
+This error does not prevent the authentication process from completing successfully. The session cookie will still be set, allowing you to proceed with frontend development on `http://localhost:8080`.
+
+However, if you need to verify static file rendering within the Django application or simply want to avoid this error, you must rebuild the backend's static files. To do this:
+
+1. Activate the virtual environment for the Django backend and set the required ENV var for the telescope config.
+2. Run the provided script to rebuild the static files (located in repository root):
+
+   ```bash
+   ./rebuild_static.bash
+   ```
+
+This script will trigger `npm run build` and `./manage.py collectstatic`, which requires the correct Django configuration to initialize properly.
