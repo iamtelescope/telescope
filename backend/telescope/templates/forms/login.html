@@ -25,13 +25,13 @@
           {{ err }}
         {% endfor %}
         </div>
-        <input class="btn-submit"  type="submit" value="Log in">
+        <input class="btn-submit"  type="submit" value="Submit">
       </form>
       {% if github_enabled %}
-      <div style="display: flex; justify-content: center; align-items:center; margin-top: 10px;"> or </div>
+      <div style="display: flex; justify-content: center; align-items:center; margin-top: 10px;">or sign in with</div>
       <form action="/login/github/login/" method="post">
         {% csrf_token %}
-        <input class="btn-thirdparty" type="submit" value="Log in using GitHub">
+        <input class="btn-thirdparty" type="submit" value="GitHub">
       </form>
       {% endif %}
     </div>
