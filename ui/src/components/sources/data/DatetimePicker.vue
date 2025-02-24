@@ -46,6 +46,7 @@ import InputText from 'primevue/inputtext'
 import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
 
+import { useSourceControlsStore } from '@/stores/sourceControls'
 import ErrorText from '@/components/common/ErrorText.vue'
 import { getRelativeOption, getRelativeOptions, getDateIfTimestamp, getDatetimeRangeText, fmt, dateIsValid, dateTimeFormat, humanRelatedTimeRegex, getStrDateOrStrRelative } from '@/utils/datetimeranges.js'
 import { tzOptions } from '@/utils/timezones.js'
@@ -55,6 +56,9 @@ const route = useRoute()
 
 const props = defineProps(['from', 'to'])
 const emit = defineEmits(['rangeSelect'])
+
+const sourceControlsStore = useSourceControlsStore()
+
 const dropdown = ref()
 const zones = ref(tzOptions)
 const selectedZone = ref({ 'name': 'UTC', 'code': 'UTC' })
@@ -184,13 +188,16 @@ const handleSelectRelative = (event) => {
 
 const onDateSelect = () => {
     if (dates.value[0] && dates.value[1]) {
-        from.value = dates.value[0]
-        to.value = dates.value[1]
+
         fromInputText.value = fmt(dates.value[0])
         toInputText.value = fmt(dates.value[1])
         fromInputManually.value = false
         toInputManually.value = false
         selectedRelative.value = null
+        emit('rangeSelect', {
+            from: dates.value[0],
+            to: dates.value[1],
+        })
     }
 }
 

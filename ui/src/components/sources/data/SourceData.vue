@@ -1,6 +1,6 @@
 <template>
     <Controls ref="controlsRef" @searchRequest="onSearchRequest" @shareURL="onShareURL" @download="onDownload"
-        :source="source" :loading="loading" :from="from" :to="to" :validation="validation" />
+        :source="source" :loading="loading" :validation="validation" />
     <div class="flex justify-content-center	w-full">
         <Loader v-if="loading" />
         <div v-else style="padding: 0px; width: 100%;">
@@ -18,13 +18,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onBeforeMount } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useToast } from 'primevue'
 
 import { useNavStore } from '@/stores/nav'
 
+import { useSourceControlsStore } from '@/stores/sourceControls'
 import { useGetSourceData } from '@/composables/sources/useSourceService'
 import Controls from '@/components/sources/data/Controls.vue'
 import Loader from '@/components/common/Loader.vue'
@@ -38,12 +39,11 @@ const controlsRef = ref(null)
 const navStore = useNavStore()
 const route = useRoute()
 const toast = useToast()
-
-const from = ref()
-const to = ref()
+const sourceControlsStore = useSourceControlsStore()
 const timezone = ref('UTC')
 
 const props = defineProps(['source'])
+
 
 const { rows, metadata, error, loading, validation, load } = useGetSourceData()
 
@@ -82,8 +82,8 @@ const onDownload = () => {
 }
 
 const onHistogrammRangeSelected = (params) => {
-    from.value = params.from
-    to.value = params.to
+    sourceControlsStore.setFrom(params.from)
+    sourceControlsStore.setTo(params.to)
     controlsRef.value.handleSearch()
 }
 
@@ -96,4 +96,8 @@ navStore.update([
     { label: props.source.slug, },
     { label: 'explore' },
 ])
+
+onBeforeMount(() => {
+    sourceControlsStore.init(props.source)
+})
 </script>

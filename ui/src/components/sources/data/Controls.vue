@@ -7,14 +7,16 @@
       <Button icon="pi pi-download" class="mr-2" severity="primary" label="Download" size="small"
         @click="handleDownload" :disabled="loading" />
       <Select v-model="limit" :options="limits" optionLabel="value" placeholder="Limit" :size="'small'" class="mr-2" />
-      <DatetimePicker @rangeSelect="onRangeSelect" :from="props.from" :to="props.to" />
+      <DatetimePicker @rangeSelect="onRangeSelect" :from="sourceControlsStore.from" :to="sourceControlsStore.to" />
     </template>
   </Toolbar>
   <div class="mb-2">
-    <FieldsEditor @change="onFieldsChange" :source="source" :value="fields" @submit="handleSearch" />
+    <FieldsEditor @change="onFieldsChange" :source="source" :value="sourceControlsStore.fields"
+      @submit="handleSearch" />
   </div>
   <div class="mb-3">
-    <QueryEditor @change="onQueryChange" :source="source" :value="query" :from="from" :to="to" @submit="handleSearch" />
+    <QueryEditor @change="onQueryChange" :source="source" :value="sourceControlsStore.query"
+      :from="sourceControlsStore.from" :to="sourceControlsStore.to" @submit="handleSearch" />
   </div>
   <Message severity="error" v-if="validation != null && !validation.result">
     <span class="text-2xl">Invalid parameters given</span><br>
@@ -26,7 +28,6 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
 
 import { Message, Button, Select, Toolbar } from 'primevue'
 
@@ -37,56 +38,38 @@ import { getLimits } from '@/utils/limits.js'
 
 import { useSourceControlsStore } from '@/stores/sourceControls'
 
-const props = defineProps(['source', 'loading', 'from', 'to', 'validation'])
+const props = defineProps(['source', 'loading', 'validation'])
 const emit = defineEmits(['searchRequest', 'shareURL', 'download'])
 
-const route = useRoute()
 const sourceControlsStore = useSourceControlsStore()
 
-const from = ref(null)
-const to = ref(null)
 const source = ref(props.source)
-const query = ref(route.query.query ?? '')
-const fields = ref(route.query.fields ?? source.value.defaultChosenFields.join(', '))
-let queryLimit = 50
-sourceControlsStore.setQuery(query.value)
-sourceControlsStore.setFields(fields.value)
-
-if (route.query.limit) {
-  let intLimit = parseInt(route.query.limit)
-  if (!isNaN(intLimit)) {
-    queryLimit = intLimit
-  }
-}
-
-const limit = ref({ "value": queryLimit })
-const limits = ref(getLimits(queryLimit))
+const limit = ref(sourceControlsStore.limit)
+const limits = ref(getLimits(sourceControlsStore.limit.value))
 
 const onRangeSelect = (params) => {
-  from.value = params.from
-  to.value = params.to
+  sourceControlsStore.setFrom(params.from)
+  sourceControlsStore.setTo(params.to)
 }
 
 const getSearchParams = () => {
   return {
     searchParams: {
-      query: query.value,
-      fields: fields.value,
-      limit: limit.value.value,
-      from: new Date(`${from.value}`).valueOf() || from.value,
-      to: new Date(`${to.value}`).valueOf() || to.value,
+      query: sourceControlsStore.query,
+      fields: sourceControlsStore.fields,
+      limit: sourceControlsStore.limit.value,
+      from: new Date(`${sourceControlsStore.from}`).valueOf() || sourceControlsStore.from,
+      to: new Date(`${sourceControlsStore.to}`).valueOf() || sourceControlsStore.to,
     },
     source: source.value,
   }
 }
 
 const onFieldsChange = (value) => {
-  fields.value = value
   sourceControlsStore.setFields(value)
 }
 
 const onQueryChange = (value) => {
-  query.value = value
   sourceControlsStore.setQuery(value)
 }
 
@@ -108,14 +91,11 @@ onMounted(() => {
 
 defineExpose({ onRangeSelect, handleSearch })
 
-watch(props, () => {
-  if (props.from && props.to) {
-    from.value = props.from
-    to.value = props.to
-  }
-})
 watch(sourceControlsStore, () => {
-  fields.value = sourceControlsStore.fields
-  query.value = sourceControlsStore.query
+  limit.value = sourceControlsStore.limit
+})
+
+watch(limit, () => {
+  sourceControlsStore.setLimit(limit.value)
 })
 </script>

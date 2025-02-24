@@ -82,7 +82,6 @@ const calcRenderOptions = (type) => {
 
 const calcPlotLines = () => {
     let plotLines = []
-
     if (props.meta.rows < props.meta.total) {
         let color = 'rgba(0, 0, 255, 0.2)'
         let plotSize = props.meta.newest_row - props.meta.oldest_row
@@ -132,6 +131,7 @@ const getChartSettings = (type) => {
         num += 1
         series.push(item)
     }
+   
     return {
         timeline: props.timestamps,
         timeMultiplier: 1,

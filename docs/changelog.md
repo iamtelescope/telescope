@@ -1,5 +1,12 @@
 # Changelog
 
+## 2024.02.24
+Version: **0.0.8**
+
+Changes:
+ - Bugfix for non-UTC time fields in ClickHouse
+ - Bugfix for specifying time with histogram range selection
+
 ## 2024.02.19
 Version: **0.0.7**
 
