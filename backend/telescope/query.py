@@ -69,7 +69,13 @@ def fetch_data(
     from_db_table = f"{source.connection['database']}.{source.connection['table']}"
 
     fields_names = sorted(source._fields.keys())
-    fields_to_select = ", ".join(sorted(fields_names))
+    fields_to_select = []
+    for field in fields_names:
+        if field == source.time_field:
+            fields_to_select.append(f"toTimeZone({field}, 'UTC')")
+        else:
+            fields_to_select.append(field)
+    fields_to_select = ", ".join(fields_to_select)
     select_query = f"SELECT generateUUIDv4(),{fields_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} {order_by_clause} LIMIT {limit}"
     count_query = f"SELECT count() as c FROM {from_db_table} WHERE {time_clause} AND {filter_clause}"
 
@@ -84,12 +90,12 @@ def fetch_data(
         stats_interval_seconds = round(seconds / max_points)
         if stats_interval_seconds == 0:
             stats_interval_seconds = 1
-        stats_time_selector = f"toUnixTimestamp(toStartOfInterval({source.time_field}, INTERVAL {stats_interval_seconds} second))*1000"
+        stats_time_selector = f"toUnixTimestamp(toStartOfInterval(toTimeZone({source.time_field}, 'UTC'), INTERVAL {stats_interval_seconds} second))*1000"
     else:
         if source._fields[source.time_field]["type"] == "datetime64":
-            stats_time_selector = f"toUnixTimestamp64Milli({source.time_field})"
+            stats_time_selector = f"toUnixTimestamp64Milli(toTimeZone({source.time_field}), 'UTC')"
         else:
-            stats_time_selector = f"toUnixTimestamp({source.time_field})*1000"
+            stats_time_selector = f"toUnixTimestamp(toTimeZone({source.time_field}, 'UTC'))*1000"
 
     with clickhouse.Client(**get_source_database_conn_kwargs(source)) as client:
         selected_fields = [source._record_pseudo_id_field] + fields_names
