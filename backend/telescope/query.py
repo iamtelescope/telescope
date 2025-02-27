@@ -93,9 +93,13 @@ def fetch_data(
         stats_time_selector = f"toUnixTimestamp(toStartOfInterval(toTimeZone({source.time_field}, 'UTC'), INTERVAL {stats_interval_seconds} second))*1000"
     else:
         if source._fields[source.time_field]["type"] == "datetime64":
-            stats_time_selector = f"toUnixTimestamp64Milli(toTimeZone({source.time_field}), 'UTC')"
+            stats_time_selector = (
+                f"toUnixTimestamp64Milli(toTimeZone({source.time_field}), 'UTC')"
+            )
         else:
-            stats_time_selector = f"toUnixTimestamp(toTimeZone({source.time_field}, 'UTC'))*1000"
+            stats_time_selector = (
+                f"toUnixTimestamp(toTimeZone({source.time_field}, 'UTC'))*1000"
+            )
 
     with clickhouse.Client(**get_source_database_conn_kwargs(source)) as client:
         selected_fields = [source._record_pseudo_id_field] + fields_names
@@ -110,14 +114,19 @@ def fetch_data(
             )
         if get_stats and rows:
             total = client.execute(count_query)[0][0]
-            stat_sql = (
-                f"SELECT {stats_time_selector} as t, "
-                f"COUNT({source.severity_field}) as c, "
-                f"{source.severity_field} FROM {from_db_table} "
-                f"WHERE {time_clause} AND {filter_clause} GROUP BY t,{source.severity_field} ORDER by t"
-            )
+            stat_sql = f"SELECT {stats_time_selector} as t, COUNT() as Count"
+            if source.severity_field:
+                stat_sql += f", {source.severity_field}"
+            stat_sql += f" FROM {from_db_table} WHERE {time_clause} AND {filter_clause} GROUP BY t"
+            if source.severity_field:
+                stat_sql += f", {source.severity_field}"
+            stat_sql += " ORDER BY t"
             for item in client.execute(stat_sql):
-                ts, count, severity = item
+                if source.severity_field:
+                    ts, count, severity = item
+                else:
+                    ts, count = item
+                    severity = "Rows"
                 stats_names.add(severity)
                 items = stats.get(severity, [])
                 items.append((ts, count))

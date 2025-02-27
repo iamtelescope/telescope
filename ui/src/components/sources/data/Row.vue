@@ -2,7 +2,7 @@
     <div class="flex flex-col h-full w-full overflow-y-auto border-t-4"
         :style="{ borderColor: getColor(row.data[source.severityField]) }">
         <div class="flex flex-col">
-            <div class="p-4">
+            <div class="p-4" v-if="source.severityField.length !=0 ">
                 <Tag value="Primary" :style="{ backgroundColor: getColor(row.data[source.severityField]), color: getContrastColor(getColor(row.data[source.severityField])) }" class="text-gray-900 mr-2 text-bold">{{
                     row.data[source.severityField] }}</Tag>
                 <span class="font-mono">{{ row.time.datetime }}.{{ row.time.microseconds }}</span>
