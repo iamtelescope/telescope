@@ -55,11 +55,11 @@ If you encounter any issues, please create an issue.
 > - Was not used in production, so it might encounter some performance issues on real installations.
 
 ## Beyond βeta
-Features planned for future implementation:
+Features planned for future implementation ([Telescope 1.0.0 milestone](https://github.com/iamtelescope/telescope/milestone/1))
 
-- Ability to store fields and query presets for easier log searches.
+- [Ability to store fields and query presets for easier log searches](https://github.com/iamtelescope/telescope/issues/3).
 - Grant expert users the ability to write raw SQL `WHERE` statements.
-- Support custom `GROUP BY` columns for graphs. 
+- [Support custom GROUP BY columns for graphs](https://github.com/iamtelescope/telescope/issues/4).
 - Display records in context.
 - Snapshot storage for long-term retention of log records, preventing data loss due to rotation.
 - Live log trailing.
