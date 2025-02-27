@@ -1,5 +1,15 @@
 # Changelog
 
+## 2024.02.27
+Version: **0.0.9**
+
+Changes:
+ - Make the source severity field optional.
+
+Related issues:
+ - [ISSUE-6](https://github.com/iamtelescope/telescope/issues/6)
+
+
 ## 2024.02.24
 Version: **0.0.8**
 

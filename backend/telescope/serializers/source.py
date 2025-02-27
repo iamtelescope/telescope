@@ -92,7 +92,7 @@ class NewSourceSerializer(serializers.Serializer):
     description = serializers.CharField(allow_blank=True)
     time_field = serializers.CharField()
     # uniq_field = serializers.CharField()
-    severity_field = serializers.CharField()
+    severity_field = serializers.CharField(allow_blank=True)
     default_chosen_fields = serializers.ListField(child=serializers.CharField())
     fields = serializers.DictField(child=SourceFieldSerializer())
     connection = ConnectionSerializer()
@@ -128,7 +128,7 @@ class NewSourceSerializer(serializers.Serializer):
         # for field_name in ["time_field", "uniq_field", "severity_field"]:
         for field_name in ["time_field", "severity_field"]:
             value = data[field_name]
-            if value not in data["fields"]:
+            if value and value not in data["fields"]:
                 errors[field_name] = f"field {value} was not found in fields list"
             elif field_name == "time_field":
                 if "datetime" not in data["fields"][value]["type"].lower():

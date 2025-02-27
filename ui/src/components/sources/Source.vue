@@ -36,7 +36,7 @@
                             <DataRow name="DESCRIPTION" :value="source.description" />
                             <DataRow name="TIME FIELD" :value="source.timeField" />
                             <!--<DataRow name="UNIQ FIELD" :value="source.uniqField" />-->
-                            <DataRow name="SEVERITY FIELD" :value="source.severityField" />
+                            <DataRow name="SEVERITY FIELD" :value="source.severityField || '&dash;'" />
                             <DataRow name="DEFAULT CHOSEN FEILDS" :showBorder="false">
                                 {{ source.defaultChosenFields.join(', ') }}
                             </DataRow>

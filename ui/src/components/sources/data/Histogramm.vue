@@ -1,9 +1,9 @@
 <template>
     <BorderCard>
         <div class="flex flex-row">
-            <FloatLabel variant="on" class="mr-2">
+            <FloatLabel variant="on" class="mr-2" v-if="source.severityField.length != 0">
                 <Select v-model="groupBy" :options="groupByOptions" placeholder="&#8211;" filter autoFilterFocus />
-                <label>Group by</label>
+                <label class="text-nowrap">Group by</label>
             </FloatLabel>
             <SelectButton v-model="chartType" :defaultValue="chartDefaultType" :allowEmpty="false" :options="options"
                 @change="onChartTypeSelect">

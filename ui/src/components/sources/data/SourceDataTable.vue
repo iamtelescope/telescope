@@ -7,7 +7,7 @@
     <table class="w-full min-w-full text-sm" v-if="rows && dateFormat">
         <thead>
             <tr>
-                <th class="border-b border-neutral-200 dark:border-neutral-700"></th>
+                <th v-if="source.severityField" class="border-b border-neutral-200 dark:border-neutral-700"></th>
                 <th class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700">Time</th>
                 <th class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700"
                     v-for="field in metadata.fields" :key="field.name">{{ field.display_name
@@ -18,7 +18,7 @@
         <tbody>
             <tr class="hover:bg-slate-100 dark:hover:bg-neutral-800 hover:cursor-pointer" v-for="row in rows"
                 :key="row.record_id" @click="handleRowClick(row)">
-                <td class="pl-1 pr-2 w-1 m-w-1 border-b border-neutral-200 dark:border-neutral-700">
+                <td v-if="source.severityField" class="pl-1 pr-2 w-1 m-w-1 border-b border-neutral-200 dark:border-neutral-700">
                     <div class="rounded w-2 h-6" :style="{ 'background-color': getRowColor(row) }"></div>
                 </td>
                 <td
