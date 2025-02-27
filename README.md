@@ -40,8 +40,7 @@ You can log in via GitHub to explore the core features of the system from an end
 
 ## Contributing
 
-Patches are welcome! Feel free to open a pull request.
-If you encounter any issues, please create an issue.
+Patches are welcome! Please take a look at [Contributing guidelines](CONTRIBUTING.md).
 
 ## βeta notion
 
