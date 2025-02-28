@@ -1,8 +1,14 @@
+from typing import List
+
 import clickhouse_driver as clickhouse
+from clickhouse_driver.util.escape import escape_param
 
 from flyql.parser import parse, ParserError
 from flyql.exceptions import FlyqlError
 from flyql_generators.clickhouse import to_sql, Field
+
+from telescope.models import SourceField
+from telescope.fields import ParsedField
 
 from telescope.fetchers.request import (
     AutocompleteRequest,
@@ -18,15 +24,15 @@ from telescope.fetchers.fetcher import BaseFetcher
 from telescope.fetchers.models import Row
 
 
-def flyql_clickhouse_fields(source_fields):
+def flyql_clickhouse_fields(source_fields: List[SourceField]):
     return {
-        data["name"]: Field(
-            name=data["name"],
-            jsonstring=data["jsonstring"],
-            _type=data["type"],
-            values=data["values"],
+        field.name: Field(
+            name=field.name,
+            jsonstring=field.jsonstring,
+            _type=field.type,
+            values=field.values,
         )
-        for _, data in source_fields.items()
+        for _, field in source_fields.items()
     }
 
 
@@ -84,9 +90,28 @@ class Fetcher(BaseFetcher):
             )
         else:
             filter_clause = "true"
-        group_by = request.source.severity_field
 
         order_by_clause = f"ORDER BY {request.source.time_field} DESC"
+
+        group_by_value = ""
+        group_by = request.group_by[0] if request.group_by else None
+        if group_by:
+            if ":" in group_by.name:
+                spl = group_by.name.split(":")
+                if group_by.jsonstring:
+                    json_path = spl[1:]
+                    json_path = ", ".join([escape_param(x, context=None) for x in json_path])
+                    group_by_value = f"JSONExtractString({group_by.root_name}, {json_path})"
+                elif group_by.is_map():
+                    map_key = ":".join(spl[1:])
+                    group_by_value = f"{group_by.root_name}['{map_key}']"
+                elif group_by.is_array():
+                    array_index = int(":".join(spl[1]))
+                    group_by_value = f"{group_by.root_name}[{array_index}]"
+                else:
+                    raise ValueError
+            else:
+                group_by_value = f"toString({group_by.root_name})"
 
         total = 0
         time_clause = f"{request.source.time_field} BETWEEN fromUnixTimestamp64Milli({request.time_from}) and fromUnixTimestamp64Milli({request.time_to})"
@@ -114,10 +139,7 @@ class Fetcher(BaseFetcher):
                 stats_interval_seconds = 1
             stats_time_selector = f"toUnixTimestamp(toStartOfInterval(toTimeZone({request.source.time_field}, 'UTC'), INTERVAL {stats_interval_seconds} second))*1000"
         else:
-            if (
-                request.source._fields[request.source.time_field]["type"]
-                == "datetime64"
-            ):
+            if request.source._fields[request.source.time_field].type == "datetime64":
                 stats_time_selector = f"toUnixTimestamp64Milli(toTimeZone({request.source.time_field}), 'UTC')"
             else:
                 stats_time_selector = f"toUnixTimestamp(toTimeZone({request.source.time_field}, 'UTC'))*1000"
@@ -126,28 +148,31 @@ class Fetcher(BaseFetcher):
             **get_source_database_conn_kwargs(request.source)
         ) as client:
             stat_sql = f"SELECT {stats_time_selector} as t, COUNT() as Count"
-            if request.source.severity_field:
-                stat_sql += f", {request.source.severity_field}"
+            if group_by_value:
+                stat_sql += f", {group_by_value} as `{group_by.name}`"
             stat_sql += f" FROM {from_db_table} WHERE {time_clause} AND {filter_clause} GROUP BY t"
-            if request.source.severity_field:
-                stat_sql += f", {request.source.severity_field}"
+            if group_by_value:
+                stat_sql += f", `{group_by.name}`"
             stat_sql += " ORDER BY t"
             for item in client.execute(stat_sql):
-                if request.source.severity_field:
-                    ts, count, severity = item
+                if group_by_value:
+                    ts, count, groupper = item
+                    if not groupper:
+                        groupper = "__none__"
                 else:
                     ts, count = item
-                    severity = "Rows"
-                stats_names.add(severity)
-                items = stats.get(severity, [])
+                    groupper = "Rows"
+
+                stats_names.add(groupper)
+                items = stats.get(groupper, [])
                 items.append((ts, count))
                 total += count
-                stats[severity] = items
+                stats[groupper] = items
                 unique_ts.add(ts)
-                if severity not in stats_by_ts:
-                    stats_by_ts[severity] = {ts: count}
+                if groupper not in stats_by_ts:
+                    stats_by_ts[groupper] = {ts: count}
                 else:
-                    stats_by_ts[severity][ts] = count
+                    stats_by_ts[groupper][ts] = count
         stats = {
             "timestamps": sorted(unique_ts),
             "data": {},
@@ -181,7 +206,6 @@ class Fetcher(BaseFetcher):
             )
         else:
             filter_clause = "true"
-        group_by = request.source.severity_field
 
         order_by_clause = f"ORDER BY {request.source.time_field} DESC"
 

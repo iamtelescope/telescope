@@ -1,10 +1,11 @@
+from typing import List
 from django.contrib.auth.models import User, Group
 
 from rest_framework import serializers
 
 from telescope.models import Source, SourceRoleBinding
 from telescope.utils import parse_time
-from telescope.fields import parse as parse_fields, ParserError as FieldsParserError
+from telescope.fields import parse as parse_fields, ParserError as FieldsParserError, ParsedField
 from telescope.fetchers import get_fetchers
 
 
@@ -77,6 +78,7 @@ class SourceFieldSerializer(serializers.Serializer):
     autocomplete = serializers.BooleanField()
     suggest = serializers.BooleanField()
     jsonstring = serializers.BooleanField()
+    group_by = serializers.BooleanField()
     values = serializers.ListField(child=serializers.CharField())
 
     def to_internal_value(self, data):
@@ -92,7 +94,7 @@ class NewSourceSerializer(serializers.Serializer):
     description = serializers.CharField(allow_blank=True)
     time_field = serializers.CharField()
     # uniq_field = serializers.CharField()
-    severity_field = serializers.CharField(allow_blank=True)
+    severity_field = serializers.CharField(allow_blank=True, allow_null=True)
     default_chosen_fields = serializers.ListField(child=serializers.CharField())
     fields = serializers.DictField(child=SourceFieldSerializer())
     connection = ConnectionSerializer()
@@ -120,6 +122,11 @@ class NewSourceSerializer(serializers.Serializer):
     def validate_default_chosen_fields(self, value):
         if not value:
             raise serializers.ValidationError("This field may not be blank")
+        return value
+
+    def validate_severity_field(self, value):
+        if value is None:
+            return ''
         return value
 
     def validate(self, data):
@@ -203,7 +210,7 @@ class SourceDataRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError(error)
         return value
 
-    def validate_fields(self, value):
+    def validate_fields(self, value: str) -> List[ParsedField]:
         try:
             value = parse_fields(self.context["source"], value)
         except FieldsParserError as err:
@@ -215,4 +222,19 @@ class SourceDataRequestSerializer(serializers.Serializer):
         result, help_text = fetcher.validate_query(self.context["source"], value)
         if not result:
             raise serializers.ValidationError(help_text)
+        return value
+
+
+class SourceGraphDataRequestSerializer(SourceDataRequestSerializer):
+    group_by = serializers.CharField(allow_blank=True, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(SourceGraphDataRequestSerializer, self).__init__(*args, **kwargs)
+        self.fields.pop("fields", None)
+
+    def validate_group_by(self, value: str) -> List[ParsedField]:
+        try:
+            value = parse_fields(self.context["source"], value)
+        except FieldsParserError as err:
+            raise serializers.ValidationError(err.message)
         return value

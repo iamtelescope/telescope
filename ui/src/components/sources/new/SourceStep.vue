@@ -114,6 +114,13 @@
                             <ToggleSwitch :id="field.name + '_jsonstring'"
                                 v-model="sourceFormData['fields'][field.name]['jsonstring']" />
                         </div>
+                        <div class="flex pl-6">
+                            <span>Allow in GROUP BY</span>
+                        </div>
+                        <div class="flex pl-2">
+                            <ToggleSwitch :id="field.name + '_group_by'"
+                                v-model="sourceFormData['fields'][field.name]['group_by']" />
+                        </div>
                     </div>
                     <div class="flex flex-row w-full items-center mb-4">
                         <div class="flex w-32">
@@ -243,6 +250,7 @@ const getSourceDynamicFieldDefaultData = () => {
         autocomplete: false,
         suggest: false,
         jsonstring: false,
+        group_by: false,
         values: '',
     }
 }

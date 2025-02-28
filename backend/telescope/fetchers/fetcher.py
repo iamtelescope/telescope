@@ -1,5 +1,13 @@
-from telescope.fetchers.request import AutocompleteRequest, DataRequest
-from telescope.fetchers.response import AutocompleteResponse, DataResponse
+from telescope.fetchers.request import (
+    AutocompleteRequest,
+    DataRequest,
+    GraphDataRequest,
+)
+from telescope.fetchers.response import (
+    AutocompleteResponse,
+    DataResponse,
+    GraphDataResponse,
+)
 
 
 class BaseFetcher:
@@ -13,4 +21,8 @@ class BaseFetcher:
 
     @classmethod
     def fetch_data(self, request: DataRequest) -> DataResponse:
+        raise NotImplementedError
+
+    @classmethod
+    def fetch_graph_data(self, request: GraphDataRequest) -> GraphDataResponse:
         raise NotImplementedError

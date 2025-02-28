@@ -39,7 +39,7 @@ class Row:
     def as_dict(self) -> Dict:
         data = {}
         for name, source_field in self.source._fields.items():
-            if source_field["jsonstring"]:
+            if source_field.jsonstring:
                 try:
                     value = json.loads(self.data[name])
                 except Exception as err:

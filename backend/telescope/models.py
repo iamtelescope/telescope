@@ -1,10 +1,33 @@
 import logging
+from typing import List, Dict
 
 from django.db import models
 from django.contrib.auth.models import User, Group
 
 
 logger = logging.getLogger("telescope.models")
+
+
+class SourceField:
+    def __init__(
+        self,
+        name: str,
+        display_name: str,
+        type: str,
+        jsonstring: bool,
+        autocomplete: bool,
+        suggest: bool,
+        group_by: bool,
+        values: List[str],
+    ):
+        self.name = name
+        self.display_name = display_name
+        self.type = type
+        self.jsonstring = jsonstring
+        self.autocomplete = autocomplete
+        self.suggest = suggest
+        self.group_by = group_by
+        self.values = values
 
 
 class Source(models.Model):
@@ -34,17 +57,19 @@ class Source(models.Model):
         return "_____record_pseudo_id"
 
     @property
-    def _fields(self):
+    def _fields(self) -> Dict[str, SourceField]:
         fields = {}
         for key, value in self.fields.items():
-            fields[key] = {
-                "name": key,
-                "type": value["type"],
-                "jsonstring": value["jsonstring"],
-                "display_name": value.get("display_name"),
-                "modifier": value.get("modifier"),
-                "values": value.get("values"),
-            }
+            fields[key] = SourceField(
+                name=key,
+                display_name=value["display_name"],
+                type=value["type"],
+                jsonstring=value["jsonstring"],
+                autocomplete=value["autocomplete"],
+                suggest=value["suggest"],
+                group_by=value["group_by"],
+                values=value["values"],
+            )
         return fields
 
     def add_perms(self, perms):

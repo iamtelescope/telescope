@@ -22,6 +22,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
                 query: route.query.query ?? '',
                 from: route.query.from ?? 'now-5m',
                 to: route.query.to ?? 'now',
+                graphGroupBy: route.query.graph_group_by ?? source.severityField,
                 timezone: 'UTC',
                 limit: {"value": 50},
             }
@@ -64,6 +65,10 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         return data.value[route.params.sourceSlug].limit
     })
 
+    const graphGroupBy = computed(() => {
+        return data.value[route.params.sourceSlug].graphGroupBy
+    })
+
     function setFields(value) {
         data.value[route.params.sourceSlug].fields = value
     }
@@ -84,6 +89,9 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         data.value[route.params.sourceSlug].to = value
     }
 
+    function setGraphGroupBy(value) {
+        data.value[route.params.sourceSlug].graphGroupBy = value
+    }
 
     function addQueryExpression(field, operator, value) {
         let currentQuery = query.value
@@ -98,5 +106,5 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         toast.add({ severity: 'success', summary: 'Success', detail: 'Query was updated', life: 3000 });
     }
 
-    return { init, setFields, setQuery, addQueryExpression, setLimit, setFrom, setTo, from, to, limit, fields, query, parsedFields }
+    return { init, setFields, setQuery, addQueryExpression, setLimit, setFrom, setTo, setGraphGroupBy, from, to, limit, fields, query, parsedFields, graphGroupBy }
 })

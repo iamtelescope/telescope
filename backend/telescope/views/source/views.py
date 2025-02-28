@@ -47,6 +47,7 @@ from telescope.serializers.source import (
     NewSourceSerializer,
     UpdateSourceSerializer,
     SourceDataRequestSerializer,
+    SourceGraphDataRequestSerializer,
     SourceAutocompleteRequestSerializer,
 )
 
@@ -151,11 +152,8 @@ class SourceView(APIView):
                 response.validation["fields"] = serializer.errors
             else:
                 with transaction.atomic():
-                    for key, value in serializer.data["connection"].items():
-                        source.connection[key] = value
-
                     for key, value in serializer.data.items():
-                        if key != "connection" and key != "slug":
+                        if key != "slug":
                             setattr(source, key, value)
                     source.save()
 
@@ -205,9 +203,11 @@ def get_telescope_field(name, _type):
         "jsonstring": False,
         "autocomplete": True,
         "suggest": True,
+        "group_by": True,
     }
     if "datetime" in _type.lower():
         data["autocomplete"] = False
+        data["group_by"] = False
     elif _type.startswith("Enum"):
         try:
             data["values"] = ",".join(
@@ -348,7 +348,6 @@ class SourceDataView(APIView):
             required_permissions=[permissions.Source.USE.value],
         )
         source = Source.objects.get(slug=slug)
-
         serializer = SourceDataRequestSerializer(
             data=request.data, context={"source": source}
         )
@@ -374,7 +373,7 @@ class SourceDataView(APIView):
             response.mark_failed(str(err))
         else:
             response.data = {
-                "fields": serializer.validated_data["fields"],
+                "fields": [f.as_dict() for f in serializer.validated_data["fields"]],
                 "rows": [row.as_dict() for row in data_response.rows],
             }
         return Response(response.as_dict())
@@ -392,7 +391,7 @@ class SourceGraphDataView(APIView):
         )
         source = Source.objects.get(slug=slug)
 
-        serializer = SourceDataRequestSerializer(
+        serializer = SourceGraphDataRequestSerializer(
             data=request.data, context={"source": source}
         )
         if not serializer.is_valid():
@@ -407,6 +406,7 @@ class SourceGraphDataView(APIView):
                 query=serializer.validated_data["query"],
                 time_from=serializer.validated_data["from"],
                 time_to=serializer.validated_data["to"],
+                group_by=serializer.validated_data["group_by"],
             )
             graph_data_response = fetcher.fetch_graph_data(graph_data_request)
         except Exception as err:
@@ -414,7 +414,6 @@ class SourceGraphDataView(APIView):
             response.mark_failed(str(err))
         else:
             response.data = {
-                "fields": serializer.validated_data["fields"],
                 "timestamps": graph_data_response.timestamps,
                 "data": graph_data_response.data,
                 "total": graph_data_response.total,

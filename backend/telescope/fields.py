@@ -1,4 +1,8 @@
+from typing import List, Optional
+
 from enum import Enum
+
+from telescope.models import Source
 
 DOT = "."
 DOUBLE_QUOTE = '"'
@@ -564,10 +568,52 @@ class Parser:
             self.set_error_state("invalid character, expected alias delimiter", 5)
 
 
-def parse(source, text):
+class ParsedField:
+    def __init__(
+        self,
+        name: str,
+        root_name: str,
+        type: bool,
+        jsonstring: bool,
+        display_name: bool,
+        modifiers: List,
+    ):
+        self.name = name
+        self.root_name = root_name
+        self.type = type
+        self.jsonstring = jsonstring
+        self.display_name = display_name
+        self.modifiers = modifiers
+        self._is_map: Optional[bool] = None
+        self._is_array: Optional[bool] = None
+
+    def as_dict(self):
+        return {
+            "name": self.name,
+            "root_name": self.root_name,
+            "type": self.type,
+            "jsonstring": self.jsonstring,
+            "display_name": self.display_name,
+            "modifiers": self.modifiers,
+        }
+
+    def is_map(self) -> bool:
+        if self._is_map is None:
+            self._is_map = self.type.lower().replace("nullable(", "").startswith("map(")
+        return self._is_map
+
+    def is_array(self) -> bool:
+        if self._is_array is None:
+            self._is_array = (
+                self.type.lower().replace("nullable(", "").startswith("array(")
+            )
+        return self._is_array
+
+
+def parse(source: Source, text: str) -> List[ParsedField]:
     parser = Parser()
     parser.parse(text)
-    data = []
+    parsed_fields = []
     for field in parser.fields:
         source_field_name = field["name"].split(":")[0]
         if source_field_name not in source._fields:
@@ -585,15 +631,15 @@ def parse(source, text):
         titled_name = (
             field["name"].title() if not ":" in field["name"] else field["name"]
         )
-        display_name = field["alias"] or source_field.get("display_name") or titled_name
-        data.append(
-            {
-                "name": field["name"],
-                "root_name": source_field["name"],
-                "type": source_field["type"],
-                "jsonstring": source_field["jsonstring"],
-                "display_name": display_name,
-                "modifiers": field["modifiers"],
-            }
+        display_name = field["alias"] or source_field.display_name or titled_name
+        parsed_fields.append(
+            ParsedField(
+                name=field["name"],
+                root_name=source_field.name,
+                type=source_field.type,
+                jsonstring=source_field.jsonstring,
+                display_name=display_name,
+                modifiers=field["modifiers"],
+            )
         )
-    return data
+    return parsed_fields
