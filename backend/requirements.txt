@@ -1,4 +1,4 @@
-Django==5.1.5
+Django==5.1.7
 MarkupSafe==2.1.5
 PyJWT==2.8.0
 PyYAML==6.0.1
