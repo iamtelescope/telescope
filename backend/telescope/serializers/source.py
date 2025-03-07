@@ -5,7 +5,7 @@ from rest_framework import serializers
 from telescope.models import Source, SourceRoleBinding
 from telescope.utils import parse_time
 from telescope.fields import parse as parse_fields, ParserError as FieldsParserError
-from telescope.query import validate_flyql_query
+from telescope.fetchers import get_fetchers
 
 
 class SourceAdminSerializer(serializers.ModelSerializer):
@@ -211,7 +211,8 @@ class SourceDataRequestSerializer(serializers.Serializer):
         return value
 
     def validate_query(self, value):
-        result, help_text = validate_flyql_query(self.context["source"], value)
+        fetcher = get_fetchers()[self.context["source"].kind]
+        result, help_text = fetcher.validate_query(self.context["source"], value)
         if not result:
             raise serializers.ValidationError(help_text)
         return value

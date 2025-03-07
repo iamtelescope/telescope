@@ -54,7 +54,6 @@ class SuperuserView(View):
 
     def post(self, request):
         form = SuperuserForm(request.POST)
-        print("before validation")
         if form.is_valid():
             try:
                 with transaction.atomic():
@@ -68,7 +67,6 @@ class SuperuserView(View):
                 form.add_error(f"Unhandled exception: {err}")
             else:
                 return redirect("/login")
-        print("after validation")
         return render(request, "forms/superuser.html", {"form": form})
 
 

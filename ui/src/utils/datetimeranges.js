@@ -1,4 +1,5 @@
 import { format, parse, isValid } from 'date-fns'
+import { DateTime } from "luxon"
 
 const dateTimeFormat = 'yyyy-MM-dd HH:mm:ss.SSS'
 
@@ -131,10 +132,10 @@ function getDatetimeRangeText(from, to) {
         let fromResult = getDateIfTimestamp(from)
         let toResult = getDateIfTimestamp(to)
         if (fromResult.parsed) {
-            from = fmt(fromResult.date)
+            from = DateTime.fromJSDate(fromResult.date).toUTC().toFormat(dateTimeFormat)
         }
         if (toResult.parsed) {
-            to = fmt(toResult.date)
+            to = DateTime.fromJSDate(toResult.date).toUTC().toFormat(dateTimeFormat)
         }
         return `${from} - ${to}`
     }

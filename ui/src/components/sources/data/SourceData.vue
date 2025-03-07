@@ -1,34 +1,34 @@
 <template>
     <Controls ref="controlsRef" @searchRequest="onSearchRequest" @shareURL="onShareURL" @download="onDownload"
         :source="source" :loading="loading" :validation="validation" />
-    <div class="flex justify-content-center	w-full">
-        <Loader v-if="loading" />
-        <div v-else style="padding: 0px; width: 100%;">
-            <Error :error="error" v-if="error" />
-            <div v-else>
-                <Histogramm v-if="metadata" :timestamps="metadata.stats.timestamps" :data="metadata.stats.data"
-                    :meta="metadata.stats.meta" :source="source" class="mb-3"
-                    @rangeSelected="onHistogrammRangeSelected" />
-                <LimitMessage v-if="metadata" :meta="metadata.stats.meta"></LimitMessage>
-                <SourceDataTable v-if="rows && source" :source="source" :rows="rows" :metadata="metadata"
-                    :timezone="timezone" />
-            </div>
-        </div>
-    </div>
+    <BorderCard class="mb-3" :loading="graphLoading">
+        <Skeleton v-if="!graphData && !graphError" width="100%" height="235px"></Skeleton>
+        <Error v-if="graphError" :error="graphError"></Error>
+        <Histogramm v-if="graphData && !graphError" :stats="graphData" :source="source"
+            @rangeSelected="onHistogrammRangeSelected" :rows="rows"/>
+    </BorderCard>
+    <BorderCard :loading="loading">
+        <Skeleton v-if="!rows && !error" width="100%" height="400px"></Skeleton>
+        <Error v-if="error" :error="error"></Error>
+        <LimitMessage v-if="fields && graphData && !error && !graphError" :rowsCount="rows.length" :totalCount="graphData.total"></LimitMessage>
+        <SourceDataTable v-if="rows && !error" :source="source" :rows="rows" :fields="fields"
+            :timezone="timezone" />
+    </BorderCard>
 </template>
 
 <script setup>
-import { ref, onBeforeMount } from 'vue'
+import { ref, onBeforeMount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useToast } from 'primevue'
 
 import { useNavStore } from '@/stores/nav'
 
+import { Skeleton } from 'primevue'
 import { useSourceControlsStore } from '@/stores/sourceControls'
-import { useGetSourceData } from '@/composables/sources/useSourceService'
+import { useGetSourceData, useGetSourceGraphData } from '@/composables/sources/useSourceService'
 import Controls from '@/components/sources/data/Controls.vue'
-import Loader from '@/components/common/Loader.vue'
+import BorderCard from '@/components/common/BorderCard.vue'
 import Error from '@/components/common/Error.vue'
 import SourceDataTable from '@/components/sources/data/SourceDataTable.vue'
 import Histogramm from "@/components/sources/data/Histogramm.vue"
@@ -44,15 +44,21 @@ const timezone = ref('UTC')
 
 const props = defineProps(['source'])
 
-
-const { rows, metadata, error, loading, validation, load } = useGetSourceData()
+const { rows, fields, error, loading, validation, load } = useGetSourceData()
+const {
+    data: graphData,
+    error: graphError,
+    loading: graphLoading,
+    validation: graphValidation,
+    load: graphLoad
+} = useGetSourceGraphData();
 
 const onSearchRequest = (params) => {
-    rows.value = null
     let queryString = new URLSearchParams(params.searchParams).toString();
     let url = route.path + "?" + queryString
     window.history.pushState('', 'telescope', url)
     load(props.source.slug, params.searchParams)
+    graphLoad(props.source.slug, params.searchParams)
 }
 
 const onShareURL = (params) => {
@@ -100,4 +106,7 @@ navStore.update([
 onBeforeMount(() => {
     sourceControlsStore.init(props.source)
 })
+watch(() => props.rows, (newValue, oldValue) => {
+  console.log(`myProp изменился: ${oldValue} → ${newValue}`);
+});
 </script>
