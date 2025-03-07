@@ -69,6 +69,10 @@ class SourceService {
         let response = await http.Post(`/ui/v1/sources/${sourceSlug}/data`, params)
         return response
     }
+    getGraphData = async (sourceSlug, params) => {
+        let response = await http.Post(`/ui/v1/sources/${sourceSlug}/graphData`, params)
+        return response
+    }
     autocomplete = async (sourceSlug, params) => {
         let response = await http.Post(`/ui/v1/sources/${sourceSlug}/autocomplete`, params)
         return response

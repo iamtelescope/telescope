@@ -24,7 +24,8 @@ from telescope.rbac.helpers import (
     user_has_source_permissions,
 )
 
-from telescope.query import autocomplete, fetch_data, validate_flyql_query
+from telescope.fetchers import get_fetchers
+from telescope.fetchers.request import DataRequest, GraphDataRequest
 from telescope.rbac.roles import SourceRole
 from telescope.rbac import permissions
 from telescope.auth.decorators import global_permission_required
@@ -323,15 +324,16 @@ class SourceDataAutocompleteView(APIView):
             response.validation["result"] = False
             response.validation["fields"] = serializer.errors
             return Response(response.as_dict())
-        items, incomplete = autocomplete(
+        fetcher = get_fetchers()[source.kind]
+        autocomplete_response = fetcher.autocomplete(
             source=source,
             field=serializer.validated_data["field"],
             time_from=serializer.validated_data["from"],
             time_to=serializer.validated_data["to"],
             value=serializer.validated_data["value"],
         )
-        response.data["items"] = items
-        response.data["incomplete"] = incomplete
+        response.data["items"] = autocomplete_response.items
+        response.data["incomplete"] = autocomplete_response.incomplete
         return Response(response.as_dict())
 
 
@@ -356,23 +358,66 @@ class SourceDataView(APIView):
             return Response(response.as_dict())
 
         try:
-            rows, total, stats = fetch_data(
+            fetcher = get_fetchers()[source.kind]
+            data_request = DataRequest(
                 source=source,
                 query=serializer.validated_data["query"],
                 time_from=serializer.validated_data["from"],
                 time_to=serializer.validated_data["to"],
                 limit=serializer.validated_data["limit"],
+            )
+            data_response = fetcher.fetch_data(
+                data_request,
                 timezone=ZoneInfo("UTC"),
             )
         except Exception as err:
             response.mark_failed(str(err))
         else:
             response.data = {
-                "metadata": {
-                    "fields": serializer.validated_data["fields"],
-                    "stats": stats,
-                },
-                "rows": [row.as_dict() for row in rows],
+                "fields": serializer.validated_data["fields"],
+                "rows": [row.as_dict() for row in data_response.rows],
+            }
+        return Response(response.as_dict())
+
+
+class SourceGraphDataView(APIView):
+    @method_decorator(login_required)
+    def post(self, request, slug):
+        response = UIResponse()
+
+        require_source_permissions(
+            user=request.user,
+            source_slug=slug,
+            required_permissions=[permissions.Source.USE.value],
+        )
+        source = Source.objects.get(slug=slug)
+
+        serializer = SourceDataRequestSerializer(
+            data=request.data, context={"source": source}
+        )
+        if not serializer.is_valid():
+            response.validation["result"] = False
+            response.validation["fields"] = serializer.errors
+            return Response(response.as_dict())
+
+        try:
+            fetcher = get_fetchers()[source.kind]
+            graph_data_request = GraphDataRequest(
+                source=source,
+                query=serializer.validated_data["query"],
+                time_from=serializer.validated_data["from"],
+                time_to=serializer.validated_data["to"],
+            )
+            graph_data_response = fetcher.fetch_graph_data(graph_data_request)
+        except Exception as err:
+            logger.exception("Unhandled error: %s", err)
+            response.mark_failed(str(err))
+        else:
+            response.data = {
+                "fields": serializer.validated_data["fields"],
+                "timestamps": graph_data_response.timestamps,
+                "data": graph_data_response.data,
+                "total": graph_data_response.total,
             }
         return Response(response.as_dict())
 
