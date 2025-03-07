@@ -4,7 +4,6 @@ PyJWT==2.8.0
 PyYAML==6.0.1
 asgiref==3.8.1
 certifi==2024.7.4
-cffi==1.16.0
 charset-normalizer==3.3.2
 cryptography==44.0.1
 defusedxml==0.7.1
