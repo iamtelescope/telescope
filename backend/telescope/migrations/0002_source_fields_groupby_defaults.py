@@ -7,7 +7,7 @@ def migrate_source_fields(apps, schema_editor):
     if schema_editor.connection.alias != "default":
         return
 
-    with transaction.atomikc():
+    with transaction.atomic():
         for source in Source.objects.all():
             for key, value in source.fields.items():
                 if 'group_by' not in value:
