@@ -1,5 +1,20 @@
 # Changelog
 
+## 2024.03.10
+Version: **0.0.10**
+Changes:
+ - Added support for custom fields in the "Group By" option on graphs.
+ - Changed data loading behavior: now, when making a new request, the old data remains on the screen until the new data is fully loaded.
+ - Bugfix for a mismatch between time values in graphs and data tables (caused by differences between UTC and non-UTC timestamps).
+
+Related issues:
+ - [ISSUE-4](https://github.com/iamtelescope/telescope/issues/4)
+
+Notes:
+{% note warning %}
+This release requires database migrations to be run.
+{% endnote %}
+
 ## 2024.02.27
 Version: **0.0.9**
 
