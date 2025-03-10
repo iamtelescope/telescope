@@ -1,5 +1,5 @@
 <template>
-    <div :style="{ height: `${editorHeight}px` }" class="editor border rounded pl-2 pr-2 mb-2 dark:border-neutral-600"
+    <div :style="{ height: `${editorHeight}px` }" class="editor border rounded-lg border-neutral-300 pl-2 pr-2 dark:border-neutral-600"
         :class="{ 'border-sky-800 dark:border-sky-700': editorFocused }">
         <vue-monaco-editor v-model:value="code" :theme="theme" language="flyql" :options="getDefaultMonacoOptions()"
             @mount="handleMount" @change="onChange" />
@@ -31,7 +31,7 @@ const editorFocused = ref(false)
 
 const editorHeight = computed(() => {
     const lines = (code.value.match(/\n/g) || '').length + 1
-    return 14 + (lines * 20)
+    return 24 + (lines * 20)
 })
 
 const theme = computed(() => {

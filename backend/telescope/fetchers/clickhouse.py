@@ -92,6 +92,7 @@ class Fetcher(BaseFetcher):
             filter_clause = "true"
 
         order_by_clause = f"ORDER BY {request.source.time_field} DESC"
+        raw_where_clause = request.raw_query or "true"
 
         group_by_value = ""
         group_by = request.group_by[0] if request.group_by else None
@@ -100,8 +101,12 @@ class Fetcher(BaseFetcher):
                 spl = group_by.name.split(":")
                 if group_by.jsonstring:
                     json_path = spl[1:]
-                    json_path = ", ".join([escape_param(x, context=None) for x in json_path])
-                    group_by_value = f"JSONExtractString({group_by.root_name}, {json_path})"
+                    json_path = ", ".join(
+                        [escape_param(x, context=None) for x in json_path]
+                    )
+                    group_by_value = (
+                        f"JSONExtractString({group_by.root_name}, {json_path})"
+                    )
                 elif group_by.is_map():
                     map_key = ":".join(spl[1:])
                     group_by_value = f"{group_by.root_name}['{map_key}']"
@@ -150,7 +155,7 @@ class Fetcher(BaseFetcher):
             stat_sql = f"SELECT {stats_time_selector} as t, COUNT() as Count"
             if group_by_value:
                 stat_sql += f", {group_by_value} as `{group_by.name}`"
-            stat_sql += f" FROM {from_db_table} WHERE {time_clause} AND {filter_clause} GROUP BY t"
+            stat_sql += f" FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} GROUP BY t"
             if group_by_value:
                 stat_sql += f", `{group_by.name}`"
             stat_sql += " ORDER BY t"
@@ -208,6 +213,7 @@ class Fetcher(BaseFetcher):
             filter_clause = "true"
 
         order_by_clause = f"ORDER BY {request.source.time_field} DESC"
+        raw_where_clause = request.raw_query or "true"
 
         time_clause = f"{request.source.time_field} BETWEEN fromUnixTimestamp64Milli({request.time_from}) and fromUnixTimestamp64Milli({request.time_to})"
         from_db_table = f"{request.source.connection['database']}.{request.source.connection['table']}"
@@ -220,8 +226,8 @@ class Fetcher(BaseFetcher):
             else:
                 fields_to_select.append(field)
         fields_to_select = ", ".join(fields_to_select)
-        select_query = f"SELECT generateUUIDv4(),{fields_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} {order_by_clause} LIMIT {request.limit}"
-        count_query = f"SELECT count() as c FROM {from_db_table} WHERE {time_clause} AND {filter_clause}"
+        select_query = f"SELECT generateUUIDv4(),{fields_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}"
+        count_query = f"SELECT count() as c FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause}"
 
         rows = []
 

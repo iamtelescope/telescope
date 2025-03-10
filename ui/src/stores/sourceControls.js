@@ -20,16 +20,17 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             const initData = {
                 fields: route.query.fields ?? source.defaultChosenFields.join(', '),
                 query: route.query.query ?? '',
+                rawQuery: route.query.raw_query ?? '',
                 from: route.query.from ?? 'now-5m',
                 to: route.query.to ?? 'now',
                 graphGroupBy: route.query.graph_group_by ?? source.severityField,
                 timezone: 'UTC',
-                limit: {"value": 50},
+                limit: { "value": 50 },
             }
             if (route.query.limit) {
                 let intLimit = parseInt(route.query.limit)
                 if (!isNaN(intLimit)) {
-                    initData.limit = {"value": intLimit}
+                    initData.limit = { "value": intLimit }
                 }
             }
             data.value[route.params.sourceSlug] = initData
@@ -43,6 +44,10 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
     const query = computed(() => {
         return data.value[route.params.sourceSlug].query
+    })
+
+    const rawQuery = computed(() => {
+        return data.value[route.params.sourceSlug].rawQuery
     })
 
     const parsedFields = computed(() => {
@@ -69,12 +74,50 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         return data.value[route.params.sourceSlug].graphGroupBy
     })
 
+    const queryParams = computed(() => {
+        let params = {
+            query: query.value,
+            fields: fields.value,
+            limit: limit.value.value,
+            from: new Date(from.value).valueOf() || from.value,
+            to: new Date(to.value).valueOf() || to.value,
+            graph_group_by: graphGroupBy.value || "",
+        }
+        if (rawQuery.value) {
+            params.raw_query = rawQuery.value
+        }
+        return params
+    })
+
+    const queryString = computed(() => {
+        return new URLSearchParams(queryParams.value).toString()
+     })
+
+     const dataRequestParams = computed(() => {
+        let params = {... queryParams.value}
+        delete params.graph_group_by
+        return params
+     })
+
+     const graphRequestParams = computed(() => {
+        let params = {... queryParams.value}
+        params.group_by = params.graph_group_by
+        delete params.graph_group_by
+        delete params.fields
+        delete params.limit
+        return params
+     })
+
     function setFields(value) {
         data.value[route.params.sourceSlug].fields = value
     }
 
     function setQuery(value) {
         data.value[route.params.sourceSlug].query = value
+    }
+
+    function setRawQuery(value) {
+        data.value[route.params.sourceSlug].rawQuery = value
     }
 
     function setLimit(value) {
@@ -93,6 +136,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         data.value[route.params.sourceSlug].graphGroupBy = value
     }
 
+
     function addQueryExpression(field, operator, value) {
         let currentQuery = query.value
         if (currentQuery != "") {
@@ -106,5 +150,5 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         toast.add({ severity: 'success', summary: 'Success', detail: 'Query was updated', life: 3000 });
     }
 
-    return { init, setFields, setQuery, addQueryExpression, setLimit, setFrom, setTo, setGraphGroupBy, from, to, limit, fields, query, parsedFields, graphGroupBy }
+    return { init, setFields, setQuery, setRawQuery, addQueryExpression, setLimit, setFrom, setTo, setGraphGroupBy, from, to, limit, fields, query, rawQuery, parsedFields, graphGroupBy, queryString, dataRequestParams, graphRequestParams}
 })

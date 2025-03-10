@@ -124,7 +124,7 @@ const roles = ref([
     { 'name': 'editor' },
     { 'name': 'viewer' },
     { 'name': 'user' },
-    { 'name': 'sqluser' },
+    { 'name': 'raw_query_user' },
 ])
 
 const selectedUser = ref(null)

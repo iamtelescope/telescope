@@ -11,6 +11,7 @@ import PrimeVue from 'primevue/config'
 
 import ToastService from 'primevue/toastservice'
 import ConfirmationService from 'primevue/confirmationservice'
+import Tooltip from 'primevue/tooltip'
 
 import '@/assets/css/main.css'
 
@@ -51,7 +52,7 @@ app.use(PrimeVue, {
 app.use(ConfirmationService)
 app.use(ToastService)
 app.component('font-awesome-icon', FontAwesomeIcon)
-
+app.directive('tooltip', Tooltip)
 
 const authStore = useAuthStore()
 authStore.login()

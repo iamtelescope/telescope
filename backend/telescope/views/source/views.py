@@ -347,10 +347,12 @@ class SourceDataView(APIView):
             source_slug=slug,
             required_permissions=[permissions.Source.USE.value],
         )
+
         source = Source.objects.get(slug=slug)
         serializer = SourceDataRequestSerializer(
-            data=request.data, context={"source": source}
+            data=request.data, context={"source": source, "user": request.user}
         )
+
         if not serializer.is_valid():
             response.validation["result"] = False
             response.validation["fields"] = serializer.errors
@@ -361,6 +363,7 @@ class SourceDataView(APIView):
             data_request = DataRequest(
                 source=source,
                 query=serializer.validated_data["query"],
+                raw_query=serializer.validated_data.get("raw_query", ""),
                 time_from=serializer.validated_data["from"],
                 time_to=serializer.validated_data["to"],
                 limit=serializer.validated_data["limit"],
@@ -392,8 +395,9 @@ class SourceGraphDataView(APIView):
         source = Source.objects.get(slug=slug)
 
         serializer = SourceGraphDataRequestSerializer(
-            data=request.data, context={"source": source}
+            data=request.data, context={"source": source, "user": request.user}
         )
+
         if not serializer.is_valid():
             response.validation["result"] = False
             response.validation["fields"] = serializer.errors
@@ -404,6 +408,7 @@ class SourceGraphDataView(APIView):
             graph_data_request = GraphDataRequest(
                 source=source,
                 query=serializer.validated_data["query"],
+                raw_query=serializer.validated_data.get("raw_query", ""),
                 time_from=serializer.validated_data["from"],
                 time_to=serializer.validated_data["to"],
                 group_by=serializer.validated_data["group_by"],

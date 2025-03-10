@@ -10,7 +10,7 @@ function getDefaultMonacoOptions() {
         readOnly: false,
         fontSize: 13,
         padding: {
-            top: 6,
+            top: 20,
             bottom: 6,
         },
         contextmenu: false,
@@ -48,7 +48,6 @@ function getDefaultMonacoOptions() {
         'semanticHighlighting.enabled': true,
     }
 }
-
 function initMonacoSetup() {
     loader.config({ monaco })
     monaco.editor.defineTheme('telescope', {
@@ -65,6 +64,10 @@ function initMonacoSetup() {
             { token: 'flyqlKey', foreground: '0451a5' },
             { token: 'flyqlOperator', foreground: '0089ab' },
             { token: 'flyqlValue', foreground: '8b0000' },
+            
+            { token: 'identifier', foreground: '0451a5' },
+            { token: 'string.sql', foreground: '8b0000' },
+            { token: 'operator.sql', foreground: '0089ab' },
         ],
     })
     monaco.editor.defineTheme('telescope-dark', {
@@ -81,6 +84,10 @@ function initMonacoSetup() {
             { token: 'flyqlKey', foreground: '6e9fff' },
             { token: 'flyqlOperator', foreground: '0089ab' },
             { token: 'flyqlValue', foreground: '8b0000' },
+
+            { token: 'identifier', foreground: '6e9fff' },
+            { token: 'string.sql', foreground: 'ce9178' },
+            { token: 'operator.sql', foreground: '0089ab' },
         ],
     })
     monaco.languages.register({ id: 'fields' })
