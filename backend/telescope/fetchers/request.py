@@ -1,4 +1,6 @@
+from typing import List
 from telescope.models import Source
+from telescope.fields import ParsedField
 
 
 class AutocompleteRequest:
@@ -14,7 +16,7 @@ class AutocompleteRequest:
         self.field = field
         self.time_from = time_from
         self.time_to = time_to
-        self.limit = limit
+        self.value = value
 
 
 class DataRequest:
@@ -40,8 +42,10 @@ class GraphDataRequest:
         query: str,
         time_from: int,
         time_to: int,
+        group_by: List[ParsedField],
     ):
         self.source = source
         self.query = query
         self.time_from = time_from
         self.time_to = time_to
+        self.group_by = group_by

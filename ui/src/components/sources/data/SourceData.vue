@@ -1,23 +1,28 @@
 <template>
     <Controls ref="controlsRef" @searchRequest="onSearchRequest" @shareURL="onShareURL" @download="onDownload"
-        :source="source" :loading="loading" :validation="validation" />
+        :source="source" :loading="loading"
+        :groupByInvalid="graphValidation && !graphValidation.result && graphValidation.fields.group_by" />
     <BorderCard class="mb-3" :loading="graphLoading">
-        <Skeleton v-if="!graphData && !graphError" width="100%" height="235px"></Skeleton>
+        <Skeleton v-if="graphLoading && graphData === null" width="100%" height="235px"></Skeleton>
         <Error v-if="graphError" :error="graphError"></Error>
-        <Histogramm v-if="graphData && !graphError" :stats="graphData" :source="source"
-            @rangeSelected="onHistogrammRangeSelected" :rows="rows"/>
+        <ValidationError v-if="graphValidation && !graphValidation.result" :validation="graphValidation"
+            message="Failed to load graph: invalid parameters given" />
+        <Histogramm v-else-if="showHistogramm" :stats="graphData" :source="source"
+            @rangeSelected="onHistogrammRangeSelected" :rows="rows" :groupByLabel="sourceControlsStore.graphGroupBy"/>
     </BorderCard>
     <BorderCard :loading="loading">
-        <Skeleton v-if="!rows && !error" width="100%" height="400px"></Skeleton>
+        <Skeleton v-if="loading && rows === null" width="100%" height="400px"></Skeleton>
         <Error v-if="error" :error="error"></Error>
-        <LimitMessage v-if="fields && graphData && !error && !graphError" :rowsCount="rows.length" :totalCount="graphData.total"></LimitMessage>
-        <SourceDataTable v-if="rows && !error" :source="source" :rows="rows" :fields="fields"
-            :timezone="timezone" />
+        <ValidationError v-if="validation && !validation.result" :validation="validation"
+            message="Failed to load logs data: invalid parameters given" />
+        <LimitMessage v-if="fields && graphData && !error && !graphError" :rowsCount="rows.length"
+            :totalCount="graphData.total"></LimitMessage>
+        <SourceDataTable v-if="showSourceDataTable" :source="source" :rows="rows" :fields="fields" :timezone="timezone" />
     </BorderCard>
 </template>
 
 <script setup>
-import { ref, onBeforeMount, watch } from 'vue'
+import { ref, onBeforeMount, computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useToast } from 'primevue'
@@ -30,6 +35,7 @@ import { useGetSourceData, useGetSourceGraphData } from '@/composables/sources/u
 import Controls from '@/components/sources/data/Controls.vue'
 import BorderCard from '@/components/common/BorderCard.vue'
 import Error from '@/components/common/Error.vue'
+import ValidationError from '@/components/common/ValidationError.vue'
 import SourceDataTable from '@/components/sources/data/SourceDataTable.vue'
 import Histogramm from "@/components/sources/data/Histogramm.vue"
 import LimitMessage from '@/components/sources/data/LimitMessage.vue'
@@ -57,9 +63,29 @@ const onSearchRequest = (params) => {
     let queryString = new URLSearchParams(params.searchParams).toString();
     let url = route.path + "?" + queryString
     window.history.pushState('', 'telescope', url)
-    load(props.source.slug, params.searchParams)
-    graphLoad(props.source.slug, params.searchParams)
+    load(props.source.slug, {
+        fields: params.searchParams.fields,
+        query: params.searchParams.query,
+        limit: params.searchParams.limit,
+        from: params.searchParams.from,
+        to: params.searchParams.to,
+    })
+    graphLoad(props.source.slug, {
+        query: params.searchParams.query,
+        limit: params.searchParams.limit,
+        from: params.searchParams.from,
+        to: params.searchParams.to,
+        group_by: params.searchParams.graph_group_by,
+    })
 }
+
+const showHistogramm = computed(() => {
+    return graphData.value !== null && !graphError.value && graphValidation.value && graphValidation.value.result
+})
+
+const showSourceDataTable = computed(() => {
+    return rows.value !== null && !error.value && validation.value && validation.value.result
+})
 
 const onShareURL = (params) => {
     let queryString = new URLSearchParams(params.searchParams).toString()
@@ -106,7 +132,4 @@ navStore.update([
 onBeforeMount(() => {
     sourceControlsStore.init(props.source)
 })
-watch(() => props.rows, (newValue, oldValue) => {
-  console.log(`myProp изменился: ${oldValue} → ${newValue}`);
-});
 </script>

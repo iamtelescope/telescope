@@ -7,8 +7,9 @@
     <table class="w-full min-w-full text-sm" v-if="rows && dateFormat">
         <thead>
             <tr>
-                <th v-if="source.severityField" class="border-b border-neutral-200 dark:border-neutral-700"></th>
-                <th class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700" style="width: 50px">Time</th>
+                <th v-if="source.severityField.length != 0" class="border-b border-neutral-200 dark:border-neutral-700">
+                </th>
+                <th class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700">Time</th>
                 <th class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700"
                     v-for="field in fields" :key="field.name">{{ field.display_name
                     }}
@@ -18,17 +19,21 @@
         <tbody>
             <tr class="hover:bg-slate-100 dark:hover:bg-neutral-800 hover:cursor-pointer" v-for="row in rows"
                 :key="row.record_id" @click="handleRowClick(row)">
-                <td v-if="source.severityField" class="pl-1 pr-2 w-1 m-w-1 border-b border-neutral-200 dark:border-neutral-700">
-                    <div class="rounded w-2 h-6" :style="{ 'background-color': getRowColor(row) }"></div>
+                <td v-if="source.severityField.length != 0"
+                    class="pl-1 pr-2 w-1 m-w-1 border-b border-neutral-200 dark:border-neutral-700">
+                    <div class="rounded w-2 h-6" :style="{ 'background-color': getRowColor(row) }"
+                        :title="row.data[source.severityField]"></div>
                 </td>
-                <td
-                    class="text-nowrap pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300 hover:cursor-pointer hover:bg-slate-300 dark:hover:bg-neutral-900" style="width: 50px">
+                <td class="text-nowrap pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300 hover:cursor-pointer hover:bg-slate-300 dark:hover:bg-neutral-900"
+                    style="width: 50px">
                     <pre>{{ getTime(row.time) }}<span v-if="showMicroseconds">.<span class="text-xs text-neutral-500">{{
                         row.time.microseconds }}</span></span></pre>
                 </td>
                 <td class="text-nowrap pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300 hover:cursor-pointer hover:bg-slate-300 dark:hover:bg-neutral-900"
                     v-for="field in fields" :key="field.name">
-                    <div v-if="containsHtmlModifiers(field)" :class="{ 'whitespace-pre-wrap break-all': getRowValueLength(field, row.data) > 50 }" v-html="getRowValue(field, row.data)" />
+                    <div v-if="containsHtmlModifiers(field)"
+                        :class="{ 'whitespace-pre-wrap break-all': getRowValueLength(field, row.data) > 50 }"
+                        v-html="getRowValue(field, row.data)" />
                     <pre v-else :class="{ 'whitespace-pre-wrap break-all': getRowValueLength(field, row.data) > 50 }">{{
                         getRowValue(field, row.data) || '&dash;' }}</pre>
                 </td>
@@ -47,6 +52,7 @@ import Row from "@/components/sources/data/Row.vue"
 
 import { getColor } from '@/utils/colors.js'
 import { MODIFIERS } from '@/utils/modifiers.js'
+
 
 const props = defineProps(['source', 'rows', 'fields', 'timezone'])
 const selectedRow = ref(null)
@@ -109,7 +115,7 @@ const getRowValue = (field, data) => {
 
 const getRowValueLength = (field, data) => {
     let value = getRowValue(field, data)
-    if (typeof(value) === 'object') {
+    if (typeof (value) === 'object') {
         return JSON.stringify(value).length
     }
     return String(value).length

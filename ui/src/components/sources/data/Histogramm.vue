@@ -1,11 +1,7 @@
 <template>
     <div class="flex flex-row">
-        <FloatLabel variant="on" class="mr-2" v-if="source.severityField.length != 0">
-            <Select v-model="groupBy" :options="groupByOptions" placeholder="&#8211;" filter autoFilterFocus />
-            <label class="text-nowrap">Group by</label>
-        </FloatLabel>
-        <SelectButton v-model="selectedChartType" :defaultValue="chartDefaultType" :allowEmpty="false"
-            :options="options" @change="onChartTypeSelect">
+        <SelectButton v-model="chartType" :defaultValue="chartDefaultType" :allowEmpty="false" :options="chartTypeOptions"
+            @change="onChartTypeSelect">
             <template #option="slotProps">
                 <font-awesome-icon :icon="`fa-solid fa-chart-${slotProps.option}`" />
             </template>
@@ -20,9 +16,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { format } from "date-fns"
 import uPlot from "uplot"
 
-import SelectButton from 'primevue/selectbutton'
-import FloatLabel from 'primevue/floatlabel'
-import Select from 'primevue/select'
+import { SelectButton } from 'primevue'
 
 import { useDark } from '@vueuse/core'
 
@@ -30,15 +24,14 @@ import YagrChart from '@/components/common/YagrChart.vue'
 
 import { getColor } from '@/utils/colors.js'
 
-const props = defineProps(['source', 'stats', 'rows'])
+const props = defineProps(['source', 'stats', 'rows', 'groupByLabel'])
+
 const emit = defineEmits(['rangeSelected'])
 const chartSettings = ref(null)
-const selectedChartType = ref(null)
-const groupBy = ref(props.source.severityField)
-const groupByOptions = ref([props.source.severityField])
 const chartDefaultType = ref('column')
-const options = ref(['column', 'area', 'line'])
+const chartTypeOptions = ref(['column', 'area', 'line'])
 const isDark = useDark()
+const selectedChartType = ref(null)
 
 const onChartTypeSelect = (e) => {
     let type = e.value ?? chartDefaultType.value
@@ -108,12 +101,16 @@ const calcPlotLines = () => {
 }
 
 const tooltipRender = (data) => {
-    let html = `<div class="font-bold pb-2 dark:text-neutral-300">${format(uPlot.tzDate(new Date(data.x), 'Etc/UTC'), "yyyy-MM-dd HH:mm:ss.SSS")}</div><table class='p-0 m-0 w-full'>`
-    let rows = []
+    let html = `<div class="font-bold pb-2 dark:text-neutral-300">${format(uPlot.tzDate(new Date(data.x), 'Etc/UTC'), "yyyy-MM-dd HH:mm:ss")}</div><table class='p-0 m-0 w-full'>`
+    let label = props.groupByLabel
+    if (!label) {
+        label = 'Name'
+    }
+    html += `<tr class="pb-2"><th></th><th class="text-left pb-2 pr-2 dark:text-neutral-300">${label}</th><th class="text-right pb-2 dark:text-neutral-300">Count</th></tr>`
     for (const item of data.scales[0].rows.sort((a, b) => b.originalValue - a.originalValue)) {
         html += '<tr>'
-        html += `<td class="p-0 border-0"><i style="color:${item.color};" class="pi pi-circle-fill"></i></td>`
-        html += `<td class="p-0 border-0">${item.name}</td>`
+        html += `<td class="p-0 border-0 pr-2"><i style="color:${item.color};" class="pi pi-circle-fill"></i></td>`
+        html += `<td class="p-0 border-0 pr-2">${item.name}</td>`
         html += `<td class="p-0 border-0 text-right"> ${item.dataValue}</td>`
         html += '</tr>'
     }

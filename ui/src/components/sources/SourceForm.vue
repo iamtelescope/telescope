@@ -96,6 +96,7 @@ const getSourceDynamicFieldDefaultErrors = () => {
         autocomplete: '',
         jsonstring: '',
         suggest: '',
+        group_by: '',
         values: '',
     }
 }

@@ -69,6 +69,11 @@
                                             <ToggleSwitch v-model="slotProps.data.jsonstring" readonly />
                                         </template>
                                     </Column>
+                                    <Column sortable header="GROUP BY">
+                                        <template #body="slotProps">
+                                            <ToggleSwitch v-model="slotProps.data.group_by" readonly />
+                                        </template>
+                                    </Column>
                                     <Column sortable header="VALUES">
                                         <template #body="slotProps">
                                             <span v-if="slotProps.data.values.length">{{
