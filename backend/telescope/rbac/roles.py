@@ -12,7 +12,7 @@ class SourceRole(Enum):
     EDITOR = "editor"
     VIEWER = "viewer"
     USER = "user"
-    SQLUSER = "sqluser"
+    RAW_QUERY_USER = "raw_query_user"
 
 
 ROLES = {
@@ -24,7 +24,7 @@ ROLES = {
             permissions.Global.READ_SOURCE.value,
             permissions.Global.EDIT_SOURCE.value,
             permissions.Global.GRANT_SOURCE.value,
-            permissions.Global.SQL_SOURCE.value,
+            permissions.Global.RAW_QUERY_SOURCE.value,
             permissions.Global.USE_SOURCE.value,
             permissions.Global.DELETE_SOURCE.value,
         ],
@@ -36,7 +36,7 @@ ROLES = {
             permissions.Source.DELETE.value,
             permissions.Source.USE.value,
             permissions.Source.GRANT.value,
-            permissions.Source.SQL.value,
+            permissions.Source.RAW_QUERY.value,
         ],
         SourceRole.EDITOR.value: [
             permissions.Source.READ.value,
@@ -50,10 +50,10 @@ ROLES = {
             permissions.Source.READ.value,
             permissions.Source.USE.value,
         ],
-        SourceRole.SQLUSER.value: [
+        SourceRole.RAW_QUERY_USER.value: [
             permissions.Source.READ.value,
             permissions.Source.USE.value,
-            permissions.Source.SQL.value,
+            permissions.Source.RAW_QUERY.value,
         ],
     },
 }

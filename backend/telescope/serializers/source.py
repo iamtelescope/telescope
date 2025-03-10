@@ -5,8 +5,14 @@ from rest_framework import serializers
 
 from telescope.models import Source, SourceRoleBinding
 from telescope.utils import parse_time
-from telescope.fields import parse as parse_fields, ParserError as FieldsParserError, ParsedField
+from telescope.fields import (
+    parse as parse_fields,
+    ParserError as FieldsParserError,
+    ParsedField,
+)
 from telescope.fetchers import get_fetchers
+from telescope.rbac.helpers import user_has_source_permissions
+from telescope.rbac import permissions
 
 
 class SourceAdminSerializer(serializers.ModelSerializer):
@@ -126,7 +132,7 @@ class NewSourceSerializer(serializers.Serializer):
 
     def validate_severity_field(self, value):
         if value is None:
-            return ''
+            return ""
         return value
 
     def validate(self, data):
@@ -188,6 +194,7 @@ class SourceAutocompleteRequestSerializer(serializers.Serializer):
 class SourceDataRequestSerializer(serializers.Serializer):
     fields = serializers.CharField()
     query = serializers.CharField(allow_blank=True)
+    raw_query = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     _from = serializers.CharField()
     to = serializers.CharField()
     limit = serializers.IntegerField()
@@ -224,6 +231,18 @@ class SourceDataRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError(help_text)
         return value
 
+    def validate(self, data):
+        if data.get("raw_query"):
+            if not user_has_source_permissions(
+                self.context["user"],
+                source_slug=self.context["source"].slug,
+                required_permissions=[permissions.Source.RAW_QUERY.value],
+            ):
+                raise serializers.ValidationError(
+                    "insuffisient permissions to use source raw queries"
+                )
+        return data
+
 
 class SourceGraphDataRequestSerializer(SourceDataRequestSerializer):
     group_by = serializers.CharField(allow_blank=True, required=False)
@@ -231,6 +250,7 @@ class SourceGraphDataRequestSerializer(SourceDataRequestSerializer):
     def __init__(self, *args, **kwargs):
         super(SourceGraphDataRequestSerializer, self).__init__(*args, **kwargs)
         self.fields.pop("fields", None)
+        self.fields.pop("limit", None)
 
     def validate_group_by(self, value: str) -> List[ParsedField]:
         try:

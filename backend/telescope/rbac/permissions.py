@@ -6,7 +6,7 @@ class Global(Enum):
     READ_SOURCE = "global_read_source"
     EDIT_SOURCE = "global_edit_source"
     GRANT_SOURCE = "global_grant_source"
-    SQL_SOURCE = "global_sql_source"
+    RAW_QUERY_SOURCE = "global_raw_query_source"
     USE_SOURCE = "global_use_source"
     DELETE_SOURCE = "global_delete_source"
 
@@ -20,7 +20,7 @@ class Source(Enum):
     EDIT = "edit"
     GRANT = "grant"
     DELETE = "delete"
-    SQL = "sql"
+    RAW_QUERY = "raw_query"
 
 
 GLOBAL_TO_SOURCE = {
@@ -28,6 +28,6 @@ GLOBAL_TO_SOURCE = {
     Global.EDIT_SOURCE.value: Source.EDIT.value,
     Global.GRANT_SOURCE.value: Source.GRANT.value,
     Global.DELETE_SOURCE.value: Source.DELETE.value,
-    Global.SQL_SOURCE.value: Source.SQL.value,
+    Global.RAW_QUERY_SOURCE.value: Source.RAW_QUERY.value,
     Global.USE_SOURCE.value: Source.USE.value,
 }

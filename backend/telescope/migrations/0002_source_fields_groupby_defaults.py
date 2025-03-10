@@ -10,14 +10,14 @@ def migrate_source_fields(apps, schema_editor):
     with transaction.atomic():
         for source in Source.objects.all():
             for key, value in source.fields.items():
-                if 'group_by' not in value:
-                    value['group_by'] = False
+                if "group_by" not in value:
+                    value["group_by"] = False
             source.save()
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("telescope",  "0001_initial"),
+        ("telescope", "0001_initial"),
     ]
 
     operations = [

@@ -1,8 +1,8 @@
 <template>
-    <Controls ref="controlsRef" @searchRequest="onSearchRequest" @shareURL="onShareURL" @download="onDownload"
+    <Controls class="mb-3" ref="controlsRef" @searchRequest="onSearchRequest" @shareURL="onShareURL" @download="onDownload"
         :source="source" :loading="loading"
         :groupByInvalid="graphValidation && !graphValidation.result && graphValidation.fields.group_by" />
-    <BorderCard class="mb-3" :loading="graphLoading">
+    <BorderCard class="mb-2" :loading="graphLoading">
         <Skeleton v-if="graphLoading && graphData === null" width="100%" height="235px"></Skeleton>
         <Error v-if="graphError" :error="graphError"></Error>
         <ValidationError v-if="graphValidation && !graphValidation.result" :validation="graphValidation"
@@ -60,23 +60,10 @@ const {
 } = useGetSourceGraphData();
 
 const onSearchRequest = (params) => {
-    let queryString = new URLSearchParams(params.searchParams).toString();
-    let url = route.path + "?" + queryString
+    let url = route.path + "?" + sourceControlsStore.queryString
     window.history.pushState('', 'telescope', url)
-    load(props.source.slug, {
-        fields: params.searchParams.fields,
-        query: params.searchParams.query,
-        limit: params.searchParams.limit,
-        from: params.searchParams.from,
-        to: params.searchParams.to,
-    })
-    graphLoad(props.source.slug, {
-        query: params.searchParams.query,
-        limit: params.searchParams.limit,
-        from: params.searchParams.from,
-        to: params.searchParams.to,
-        group_by: params.searchParams.graph_group_by,
-    })
+    load(props.source.slug, sourceControlsStore.dataRequestParams)
+    graphLoad(props.source.slug, sourceControlsStore.graphRequestParams)
 }
 
 const showHistogramm = computed(() => {
@@ -88,8 +75,7 @@ const showSourceDataTable = computed(() => {
 })
 
 const onShareURL = (params) => {
-    let queryString = new URLSearchParams(params.searchParams).toString()
-    let url = window.location.origin + route.path + "?" + queryString
+    let url = window.location.origin + route.path + "?" + sourceControlsStore.queryString
 
     navigator.clipboard.writeText(url)
         .then(() => {

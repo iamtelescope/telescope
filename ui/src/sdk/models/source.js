@@ -33,6 +33,13 @@ class Source {
             return false
         }
     }
+    isRawQueryAllowed() {
+        if (this.permissions.includes('raw_query')) {
+            return true
+        } else {
+            return false
+        }
+    }
     generateFieldsExample() {
         let fields = []
         for (const field in this.fields) {
@@ -40,6 +47,7 @@ class Source {
         }
         return fields.join(', ')
     }
+    
     generateFlyQLExample() {
         let text = ''
         let fields = []

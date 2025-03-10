@@ -1,6 +1,6 @@
 <template>
     <div :style="{ height: `${editorHeight}px` }"
-        class="editor border rounded mt-1 pl-2 pr-2 mb-2 dark:border-neutral-600"
+        class="editor border rounded-lg mt-1 border-neutral-300 pl-2 pr-2 dark:border-neutral-600"
         :class="{ 'border-sky-800 dark:border-sky-700': editorFocused }">
         <vue-monaco-editor v-model:value="code" theme="telescope" language="fields" :options="getDefaultMonacoOptions()"
             @mount="handleMount" @change="onChange" />
@@ -24,7 +24,7 @@ const editorFocused = ref(false)
 
 const editorHeight = computed(() => {
     const lines = (code.value.match(/\n/g) || '').length + 1
-    return 14 + (lines * 20)
+    return 24 + (lines * 20)
 })
 
 const code = ref(props.value)
@@ -114,7 +114,7 @@ const handleMount = editor => {
         },
         triggerCharacters: [',', '|'],
     })
-    editor.updateOptions({placeholder: props.source.generateFieldsExample()})
+    editor.updateOptions({ placeholder: props.source.generateFieldsExample() })
     editorRef.value = editor
     editor.addAction({
         id: 'submit',
