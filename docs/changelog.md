@@ -1,5 +1,13 @@
 # Changelog
 
+## 2024.03.10 +
+Version: **0.0.11**
+Changes:
+ - Added support for raw SQL `WHERE` statements
+
+Related issues:
+ - [ISSUE-5](https://github.com/iamtelescope/telescope/issues/5)
+
 ## 2024.03.10
 Version: **0.0.10**
 Changes:
