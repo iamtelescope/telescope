@@ -11,8 +11,11 @@ Related issues:
  - [ISSUE-4](https://github.com/iamtelescope/telescope/issues/4)
 
 Notes:
+
 {% note warning %}
+
 This release requires database migrations to be run.
+
 {% endnote %}
 
 ## 2024.02.27
