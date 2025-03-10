@@ -108,6 +108,9 @@ const tooltipRender = (data) => {
     }
     html += `<tr class="pb-2"><th></th><th class="text-left pb-2 pr-2 dark:text-neutral-300">${label}</th><th class="text-right pb-2 dark:text-neutral-300">Count</th></tr>`
     for (const item of data.scales[0].rows.sort((a, b) => b.originalValue - a.originalValue)) {
+        if (item.dataValue == 0) {
+            continue
+        }
         html += '<tr>'
         html += `<td class="p-0 border-0 pr-2"><i style="color:${item.color};" class="pi pi-circle-fill"></i></td>`
         html += `<td class="p-0 border-0 pr-2">${item.name}</td>`
