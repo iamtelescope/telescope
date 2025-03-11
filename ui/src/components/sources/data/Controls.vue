@@ -15,16 +15,8 @@
                 </FloatLabel>
                 <DatetimePicker @rangeSelect="onRangeSelect" :from="sourceControlsStore.from"
                     :to="sourceControlsStore.to" />
-                <FloatLabel variant="on">
-                    <Select size="small" v-model="groupBy" :options="groupByOptions" optionLabel="name" editable
-                        :showClear="groupBy != ''" class="ml-2" @change="onGraphGroupByChange"
-                        :invalid="groupByInvalid">
-                    </Select>
-                    <label>Graph group by</label>
-                </FloatLabel>
-                <div class="flex items-center ml-6">
-                    <span class="mr-2">Enable RAW Query</span> <ToggleSwitch v-model="showRawQueryEditor" @change="onToggleShowRawQueryEditor" :readonly="!source.isRawQueryAllowed()" v-tooltip="rawEditorTooltip" />
-                </div>
+                <QuerySettings :source="source" :enableRawQueryEditorInitial="showRawQueryEditor" @enableRawQueryEditorChange="onEnableRawQueryEditorChange"/>
+                <GraphSettings :source="source" :groupByInvalid="groupByInvalid" @graphVisibilityChanged="onGraphVisibilityChanged"/>
             </template>
         </Toolbar>
         <div class="mb-2">
@@ -58,6 +50,8 @@ import { ref, watch, computed, onMounted } from "vue"
 import { Button, Select, Toolbar, FloatLabel, IftaLabel, ToggleSwitch } from "primevue"
 
 import DatetimePicker from "@/components/sources/data/DatetimePicker.vue"
+import GraphSettings from "@/components/sources/data/GraphSettings.vue"
+import QuerySettings from "@/components/sources/data/QuerySettings.vue"
 import FieldsEditor from "@/components/sources/data/FieldsEditor.vue"
 import QueryEditor from "@/components/sources/data/QueryEditor.vue"
 import RawQueryEditor from "@/components/sources/data/RawQueryEditor.vue"
@@ -66,7 +60,7 @@ import { getLimits } from "@/utils/limits.js"
 import { useSourceControlsStore } from "@/stores/sourceControls"
 
 const props = defineProps(["source", "loading", "groupByInvalid"])
-const emit = defineEmits(["searchRequest", "shareURL", "download"])
+const emit = defineEmits(["searchRequest", "shareURL", "download", "graphVisibilityChanged"])
 
 const sourceControlsStore = useSourceControlsStore()
 
@@ -75,19 +69,6 @@ const showRawQueryEditor = ref(sourceControlsStore.rawQuery ? true : false)
 const storedRawQuery = ref("")
 const limit = ref(sourceControlsStore.limit)
 const limits = ref(getLimits(sourceControlsStore.limit.value))
-const groupBy = ref(sourceControlsStore.graphGroupBy ? sourceControlsStore.graphGroupBy : null)
-
-const onGraphGroupByChange = (event) => {
-    let value = event.value
-    if (typeof (value) == 'object') {
-        if (value === null) {
-            value = ''
-        } else {
-            value = value.name
-        }
-    }
-    sourceControlsStore.setGraphGroupBy(value)
-}
 
 const onToggleShowRawQueryEditor = () => {
     if (showRawQueryEditor.value) {
@@ -100,26 +81,11 @@ const onToggleShowRawQueryEditor = () => {
     }
 }
 
-const rawEditorTooltip = computed(() => {
-    if (!props.source.isRawQueryAllowed()) {
-        return  { value: 'Insufficient permissions to use source raw queries', showDelay: 300 }
-    }
-})
-
 const onRangeSelect = (params) => {
     sourceControlsStore.setFrom(params.from);
     sourceControlsStore.setTo(params.to);
 }
 
-const groupByOptions = computed(() => {
-    let result = []
-    for (const [key, value] of Object.entries(props.source.fields)) {
-        if (value.group_by) {
-            result.push({ name: key })
-        }
-    }
-    return result
-})
 
 const onFieldsChange = (value) => {
     sourceControlsStore.setFields(value)
@@ -129,8 +95,24 @@ const onQueryChange = (value) => {
     sourceControlsStore.setQuery(value)
 }
 
+const onEnableRawQueryEditorChange = (value) => {
+    showRawQueryEditor.value = value
+    if (showRawQueryEditor.value) {
+        if (storedRawQuery.value) {
+            sourceControlsStore.setRawQuery(storedRawQuery.value)
+        }
+    } else {
+        storedRawQuery.value = sourceControlsStore.rawQuery
+        sourceControlsStore.setRawQuery("")
+    }
+}
+
 const onRawQueryChange = (value) => {
     sourceControlsStore.setRawQuery(value)
+}
+
+const onGraphVisibilityChanged = () => {
+    emit('graphVisibilityChanged')
 }
 
 const handleSearch = () => {

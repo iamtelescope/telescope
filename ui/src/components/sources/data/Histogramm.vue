@@ -6,6 +6,8 @@
                 <font-awesome-icon :icon="`fa-solid fa-chart-${slotProps.option}`" />
             </template>
         </SelectButton>
+        <div class="flex items-center pl-4"><span class="text-gray-500">group by:</span> <span class="pl-2 font-bold">{{ groupByLabel || '–' }}</span></div>
+
     </div>
     <div class="flex flex-col" id="histogramm">
         <YagrChart v-if="chartSettings" :theme="theme" :settings="chartSettings" />

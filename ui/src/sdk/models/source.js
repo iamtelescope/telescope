@@ -26,6 +26,13 @@ class Source {
             return false
         }
     }
+    isReadable() {
+        if (this.permissions.includes('read')) {
+            return true
+        } else {
+            return false
+        }
+    }
     isGrantable() {
         if (this.permissions.includes('grant')) {
             return true
@@ -63,6 +70,28 @@ class Source {
         }
         if (fields.length == 4) {
             text += `${fields[0]}="*like value*" and ${fields[1]}!=value or (${fields[2]}=~".*rege[xX]$" and ${fields[3]}!~"reg ex$")`
+        }
+        return text
+    }
+
+    generateRawQueryExample() {
+        if (this.kind !== 'clickhouse') {
+            return ''
+        }
+        let text = ''
+        let fields = []
+        for (const [field, data] of Object.entries(this.fields)) {
+            if (data.type.toLowerCase().includes('string') && fields.length < 4) {
+                fields.push(field)
+            }
+        }
+        if (fields.length == 1) {
+            text += `${fields[0]} = 'value'`
+        } else if (fields.length == 2 || fields.length == 3) {
+            text += `${fields[0]} = 'value' and ${fields[1] != 'value'}`
+        }
+        if (fields.length == 4) {
+            text += `${fields[0]} LIKE "%value%" AND ${fields[1]} != 'value' OR match(${fields[2]}, '*rege[xX]$' AND NOT match(${fields[3]}, 'reg ex$')`
         }
         return text
     }

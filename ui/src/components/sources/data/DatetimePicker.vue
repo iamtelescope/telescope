@@ -4,19 +4,19 @@
         <div class="flex w-full">
             <div class="flex flex-col mr-3">
                 <label for="From" class="font-bold block mb-2">From</label>
-                <InputText label="From" v-model="fromInputText" @update:model-value="onFromInputUpdate"
+                <InputText size="small" label="From" v-model="fromInputText" @update:model-value="onFromInputUpdate"
                     :invalid="!fromInputValid" />
                 <ErrorText v-if="!fromInputValid" :text="fromInputValidError" />
                 <br>
                 <label for="To" class="font-bold block mb-2">To</label>
-                <InputText label="To" v-model="toInputText" @update:model-value="onToInputUpdate"
+                <InputText size="small" label="To" v-model="toInputText" @update:model-value="onToInputUpdate"
                     :invalid="!toInputValid" />
                 <ErrorText v-if="!toInputValid" :text="toInputValidError" />
                 <br>
                 <label for="Timezone" class="font-bold block mb-2">Timezone</label>
                 <Select v-model="selectedZone" :options="zones" optionLabel="name" placeholder="Timezone"
-                    class="w-full md:w-56" filter autoFilterFocus disabled /><br>
-                <Button label="Apply" severity="primary" @click="handleApply" />
+                    class="w-full md:w-56" size="small" filter autoFilterFocus disabled /><br>
+                <Button label="Apply" severity="primary" size="small" @click="handleApply" />
             </div>
             <div class="border-r border-l pt-0 pb-0 p-2">
                 <DatePicker v-model="dates" selectionMode="range"
@@ -49,7 +49,6 @@ import Select from 'primevue/select'
 import ErrorText from '@/components/common/ErrorText.vue'
 import { getRelativeOption, getRelativeOptions, getDateIfTimestamp, getDatetimeRangeText, fmt, dateIsValid, dateTimeFormat, humanRelatedTimeRegex, getStrDateOrStrRelative } from '@/utils/datetimeranges.js'
 import { tzOptions } from '@/utils/timezones.js'
-
 
 const route = useRoute()
 

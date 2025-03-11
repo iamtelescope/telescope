@@ -53,7 +53,9 @@ function initMonacoSetup() {
     monaco.editor.defineTheme('telescope', {
         base: 'vs',
         inherit: true,
-        colors: {},
+        colors: {
+            'editorGhostText.foreground': '#c6c6c6',
+        },
         rules: [
             { token: 'field', foreground: '0451a5' },
             { token: 'alias', foreground: '0451a5', fontStyle: 'bold' },
@@ -73,7 +75,9 @@ function initMonacoSetup() {
     monaco.editor.defineTheme('telescope-dark', {
         base: 'vs-dark',
         inherit: true,
-        colors: {},
+        colors: {
+            'editorGhostText.foreground': '#676767',
+        },
         rules: [
             { token: 'field', foreground: '6e9fff' },
             { token: 'alias', foreground: '6e9fff', fontStyle: 'bold' },

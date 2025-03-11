@@ -24,6 +24,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
                 from: route.query.from ?? 'now-5m',
                 to: route.query.to ?? 'now',
                 graphGroupBy: route.query.graph_group_by ?? source.severityField,
+                showGraph: route.query.show_graph ?? true,
                 timezone: 'UTC',
                 limit: { "value": 50 },
             }
@@ -74,6 +75,10 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         return data.value[route.params.sourceSlug].graphGroupBy
     })
 
+    const showGraph = computed(() => {
+        return data.value[route.params.sourceSlug].showGraph
+    })
+
     const queryParams = computed(() => {
         let params = {
             query: query.value,
@@ -82,6 +87,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             from: new Date(from.value).valueOf() || from.value,
             to: new Date(to.value).valueOf() || to.value,
             graph_group_by: graphGroupBy.value || "",
+            show_graph: showGraph.value,
         }
         if (rawQuery.value) {
             params.raw_query = rawQuery.value
@@ -91,22 +97,22 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
     const queryString = computed(() => {
         return new URLSearchParams(queryParams.value).toString()
-     })
+    })
 
-     const dataRequestParams = computed(() => {
-        let params = {... queryParams.value}
+    const dataRequestParams = computed(() => {
+        let params = { ...queryParams.value }
         delete params.graph_group_by
         return params
-     })
+    })
 
-     const graphRequestParams = computed(() => {
-        let params = {... queryParams.value}
+    const graphRequestParams = computed(() => {
+        let params = { ...queryParams.value }
         params.group_by = params.graph_group_by
         delete params.graph_group_by
         delete params.fields
         delete params.limit
         return params
-     })
+    })
 
     function setFields(value) {
         data.value[route.params.sourceSlug].fields = value
@@ -136,6 +142,9 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         data.value[route.params.sourceSlug].graphGroupBy = value
     }
 
+    function setShowGraph(value) {
+        data.value[route.params.sourceSlug].showGraph = value
+    }
 
     function addQueryExpression(field, operator, value) {
         let currentQuery = query.value
@@ -150,5 +159,5 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         toast.add({ severity: 'success', summary: 'Success', detail: 'Query was updated', life: 3000 });
     }
 
-    return { init, setFields, setQuery, setRawQuery, addQueryExpression, setLimit, setFrom, setTo, setGraphGroupBy, from, to, limit, fields, query, rawQuery, parsedFields, graphGroupBy, queryString, dataRequestParams, graphRequestParams}
+    return { init, setFields, setQuery, setRawQuery, addQueryExpression, setLimit, setFrom, setTo, setGraphGroupBy, setShowGraph, from, to, limit, fields, query, rawQuery, parsedFields, graphGroupBy, queryString, dataRequestParams, graphRequestParams, showGraph }
 })

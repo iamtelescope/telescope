@@ -1,8 +1,8 @@
 <template>
     <Controls class="mb-3" ref="controlsRef" @searchRequest="onSearchRequest" @shareURL="onShareURL" @download="onDownload"
-        :source="source" :loading="loading"
-        :groupByInvalid="graphValidation && !graphValidation.result && graphValidation.fields.group_by" />
-    <BorderCard class="mb-2" :loading="graphLoading">
+        :source="source" :loading="loading" @graphVisibilityChanged="onGraphVisibilityChanged"
+        :groupByInvalid="!!(graphValidation && !graphValidation.result && graphValidation.fields.group_by)" />
+    <BorderCard class="mb-2" :loading="graphLoading" v-if="sourceControlsStore.showGraph">
         <Skeleton v-if="graphLoading && graphData === null" width="100%" height="235px"></Skeleton>
         <Error v-if="graphError" :error="graphError"></Error>
         <ValidationError v-if="graphValidation && !graphValidation.result" :validation="graphValidation"
@@ -15,7 +15,7 @@
         <Error v-if="error" :error="error"></Error>
         <ValidationError v-if="validation && !validation.result" :validation="validation"
             message="Failed to load logs data: invalid parameters given" />
-        <LimitMessage v-if="fields && graphData && !error && !graphError" :rowsCount="rows.length"
+        <LimitMessage v-if="rows && graphData && !error && !graphError" :rowsCount="rows.length"
             :totalCount="graphData.total"></LimitMessage>
         <SourceDataTable v-if="showSourceDataTable" :source="source" :rows="rows" :fields="fields" :timezone="timezone" />
     </BorderCard>
@@ -59,11 +59,21 @@ const {
     load: graphLoad
 } = useGetSourceGraphData();
 
-const onSearchRequest = (params) => {
+const onSearchRequest = () => {
     let url = route.path + "?" + sourceControlsStore.queryString
     window.history.pushState('', 'telescope', url)
     load(props.source.slug, sourceControlsStore.dataRequestParams)
-    graphLoad(props.source.slug, sourceControlsStore.graphRequestParams)
+    if (sourceControlsStore.showGraph) {
+       graphLoad(props.source.slug, sourceControlsStore.graphRequestParams)
+    }
+}
+
+const onGraphVisibilityChanged = () => {
+    if (sourceControlsStore.showGraph) {
+        graphLoad(props.source.slug, sourceControlsStore.graphRequestParams)
+    } else {
+        graphData.value = null
+    }
 }
 
 const showHistogramm = computed(() => {
@@ -74,7 +84,7 @@ const showSourceDataTable = computed(() => {
     return rows.value !== null && !error.value && validation.value && validation.value.result
 })
 
-const onShareURL = (params) => {
+const onShareURL = () => {
     let url = window.location.origin + route.path + "?" + sourceControlsStore.queryString
 
     navigator.clipboard.writeText(url)

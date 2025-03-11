@@ -41,6 +41,7 @@ const editorRef = shallowRef()
 
 const handleMount = editor => {
     editorRef.value = editor
+    editor.updateOptions({placeholder: props.source.generateRawQueryExample()})
     editor.addAction({
         id: 'submit',
         label: 'submit',

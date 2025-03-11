@@ -36,6 +36,9 @@
                                         <Button v-if="source.isEditable()" type="button" severity="secondary"
                                             icon="pi pi-cog" label="Manage" size="small"
                                             @click.stop="handleSourceViewClick(source)" />
+                                        <Button v-else-if="source.isReadable()" type="button" severity="secondary"
+                                            icon="pi pi-eye" label="View" size="small"
+                                            @click.stop="handleSourceViewClick(source)" />
                                     </div>
                                 </div>
                             </template>

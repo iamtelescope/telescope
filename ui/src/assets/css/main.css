@@ -36,7 +36,12 @@
     --p-surface-0: #d7d7d7;
     --p-datatable-body-cell-border-color: var(--p-surface-700);
     --p-primary-color: var(--p-primary-400);
+    --p-button-text-primary-color: var(--p-primary-200);
+    --p-tabs-tab-active-color: var(--p-primary-200);
     --p-primary-contrast-color: var(--p-surface-900);
+    --p-togglebutton-checked-color: var(--p-primary-200);
+    --p-floatlabel-focus-color: var(--p-primary-200);
+    --p-iftalabel-focus-color:  var(--p-primary-200);
     --p-primary-hover-color: var(--p-primary-300);
     --p-primary-active-color: var(--p-primary-200);
     --p-content-border-color: var(--p-surface-700);
