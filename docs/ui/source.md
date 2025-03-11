@@ -30,8 +30,8 @@ If the connection test was previously successful, you can automatically add fiel
 After adding fields, the **"Time field"** and **"Severity field"** options will become selectable from a dropdown list.
 
 - **`Time field`** – Used in the time range selector for querying data.
-- **`Severity field`** – Used to apply different colors to messages and graph bars based on severity. If not set, no color bars appear in the result table
-- **`Default chosen fields`** – Comma-separated list of values for the fields selector. Each value in lis shoud exist in fields names list
+- **`Severity field`** – Used to apply different colors to messages bars based on severity and as a default field for graph grouping. If not set, no colored bars appear in the result table, and no group by field is selected by default.
+- **`Default chosen fields`** – Comma-separated list of values for the fields selector. Each value in lis shoud exist in fields names list.
 
 #### **Field Properties**
 Each field has several properties:

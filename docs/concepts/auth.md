@@ -38,7 +38,7 @@ It includes the following global permissions:
 - `global_read_source`
 - `global_edit_source`
 - `global_grant_source`
-- `global_sql_source`
+- `global_raw_query_source`
 - `global_use_source`
 - `global_delete_source`
 
@@ -55,7 +55,7 @@ Permissions:
 - `source_delete`
 - `source_use`
 - `source_grant`
-- `source_sql`
+- `source_raw_query`
 
 ### **Editor**
 Can read, edit, and delete the source.
@@ -75,9 +75,9 @@ Permissions:
 - `source_read`
 - `source_use`
 
-### **SQL User**
-Can read, use, and execute SQL queries on the source.
+### **Raw Query User**
+Can read, use, and execute RAW queries on the source.
 Permissions:
 - `source_read`
 - `source_use`
-- `source_sql`
+- `source_raw_query`

@@ -46,6 +46,8 @@ items:
           href: ui/explorer/fields.md
         - name: Query input
           href: ui/explorer/query.md
+        - name: Raw Query input
+          href: ui/explorer/raw_query.md
   - name: How-to
     items:
       - name: Demo logs setup

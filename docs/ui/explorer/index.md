@@ -17,11 +17,27 @@ Specifies how many rows of data should be retrieved from the server and displaye
 ![Time range](_assets/timerange.png "Time range")
 Defines the time range for data retrieval, allowing either exact dates or a relative time period.
 
+### Query setup
+The Query setup button opens a menu with settings related to query configuration. Currently, 
+it allows you to enable or disable the raw query editor for the selected source.
+
+### Graph Setup  
+
+The **Graph setup** button opens a menu with settings for configuring graph visualization. Currently, it allows you to:  
+
+- **Toggle graph visibility** – Enable or disable the display of the graph.  
+- **Set Group By field** – Choose a field to group data in the graph.  
+
+Grouping is also supported for elements JSON, Map or Array fields types using the colon (`:`) notation. (Refer to the [Fields input documentation](fields.md#working-with-json,-map,-and-array-fields) for more details on accessing nested data).
+
 ### Fields Input
 A detailed description of the `fields input` is located on a separate [page](./fields.md).
 
 ### Query input
 A detailed description of the `query input` is located on a separate [page](./query.md).
+
+### Raw Query input
+A detailed description of the `raw query input` is located on a separate [page](./raw_query.md).
 
 ## Results
 ![Results](_assets/results.png "Results")

@@ -25,13 +25,67 @@ Each field definition can include the following components:
    - `message as msg`
    - `message|lastline|chars(25) as message`
 
-## Working with JSON Fields
 
-For fields stored as JSON strings, you can extract nested values using a colon (`:`) as a delimiter.
-**Example:**
-- `rest:app:request:bytes`
-  This expression navigates the JSON structure `{ "rest": { "app": { "request": { "bytes": 25 } } } }` and returns the value `25`.
-If the specified key does not exist, an empty string is returned. Modifiers can also be applied to values extracted from JSON fields.
+## Working with JSON, Map, and Array Fields  
+
+For fields stored as JSON strings, Maps, or Arrays, you can extract nested values using a colon (`:`) as a delimiter.
+
+### JSON Fields  
+You can navigate JSON structures using the field path separated by colons.
+
+**Example:**  
+```plaintext
+rest:app:request:bytes
+```
+For the JSON object:
+```json
+{
+  "rest": {
+    "app": {
+      "request": {
+        "bytes": 25
+      }
+    }
+  }
+}
+```
+This expression returns `25`. If the specified key does not exist, an empty string is returned.  
+
+### Map Fields  
+For **Map**-type fields, you can access values using the key name.
+
+**Example:**  
+```plaintext
+metadata:request_id
+```
+For the map:
+```json
+{
+  "metadata": {
+    "request_id": "abc-123"
+  }
+}
+```
+This expression returns `"abc-123"`.  
+
+### Array Fields  
+For **Array**-type fields, you can access elements by index.
+
+**Example:**  
+```plaintext
+errors:0
+```
+For the array:
+```json
+{
+  "errors": ["Error A", "Error B", "Error C"]
+}
+```
+This expression returns `"Error A"`.  
+
+Currently, only **one level of nesting** is supported for Maps and Arrays.  
+
+Modifiers can also be applied to extracted values for additional processing.
 
 ## Available Modifiers
 
