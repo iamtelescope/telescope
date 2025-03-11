@@ -1,5 +1,11 @@
 # Changelog
 
+## 2024.03.11
+Version: **0.0.12**
+Changes:
+ - Explorer UI update: Query settings and chart settings have been moved into separate dropdown menus to improve usability and reduce interface clutter.
+ - Added a placeholder for the raw query editor and made various style adjustments
+
 ## 2024.03.10 +
 Version: **0.0.11**
 Changes:
