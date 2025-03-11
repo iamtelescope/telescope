@@ -25,19 +25,22 @@ You can log in via GitHub to explore the core features of the system from an end
 ## Key Features
 
 ### 🔗 Source Management
-- Create and manage multiple connections to different ClickHouse clusters.
-- Choose which fields of a table to use and configure which should be suggested, hidden, or support autocompletion.
-- Configure which users and groups have access to a source and define their permissions.
+- Create and manage **multiple connections** to different ClickHouse clusters.
+- Choose which fields of a table to use and configure which should be **suggested**, hidden, or support **autocompletion**.
+- Configure which users and groups have access to a source and define their **permissions**.
 
 ### 📊 Data Explorer
+
 - Gain insights into your logs with dynamic visualizations and interactive graphs.
 - Customize your view by selecting relevant columns, adjusting data presentation, and applying filters to focus on what matters most.
 - Use a time and date selector with support for relative time ranges to refine your log queries effortlessly.
+- Configure **graph grouping**, including support for nested fields like **JSON strings, Maps or Arrays**.
+- Execute advanced queries with **RAW SQL filtering** using `WHERE` clause with ClickHouse SQL expressions for precise data filtering.
 - Enjoy a clean, minimalist design that keeps the focus on your log data, ensuring a seamless and distraction-free analysis experience.
 
 ### 🔒 Role-Based Access Control (RBAC) and Authentication Support
-- Authenticate with GitHub, with the ability to enforce organization membership requirements for access control.
-- Define and manage user and group permissions to control access to specific sources based on their roles.
+- Authenticate with GitHub, with the ability to enforce **organization membership** requirements for access control.
+- Define and manage **user and group permissions** to control access to specific sources based on their roles.
 
 ## Contributing
 
@@ -52,14 +55,11 @@ Patches are welcome! Please take a look at [Contributing guidelines](CONTRIBUTIN
 > - Certain components might not work as expected or could behave inconsistently.
 > - Bugs or issues may occur during usage.
 > - From a development and operational perspective, the system may not yet offer full convenience or polish.
-> - Was not used in production, so it might encounter some performance issues on real installations.
 
 ## Beyond βeta
 Features planned for future implementation ([Telescope 1.0.0 milestone](https://github.com/iamtelescope/telescope/milestone/1))
 
 - [Ability to store fields and query presets for easier log searches](https://github.com/iamtelescope/telescope/issues/3).
-- ~[Grant expert users the ability to write raw SQL WHERE statements](https://github.com/iamtelescope/telescope/issues/5)~.
-- ~[Support custom GROUP BY columns for graphs](https://github.com/iamtelescope/telescope/issues/4).~
 - Display records in context.
 - Snapshot storage for long-term retention of log records, preventing data loss due to rotation.
 - Live log trailing.
