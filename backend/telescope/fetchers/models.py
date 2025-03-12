@@ -7,6 +7,9 @@ from zoneinfo import ZoneInfo
 from telescope.models import Source
 from telescope.constants import UTC_ZONE
 
+import logging
+logger = logging.getLogger("telescope.models")
+
 
 class Row:
     def __init__(
@@ -42,7 +45,7 @@ class Row:
             if source_field.jsonstring:
                 try:
                     value = json.loads(self.data[name])
-                except Exception as err:
+                except Exception:
                     value = self.data[name]
                     logger.error(
                         "Failed to json.loads(value) for JSON-treated field '%s'", name
