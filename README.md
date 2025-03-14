@@ -17,7 +17,7 @@ _A handy tool that manages to make close what once was far_
 :whale:	**[Run locally using Docker](https://iamtelescope.github.io/telescope/docs/setup/quickstart.html)**
 
 ## 🚀 Live installation
-An live instance is available at [https://telescope.humanuser.net](https://telescope.humanuser.net).
+An live instance is available at [https://demo.telescope.humanuser.net](https://demo.telescope.humanuser.net).
 You can log in via GitHub to explore the core features of the system from an end-user perspective.
 > [!NOTE]
 > The live version is intended for demonstration purposes and does not showcase administrative features of the system.
