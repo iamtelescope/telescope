@@ -1,4 +1,4 @@
-# Telescope - web-based log viewer UI
+# [Telescope](https://telescope.humanuser.net/) - web-based log viewer UI
 _A handy tool that manages to make close what once was far_
 
 ## Introduction
