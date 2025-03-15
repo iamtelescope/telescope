@@ -154,7 +154,7 @@
                         <template #title>
                             <div class="pb-2 flex flex-row"><i class="pi pi-clock text-gray-600 text-3xl pr-4"></i>
                                 Coming soon...</div>
-                            <div class="font-bold">Saved Searches and Collaboration</div>
+                            <div class="font-bold">Live Log Streaming and Real-time Updates</div>
                         </template>
                         <template #content>
                             <div class="text-lg">Continuously <span class="font-bold">stream log updates in
