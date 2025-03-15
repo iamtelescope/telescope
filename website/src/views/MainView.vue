@@ -2,14 +2,16 @@
     <div class="flex items-start justify-center min-h-screen bg-cover bg-center bg-no-repeat bg-fixed"
         :style="{ backgroundImage: `url(${require('@/assets/background.png')})`, backgroundSize: 'cover' }">
         <div class="w-full max-w-[1280px]">
-            <div class="fixed top-0 left-0 w-full backdrop-blur-lg z-50 transition-all duration-300 ease-in-out pt-3 pb-3"
+            <div class="fixed top-0 left-0 w-full backdrop-blur-lg z-50 transition-all duration-300 ease-in-out p-3"
                 :class="{ 'border-b border-gray-300 border-opacity-100': hasScrolled, 'border-opacity-0 border-transparent': !hasScrolled }">
-                <div class="flex flex-row max-w-[1280px] mx-auto items-center py-2 px-3">
+                <div class="flex flex-row max-w-[1280px] mx-auto items-center ">
                     <div class="flex flex-row justify-start items-center cursor-pointer">
                         <img src="@/assets/logo.png" height="40px" width="40px">
                         <span id="logo" class="mr-9 pl-2.5 text-4xl">Telescope</span>
                     </div>
-                    <div class="flex flex-row w-full justify-end items-center mr-10">
+
+                    <!-- desktop -->
+                    <div class="hidden md:flex flex-row w-full justify-end items-center mr-10">
                         <Button icon="pi pi-list-check" severity="secondary" as="a" class="mr-3"
                             href="https://iamtelescope.github.io/telescope/docs/changelog.html" target="_blank"
                             rel="noopener" label="Changelog"></Button>
@@ -19,6 +21,44 @@
                         <Button icon="pi pi-github" severity="secondary" as="a"
                             href="https://github.com/iamtelescope/telescope" target="_blank" rel="noopener"
                             label="GitHub"></Button>
+                    </div>
+
+                    <!-- mobile -->
+                    <div class="md:hidden flex w-full justify-end items-center">
+                        <Button icon="pi pi-bars" severity="secondary" @click="toggleMenu()" />
+                        <Drawer v-model:visible="mobilemenuVisible" class="h-auto" position="top" :pt="{
+                            content: { class: 'p-0' },
+                        }"><template #container>
+                                <div class="flex flex-col">
+                                    <div class="flex flex-row pl-3 pt-1 pb-1 pr-1 border-b">
+                                        <div class="flex flex-row justify-start items-center cursor-pointer">
+                                            <img src="@/assets/logo.png" height="40px" width="40px">
+                                            <span id="logo" class="mr-9 pl-2.5 text-4xl">Telescope</span>
+                                        </div>
+                                        <div class="flex flex-row w-full justify-end items-center">
+                                            <i class="pi pi-times p-4 mt-3" style="font-size: 1.2rem"
+                                                @click="toggleMenu()" />
+                                        </div>
+                                    </div>
+                                    <div class="text-left w-full pt-5">
+                                        <ul class="flex flex-col w-full overflow-hidden p-0">
+                                            <li class="px-4 py-3 text-lg cursor-pointer border-b"
+                                                @click="goTo('https://iamtelescope.github.io/telescope/docs')">
+                                                <i class="pi pi-book mr-2"></i> Docs
+                                            </li>
+                                            <li class="px-4 py-3 text-lg cursor-pointer border-b"
+                                                @click="goTo('https://github.com/iamtelescope/telescope')">
+                                                <i class="pi pi-github mr-2"></i> GitHub
+                                            </li>
+                                            <li class="px-4 py-3 text-lg cursor-pointer"
+                                                @click="goTo('https://iamtelescope.github.io/telescope/docs/changelog.html')">
+                                                <i class="pi pi-list-check mr-2"></i> Changelog
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </template>
+                        </Drawer>
                     </div>
                 </div>
             </div>
@@ -42,7 +82,7 @@
                         href="https://www.youtube.com/watch?v=5IItMOXwugY" target="_blank" rel="noopener"></Button>
                 </div>
 
-                <Galleria :value="images" :numVisible="5" circular autoPlay :showIndicators="true"
+                <Galleria :value="images" :numVisible="5" circular autoPlay :showIndicators="false"
                     :changeItemOnIndicatorHover="true" containerStyle="max-width: 1280px" :showThumbnails="false" :pt="{
                         root: { style: 'border: none;' },
                     }">
@@ -171,9 +211,11 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 
-import { Button, Card, Galleria } from 'primevue'
+import { Button, Card, Galleria, Drawer } from 'primevue'
 
 const hasScrolled = ref(false)
+
+const mobilemenuVisible = ref(false)
 
 const onScroll = () => {
     hasScrolled.value = window.scrollY > 10;
@@ -184,6 +226,14 @@ const images = ref([
     //{ itemImageSrc: "/assets/explorer_dark.png", alt: "Explorer Dark Theme" },
 ])
 
+
+const toggleMenu = (event) => {
+    mobilemenuVisible.value = !mobilemenuVisible.value
+}
+const goTo = (url) => {
+    window.open(url, "_blank");
+    menu.value.hide();
+};
 onMounted(() => {
     window.addEventListener("scroll", onScroll);
 })
