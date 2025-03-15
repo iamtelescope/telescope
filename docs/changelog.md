@@ -1,5 +1,11 @@
 # Changelog
 
+## 2024.03.15
+Version: **0.0.13**
+
+Changes:
+ - Added config option to force github authentication on login page
+
 ## 2024.03.11
 Version: **0.0.12**
 Changes:

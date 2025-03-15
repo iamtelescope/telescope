@@ -19,6 +19,8 @@ auth:
       secret: ''
       # If specified, users must belong to one of these organizations to log in.
       organizations: []
+  # IF specified, forces login page to redirect to github auth (only available when github auth provider is enabled)
+  force_github_auth: false
 
 # These options are passed to Django settings
 django:
