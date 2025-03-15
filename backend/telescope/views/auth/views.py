@@ -22,7 +22,8 @@ class LoginView(views.LoginView):
     form_class = LoginForm
     next_page = "/"
     extra_context = {
-        "github_enabled": settings.CONFIG["auth"]["providers"]["github"]["enabled"]
+        "github_enabled": settings.CONFIG["auth"]["providers"]["github"]["enabled"],
+        "force_github_auth": settings.CONFIG["auth"]["force_github_auth"],
     }
 
     def dispatch(self, request, *args, **kwargs):

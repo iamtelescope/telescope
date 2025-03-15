@@ -35,7 +35,10 @@ SCHEMA = {
             "properties": {
                 "providers": {
                     "type": "object",
-                }
+                },
+                "force_github_auth": {
+                    "type": "boolean",
+                },
             },
         },
         "django": {
@@ -97,6 +100,18 @@ def validate(config, schema):
         path = ".".join(map(str, error.absolute_path))
         errors.append((path, error.message))
 
+    if not errors:
+        if (
+            config["auth"]["force_github_auth"]
+            and not config["auth"]["providers"]["github"]["enabled"]
+        ):
+            errors.append(
+                (
+                    "auth.force_github_auth",
+                    "cannot be true if github provider is not enabled",
+                )
+            )
+
     if errors:
         raise ConfigValidationError(message="Malformed configuration", errors=errors)
 
@@ -146,6 +161,7 @@ def get_default_config():
                     "default_group": None,
                 },
             },
+            "force_github_auth": False,
         },
         "frontend": {
             "github_url": "https://github.com/iamtelescope/telescope",
