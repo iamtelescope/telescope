@@ -67,7 +67,6 @@ class Fetcher(BaseFetcher):
     @classmethod
     def autocomplete(self, source, field, time_from, time_to, value):
         incomplete = False
-        items = []
         from_db_table = f"{source.connection['database']}.{source.connection['table']}"
         time_clause = f"{source.time_field} BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
         query = f"SELECT DISTINCT {field} FROM {from_db_table} WHERE {time_clause} and {field} LIKE %(value)s ORDER BY {field} LIMIT 500"
@@ -122,10 +121,11 @@ class Fetcher(BaseFetcher):
         time_clause = f"{request.source.time_field} BETWEEN fromUnixTimestamp64Milli({request.time_from}) and fromUnixTimestamp64Milli({request.time_to})"
         from_db_table = f"{request.source.connection['database']}.{request.source.connection['table']}"
 
+        time_field_type = request.source._fields[request.source.time_field].type.lower()
         fields_names = sorted(request.source._fields.keys())
         fields_to_select = []
         for field in fields_names:
-            if field == request.source.time_field:
+            if field == request.source.time_field and time_field_type not in ["timestamp", "uint64", "int64"]:
                 fields_to_select.append(f"toTimeZone({field}, 'UTC')")
             else:
                 fields_to_select.append(field)
@@ -137,17 +137,23 @@ class Fetcher(BaseFetcher):
         unique_ts = set([request.time_from, request.time_to])
         seconds = int(request.time_to - request.time_from) / 1000
         stats_names = set()
+
+        if time_field_type in ["datetime", "datetime64"]:
+            to_time_zone = f"toTimeZone({request.source.time_field}, 'UTC')"
+        elif time_field_type in ["timestamp", "uint64", "int64"]:
+            to_time_zone = f"toTimeZone(toDateTime({request.source.time_field}), 'UTC')"
+
         if seconds > 15:
             max_points = 150
             stats_interval_seconds = round(seconds / max_points)
             if stats_interval_seconds == 0:
                 stats_interval_seconds = 1
-            stats_time_selector = f"toUnixTimestamp(toStartOfInterval(toTimeZone({request.source.time_field}, 'UTC'), INTERVAL {stats_interval_seconds} second))*1000"
+            stats_time_selector = f"toUnixTimestamp(toStartOfInterval({to_time_zone}, toIntervalSecond({stats_interval_seconds}))) * 1000"
         else:
-            if request.source._fields[request.source.time_field].type == "datetime64":
-                stats_time_selector = f"toUnixTimestamp64Milli(toTimeZone({request.source.time_field}), 'UTC')"
-            else:
-                stats_time_selector = f"toUnixTimestamp(toTimeZone({request.source.time_field}, 'UTC'))*1000"
+            if time_field_type in ["datetime", "timestamp" , "uint64"]:
+                stats_time_selector = f"toUnixTimestamp({to_time_zone})*1000"
+            elif time_field_type == "datetime64":
+                stats_time_selector = f"toUnixTimestamp64Milli({to_time_zone})"
 
         with clickhouse.Client(
             **get_source_database_conn_kwargs(request.source)
@@ -222,7 +228,11 @@ class Fetcher(BaseFetcher):
         fields_to_select = []
         for field in fields_names:
             if field == request.source.time_field:
-                fields_to_select.append(f"toTimeZone({field}, 'UTC')")
+                time_field_type = request.source._fields[request.source.time_field].type.lower()
+                if time_field_type in ["datetime", "datetime64"]:
+                    fields_to_select.append(f"toTimeZone({field}, 'UTC')")
+                elif time_field_type in ["timestamp", "uint64", "int64"]:
+                    fields_to_select.append(f"toTimeZone(toDateTime({field}), 'UTC')")
             else:
                 fields_to_select.append(field)
         fields_to_select = ", ".join(fields_to_select)

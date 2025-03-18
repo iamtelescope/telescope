@@ -94,6 +94,10 @@ class SourceFieldSerializer(serializers.Serializer):
 
 
 class NewSourceSerializer(serializers.Serializer):
+    SEVERITY_FIELD_NAME = "severity_field"
+    TIME_FIELD_NAME = "time_field"
+    DEFAULT_CHOSEN_NAME = "default_chosen_fields"
+
     kind = serializers.CharField()
     slug = serializers.SlugField(max_length=64, required=True)
     name = serializers.CharField(max_length=64)
@@ -116,6 +120,53 @@ class NewSourceSerializer(serializers.Serializer):
         ]
         return super().to_internal_value(data)
 
+    def type_validate_default_chosen_fields(self, data):
+        chosen_errors = []
+        value = data[self.DEFAULT_CHOSEN_NAME]
+        if not value:
+            raise ["This field may not be blank"]
+
+        for field_name in data[self.DEFAULT_CHOSEN_NAME]:
+            if field_name not in data["fields"]:
+                chosen_errors.append(f"field {field_name} was not found in fields list")
+
+        return chosen_errors
+
+    def type_validate_severity_field(self, data):
+        value = data[self.SEVERITY_FIELD_NAME]
+        errors = {}
+
+        if value is None:
+            raise f"This field may not be blank"
+        if value not in data["fields"]:
+            errors[self.SEVERITY_FIELD_NAME] = f"field {value} was not found in fields list"
+        return errors
+
+    def type_validate_time_field(self, data):
+        value = data[self.TIME_FIELD_NAME]
+        allowed_time_field_types = ["datetime", "datetime64", "uint64", "int64", "timestamp"]
+        errors = {}
+
+        if value is None:
+            raise f"This field may not be blank"
+        if data["fields"][value]["type"].lower() not in allowed_time_field_types:
+            errors[self.SEVERITY_FIELD_NAME] = f"filed should have correct type"
+        return errors
+
+    def validate(self, data):
+        errors = {}
+        errors.update(self.type_validate_severity_field(data))
+        errors.update(self.type_validate_time_field(data))
+        chosen_errors = self.type_validate_default_chosen_fields(data)
+
+        if chosen_errors:
+            errors["default_chosen_fields"] = ", ".join(chosen_errors)
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return data
+
     def validate_slug(self, value):
         if Source.objects.filter(slug=value).exists():
             raise serializers.ValidationError("source with that slug already exist")
@@ -134,31 +185,6 @@ class NewSourceSerializer(serializers.Serializer):
         if value is None:
             return ""
         return value
-
-    def validate(self, data):
-        errors = {}
-
-        # for field_name in ["time_field", "uniq_field", "severity_field"]:
-        for field_name in ["time_field", "severity_field"]:
-            value = data[field_name]
-            if value and value not in data["fields"]:
-                errors[field_name] = f"field {value} was not found in fields list"
-            elif field_name == "time_field":
-                if "datetime" not in data["fields"][value]["type"].lower():
-                    errors["time_field"] = f"filed should have corret type"
-
-        chosen_errors = []
-        for field_name in data["default_chosen_fields"]:
-            if field_name not in data["fields"]:
-                chosen_errors.append(f"field {field_name} was not found in fields list")
-
-        if chosen_errors:
-            errors["default_chosen_fields"] = ", ".join(chosen_errors)
-
-        if errors:
-            raise serializers.ValidationError(errors)
-
-        return data
 
 
 class UpdateSourceSerializer(NewSourceSerializer):
