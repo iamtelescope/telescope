@@ -1,5 +1,14 @@
 # Changelog
 
+## 2024.03.19
+Version: **0.0.14**
+
+Changes:
+ - The source time field now supports UInt64, Int64, and timestamp ClickHouse types. Thanks to [Zerg1996](https://github.com/Zerg1996)!
+
+Related issues:
+ - [ISSUE-13](https://github.com/iamtelescope/telescope/issues/13)
+
 ## 2024.03.15
 Version: **0.0.13**
 
