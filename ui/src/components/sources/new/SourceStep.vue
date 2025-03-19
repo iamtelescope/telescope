@@ -271,9 +271,14 @@ const sourceStaticFieldChoices = computed(() => {
     let severityChoices = []
 
     for (const [fieldName, fieldData] of Object.entries(sourceFormData.fields)) {
-        let item = Object.assign({ 'name': fieldName }, fieldData)
-        if (item.type.toLowerCase().includes('datetime')) {
-            timeFieldChoices.push(item)
+       let item = Object.assign({ 'name': fieldName }, fieldData)
+       let itemType = item.type.toLowerCase()
+       if (itemType.includes('datetime') ||
+           itemType.includes('datetime64') ||
+           itemType.includes('timestamp') ||
+           itemType.includes('int64') ||
+           itemType.includes('uint64')) {
+            timeFieldChoices.push(item);
         } else {
             // uniqFieldChoices.push(item)
             severityChoices.push(item)
