@@ -23,6 +23,8 @@ from telescope.fetchers.response import (
 from telescope.fetchers.fetcher import BaseFetcher
 from telescope.fetchers.models import Row
 
+from telescope.utils import convert_to_base_ch
+
 
 def flyql_clickhouse_fields(source_fields: List[SourceField]):
     return {
@@ -48,7 +50,7 @@ def get_source_database_conn_kwargs(source):
 
 class Fetcher(BaseFetcher):
     @classmethod
-    def validate_query(self, source, query):
+    def validate_query(cls, source, query):
         if not query:
             return True, None
 
@@ -65,7 +67,7 @@ class Fetcher(BaseFetcher):
         return True, None
 
     @classmethod
-    def autocomplete(self, source, field, time_from, time_to, value):
+    def autocomplete(cls, source, field, time_from, time_to, value):
         incomplete = False
         from_db_table = f"{source.connection['database']}.{source.connection['table']}"
         time_clause = f"{source.time_field} BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
@@ -79,7 +81,7 @@ class Fetcher(BaseFetcher):
 
     @classmethod
     def fetch_graph_data(
-        self,
+        cls,
         request: GraphDataRequest,
     ):
         if request.query:
@@ -121,12 +123,18 @@ class Fetcher(BaseFetcher):
         time_clause = f"{request.source.time_field} BETWEEN fromUnixTimestamp64Milli({request.time_from}) and fromUnixTimestamp64Milli({request.time_to})"
         from_db_table = f"{request.source.connection['database']}.{request.source.connection['table']}"
 
-        time_field_type = request.source._fields[request.source.time_field].type.lower()
+        time_field_type = convert_to_base_ch(request.source._fields[request.source.time_field].type.lower())
+        to_time_zone = ""
+        if time_field_type in ["datetime", "datetime64"]:
+            to_time_zone = f"toTimeZone({request.source.time_field}, 'UTC')"
+        elif time_field_type in ["timestamp", "uint64", "int64"]:
+            to_time_zone = f"toTimeZone(toDateTime({request.source.time_field}), 'UTC')"
+
         fields_names = sorted(request.source._fields.keys())
         fields_to_select = []
         for field in fields_names:
-            if field == request.source.time_field and time_field_type not in ["timestamp", "uint64", "int64"]:
-                fields_to_select.append(f"toTimeZone({field}, 'UTC')")
+            if field == request.source.time_field:
+                fields_to_select.append(to_time_zone)
             else:
                 fields_to_select.append(field)
         fields_to_select = ", ".join(fields_to_select)
@@ -134,15 +142,10 @@ class Fetcher(BaseFetcher):
         rows = []
         stats = {}
         stats_by_ts = {}
-        unique_ts = set([request.time_from, request.time_to])
+        unique_ts = {request.time_from, request.time_to}
         seconds = int(request.time_to - request.time_from) / 1000
         stats_names = set()
-
-        if time_field_type in ["datetime", "datetime64"]:
-            to_time_zone = f"toTimeZone({request.source.time_field}, 'UTC')"
-        elif time_field_type in ["timestamp", "uint64", "int64"]:
-            to_time_zone = f"toTimeZone(toDateTime({request.source.time_field}), 'UTC')"
-
+        stats_time_selector = ""
         if seconds > 15:
             max_points = 150
             stats_interval_seconds = round(seconds / max_points)
@@ -228,7 +231,7 @@ class Fetcher(BaseFetcher):
         fields_to_select = []
         for field in fields_names:
             if field == request.source.time_field:
-                time_field_type = request.source._fields[request.source.time_field].type.lower()
+                time_field_type = convert_to_base_ch(request.source._fields[request.source.time_field].type.lower())
                 if time_field_type in ["datetime", "datetime64"]:
                     fields_to_select.append(f"toTimeZone({field}, 'UTC')")
                 elif time_field_type in ["timestamp", "uint64", "int64"]:

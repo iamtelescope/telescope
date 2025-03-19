@@ -14,6 +14,17 @@ from telescope.fetchers import get_fetchers
 from telescope.rbac.helpers import user_has_source_permissions
 from telescope.rbac import permissions
 
+from telescope.utils import ALLOWED_TIME_FIELD_TYPES, convert_to_base_ch
+
+class SerializeErrorMsg:
+    EMPTY_FIELD = "This field may not be blank"
+    SLUG_SOURCE_EXIST = "Source with that slug already exist"
+    SLUG_START_WITH_DASH = "Should not starts with dash"
+    SLUG_END_WITH_DASH = "Should not ends with dash"
+    DB_SUPPORTED_ONLY_CLICK = "Only clickhouse kind is supported atm"
+    TIME_FIELD_TYPE = "Field should have a valid time-related type"
+    RAW_QUERIES_PERMISSIONS = "Insufficient permissions to use source raw queries"
+
 
 class SourceAdminSerializer(serializers.ModelSerializer):
     class Meta:
@@ -96,7 +107,7 @@ class SourceFieldSerializer(serializers.Serializer):
 class NewSourceSerializer(serializers.Serializer):
     SEVERITY_FIELD_NAME = "severity_field"
     TIME_FIELD_NAME = "time_field"
-    DEFAULT_CHOSEN_NAME = "default_chosen_fields"
+    DEFAULT_CHOSEN_FIELDS_NAME = "default_chosen_fields"
 
     kind = serializers.CharField()
     slug = serializers.SlugField(max_length=64, required=True)
@@ -111,56 +122,60 @@ class NewSourceSerializer(serializers.Serializer):
 
     def validate_kind(self, value):
         if value != "clickhouse":
-            raise serializers.ValidationError("only clickhouse kind is supported atm")
+            raise serializers.ValidationError(SerializeErrorMsg.DB_SUPPORTED_ONLY_CLICK)
         return value
 
     def to_internal_value(self, data):
-        data["default_chosen_fields"] = [
-            x.strip() for x in data["default_chosen_fields"].split(",") if x.strip()
+        data[self.DEFAULT_CHOSEN_FIELDS_NAME] = [
+            x.strip() for x in data[self.DEFAULT_CHOSEN_FIELDS_NAME].split(",") if x.strip()
         ]
         return super().to_internal_value(data)
 
     def type_validate_default_chosen_fields(self, data):
         chosen_errors = []
-        value = data[self.DEFAULT_CHOSEN_NAME]
+        value = data[self.DEFAULT_CHOSEN_FIELDS_NAME]
         if not value:
-            raise ["This field may not be blank"]
+            raise [SerializeErrorMsg.EMPTY_FIELD]
 
-        for field_name in data[self.DEFAULT_CHOSEN_NAME]:
+        for field_name in data[self.DEFAULT_CHOSEN_FIELDS_NAME]:
             if field_name not in data["fields"]:
                 chosen_errors.append(f"field {field_name} was not found in fields list")
 
-        return chosen_errors
+        errors = {}
+        if chosen_errors:
+            errors[self.DEFAULT_CHOSEN_FIELDS_NAME] = ", ".join(chosen_errors)
+
+        return errors
 
     def type_validate_severity_field(self, data):
         value = data[self.SEVERITY_FIELD_NAME]
         errors = {}
 
         if value is None:
-            raise f"This field may not be blank"
+            raise SerializeErrorMsg.EMPTY_FIELD
         if value not in data["fields"]:
             errors[self.SEVERITY_FIELD_NAME] = f"field {value} was not found in fields list"
         return errors
 
     def type_validate_time_field(self, data):
-        value = data[self.TIME_FIELD_NAME]
-        allowed_time_field_types = ["datetime", "datetime64", "uint64", "int64", "timestamp"]
+        value = data.get(self.TIME_FIELD_NAME)
         errors = {}
 
-        if value is None:
-            raise f"This field may not be blank"
-        if data["fields"][value]["type"].lower() not in allowed_time_field_types:
-            errors[self.SEVERITY_FIELD_NAME] = f"filed should have correct type"
+        if not value:
+            raise ValueError(SerializeErrorMsg.EMPTY_FIELD)
+
+        field_type = convert_to_base_ch(data["fields"].get(value, {}).get("type", "").lower())
+
+        if field_type not in ALLOWED_TIME_FIELD_TYPES:
+            errors[self.TIME_FIELD_NAME] = SerializeErrorMsg.TIME_FIELD_TYPE
+
         return errors
 
     def validate(self, data):
         errors = {}
         errors.update(self.type_validate_severity_field(data))
         errors.update(self.type_validate_time_field(data))
-        chosen_errors = self.type_validate_default_chosen_fields(data)
-
-        if chosen_errors:
-            errors["default_chosen_fields"] = ", ".join(chosen_errors)
+        errors.update(self.type_validate_default_chosen_fields(data))
 
         if errors:
             raise serializers.ValidationError(errors)
@@ -169,16 +184,16 @@ class NewSourceSerializer(serializers.Serializer):
 
     def validate_slug(self, value):
         if Source.objects.filter(slug=value).exists():
-            raise serializers.ValidationError("source with that slug already exist")
+            raise serializers.ValidationError(SerializeErrorMsg.SLUG_SOURCE_EXIST)
         if value.startswith("-"):
-            raise serializers.ValidationError("should not starts with dash")
+            raise serializers.ValidationError(SerializeErrorMsg.SLUG_START_WITH_DASH)
         if value.endswith("-"):
-            raise serializers.ValidationError("should not ends with dash")
+            raise serializers.ValidationError(SerializeErrorMsg.SLUG_END_WITH_DASH)
         return value
 
     def validate_default_chosen_fields(self, value):
         if not value:
-            raise serializers.ValidationError("This field may not be blank")
+            raise serializers.ValidationError(SerializeErrorMsg.EMPTY_FIELD)
         return value
 
     def validate_severity_field(self, value):
@@ -264,9 +279,7 @@ class SourceDataRequestSerializer(serializers.Serializer):
                 source_slug=self.context["source"].slug,
                 required_permissions=[permissions.Source.RAW_QUERY.value],
             ):
-                raise serializers.ValidationError(
-                    "insuffisient permissions to use source raw queries"
-                )
+                raise serializers.ValidationError(SerializeErrorMsg.RAW_QUERIES_PERMISSIONS)
         return data
 
 

@@ -3,11 +3,35 @@ import json
 from datetime import datetime
 from datetime import timezone
 from datetime import timedelta
+from typing import List
 
 
 from rest_framework.renderers import JSONRenderer
 from rest_framework.compat import INDENT_SEPARATORS, LONG_SEPARATORS, SHORT_SEPARATORS
 
+CLICKHOUSE_TYPES: List[str] = [
+    "aggregatefunction", "array", "bool", "date", "date32", "datetime", "datetime32", "datetime64",
+    "decimal", "decimal128", "decimal256", "decimal32", "decimal64", "dynamic", "enum", "enum16",
+    "enum8", "fixedstring", "float32", "float64", "ipv4", "ipv6", "int128", "int16", "int256", "int32",
+    "int64", "int8", "intervalday", "intervalhour", "intervalmicrosecond", "intervalmillisecond",
+    "intervalminute", "intervalmonth", "intervalnanosecond", "intervalquarter", "intervalsecond",
+    "intervalweek", "intervalyear", "json", "linestring", "lowcardinality", "map", "multipolygon",
+    "nested", "nothing", "nullable", "object", "point", "polygon", "ring", "simpleaggregatefunction",
+    "string", "tuple", "uint128", "uint16", "uint256", "uint32", "uint64", "uint8", "uuid", "variant",
+    "bigint", "bigint signed", "bigint unsigned", "binary", "binary large object", "binary varying",
+    "bit", "blob", "byte", "bytea", "char", "char large object", "char varying", "character",
+    "character large object", "character varying", "clob", "dec", "double", "double precision", "enum",
+    "fixed", "float", "geometry", "inet4", "inet6", "int", "int signed", "int unsigned", "int1",
+    "int1 signed", "int1 unsigned", "integer", "integer signed", "integer unsigned", "longblob",
+    "longtext", "mediumblob", "mediumint", "mediumint signed", "mediumint unsigned", "mediumtext",
+    "national char", "national char varying", "national character", "national character large object",
+    "national character varying", "nchar", "nchar large object", "nchar varying", "numeric", "nvarchar",
+    "real", "set", "signed", "single", "smallint", "smallint signed", "smallint unsigned", "text",
+    "time", "timestamp", "tinyblob", "tinyint", "tinyint signed", "tinyint unsigned", "tinytext",
+    "unsigned", "varbinary", "varchar", "varchar2", "year", "bool", "boolean"
+]
+
+ALLOWED_TIME_FIELD_TYPES: List[str] = ["datetime", "datetime64", "uint64", "int64", "timestamp"]
 
 class DefaultJSONRenderer(JSONRenderer):
     # copied from https://github.com/encode/django-rest-framework/blob/28d0261afcd6702900512e00c37f4e264c117d83/rest_framework/renderers.py#L85
@@ -84,3 +108,11 @@ def parse_time(value):
                     * 1000
                 )
     return timestamp, error
+
+def convert_to_base_ch(full_type: str) -> str:
+    """Finds the longest matching ClickHouse type in the given full type string."""
+    res: str = ""
+    for t in CLICKHOUSE_TYPES:
+        if t in full_type and len(t) > len(res):
+            res = t
+    return res
