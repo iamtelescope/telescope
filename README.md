@@ -3,7 +3,8 @@ _A handy tool that manages to make close what once was far_
 
 ## Introduction
 
-**Telescope** is a web application designed to provide an intuitive interface for exploring log data. It is built to work with any type of logs, as long as they are stored in [**ClickHouse**](https://github.com/ClickHouse/ClickHouse). Users can easily configure connections to their ClickHouse databases and run queries to filter, search, and analyze logs efficiently. While ClickHouse is the primary supported storage backend, future versions of Telescope may introduce support for additional data sources.
+**Telescope** is a web application designed to provide an intuitive interface for exploring log data. It supports multiple types of sources, including [**ClickHouse**](https://github.com/ClickHouse/ClickHouse) and [**Docker**](https://www.docker.com/). Users can configure connections to their ClickHouse databases or access container logs via the Docker API. Telescope provides a unified querying experience across different source types, allowing users to filter, search, and analyze logs efficiently. While ClickHouse remains the primary backend for structured log storage, Docker support offers a convenient option for local development or ephemeral environments. Future versions may further extend source support.
+
 
 ![Source data](screenshots/main.png?raw=true "Source data")
 
@@ -25,8 +26,8 @@ You can log in via GitHub to explore the core features of the system from an end
 ## Key Features
 
 ### 🔗 Source Management
-- Create and manage **multiple connections** to different ClickHouse clusters.
-- Choose which fields of a table to use and configure which should be **suggested**, hidden, or support **autocompletion**.
+- Create and manage **multiple connections** to different data sources, including ClickHouse and Docker.
+- Define which fields from a source should be used, and configure which ones are **suggested**, hidden, or support **autocompletion**.
 - Configure which users and groups have access to a source and define their **permissions**.
 
 ### 📊 Data Explorer

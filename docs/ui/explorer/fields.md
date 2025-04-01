@@ -26,14 +26,14 @@ Each field definition can include the following components:
    - `message|lastline|chars(25) as message`
 
 
-## Working with JSON, Map, and Array Fields  
+## Working with JSON, Map, and Array Fields
 
 For fields stored as JSON strings, Maps, or Arrays, you can extract nested values using a colon (`:`) as a delimiter.
 
-### JSON Fields  
+### JSON Fields
 You can navigate JSON structures using the field path separated by colons.
 
-**Example:**  
+**Example:**
 ```plaintext
 rest:app:request:bytes
 ```
@@ -49,12 +49,12 @@ For the JSON object:
   }
 }
 ```
-This expression returns `25`. If the specified key does not exist, an empty string is returned.  
+This expression returns `25`. If the specified key does not exist, an empty string is returned.
 
-### Map Fields  
+### Map Fields
 For **Map**-type fields, you can access values using the key name.
 
-**Example:**  
+**Example:**
 ```plaintext
 metadata:request_id
 ```
@@ -66,12 +66,12 @@ For the map:
   }
 }
 ```
-This expression returns `"abc-123"`.  
+This expression returns `"abc-123"`.
 
-### Array Fields  
+### Array Fields
 For **Array**-type fields, you can access elements by index.
 
-**Example:**  
+**Example:**
 ```plaintext
 errors:0
 ```
@@ -81,9 +81,9 @@ For the array:
   "errors": ["Error A", "Error B", "Error C"]
 }
 ```
-This expression returns `"Error A"`.  
+This expression returns `"Error A"`.
 
-Currently, only **one level of nesting** is supported for Maps and Arrays.  
+Currently, only **one level of nesting** is supported for Maps and Arrays.
 
 Modifiers can also be applied to extracted values for additional processing.
 
@@ -106,7 +106,7 @@ Example:
 `message|lines(3)` extracts the first 3 lines.
 
 ### slice
-Extracts a substring from the given value based on the specified range. Usage: `slice(from[,to])`, where `from` is the starting index, and `to` (optional) is the ending index. If `to` is not provided, it extracts from `from` to the end.  
+Extracts a substring from the given value based on the specified range. Usage: `slice(from[,to])`, where `from` is the starting index, and `to` (optional) is the ending index. If `to` is not provided, it extracts from `from` to the end.
 
 Example:
 `message|slice(5,10)` extracts characters from index 5 to 10.

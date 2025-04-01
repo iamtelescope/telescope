@@ -3,6 +3,7 @@
 To create a source, you need to fill in the form data.
 
 ### Connection Data
+#### ClickHouse Source
 - **`host`** – ClickHouse server host. Defaults to `localhost`.
 - **`port`** – ClickHouse server native protocol port. Defaults to `9000`.
 - **`user`** – Username used to connect to the server. Defaults to `default`.
@@ -10,6 +11,9 @@ To create a source, you need to fill in the form data.
 - **`database`** – Database name.
 - **`table`** – Table name.
 - **`ssl`** – Whether to use a secure connection. (Custom SSL certificates are not yet supported.)
+
+#### Docker Source
+- **`address`** – The URL of the Docker daemon socket. This is typically something like `unix:///var/run/docker.sock` for local access, or `tcp://<host>:<port>` for remote connections.
 
 After filling in the connection data, you need to test the connection by clicking the **"Validate connection & load schema"** button.
 
@@ -22,6 +26,7 @@ If the connection test fails, you can still create the source, but you will need
 - **`name`** – Source name.
 - **`description`** – Source description.
 
+
 ### Fields Setup
 
 In this section, you need to define the list of fields and configure their usage.
@@ -30,8 +35,20 @@ If the connection test was previously successful, you can automatically add fiel
 After adding fields, the **"Time field"** and **"Severity field"** options will become selectable from a dropdown list.
 
 - **`Time field`** – Used in the time range selector for querying data.
-- **`Severity field`** – Used to apply different colors to messages bars based on severity and as a default field for graph grouping. If not set, no colored bars appear in the result table, and no group by field is selected by default.
-- **`Default chosen fields`** – Comma-separated list of values for the fields selector. Each value in lis shoud exist in fields names list.
+- **`Severity field`** – Used to apply different colors to message bars based on severity and as a default field for graph grouping. If not set, no colored bars appear in the result table, and no group-by field is selected by default.
+  {% note info %}
+
+  This setting is **disabled for Docker sources**, which do not support severity highlighting.
+
+  {% endnote %}
+- **`Default chosen fields`** – Comma-separated list of values for the field selector. Each value must exist in the field name list.
+
+
+{% note info %}
+
+For **Docker sources**, the field list is **predefined and cannot be customized**. You may remove individual fields, but new fields cannot be added.
+
+{% endnote %}
 
 #### **Field Properties**
 Each field has several properties:

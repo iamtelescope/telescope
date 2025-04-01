@@ -2,7 +2,13 @@
 
 Query input syntax is [FlyQL](https://github.com/iamtelescope/flyql) syntax. Please refer FlyQL doc.
 
-For ClickHouse sources queries generates by [FlyQL ClickHouse generator](https://github.com/iamtelescope/flyql-generators/tree/main/python/flyql_generators)
+- For ClickHouse sources queries generates by [FlyQL ClickHouse generator](https://github.com/iamtelescope/flyql-generators/tree/main/python/flyql_generators)
+- For **Docker** sources, queries are evaluated directly in Python using [FlyQL’s matcher](https://github.com/iamtelescope/flyql/blob/main/python/flyql/matcher/evaluator.py), which does **not support `LIKE`-style wildcard matching**.
+
+{% note warning %}
+In Docker sources, expressions like `host=l*ohost` are **not** interpreted using SQL-style `LIKE`. Instead, you should use `=~` for pattern matching, e.g. `host=~"^l.*ohost$"`.
+{% endnote %}
+
 
 Despite the fact that the documentation for flyql and flyql ClickHouse generator is located in their respective repositories, a few query examples are provided here to give a basic understanding of how to query data inside Telescope.
 
@@ -11,6 +17,8 @@ Despite the fact that the documentation for flyql and flyql ClickHouse generator
 `host!=localhost` - Selects records where the `host` field is **not** `"localhost"`.
 
 `host=l*ohost` - Selects records where the `host` field starts with `"l"`, ends with `"ohost"`, and has any characters in between.
+- **ClickHouse**: Matches records where `host` starts with `"l"` and ends with `"ohost"` using SQL `LIKE`.
+- **Docker**: **Not supported** — use a regular expression instead: `host=~'^l.*ohost$'`.
 
 `host=localhost and message=2025*` - Selects records where the `host` is `"localhost"` and the `message` field starts with `"2025"`.
 

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2024.04.01
+Version: **0.0.15**
+Changes:
+  - Added Docker as a new source kind
+  - Redesigned source list
+  - Added toggle to show/hide filters on the explorer page
+  - Fixed bug in date range selector when using the graph
+  - Fixed bug where the show/hide graph option wasn’t preserved on reload
+
+Notes:
+
+{% note warning %}
+
+This release requires database migrations to be run.
+
+{% endnote %}
+
 ## 2024.03.19
 Version: **0.0.14**
 
