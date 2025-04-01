@@ -1,6 +1,6 @@
-function getDefaultIfUndefined(value, default_value) {
+function getDefaultIfUndefined(value, defaultValue) {
     if (value == undefined) {
-        return default_value;
+        return defaultValue;
     } else {
         return value
     }
@@ -12,4 +12,16 @@ function isNumeric(str) {
         !isNaN(parseFloat(str))
 }
 
-export { getDefaultIfUndefined, isNumeric }
+function getBooleanFromString(value, defaultIfUndefined) {
+    if (value == undefined) {
+        return defaultIfUndefined
+    } else {
+        if (value.toLowerCase() === 'true') {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
+export { getDefaultIfUndefined, isNumeric, getBooleanFromString}

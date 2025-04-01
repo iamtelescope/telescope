@@ -11,7 +11,7 @@
     "@fortawesome/fontawesome-svg-core": "^6.7.1",
     "@fortawesome/free-solid-svg-icons": "^6.7.1",
     "@fortawesome/vue-fontawesome": "^3.0.8",
-    "@gravity-ui/yagr": "^4.3.5",
+    "@gravity-ui/yagr": "^4.6.1",
     "@guolao/vue-monaco-editor": "^1.5.4",
     "@primevue/themes": "^4.0.2",
     "@vueuse/components": "^10.10.1",

@@ -1,5 +1,5 @@
 <template>
-    <div style="height: 200px;">
+    <div style="height: 200px; max-height: 800px;">
         <div id="yaggrChart" class="w-full h-full"></div>
     </div>
 </template>

@@ -52,6 +52,28 @@ for (const key in datetimeRanges) {
     datetimeRangesReversed[`${from} - ${to}`] = key
 }
 
+class TelescopeDate {
+    constructor(data) {
+        this.value = data.value
+        this.timezone = data.timezone
+        this.isRelative = false
+        this.dateObj = null
+        this.strValue = null
+        this.error = ''
+        try {
+            if (humanRelatedTimeRegex.exec(this.value)) {
+                this.isRelative = true
+                this.strValue = this.value
+            } else {
+                this.dateObj = DateTime.fromMillis(parseInt(this.value), { zone: this.timezone })
+                this.strValue = this.dateObj.toFormat(dateTimeFormat)
+            }
+        } catch (e) {
+            this.error = `failed to initialize date: ${e.toTostring()}`
+        }
+    }
+}
+
 function getRelativeOption(from, to) {
     let key = `${from} - ${to}`
     let text = datetimeRangesReversed[key]
@@ -77,19 +99,23 @@ function getDateIfTimestamp(value) {
         date: value,
     }
     if (value instanceof Date) {
+        result.value = DateTime.fromJSDate(value).setZone('UTC')
         result.parsed = true
     } else {
         let intValue = parseInt(value)
         if (!isNaN(intValue)) {
             result.parsed = true
-            result.date = new Date(intValue)
+            result.date = DateTime.fromMillis(intValue, { zone: 'UTC' })
         } else {
             result.date = parse(value, dateTimeFormat, new Date())
+
             result.parsed = isValid(result.date)
             if (!result.parsed) {
                 if (humanRelatedTimeRegex.exec(value)) {
                     result.relative = true
                 }
+            } else {
+                result.date = DateTime.fromJSDate(result.date).setZone('UTC')
             }
         }
     }
@@ -106,14 +132,15 @@ function getStrDateOrStrRelative(value) {
         return value
     }
     // value is int timestamp
+
     const intValue = parseInt(value)
     if (!isNaN(intValue)) {
-        return fmt(new Date(intValue))
+        return DateTime.fromMillis(intValue, { zone: 'UTC' }).toFormat(dateTimeFormat)
     }
     // value is str date like '2024-12-12 00:00:00.000'
     const parsedDate = parse(value, dateTimeFormat, new Date())
     if (isValid(parsedDate)) {
-        return fmt(parsedDate)
+        return DateTime.fromJSDate(parsedDate).setZone('UTC').toFormat(dateTimeFormat)
     }
     // invalid value
     return null
@@ -124,19 +151,12 @@ function fmt(date) {
 }
 
 function getDatetimeRangeText(from, to) {
+    // Accepts TelescopeDate obj
     let key = `${from} - ${to}`
     let text = datetimeRangesReversed[key]
     if (text) {
         return text
     } else {
-        let fromResult = getDateIfTimestamp(from)
-        let toResult = getDateIfTimestamp(to)
-        if (fromResult.parsed) {
-            from = DateTime.fromJSDate(fromResult.date).toUTC().toFormat(dateTimeFormat)
-        }
-        if (toResult.parsed) {
-            to = DateTime.fromJSDate(toResult.date).toUTC().toFormat(dateTimeFormat)
-        }
         return `${from} - ${to}`
     }
 }
@@ -154,4 +174,4 @@ function dateIsValid(dateString) {
     return [parsedDate, valid]
 }
 
-export { datetimeRanges, dateTimeFormat, humanRelatedTimeRegex, getStrDateOrStrRelative, getDatetimeRangeText, getRelativeOption, getRelativeOptions, getDateIfTimestamp, fmt, dateIsValid }
+export { TelescopeDate, datetimeRanges, dateTimeFormat, humanRelatedTimeRegex, getStrDateOrStrRelative, getDatetimeRangeText, getRelativeOption, getRelativeOptions, getDateIfTimestamp, fmt, dateIsValid }

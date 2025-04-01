@@ -1,24 +1,28 @@
 <template>
-    <Controls class="mb-3" ref="controlsRef" @searchRequest="onSearchRequest" @shareURL="onShareURL" @download="onDownload"
+    <Controls ref="controlsRef" @searchRequest="onSearchRequest" @shareURL="onShareURL" @download="onDownload"
         :source="source" :loading="loading" @graphVisibilityChanged="onGraphVisibilityChanged"
         :groupByInvalid="!!(graphValidation && !graphValidation.result && graphValidation.fields.group_by)" />
-    <BorderCard class="mb-2" :loading="graphLoading" v-if="sourceControlsStore.showGraph">
-        <Skeleton v-if="graphLoading && graphData === null" width="100%" height="235px"></Skeleton>
-        <Error v-if="graphError" :error="graphError"></Error>
-        <ValidationError v-if="graphValidation && !graphValidation.result" :validation="graphValidation"
-            message="Failed to load graph: invalid parameters given" />
-        <Histogramm v-else-if="showHistogramm" :stats="graphData" :source="source"
-            @rangeSelected="onHistogrammRangeSelected" :rows="rows" :groupByLabel="sourceControlsStore.graphGroupBy"/>
-    </BorderCard>
-    <BorderCard :loading="loading">
-        <Skeleton v-if="loading && rows === null" width="100%" height="400px"></Skeleton>
-        <Error v-if="error" :error="error"></Error>
-        <ValidationError v-if="validation && !validation.result" :validation="validation"
-            message="Failed to load logs data: invalid parameters given" />
-        <LimitMessage v-if="rows && graphData && !error && !graphError" :rowsCount="rows.length"
-            :totalCount="graphData.total"></LimitMessage>
-        <SourceDataTable v-if="showSourceDataTable" :source="source" :rows="rows" :fields="fields" :timezone="timezone" />
-    </BorderCard>
+    <div class="mt-3">
+        <BorderCard class="mb-2" :loading="graphLoading" v-if="sourceControlsStore.showGraph">
+            <Skeleton v-if="graphLoading && graphData === null" width="100%" height="235px"></Skeleton>
+            <Error v-if="graphError" :error="graphError"></Error>
+            <ValidationError v-if="graphValidation && !graphValidation.result" :validation="graphValidation"
+                message="Failed to load graph: invalid parameters given" />
+            <Histogramm v-else-if="showHistogramm && graphValidation.result" :stats="graphData" :source="source"
+                @rangeSelected="onHistogrammRangeSelected" :rows="rows"
+                :groupByLabel="sourceControlsStore.graphGroupBy" />
+        </BorderCard>
+        <BorderCard :loading="loading">
+            <Skeleton v-if="loading && rows === null" width="100%" height="400px"></Skeleton>
+            <Error v-if="error" :error="error"></Error>
+            <ValidationError v-if="validation && !validation.result" :validation="validation"
+                message="Failed to load logs data: invalid parameters given" />
+            <LimitMessage v-if="rows && graphData && !error && !graphError" :rowsCount="rows.length"
+                :totalCount="graphData.total"></LimitMessage>
+            <SourceDataTable v-if="showSourceDataTable" :source="source" :rows="rows" :fields="fields"
+                :timezone="timezone" />
+        </BorderCard>
+    </div>
 </template>
 
 <script setup>
@@ -32,6 +36,7 @@ import { useNavStore } from '@/stores/nav'
 import { Skeleton } from 'primevue'
 import { useSourceControlsStore } from '@/stores/sourceControls'
 import { useGetSourceData, useGetSourceGraphData } from '@/composables/sources/useSourceService'
+
 import Controls from '@/components/sources/data/Controls.vue'
 import BorderCard from '@/components/common/BorderCard.vue'
 import Error from '@/components/common/Error.vue'
@@ -64,7 +69,7 @@ const onSearchRequest = () => {
     window.history.pushState('', 'telescope', url)
     load(props.source.slug, sourceControlsStore.dataRequestParams)
     if (sourceControlsStore.showGraph) {
-       graphLoad(props.source.slug, sourceControlsStore.graphRequestParams)
+        graphLoad(props.source.slug, sourceControlsStore.graphRequestParams)
     }
 }
 

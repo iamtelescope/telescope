@@ -42,6 +42,8 @@ class Source(models.Model):
     modifiers = models.JSONField()
     table = models.CharField(max_length=128)
     default_chosen_fields = models.JSONField()
+    support_raw_query = models.BooleanField()
+    context_fields = models.JSONField()
     connection = models.JSONField()
 
     def __init__(self, *args, **kwargs):
@@ -49,8 +51,15 @@ class Source(models.Model):
         self.permissions = set()
 
     @classmethod
-    def create(self, data, username):
-        return Source.objects.create(**data, modifiers=[])
+    def create(self, kind, data, username):
+        data["context_fields"] = {}
+        data["support_raw_query"] = True
+        if kind == "docker":
+            data["support_raw_query"] = False
+            data["context_fields"] = {
+                "container": {},
+            }
+        return Source.objects.create(kind=kind, **data, modifiers=[])
 
     @property
     def _record_pseudo_id_field(self):

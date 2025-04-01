@@ -76,7 +76,7 @@ const useGetSourceData = () => {
         validation.value = response.validation
         loading.value = false
     }
-    return { rows, fields, error, loading, validation, load}
+    return { rows, fields, error, loading, validation, load }
 }
 
 const useGetSourceGraphData = () => {
@@ -95,7 +95,26 @@ const useGetSourceGraphData = () => {
         validation.value = response.validation
         loading.value = false
     }
-    return { data, error, loading, validation, load}
+    return { data, error, loading, validation, load }
 }
 
-export { useGetSource, useGetSources, useGetSourceRoleBidings, useGetSourceData, useGetSourceGraphData }
+const useGetSourceContextFieldData = () => {
+    const data = ref(null)
+    const error = ref(null)
+    const loading = ref(null)
+    const validation = ref(null)
+
+    const load = async (sourceSlug, params) => {
+        loading.value = true
+        let response = await srv.getContextFieldData(sourceSlug, params)
+        if (response.result) {
+            data.value = response.data.data
+        }
+        error.value = response.errors.join(', ')
+        validation.value = response.validation
+        loading.value = false
+    }
+    return { data, error, loading, validation, load }
+}
+
+export { useGetSource, useGetSources, useGetSourceRoleBidings, useGetSourceData, useGetSourceGraphData, useGetSourceContextFieldData }

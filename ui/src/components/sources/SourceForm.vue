@@ -21,16 +21,27 @@
             </div>
         </div>
     </div>
-    <ConnectionStep :source="source" :startConnectionTest="startConnectionTest"
+    <FloatLabel variant="on" class="mb-6">
+        <Select id="source_kind" v-model="sourceKindSelected" fluid :options="sourceKindOptions"
+            :disabled="source != null" />
+        <label for="source_kind">Source kind</label>
+    </FloatLabel>
+
+    <ClickhouseConnectionStep v-if="sourceKindSelected == 'clickhouse'" :source="source"
+        :startConnectionTest="startConnectionTest" @connectionDataValidated="onConnectionDataValidated"
+        @connectionTestStarted="onConnectionTestStarted" @connectionDataChanged="onConnectionDataChanged">
+    </ClickhouseConnectionStep>
+    <DockerConnectionStep v-else-if="sourceKindSelected == 'docker'" :startConnectionTest="startConnectionTest"
         @connectionDataValidated="onConnectionDataValidated" @connectionTestStarted="onConnectionTestStarted"
-        @connectionDataChanged="onConnectionDataChanged">
-    </ConnectionStep>
+        @connectionDataChanged="onConnectionDataChanged"></DockerConnectionStep>
     <div v-if="connectionTestPassed">
-        <SourceStep :schemaFields="schemaFields" :connectionData="connectionData" :sourceFormErrors="sourceFormErrors"
-            @sourceDynamicFieldAdded="onSourceDynamicFieldAdded"
-            @sourceDynamicFieldRemoved="onSourceDynamicFieldRemoved" @sourceFormDataChanged="onSourceFormDataChanged"
-            :source="source">
-        </SourceStep>
+        <CommonDataForm :source="source" :formErrors="sourceCommonDataFormErrors"
+            @formDataChanged="onCommonFormDataChange" />
+        <FieldsDataForm :source="source" :schemaFields="schemaFields" :kind="sourceKindSelected.value"
+            :connectionData="connectionData" :formErrors="sourceFieldsDataFormErrors" :settings="fieldsSettings"
+            @dynamicFieldAdded="onSourceDynamicFieldAdded" @dynamicFieldRemoved="onSourceDynamicFieldRemoved"
+            @formDataChanged="onSourceFormDataChanged" />
+
     </div>
     <div class="flex pt-6 pb-6 justify-end">
         <Button severity="primary" icon="pi pi-check" size="small" :label="submitButtonLabel" @click="handleFormSubmit"
@@ -43,15 +54,20 @@ import { ref, computed } from 'vue'
 import { useToast } from 'primevue'
 import { useRouter } from 'vue-router'
 
-import Button from 'primevue/button'
+import { Button, Select, FloatLabel } from 'primevue'
 
-import SourceStep from '@/components/sources/new/SourceStep.vue'
-import ConnectionStep from '@/components/sources/new/ConnectionStep.vue'
+import CommonDataForm from '@/components/sources/new/CommonDataForm.vue'
+import FieldsDataForm from '@/components/sources/new/FieldsDataForm.vue'
+import ClickhouseConnectionStep from '@/components/sources/new/clickhouse/ConnectionForm.vue'
+import DockerConnectionStep from '@/components/sources/new/docker/ConnectionForm.vue'
+
 import { SourceService } from '@/sdk/services/Source'
 
 const props = defineProps(['source', 'startConnectionTest'])
 const toast = useToast()
 const router = useRouter()
+const sourceKindSelected = ref(props.source ? props.source.kind : null)
+const sourceKindOptions = ['clickhouse', 'docker']
 
 const sourceSrv = new SourceService()
 
@@ -63,6 +79,20 @@ const submitButtonLabel = computed(() => {
     }
 })
 
+const formFieldsInitialErrors = {
+    'common': {
+        'slug': '',
+        'name': '',
+        'description': '',
+    },
+    'fields': {
+        'time_field': '',
+        'severity_field': '',
+        'default_chosen_fields': '',
+        'fields': {},
+    },
+}
+
 const connectionTestPassed = ref(false)
 
 const schemaFields = ref([])
@@ -70,17 +100,38 @@ const connectionData = ref(null)
 
 const submitButtonLoading = ref(false)
 
-const getInitialSourceFormErrors = () => {
-    let data = {
-        'slug': '',
-        'name': '',
-        'description': '',
-        'time_field': '',
-        // 'uniq_field': '',
-        'severity_field': '',
-        'default_chosen_fields': '',
-        'fields': {},
+const fieldsSettings = computed(() => {
+    let settings = {
+        allowAddManualFields: true,
+        autoLoadFieldsFromSchema: false,
+        fields: {
+            time: {
+                default: '',
+            },
+            severity: {
+                editable: true
+            },
+            defaultChosenFields: {
+                default: '',
+            }
+        }
     }
+    if (sourceKindSelected.value == 'docker') {
+        settings.autoLoadFieldsFromSchema = props.source ? false : true
+        settings.allowAddManualFields = false
+        settings.fields.time.default = 'time'
+        settings.fields.severity.editable = false
+        settings.fields.defaultChosenFields.default = 'container_short_id, stream, message'
+    }
+    return settings
+})
+
+const getInitialSourceCommonDataFormErrors = () => {
+    return Object.assign({}, formFieldsInitialErrors.common)
+}
+
+const getInitialSourceFieldsDataFormErrors = () => {
+    let data = Object.assign({}, formFieldsInitialErrors.fields)
     if (props.source) {
         for (const [key, _] of Object.entries(props.source.fields)) {
             data.fields[key] = getSourceDynamicFieldDefaultErrors()
@@ -101,8 +152,10 @@ const getSourceDynamicFieldDefaultErrors = () => {
     }
 }
 
-const sourceFormErrors = ref(getInitialSourceFormErrors())
-const sourceFormData = ref({})
+const sourceCommonDataFormErrors = ref(getInitialSourceCommonDataFormErrors())
+const sourceFieldsDataFormErrors = ref(getInitialSourceFieldsDataFormErrors())
+const sourceCommonData = ref({})
+const sourceFieldsData = ref({})
 
 const onConnectionDataValidated = (data, fields) => {
     connectionTestPassed.value = true
@@ -118,26 +171,33 @@ const onConnectionDataChanged = () => {
     connectionTestPassed.value = false
 }
 
+const onCommonFormDataChange = (data) => {
+    sourceCommonData.value = data
+}
+
 const onSourceFormDataChanged = (data) => {
-    sourceFormData.value = data
+    sourceFieldsData.value = data
 }
 
 const onSourceDynamicFieldAdded = (fieldName) => {
-    sourceFormErrors.value.fields[fieldName] = getSourceDynamicFieldDefaultErrors()
+    sourceFieldsDataFormErrors.value.fields[fieldName] = getSourceDynamicFieldDefaultErrors()
 }
 
 const onSourceDynamicFieldRemoved = (fieldName) => {
-    delete sourceFormErrors.value.fields[fieldName]
+    delete sourceFieldsDataFormErrors.value.fields[fieldName]
 }
 
 const resetErrors = () => {
-    for (const field in sourceFormErrors.value) {
+    for (const field in sourceCommonDataFormErrors.value) {
+        sourceCommonDataFormErrors.value[field] = ""
+    }
+    for (const field in sourceFieldsDataFormErrors.value) {
         if (field == 'fields') {
-            for (const key in sourceFormErrors.value[field]) {
-                sourceFormErrors.value[field][key] = getSourceDynamicFieldDefaultErrors()
+            for (const key in sourceFieldsDataFormErrors.value[field]) {
+                sourceFieldsDataFormErrors.value[field][key] = getSourceDynamicFieldDefaultErrors()
             }
         } else {
-            sourceFormErrors.value[field] = ""
+            sourceFieldsDataFormErrors.value[field] = ""
         }
     }
 }
@@ -146,15 +206,20 @@ const handleFormSubmit = async () => {
     resetErrors()
     submitButtonLoading.value = true
 
-    let data = Object.assign({}, sourceFormData.value)
+    let data = Object.assign({}, sourceCommonData.value)
+    for (const [key, value] of Object.entries(sourceFieldsData.value)) {
+        data[key] = value
+    }
     data['connection'] = connectionData.value
-    data['kind'] = 'clickhouse'
+    data['kind'] = sourceKindSelected.value
+
     let response
     if (props.source) {
         response = await sourceSrv.updateSource(props.source.slug, data)
     } else {
         response = await sourceSrv.createSource(data)
     }
+
     submitButtonLoading.value = false
     response.sendToast(toast)
 
@@ -164,12 +229,16 @@ const handleFormSubmit = async () => {
                 if (field == 'fields') {
                     for (const name in response.validation.fields.fields) {
                         for (const [key, value] of Object.entries(response.validation.fields.fields[name])) {
-                            sourceFormErrors.value.fields[name][key] = value.join(', ')
+                            sourceFieldsDataFormErrors.value.fields[name][key] = value.join(', ')
                         }
                     }
-
                 } else {
-                    sourceFormErrors.value[field] = response.validation.fields[field].join(', ')
+                    if (field in formFieldsInitialErrors.common) {
+                        sourceCommonDataFormErrors.value[field] = response.validation.fields[field].join(', ')
+                    } else {
+                        sourceFieldsDataFormErrors.value[field] = response.validation.fields[field].join(', ')
+                    }
+
                 }
             }
         } else {

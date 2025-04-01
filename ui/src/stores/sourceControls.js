@@ -4,8 +4,13 @@ import { defineStore } from "pinia"
 
 import { useToast } from 'primevue'
 
+import { DateTime } from "luxon"
+
 import { Parser as FieldsParser } from '@/utils/fields.js'
 import { BoolOperator as FlyQLBoolOperator } from '@/utils/flyql.js'
+import { getBooleanFromString } from '@/utils/utils'
+
+import { TelescopeDate, humanRelatedTimeRegex } from '@/utils/datetimeranges.js'
 
 export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const data = ref({})
@@ -24,9 +29,10 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
                 from: route.query.from ?? 'now-5m',
                 to: route.query.to ?? 'now',
                 graphGroupBy: route.query.graph_group_by ?? source.severityField,
-                showGraph: route.query.show_graph ?? true,
+                showGraph: getBooleanFromString(route.query.show_graph, true),
                 timezone: 'UTC',
                 limit: { "value": 50 },
+                contextFields: {},
             }
             if (route.query.limit) {
                 let intLimit = parseInt(route.query.limit)
@@ -35,6 +41,12 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
                 }
             }
             data.value[route.params.sourceSlug] = initData
+            for (const [key, value] of Object.entries(route.query)) {
+                if (key.startsWith('ctx')) {
+                    let field = key.slice(4)
+                    initData.contextFields[field] = value
+                }
+            }
             return true
         }
     })
@@ -60,11 +72,21 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     })
 
     const from = computed(() => {
-        return data.value[route.params.sourceSlug].from
+        return new TelescopeDate({
+            value: data.value[route.params.sourceSlug].from,
+            timezone: data.value[route.params.sourceSlug].timezone,
+        })
     })
 
     const to = computed(() => {
-        return data.value[route.params.sourceSlug].to
+        return new TelescopeDate({
+            value: data.value[route.params.sourceSlug].to,
+            timezone: data.value[route.params.sourceSlug].timezone,
+        })
+    })
+
+    const timezone = computed(() => {
+        return data.value[route.params.sourceSlug].timezone
     })
 
     const limit = computed(() => {
@@ -79,15 +101,20 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         return data.value[route.params.sourceSlug].showGraph
     })
 
+    const contextFields = computed(() => {
+        return data.value[route.params.sourceSlug].contextFields
+    })
+
     const queryParams = computed(() => {
         let params = {
             query: query.value,
             fields: fields.value,
             limit: limit.value.value,
-            from: new Date(from.value).valueOf() || from.value,
-            to: new Date(to.value).valueOf() || to.value,
+            from: from.value.isRelative ? from.value.value : from.value.dateObj.setZone('UTC').toMillis(),
+            to: to.value.isRelative ? to.value.value : to.value.dateObj.setZone('UTC').toMillis(),
             graph_group_by: graphGroupBy.value || "",
             show_graph: showGraph.value,
+            context_fields: structuredClone(contextFields.value),
         }
         if (rawQuery.value) {
             params.raw_query = rawQuery.value
@@ -96,17 +123,30 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     })
 
     const queryString = computed(() => {
-        return new URLSearchParams(queryParams.value).toString()
+        let params = []
+        for (const [key, value] of Object.entries(queryParams.value)) {
+            if (key == 'context_fields') {
+                for (const [ctxkey, ctxvalue] of Object.entries(value)) {
+                    let k = `ctx_${ctxkey}`
+                    for (const i of ctxvalue) {
+                        params.push([k, i])
+                    }
+                }
+            } else {
+                params.push([key, value])
+            }
+        }
+        return new URLSearchParams(params).toString()
     })
 
     const dataRequestParams = computed(() => {
-        let params = { ...queryParams.value }
+        let params = structuredClone(queryParams.value)
         delete params.graph_group_by
         return params
     })
 
     const graphRequestParams = computed(() => {
-        let params = { ...queryParams.value }
+        let params = structuredClone(queryParams.value)
         params.group_by = params.graph_group_by
         delete params.graph_group_by
         delete params.fields
@@ -117,7 +157,6 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     function setFields(value) {
         data.value[route.params.sourceSlug].fields = value
     }
-
     function setQuery(value) {
         data.value[route.params.sourceSlug].query = value
     }
@@ -131,11 +170,35 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     }
 
     function setFrom(value) {
+        if (!humanRelatedTimeRegex.exec(value)) {
+            if (value instanceof Date) {
+                value = DateTime.fromJSDate(value).setZone(data.value[route.params.sourceSlug].timezone, { keepLocalTime: true }).toMillis()
+            } else {
+                let intValue = parseInt(value)
+                if (isNaN(intValue)) {
+                    value = value.toMillis({ zone: data.value[route.params.sourceSlug].timezone })
+                }
+            }
+        }
         data.value[route.params.sourceSlug].from = value
     }
 
     function setTo(value) {
+        if (!humanRelatedTimeRegex.exec(value)) {
+            if (value instanceof Date) {
+                value = DateTime.fromJSDate(value).setZone(data.value[route.params.sourceSlug].timezone, { keepLocalTime: true }).toMillis()
+            } else {
+                let intValue = parseInt(value)
+                if (isNaN(intValue)) {
+                    value = value.toMillis({ zone: data.value[route.params.sourceSlug].timezone })
+                }
+            }
+        }
         data.value[route.params.sourceSlug].to = value
+    }
+
+    function setTimezone(value) {
+        data.value[route.params.sourceSLug].timezone = value
     }
 
     function setGraphGroupBy(value) {
@@ -144,6 +207,10 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
     function setShowGraph(value) {
         data.value[route.params.sourceSlug].showGraph = value
+    }
+
+    function setContextField(field, value) {
+        data.value[route.params.sourceSlug].contextFields[field] = value
     }
 
     function addQueryExpression(field, operator, value) {
@@ -159,5 +226,34 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         toast.add({ severity: 'success', summary: 'Success', detail: 'Query was updated', life: 3000 });
     }
 
-    return { init, setFields, setQuery, setRawQuery, addQueryExpression, setLimit, setFrom, setTo, setGraphGroupBy, setShowGraph, from, to, limit, fields, query, rawQuery, parsedFields, graphGroupBy, queryString, dataRequestParams, graphRequestParams, showGraph }
+    return {
+        init,
+        setFields,
+        setQuery,
+        setRawQuery,
+        addQueryExpression,
+        setLimit,
+        setFrom,
+        setTo,
+        setTimezone,
+        setGraphGroupBy,
+        setShowGraph,
+        setContextField,
+        from,
+        from,
+        to,
+        to,
+        timezone,
+        limit,
+        fields,
+        query,
+        rawQuery,
+        parsedFields,
+        graphGroupBy,
+        queryString,
+        dataRequestParams,
+        graphRequestParams,
+        showGraph,
+        contextFields
+    }
 })

@@ -23,7 +23,7 @@ from telescope.fetchers.response import (
 from telescope.fetchers.fetcher import BaseFetcher
 from telescope.fetchers.models import Row
 
-from telescope.utils import convert_to_base_ch
+from telescope.utils import convert_to_base_ch, get_telescope_field
 
 
 def flyql_clickhouse_fields(source_fields: List[SourceField]):
@@ -38,14 +38,39 @@ def flyql_clickhouse_fields(source_fields: List[SourceField]):
     }
 
 
-def get_source_database_conn_kwargs(source):
+def get_client_kwargs(data):
     return {
-        "host": source.connection["host"],
-        "port": source.connection["port"],
-        "user": source.connection["user"],
-        "password": source.connection["password"],
-        "secure": source.connection["ssl"],
+        "host": data["host"],
+        "port": data["port"],
+        "user": data["user"],
+        "password": data["password"],
+        "secure": data["ssl"],
     }
+
+
+def get_source_database_conn_kwargs(source):
+    return get_client_kwargs(source.connection)
+
+
+class ConnectionTestResponse:
+    def __init__(
+        self,
+    ):
+        self.reachability = {
+            "result": False,
+            "error": "",
+        }
+        self.schema = {
+            "result": False,
+            "error": "",
+            "data": [],
+        }
+
+    def as_dict(self) -> dict:
+        return {
+            "reachability": self.reachability,
+            "schema": self.schema,
+        }
 
 
 class Fetcher(BaseFetcher):
@@ -65,6 +90,29 @@ class Fetcher(BaseFetcher):
                 return False, err.message
 
         return True, None
+
+    @classmethod
+    def test_connection(cls, data: dict) -> ConnectionTestResponse:
+        response = ConnectionTestResponse()
+        target = f"`{data['database']}`.`{data['table']}`"
+        with clickhouse.Client(**get_client_kwargs(data)) as client:
+            try:
+                client.execute(f"SELECT 1 FROM {target} LIMIT 1")
+            except Exception as err:
+                response.reachability["error"] = str(err)
+                response.schema["error"] = "Skipped due to reachability test failed"
+            else:
+                response.reachability["result"] = True
+                try:
+                    result = client.execute(f"DESCRIBE TABLE {target} FORMAT JSON")
+                except Exception as err:
+                    response.schema["error"] = str(err)
+                else:
+                    response.schema["result"] = True
+                    response.schema["data"] = [
+                        get_telescope_field(x[0], x[1]) for x in result
+                    ]
+        return response
 
     @classmethod
     def autocomplete(cls, source, field, time_from, time_to, value):
@@ -123,7 +171,9 @@ class Fetcher(BaseFetcher):
         time_clause = f"{request.source.time_field} BETWEEN fromUnixTimestamp64Milli({request.time_from}) and fromUnixTimestamp64Milli({request.time_to})"
         from_db_table = f"{request.source.connection['database']}.{request.source.connection['table']}"
 
-        time_field_type = convert_to_base_ch(request.source._fields[request.source.time_field].type.lower())
+        time_field_type = convert_to_base_ch(
+            request.source._fields[request.source.time_field].type.lower()
+        )
         to_time_zone = ""
         if time_field_type in ["datetime", "datetime64"]:
             to_time_zone = f"toTimeZone({request.source.time_field}, 'UTC')"
@@ -153,7 +203,7 @@ class Fetcher(BaseFetcher):
                 stats_interval_seconds = 1
             stats_time_selector = f"toUnixTimestamp(toStartOfInterval({to_time_zone}, toIntervalSecond({stats_interval_seconds}))) * 1000"
         else:
-            if time_field_type in ["datetime", "timestamp" , "uint64"]:
+            if time_field_type in ["datetime", "timestamp", "uint64"]:
                 stats_time_selector = f"toUnixTimestamp({to_time_zone})*1000"
             elif time_field_type == "datetime64":
                 stats_time_selector = f"toUnixTimestamp64Milli({to_time_zone})"
@@ -195,11 +245,9 @@ class Fetcher(BaseFetcher):
             stats["data"][name] = []
 
         for ts in stats["timestamps"]:
-            ts_sum = 0
             for name in stats_names:
                 value = stats_by_ts.get(name, {}).get(ts, 0)
                 stats["data"][name].append(value)
-                ts_sum += value
 
         return GraphDataResponse(
             timestamps=stats["timestamps"],
@@ -231,7 +279,9 @@ class Fetcher(BaseFetcher):
         fields_to_select = []
         for field in fields_names:
             if field == request.source.time_field:
-                time_field_type = convert_to_base_ch(request.source._fields[request.source.time_field].type.lower())
+                time_field_type = convert_to_base_ch(
+                    request.source._fields[request.source.time_field].type.lower()
+                )
                 if time_field_type in ["datetime", "datetime64"]:
                     fields_to_select.append(f"toTimeZone({field}, 'UTC')")
                 elif time_field_type in ["timestamp", "uint64", "int64"]:

@@ -27,8 +27,8 @@ class SourceService {
         let response = await http.Get(`/ui/v1/sources/${sourceSlug}/roleBindings`)
         return response
     }
-    testConnection = async (connectionData) => {
-        let response = await http.Post('/ui/v1/sources/testConnection', connectionData)
+    testConnection = async (kind, connectionData) => {
+        let response = await http.Post(`/ui/v1/services/testSourceConnection/${kind}`, connectionData)
         return response
     }
     grantSourceRole = async (sourceSlug, user, group, role) => {
@@ -75,6 +75,10 @@ class SourceService {
     }
     autocomplete = async (sourceSlug, params) => {
         let response = await http.Post(`/ui/v1/sources/${sourceSlug}/autocomplete`, params)
+        return response
+    }
+    getContextFieldData = async (sourceSlug, params) => {
+        let response = await http.Post(`/ui/v1/sources/${sourceSlug}/contextFieldData`, params)
         return response
     }
 }

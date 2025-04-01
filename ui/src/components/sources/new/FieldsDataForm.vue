@@ -1,37 +1,5 @@
 <template>
     <div class="flex flex-col w-full">
-        <Fieldset class="text-wrap" :class="'mb-9'">
-            <template #legend>
-                <span class="font-bold">Common data</span>
-            </template>
-            <div class="flex flex-wrap gap-4">
-                <div class="flex flex-col w-full">
-                    <FloatLabel variant="on">
-                        <InputText id="slug" v-model="sourceFormData['slug']" fluid
-                            :invalid="sourceFormErrors['slug'] != ''" :disabled="!slugEditable" />
-                        <label for="slug">Slug</label>
-                    </FloatLabel>
-                    <ErrorText :text="sourceFormErrors['slug']" />
-                </div>
-                <div class="flex flex-col w-full">
-                    <FloatLabel variant="on">
-                        <InputText id="name" v-model="sourceFormData['name']" fluid
-                            :invalid="sourceFormErrors['name'] != ''" />
-                        <label for="name">Name</label>
-                    </FloatLabel>
-                    <ErrorText :text="sourceFormErrors['name']" />
-                </div>
-                <div class="flex flex-col w-full">
-                    <FloatLabel variant="on">
-                        <InputText id="description" v-model="sourceFormData['description']" fluid
-                            :invalid="sourceFormErrors['description'] != ''" />
-                        <label for="description">Description</label>
-                    </FloatLabel>
-                    <ErrorText :text="sourceFormErrors['description']" />
-                </div>
-            </div>
-        </Fieldset>
-
         <Fieldset class="text-wrap">
             <template #legend>
                 <span class="font-bold">Fields setup</span>
@@ -39,45 +7,37 @@
             <div class="flex flex-col w-full">
                 <div class="flex flex-col w-full">
                     <FloatLabel variant="on">
-                        <Select id="time_field" optionLabel="name" v-model="sourceFormData['time_field']"
-                            :invalid="sourceFormErrors['time_field'] != ''" fluid editable
+                        <Select id="time_field" optionLabel="name" v-model="formData['time_field']"
+                            :invalid="formErrors['time_field'] != ''" fluid editable
                             :options="sourceStaticFieldChoices['time_field']" optionValue="name" showClear />
                         <label for="time_field">Time field</label>
                     </FloatLabel>
-                    <ErrorText :text="sourceFormErrors['time_field']" />
+                    <ErrorText :text="formErrors['time_field']" />
                 </div>
-                <!--<div class="flex flex-col w-full mt-4">
-                    <FloatLabel variant="on">
-                        <Select id="uniq_field" optionLabel="name" v-model="sourceFormData['uniq_field']"
-                            :invalid="sourceFormErrors['uniq_field'] != ''" fluid editable
-                            :options="sourceStaticFieldChoices['uniq_field']" optionValue="name" showClear />
-                        <label for="uniq_field">Uniq field</label>
-                    </FloatLabel>
-                    <ErrorText :text="sourceFormErrors['uniq_field']" />
-                </div>-->
                 <div class="flex flex-col w-full mt-4">
                     <FloatLabel variant="on">
-                        <Select id="severity_field" optionLabel="name" v-model="sourceFormData['severity_field']"
-                            :invalid="sourceFormErrors['severity_field'] != ''" fluid editable
+                        <Select id="severity_field" optionLabel="name" v-model="formData['severity_field']"
+                            :invalid="formErrors['severity_field'] != ''" fluid editable
+                            :disabled="!settings.fields.severity.editable"
                             :options="sourceStaticFieldChoices['severity_field']" optionValue="name" showClear />
                         <label for="severity_field">Severity field</label>
                     </FloatLabel>
-                    <ErrorText :text="sourceFormErrors['severity_field']" />
+                    <ErrorText :text="formErrors['severity_field']" />
                 </div>
                 <div class="flex flex-col w-full mt-4">
                     <FloatLabel variant="on">
-                        <InputText id="default_chosen_fields" v-model="sourceFormData['default_chosen_fields']" fluid
-                            :invalid="sourceFormErrors['default_chosen_fields'] != ''" />
+                        <InputText id="default_chosen_fields" v-model="formData['default_chosen_fields']" fluid
+                            :invalid="formErrors['default_chosen_fields'] != ''" />
                         <label for="default_chosen_fields">Default chosen fields</label>
                     </FloatLabel>
-                    <ErrorText :text="sourceFormErrors['default_chosen_fields']" />
+                    <ErrorText :text="formErrors['default_chosen_fields']" />
                 </div>
                 <div class="flex flex-row justify-end mb-6 mt-7">
                     <Button class="mr-2" severity="primary" icon="pi pi-download" label="Load fields from schema"
                         size="small" @click="handleLoadSourceDynamicFieldsFromSchema"
                         :disabled="schemaFields.length == 0" />
                     <Button severity="primary" icon="pi pi-plus" label="Add manually" size="small"
-                        @click="newSourceDynamicFieldDialogData.visible = true" />
+                        @click="newSourceDynamicFieldDialogData.visible = true" v-if="settings.allowAddManualFields" />
                 </div>
 
                 <BorderCard v-for="field in sourceDynamicFieldsList" :key="field.name" class="mb-4 pb-2 pl-4 pr-4">
@@ -98,28 +58,28 @@
                         </div>
                         <div class="flex pl-2">
                             <ToggleSwitch :id="field.name + '_autocomplete'"
-                                v-model="sourceFormData['fields'][field.name]['autocomplete']" />
+                                v-model="formData['fields'][field.name]['autocomplete']" />
                         </div>
                         <div class="flex pl-6">
                             <span>Suggest</span>
                         </div>
                         <div class="flex pl-2">
                             <ToggleSwitch :id="field.name + '_suggest'"
-                                v-model="sourceFormData['fields'][field.name]['suggest']" />
+                                v-model="formData['fields'][field.name]['suggest']" />
                         </div>
                         <div class="flex pl-6">
                             <span>Treat as JSON String</span>
                         </div>
                         <div class="flex pl-2">
                             <ToggleSwitch :id="field.name + '_jsonstring'"
-                                v-model="sourceFormData['fields'][field.name]['jsonstring']" />
+                                v-model="formData['fields'][field.name]['jsonstring']" />
                         </div>
                         <div class="flex pl-6">
                             <span>Allow in GROUP BY</span>
                         </div>
                         <div class="flex pl-2">
                             <ToggleSwitch :id="field.name + '_group_by'"
-                                v-model="sourceFormData['fields'][field.name]['group_by']" />
+                                v-model="formData['fields'][field.name]['group_by']" />
                         </div>
                     </div>
                     <div class="flex flex-row w-full items-center mb-4">
@@ -128,9 +88,9 @@
                         </div>
                         <div class="flex flex-col pl-6 w-96">
                             <InputText :id="field.name + '_display_name'"
-                                v-model="sourceFormData['fields'][field.name]['display_name']"
+                                v-model="formData['fields'][field.name]['display_name']"
                                 :invalid="dynamicFieldHasError(field.name, 'display_name')" fluid />
-                            <ErrorText :text="sourceFormErrors['fields'][field.name]['display_name']" />
+                            <ErrorText :text="formErrors['fields'][field.name]['display_name']" />
                         </div>
                     </div>
                     <div class="flex flex-row w-full items-center mb-4">
@@ -138,11 +98,10 @@
                             <span>Type</span>
                         </div>
                         <div class="flex flex-col pl-6 w-96">
-                            <Select :id="field.name + '_type'" fluid
-                                v-model="sourceFormData['fields'][field.name]['type']"
+                            <Select :id="field.name + '_type'" fluid v-model="formData['fields'][field.name]['type']"
                                 :options="sourceDynamicFieldTypes" :invalid="dynamicFieldHasError(field.name, 'type')"
                                 editable filter autoFilterFocus />
-                            <ErrorText :text="sourceFormErrors['fields'][field.name]['type']" />
+                            <ErrorText :text="formErrors['fields'][field.name]['type']" />
                         </div>
                     </div>
                     <div class="flex flex-row w-full items-center mb-4">
@@ -150,10 +109,9 @@
                             <span>Values</span>
                         </div>
                         <div class="flex flex-col pl-6 w-96">
-                            <InputText :id="field.name + '_values'"
-                                v-model="sourceFormData['fields'][field.name]['values']"
+                            <InputText :id="field.name + '_values'" v-model="formData['fields'][field.name]['values']"
                                 :invalid="dynamicFieldHasError(field.name, 'values')" fluid />
-                            <ErrorText :text="sourceFormErrors['fields'][field.name]['values']" />
+                            <ErrorText :text="formErrors['fields'][field.name]['values']" />
                         </div>
                     </div>
                 </BorderCard>
@@ -181,7 +139,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, computed } from 'vue'
+import { ref, reactive, watch, computed, onMounted } from 'vue'
 
 import { useToast } from 'primevue/usetoast'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -195,34 +153,28 @@ import BorderCard from '@/components/common/BorderCard.vue'
 
 import ErrorText from '@/components/common/ErrorText.vue'
 
-import { ClickhouseTypes } from '@/utils/clickhousetypes'
+import { FieldTypes } from '@/utils/constants'
 
-const emit = defineEmits(['sourceFormDataChanged', 'sourceDynamicFieldAdded', 'sourceDynamicFieldRemoved'])
+const emit = defineEmits(['formDataChanged', 'dynamicFieldAdded', 'dynamicFieldRemoved'])
 const props = defineProps([
     'source',
+    'kind',
     'schemaFields',
     'connectionData',
-    'sourceFormErrors',
+    'formErrors',
+    'settings',
 ])
-const toast = useToast()
 
+const toast = useToast()
 const getInitialFormData = () => {
     let data = {
-        'slug': '',
-        'name': '',
-        'description': '',
-        'time_field': '',
-        // 'uniq_field': '',
+        'time_field': props.settings.fields.time.default,
         'severity_field': '',
-        'default_chosen_fields': '',
+        'default_chosen_fields': props.settings.fields.defaultChosenFields.default,
         'fields': {},
     }
     if (props.source) {
-        data.slug = props.source.slug
-        data.name = props.source.name
-        data.description = props.source.description
         data.time_field = props.source.timeField
-        // data.uniq_field = props.source.uniqField
         data.severity_field = props.source.severityField
         data.default_chosen_fields = props.source.defaultChosenFields?.join(', ')
 
@@ -232,6 +184,7 @@ const getInitialFormData = () => {
     }
     return data
 }
+
 
 const getInitialDynamicFieldsList = () => {
     let data = []
@@ -255,47 +208,36 @@ const getSourceDynamicFieldDefaultData = () => {
     }
 }
 
-const sourceDynamicFieldTypes = ref(ClickhouseTypes)
-
-const slugEditable = computed(() => {
-    if (props.source) {
-        return false
-    } else {
-        return true
-    }
-})
+const sourceDynamicFieldTypes = ref(FieldTypes[props.kind])
 
 const sourceStaticFieldChoices = computed(() => {
     let timeFieldChoices = []
-    // let uniqFieldChoices = []
     let severityChoices = []
 
-    for (const [fieldName, fieldData] of Object.entries(sourceFormData.fields)) {
-       let item = Object.assign({ 'name': fieldName }, fieldData)
-       let itemType = item.type.toLowerCase()
-       if (itemType.includes('datetime') ||
-           itemType.includes('datetime64') ||
-           itemType.includes('timestamp') ||
-           itemType.includes('int64') ||
-           itemType.includes('uint64')) {
+    for (const [fieldName, fieldData] of Object.entries(formData.fields)) {
+        let item = Object.assign({ 'name': fieldName }, fieldData)
+        let itemType = item.type.toLowerCase()
+        if (itemType.includes('datetime') ||
+            itemType.includes('datetime64') ||
+            itemType.includes('timestamp') ||
+            itemType.includes('int64') ||
+            itemType.includes('uint64')) {
             timeFieldChoices.push(item);
         } else {
-            // uniqFieldChoices.push(item)
             severityChoices.push(item)
         }
     }
     return {
         time_field: timeFieldChoices,
-        // uniq_field: uniqFieldChoices,
         severity_field: severityChoices,
     }
 })
 
-const sourceFormData = reactive(getInitialFormData())
+const formData = reactive(getInitialFormData())
 const sourceDynamicFieldsList = ref(getInitialDynamicFieldsList())
 
 const dynamicFieldHasError = (field, prop) => {
-    if (props.sourceFormErrors.fields[field]?.[prop]) {
+    if (props.formErrors.fields[field]?.[prop]) {
         return true
     } else {
         return false
@@ -317,8 +259,8 @@ const handleNewDynamicFieldDialogClose = () => {
 
 const handleRemoveSourceDynamicField = (fieldName) => {
     sourceDynamicFieldsList.value = sourceDynamicFieldsList.value.filter((field) => field.name != fieldName);
-    emit('sourceDynamicFieldRemoved', fieldName)
-    delete sourceFormData.fields[fieldName]
+    emit('dynamicFieldRemoved', fieldName)
+    delete formData.fields[fieldName]
 }
 
 const handleAddSourceDynamicField = () => {
@@ -326,16 +268,16 @@ const handleAddSourceDynamicField = () => {
     if (newSourceDynamicFieldDialogData.value == "") {
         newSourceDynamicFieldDialogData.invalid = true
         newSourceDynamicFieldDialogData.error = 'Name is required.'
-    } else if (name in sourceFormData.fields) {
+    } else if (name in formData.fields) {
         newSourceDynamicFieldDialogData.invalid = true
         newSourceDynamicFieldDialogData.error = 'Field with that name already exist.'
     } else {
         newSourceDynamicFieldDialogData.invalid = false
         newSourceDynamicFieldDialogData.value = ''
         newSourceDynamicFieldDialogData.error = ''
-        sourceFormData.fields[name] = getSourceDynamicFieldDefaultData()
+        formData.fields[name] = getSourceDynamicFieldDefaultData()
         sourceDynamicFieldsList.value.push({ 'name': name })
-        emit('sourceDynamicFieldAdded', name)
+        emit('dynamicFieldAdded', name)
         toast.add({ severity: 'success', summary: 'Success', detail: `Added field ${name} to list`, life: 3000 });
         newSourceDynamicFieldDialogData.visible = false
     }
@@ -347,11 +289,11 @@ const handleLoadSourceDynamicFieldsFromSchema = () => {
         let data = Object.assign({}, field)
         let name = data.name
         delete data.name
-        if (!(name in sourceFormData.fields)) {
-            sourceFormData.fields[name] = data
+        if (!(name in formData.fields)) {
+            formData.fields[name] = data
             sourceDynamicFieldsList.value.push({ 'name': name })
             fieldsAdded.push(name)
-            emit('sourceDynamicFieldAdded', name)
+            emit('dynamicFieldAdded', name)
         }
     }
     if (fieldsAdded.length != 0) {
@@ -362,10 +304,16 @@ const handleLoadSourceDynamicFieldsFromSchema = () => {
     }
 }
 
-watch(sourceFormData, () => {
-    emit('sourceFormDataChanged', sourceFormData)
+watch(formData, () => {
+    emit('formDataChanged', formData)
 })
 
-emit('sourceFormDataChanged', sourceFormData)
+onMounted(() => {
+    if (props.settings.autoLoadFieldsFromSchema) {
+        handleLoadSourceDynamicFieldsFromSchema()
+    }
+})
+
+emit('formDataChanged', formData)
 
 </script>

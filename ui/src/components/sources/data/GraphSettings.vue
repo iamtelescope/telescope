@@ -30,7 +30,7 @@ const emit = defineEmits(['graphVisibilityChanged'])
 
 const sourceControlsStore = useSourceControlsStore()
 const dropdown = ref()
-const showGraph = ref(true)
+const showGraph = ref(sourceControlsStore.showGraph)
 const groupBy = ref(sourceControlsStore.graphGroupBy ? sourceControlsStore.graphGroupBy : null)
 
 const onGraphGroupByChange = (event) => {

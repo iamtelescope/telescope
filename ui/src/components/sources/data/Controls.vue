@@ -1,6 +1,6 @@
 <template>
     <div>
-        <Toolbar class="toolbar-slim border-none p-0 pb-2 pt-1">
+        <Toolbar class="toolbar-slim border-none p-0 pt-1">
             <template #start>
                 <Button icon="pi pi-search" class="mr-2" severity="primary" label="Search" size="small"
                     @click="handleSearch" />
@@ -15,43 +15,56 @@
                 </FloatLabel>
                 <DatetimePicker @rangeSelect="onRangeSelect" :from="sourceControlsStore.from"
                     :to="sourceControlsStore.to" />
-                <QuerySettings :source="source" :enableRawQueryEditorInitial="showRawQueryEditor" @enableRawQueryEditorChange="onEnableRawQueryEditorChange"/>
-                <GraphSettings :source="source" :groupByInvalid="groupByInvalid" @graphVisibilityChanged="onGraphVisibilityChanged"/>
+                <QuerySettings :source="source" :enableRawQueryEditorInitial="showRawQueryEditor"
+                    @enableRawQueryEditorChange="onEnableRawQueryEditorChange" />
+                <GraphSettings :source="source" :groupByInvalid="groupByInvalid"
+                    @graphVisibilityChanged="onGraphVisibilityChanged" />
+            </template>
+            <template #end>
+                <ToggleButton v-model="hideFilters" onLabel="Show" offLabel="Hide"
+                    onIcon="pi pi-eye" offIcon="pi pi-eye-slash" size="small" />
             </template>
         </Toolbar>
-        <div class="mb-2">
-            <IftaLabel>
-                <FieldsEditor id="fields_editor" @change="onFieldsChange" :source="source"
-                    :value="sourceControlsStore.fields" @submit="handleSearch" />
-                <label for="fields_editor">Fields selector</label>
-            </IftaLabel>
-        </div>
-        <div class="mb-2">
-            <IftaLabel>
-                <QueryEditor id="flyql_editor" @change="onQueryChange" :source="source"
-                    :value="sourceControlsStore.query" :from="sourceControlsStore.from" :to="sourceControlsStore.to"
-                    @submit="handleSearch" />
-                <label for="flyql_editor">FlyQL query</label>
-            </IftaLabel>
-        </div>
-        <div v-if="source.isRawQueryAllowed() && showRawQueryEditor">
-            <IftaLabel>
-                <RawQueryEditor id="raw_query_editor" @change="onRawQueryChange" :source="source"
-                    :value="sourceControlsStore.rawQuery" @submit="handleSearch" />
-                <label for="raw_query_editor">RAW query (SQL WHERE statement)</label>
-            </IftaLabel>
+        <div :class="{ hidden: hideFilters }">
+            <div class="mb-2 mt-3">
+                <IftaLabel>
+                    <FieldsEditor id="fields_editor" @change="onFieldsChange" :source="source"
+                        :value="sourceControlsStore.fields" @submit="handleSearch" />
+                    <label for="fields_editor">Fields selector</label>
+                </IftaLabel>
+            </div>
+            <div class="mb-2">
+                <ContextFields v-if="source.contextFields" :source="source"
+                    :contextFields="sourceControlsStore.contextFields" @fieldChanged="onContextFieldChanged" />
+            </div>
+            <div class="mb-2">
+                <IftaLabel>
+                    <QueryEditor id="flyql_editor" @change="onQueryChange" :source="source"
+                        :value="sourceControlsStore.query" :from="sourceControlsStore.from.value" :to="sourceControlsStore.to.value"
+                        @submit="handleSearch" />
+                    <label for="flyql_editor">FlyQL query</label>
+                </IftaLabel>
+            </div>
+            <div v-if="source.isRawQueryAllowed() && showRawQueryEditor">
+                <IftaLabel>
+                    <RawQueryEditor id="raw_query_editor" @change="onRawQueryChange" :source="source"
+                        :value="sourceControlsStore.rawQuery" @submit="handleSearch" />
+                    <label for="raw_query_editor">RAW query (SQL WHERE statement)</label>
+                </IftaLabel>
+            </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted } from "vue"
+import { ref, watch, onMounted } from "vue"
 
-import { Button, Select, Toolbar, FloatLabel, IftaLabel, ToggleSwitch } from "primevue"
+import { Button, Select, Toolbar, FloatLabel, IftaLabel, ToggleButton } from "primevue"
 
 import DatetimePicker from "@/components/sources/data/DatetimePicker.vue"
 import GraphSettings from "@/components/sources/data/GraphSettings.vue"
 import QuerySettings from "@/components/sources/data/QuerySettings.vue"
+import ContextFields from "@/components/sources/data/ContextFields.vue"
 import FieldsEditor from "@/components/sources/data/FieldsEditor.vue"
 import QueryEditor from "@/components/sources/data/QueryEditor.vue"
 import RawQueryEditor from "@/components/sources/data/RawQueryEditor.vue"
@@ -64,28 +77,18 @@ const emit = defineEmits(["searchRequest", "shareURL", "download", "graphVisibil
 
 const sourceControlsStore = useSourceControlsStore()
 
+const hideFilters = ref(false)
+
 const source = ref(props.source)
 const showRawQueryEditor = ref(sourceControlsStore.rawQuery ? true : false)
 const storedRawQuery = ref("")
 const limit = ref(sourceControlsStore.limit)
 const limits = ref(getLimits(sourceControlsStore.limit.value))
 
-const onToggleShowRawQueryEditor = () => {
-    if (showRawQueryEditor.value) {
-        if (storedRawQuery.value) {
-            sourceControlsStore.setRawQuery(storedRawQuery.value)
-        }
-    } else {
-        storedRawQuery.value = sourceControlsStore.rawQuery
-        sourceControlsStore.setRawQuery("")
-    }
-}
-
 const onRangeSelect = (params) => {
     sourceControlsStore.setFrom(params.from);
     sourceControlsStore.setTo(params.to);
 }
-
 
 const onFieldsChange = (value) => {
     sourceControlsStore.setFields(value)
@@ -109,6 +112,10 @@ const onEnableRawQueryEditorChange = (value) => {
 
 const onRawQueryChange = (value) => {
     sourceControlsStore.setRawQuery(value)
+}
+
+const onContextFieldChanged = (params) => {
+    sourceControlsStore.setContextField(params.name, params.value)
 }
 
 const onGraphVisibilityChanged = () => {

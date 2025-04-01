@@ -1,16 +1,19 @@
 <template>
-    <div class="flex flex-row">
-        <SelectButton v-model="chartType" :defaultValue="chartDefaultType" :allowEmpty="false" :options="chartTypeOptions"
-            @change="onChartTypeSelect">
-            <template #option="slotProps">
-                <font-awesome-icon :icon="`fa-solid fa-chart-${slotProps.option}`" />
-            </template>
-        </SelectButton>
-        <div class="flex items-center pl-4"><span class="text-gray-500">group by:</span> <span class="pl-2 font-bold">{{ groupByLabel || '–' }}</span></div>
-
-    </div>
-    <div class="flex flex-col" id="histogramm">
-        <YagrChart v-if="chartSettings" :theme="theme" :settings="chartSettings" />
+    <div>
+        <div class="flex flex-row">
+            <SelectButton v-model="chartType" :defaultValue="chartDefaultType" :allowEmpty="false"
+                :options="chartTypeOptions" @change="onChartTypeSelect">
+                <template #option="slotProps">
+                    <font-awesome-icon :icon="`fa-solid fa-chart-${slotProps.option}`" />
+                </template>
+            </SelectButton>
+            <div class="flex items-center pl-4"><span class="text-gray-500">group by:</span> <span
+                    class="pl-2 font-bold">{{
+                        groupByLabel || '–' }}</span></div>
+        </div>
+        <div class="flex flex-col" id="histogramm">
+            <YagrChart v-if="chartSettings" :theme="theme" :settings="chartSettings" />
+        </div>
     </div>
 </template>
 <script setup>
@@ -27,7 +30,6 @@ import YagrChart from '@/components/common/YagrChart.vue'
 import { getColor } from '@/utils/colors.js'
 
 const props = defineProps(['source', 'stats', 'rows', 'groupByLabel'])
-
 const emit = defineEmits(['rangeSelected'])
 const chartSettings = ref(null)
 const chartDefaultType = ref('column')
@@ -56,7 +58,13 @@ const theme = computed(() => {
 const calcRenderOptions = (type) => {
     let options = {}
     if (type == 'column') {
+        let max = 15
+
         let columns = props.stats.timestamps.length
+        if (columns < 150) {
+            columns = 150
+        }
+
         // left-rigth padding of graph
         let padding = 70
         // spaces between columns 
@@ -69,8 +77,9 @@ const calcRenderOptions = (type) => {
         if (min <= 0 || columns > 200) {
             min = 1
         }
-
-        let max = 15
+        if (min > max) {
+            min = max
+        }
         let factor = 0.3
         options['size'] = [factor, max, min]
         options['radius'] = 0.2
@@ -103,14 +112,15 @@ const calcPlotLines = () => {
 }
 
 const tooltipRender = (data) => {
-    let html = `<div class="font-bold pb-2 dark:text-neutral-300">${format(uPlot.tzDate(new Date(data.x), 'Etc/UTC'), "yyyy-MM-dd HH:mm:ss")}</div><table class='p-0 m-0 w-full'>`
+    let html = `<div class="font-bold pb-2 dark:text-neutral-300">${format(uPlot.tzDate(new Date(data.x), 'UTC'), "yyyy-MM-dd HH:mm:ss")}</div><table class='p-0 m-0 w-full'>`
     let label = props.groupByLabel
     if (!label) {
         label = 'Name'
     }
     html += `<tr class="pb-2"><th></th><th class="text-left pb-2 pr-2 dark:text-neutral-300">${label}</th><th class="text-right pb-2 dark:text-neutral-300">Count</th></tr>`
+    let i = 0
     for (const item of data.scales[0].rows.sort((a, b) => b.originalValue - a.originalValue)) {
-        if (item.dataValue == 0) {
+        if (item.dataValue == 0 && i > 25) {
             continue
         }
         html += '<tr>'
@@ -118,6 +128,7 @@ const tooltipRender = (data) => {
         html += `<td class="p-0 border-0 pr-2">${item.name}</td>`
         html += `<td class="p-0 border-0 text-right"> ${item.dataValue}</td>`
         html += '</tr>'
+        i++
     }
     html += '</table>'
     return html
@@ -130,6 +141,7 @@ const getChartSettings = (type) => {
     }
     const series = []
     let num = 0
+
     for (const [key, value] of Object.entries(props.stats.data)) {
         let item = {
             name: key,
@@ -141,13 +153,14 @@ const getChartSettings = (type) => {
         num += 1
         series.push(item)
     }
-
     return {
         timeline: props.stats.timestamps,
         timeMultiplier: 1,
         legend: {
             show: true,
         },
+        adaptive: true,
+        height: 800,
         scales: {
             y: {
                 stacking: stacking,
@@ -190,7 +203,6 @@ const getChartSettings = (type) => {
         series: series,
         editUplotOptions: (opts) => {
             opts.tzDate = (ts) => uPlot.tzDate(new Date(ts), 'Etc/UTC')
-
             return opts;
         },
     }

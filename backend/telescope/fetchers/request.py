@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 from telescope.models import Source
 from telescope.fields import ParsedField
 
@@ -28,6 +28,7 @@ class DataRequest:
         time_from: int,
         time_to: int,
         limit: int,
+        context_fields: Dict,
     ):
         self.source = source
         self.query = query
@@ -35,6 +36,7 @@ class DataRequest:
         self.time_from = time_from
         self.time_to = time_to
         self.limit = limit
+        self.context_fields = context_fields
 
 
 class GraphDataRequest:
@@ -46,6 +48,7 @@ class GraphDataRequest:
         time_from: int,
         time_to: int,
         group_by: List[ParsedField],
+        context_fields: Dict,
     ):
         self.source = source
         self.query = query
@@ -53,3 +56,4 @@ class GraphDataRequest:
         self.time_from = time_from
         self.time_to = time_to
         self.group_by = group_by
+        self.context_fields = context_fields
