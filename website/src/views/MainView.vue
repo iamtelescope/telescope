@@ -101,8 +101,9 @@
                         </template>
                         <template #content>
                             <div class="text-lg">
-                                Manage <span class="font-bold">multiple</span> ClickHouse connections and configure
-                                field <span class="font-bold">visibility, autocompletion,
+                                Manage <span class="font-bold">multiple</span> log sources, including <span class="font-bold">ClickHouse</span>
+                                and <span class="font-bold">Docker</span>.
+                                Configure field <span class="font-bold">visibility, autocompletion,
                                     and permissions</span> for precise data control.
                             </div>
                         </template>
