@@ -8,6 +8,7 @@ from telescope.models import Source
 from telescope.constants import UTC_ZONE
 
 import logging
+
 logger = logging.getLogger("telescope.models")
 
 
@@ -39,16 +40,31 @@ class Row:
     def as_json(self) -> str:
         return json.dumps(self.as_dict(), default=str)
 
+    def is_propbably_jsonstring(self, value):
+        # check before attempting json.load
+        if not isinstance(value, str):
+            return False
+        if value.startswith("{") and value.endswith("}"):
+            return True
+        if value.startswith("[") and value.endswith("["):
+            return True
+
+        return False
+
     def as_dict(self) -> Dict:
         data = {}
         for name, source_field in self.source._fields.items():
-            if source_field.jsonstring:
+            if source_field.jsonstring and self.is_propbably_jsonstring(
+                self.data[name]
+            ):
                 try:
                     value = json.loads(self.data[name])
                 except Exception:
                     value = self.data[name]
                     logger.error(
-                        "Failed to json.loads(value) for JSON-treated field '%s'", name
+                        "Failed to json.loads(value) for JSON-treated field '%s', %s",
+                        name,
+                        type(self.data[name]),
                     )
             else:
                 value = self.data[name]

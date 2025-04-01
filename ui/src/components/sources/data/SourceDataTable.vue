@@ -4,7 +4,7 @@
             <Row :source="source" :row="selectedRow"></Row>
         </template>
     </Drawer>
-    <table class="w-full min-w-full text-sm" v-if="rows && dateFormat">
+    <table class="w-full min-w-full text-sm" v-if="rows && rows.length > 0 && dateFormat">
         <thead>
             <tr>
                 <th v-if="source.severityField.length != 0" class="border-b border-neutral-200 dark:border-neutral-700">
@@ -40,6 +40,10 @@
             </tr>
         </tbody>
     </table>
+    <div v-else>
+        <p class="font-bold">No data to display</p>
+        <p>The query was successful, but returned no results. Please check your filters or time range.</p>
+    </div>
 </template>
 
 <script setup>
@@ -52,7 +56,6 @@ import Row from "@/components/sources/data/Row.vue"
 
 import { getColor } from '@/utils/colors.js'
 import { MODIFIERS } from '@/utils/modifiers.js'
-
 
 const props = defineProps(['source', 'rows', 'fields', 'timezone'])
 const selectedRow = ref(null)

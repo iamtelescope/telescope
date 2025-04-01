@@ -12,10 +12,11 @@ class Source {
         this.name = data.name
         this.description = data.description
         this.timeField = data.time_field
-        // this.uniqField = data.uniq_field
         this.severityField = data.severity_field
         this.fields = data.fields
+        this.contextFields = data.context_fields
         this.defaultChosenFields = data.default_chosen_fields
+        this.supportRawQuery = data.support_raw_query
         this.connection = getDefaultIfUndefined(data.connection, {})
         this.permissions = getDefaultIfUndefined(data.permissions, [])
     }
@@ -41,7 +42,7 @@ class Source {
         }
     }
     isRawQueryAllowed() {
-        if (this.permissions.includes('raw_query')) {
+        if (this.permissions.includes('raw_query') && this.supportRawQuery) {
             return true
         } else {
             return false

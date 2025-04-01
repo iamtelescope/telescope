@@ -1,4 +1,4 @@
-const ClickhouseTypes = [
+const clickhouseTypes = [
     "AggregateFunction",
     "Array",
     "Bool",
@@ -137,4 +137,14 @@ const ClickhouseTypes = [
     "boolean",
 ]
 
-export { ClickhouseTypes }
+const dockerTypes = [
+    "datetime",
+    "string",
+]
+
+const FieldTypes = {
+    clickhouse: clickhouseTypes,
+    docker: dockerTypes
+}
+
+export { FieldTypes }

@@ -35,7 +35,6 @@
 
 <script setup>
 import { ref, computed, onMounted, onUpdated } from 'vue'
-import { useRoute } from 'vue-router'
 
 import { DateTime } from "luxon"
 
@@ -47,33 +46,30 @@ import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
 
 import ErrorText from '@/components/common/ErrorText.vue'
-import { getRelativeOption, getRelativeOptions, getDateIfTimestamp, getDatetimeRangeText, fmt, dateIsValid, dateTimeFormat, humanRelatedTimeRegex, getStrDateOrStrRelative } from '@/utils/datetimeranges.js'
+import { getRelativeOption, getRelativeOptions, getDatetimeRangeText, dateIsValid, dateTimeFormat, humanRelatedTimeRegex } from '@/utils/datetimeranges.js'
 import { tzOptions } from '@/utils/timezones.js'
-
-const route = useRoute()
 
 const props = defineProps(['from', 'to'])
 const emit = defineEmits(['rangeSelect'])
-
 const dropdown = ref()
 const zones = ref(tzOptions)
 const selectedZone = ref({ 'name': 'UTC', 'code': 'UTC' })
-const dates = ref([])
+const dates = ref(props.from.dateObj && props.to.dateObj ? [props.from.dateObj, props.to.dateObj] : [])
 
-const from = ref(route.query.from ?? 'now-5m')
-const to = ref(route.query.to ?? 'now')
+const from = ref(props.from.value)
+const to = ref(props.to.value)
 
-const fromInputText = ref('')
-const toInputText = ref('')
+const fromInputText = ref(props.from.strValue)
+const toInputText = ref(props.to.strValue)
 const fromInputManually = ref(false)
 const toInputManually = ref(false)
 const fromInputValid = ref(true)
+
 const fromInputValidError = ref('')
 const toInputValidError = ref('')
 const toInputValid = ref(true)
 const ranges = ref(getRelativeOptions())
-const selectedRelative = ref(getRelativeOption(from.value, to.value))
-
+const selectedRelative = ref(getRelativeOption(props.from.strValue, props.to.strValue))
 
 const onFromInputUpdate = () => {
     fromInputManually.value = true
@@ -84,19 +80,11 @@ const onToInputUpdate = () => {
 }
 
 const initValues = () => {
-    if (props.from) {
-        from.value = props.from
-    }
-    if (props.to) {
-        to.value = props.to
-    }
-    fromInputText.value = getStrDateOrStrRelative(from.value)
-    toInputText.value = getStrDateOrStrRelative(to.value)
-    let fromResult = getDateIfTimestamp(from.value)
-    let toResult = getDateIfTimestamp(to.value)
+    fromInputText.value = props.from.strValue
+    toInputText.value = props.to.strValue
 
-    if (fromResult.parsed && toResult.parsed) {
-        dates.value = [fromResult.date, toResult.date]
+    if (props.from.dateObj && props.to.dateObj) {
+        dates.value = [props.from.dateObj.toJSDate(), props.to.dateObj.toJSDate()]
     }
     emit('rangeSelect', {
         from: from.value,
@@ -113,14 +101,8 @@ onUpdated(() => {
 })
 
 const daterangelabel = computed(() => {
-    return getDatetimeRangeText(from.value, to.value)
+    return getDatetimeRangeText(props.from.strValue, props.to.strValue) + ` [${selectedZone.value.name}]`
 })
-
-const getUtcTimestamp = (value) => {
-    const dateInBrowserTimezone = DateTime.fromJSDate(new Date(value))
-    const dateInSelectedTimezone = dateInBrowserTimezone.setZone(selectedZone.value.code, { keepLocalTime: true })
-    return dateInSelectedTimezone.toUTC().toMillis()
-}
 
 const handleApply = () => {
     let isValid = true
@@ -170,8 +152,6 @@ const handleSelectRelative = (event) => {
     if (event.value) {
         from.value = event.value.from
         to.value = event.value.to
-        fromInputText.value = event.value.from
-        toInputText.value = event.value.to
         fromInputManually.value = false
         toInputManually.value = false
         dates.value = []
@@ -184,16 +164,11 @@ const handleSelectRelative = (event) => {
 
 const onDateSelect = () => {
     if (dates.value[0] && dates.value[1]) {
-
-        fromInputText.value = fmt(dates.value[0])
-        toInputText.value = fmt(dates.value[1])
         fromInputManually.value = false
         toInputManually.value = false
         selectedRelative.value = null
-        emit('rangeSelect', {
-            from: dates.value[0],
-            to: dates.value[1],
-        })
+        from.value = dates.value[0]
+        to.value = dates.value[1]
     }
 }
 

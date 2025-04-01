@@ -15,41 +15,41 @@
                     </div>
                 </div>
                 <div class="mb-9">
-                    <InputText placeholder="Filter by slug or name" v-model="filterValue" fluid
+                    <InputText placeholder="Filter by slug or name" v-model="sourceFilters.global.value" fluid
                         class="placeholder-gray-300" />
                 </div>
                 <DataView :loading="loading" :error="error">
-                    <div class="flex flex-wrap w-full gap-2">
-                        <Card v-for="(source, index) in filteredSources" :key="index" @click="handleSourceClick(source)"
-                            class="max-w-400 min-w-400 cursor-pointer hover:drop-shadow-md dark:drop-shadow-md dark:hover:drop-shadow-xl"
-                            style="max-width:420px;min-width:420px;">
-                            <template #title>
-                                <div class="flex flex-row items-start">
-                                    <img v-if="isDark" src="@/assets/clickhouse-dark.png" class="mr-3" height="24px"
-                                        width="24px">
-                                    <img v-else src="@/assets/clickhouse.png" class="mr-3" height="24px" width="24px">
-                                    <div class="flex flex-col w-full">
-                                        <span>{{ source.name }}</span>
-                                        <span class="text-gray-500 text-sm">{{ source.slug }}</span>
-                                    </div>
-                                    <div class="flex justify-end">
-                                        <Button v-if="source.isEditable()" type="button" severity="secondary"
-                                            icon="pi pi-cog" label="Manage" size="small"
-                                            @click.stop="handleSourceViewClick(source)" />
-                                        <Button v-else-if="source.isReadable()" type="button" severity="secondary"
-                                            icon="pi pi-eye" label="View" size="small"
-                                            @click.stop="handleSourceViewClick(source)" />
-                                    </div>
-                                </div>
-                            </template>
-                            <template #content>
+                    <DataTable :value="filteredSources" removableSort class="hover:cursor-pointer" :row-hover="true"
+                        v-model:filters="sourceFilters" @row-click="handleRowClick">
+                        <Column header="Kind" sortable field="kind" bodyClass="w-40">
+                            <template #body="slotProps">
                                 <div class="flex flex-row items-center">
-                                    <div style="width: 24px; height:24px;" class="mr-3"></div>
-                                    <span>{{ source.description }}</span>
+                                    <div class="pr-2">
+                                        <img :src="require(`@/assets/${slotProps.data.kind}.png`)" height="24px"
+                                            width="24px">
+                                    </div>
+                                    <div>
+                                        {{ slotProps.data.kind }}
+                                    </div>
                                 </div>
                             </template>
-                        </Card>
-                    </div>
+                        </Column>
+                        <Column field="name" header="Name" class="w-1 text-nowrap font-bold" sortable></Column>
+                        <Column field="slug" header="Slug" class="w-1 text-nowrap text-gray-500" sortable></Column>
+                        <Column field="description" header="Description" sortable></Column>
+                        <Column>
+                            <template #body="slotProps">
+                                <div class="flex flex-row justify-end">
+                                    <Button v-if="slotProps.data.isEditable()" type="button" severity="secondary"
+                                        icon="pi pi-cog" label="Manage" size="small"
+                                        @click.stop="handleSourceViewClick(slotProps.data)" />
+                                    <Button v-else-if="slotProps.data.isReadable()" type="button" severity="secondary"
+                                        icon="pi pi-eye" label="View" size="small"
+                                        @click.stop="handleSourceViewClick(slotProps.data)" />
+                                </div>
+                            </template>
+                        </Column>
+                    </DataTable>
                 </DataView>
             </div>
         </div>
@@ -63,11 +63,9 @@ import { useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
-import Button from 'primevue/button'
-import Card from 'primevue/card'
-import InputText from 'primevue/inputtext'
+import { Button, InputText, DataTable, Column } from 'primevue'
+import { FilterMatchMode } from '@primevue/core/api'
 
-import { useDark } from '@vueuse/core'
 import { useNavStore } from '@/stores/nav'
 import { useAuthStore } from '@/stores/auth'
 import { useGetSources } from '@/composables/sources/useSourceService'
@@ -77,7 +75,6 @@ import DataView from '@/components/common/DataView'
 const router = useRouter()
 const navStore = useNavStore()
 const filterValue = ref('')
-const isDark = useDark()
 
 const { user } = storeToRefs(useAuthStore())
 const { sources, error, loading } = useGetSources()
@@ -86,7 +83,12 @@ const filteredSources = computed(() => {
     return sources.value.filter((source) => source.name.includes(filterValue.value) || source.slug.includes(filterValue.value))
 })
 
-const handleSourceClick = (source) => {
+const sourceFilters = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+})
+
+const handleRowClick = (event) => {
+    let source = event.data
     router.push({ name: 'explore', params: { sourceSlug: source.slug, source: source } })
 }
 

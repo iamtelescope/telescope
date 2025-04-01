@@ -7,10 +7,12 @@ certifi==2024.7.4
 charset-normalizer==3.3.2
 cryptography==44.0.1
 defusedxml==0.7.1
+docker==7.1.0
 django-allauth==65.2.0
 django-cors-headers==4.3.1
 djangorestframework==3.15.2
-flyql_generators @ git+https://github.com/iamtelescope/flyql-generators.git@74b158bbda5ea3d4c4e7cc769eb3dd78ef5ae4e2#subdirectory=python
+flyql @ git+https://github.com/iamtelescope/flyql.git@13f3dbc93224cad802f163cd04ec6c7754c3740f#subdirectory=python
+flyql_generators @ git+https://github.com/iamtelescope/flyql-generators.git@77f47d0d790555b3ecab9582b8864ecedd2501c9#subdirectory=python
 gunicorn==23.0.0
 idna==3.7
 jsonschema==4.23.0
@@ -19,7 +21,7 @@ pycparser==2.22
 python3-openid==3.2.0
 pytz==2024.1
 requests-oauthlib==2.0.0
-requests==2.32.0
+requests==2.32.3
 sqlparse==0.5.0
 typing_extensions==4.12.2
 tzlocal==5.2

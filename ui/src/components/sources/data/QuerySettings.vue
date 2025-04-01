@@ -28,7 +28,7 @@ const enableRawQueryEditor = ref(props.enableRawQueryEditorInitial)
 
 const enableRawQueryEditorTooltip = computed(() => {
     if (!props.source.isRawQueryAllowed()) {
-        return { value: 'Insufficient permissions to use source raw queries', showDelay: 300 }
+        return { value: 'Insufficient permissions or source does not support raw queries', showDelay: 300 }
     }
 })
 

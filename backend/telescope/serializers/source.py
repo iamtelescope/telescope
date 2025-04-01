@@ -16,14 +16,21 @@ from telescope.rbac import permissions
 
 from telescope.utils import ALLOWED_TIME_FIELD_TYPES, convert_to_base_ch
 
+
+SUPPORTED_KINDS = {"clickhouse", "docker"}
+
+
 class SerializeErrorMsg:
     EMPTY_FIELD = "This field may not be blank"
     SLUG_SOURCE_EXIST = "Source with that slug already exist"
     SLUG_START_WITH_DASH = "Should not starts with dash"
     SLUG_END_WITH_DASH = "Should not ends with dash"
-    DB_SUPPORTED_ONLY_CLICK = "Only clickhouse kind is supported atm"
+    DB_SUPPORTED_ONLY_CLICK = "Only these kinds are supported: " + ", ".join(
+        SUPPORTED_KINDS
+    )
     TIME_FIELD_TYPE = "Field should have a valid time-related type"
     RAW_QUERIES_PERMISSIONS = "Insufficient permissions to use source raw queries"
+    RAW_QUERIES_NOT_SUPPORTED = "This source does not support raw queries"
 
 
 class SourceAdminSerializer(serializers.ModelSerializer):
@@ -72,6 +79,11 @@ class SourceRoleBindingSerializer(serializers.ModelSerializer):
 
 
 class ConnectionSerializer(serializers.Serializer):
+    kind = serializers.CharField()
+    data = serializers.JSONField()
+
+
+class ClickhouseConnectionSerializer(serializers.Serializer):
     host = serializers.CharField()
     port = serializers.IntegerField()
     user = serializers.CharField()
@@ -79,6 +91,10 @@ class ConnectionSerializer(serializers.Serializer):
     database = serializers.CharField()
     table = serializers.CharField()
     ssl = serializers.BooleanField()
+
+
+class DockerConnectionSerializer(serializers.Serializer):
+    address = serializers.CharField()
 
 
 class SourceWithConnectionSerializer(serializers.ModelSerializer):
@@ -104,30 +120,48 @@ class SourceFieldSerializer(serializers.Serializer):
         return super().to_internal_value(data)
 
 
-class NewSourceSerializer(serializers.Serializer):
+class SourceKindSerializer(serializers.Serializer):
+    kind = serializers.CharField()
+
+    def validate_kind(self, value):
+        if value not in SUPPORTED_KINDS:
+            raise serializers.ValidationError(SerializeErrorMsg.DB_SUPPORTED_ONLY_CLICK)
+        return value
+
+
+class SourceContextFieldDataSerializer(serializers.Serializer):
+    field = serializers.CharField()
+
+
+class NewBaseSourceSerializer(serializers.Serializer):
     SEVERITY_FIELD_NAME = "severity_field"
     TIME_FIELD_NAME = "time_field"
     DEFAULT_CHOSEN_FIELDS_NAME = "default_chosen_fields"
 
-    kind = serializers.CharField()
     slug = serializers.SlugField(max_length=64, required=True)
     name = serializers.CharField(max_length=64)
     description = serializers.CharField(allow_blank=True)
+
     time_field = serializers.CharField()
-    # uniq_field = serializers.CharField()
     severity_field = serializers.CharField(allow_blank=True, allow_null=True)
     default_chosen_fields = serializers.ListField(child=serializers.CharField())
     fields = serializers.DictField(child=SourceFieldSerializer())
-    connection = ConnectionSerializer()
+    connection = ClickhouseConnectionSerializer()
 
-    def validate_kind(self, value):
-        if value != "clickhouse":
-            raise serializers.ValidationError(SerializeErrorMsg.DB_SUPPORTED_ONLY_CLICK)
+    def validate_slug(self, value):
+        if Source.objects.filter(slug=value).exists():
+            raise serializers.ValidationError(SerializeErrorMsg.SLUG_SOURCE_EXIST)
+        if value.startswith("-"):
+            raise serializers.ValidationError(SerializeErrorMsg.SLUG_START_WITH_DASH)
+        if value.endswith("-"):
+            raise serializers.ValidationError(SerializeErrorMsg.SLUG_END_WITH_DASH)
         return value
 
     def to_internal_value(self, data):
         data[self.DEFAULT_CHOSEN_FIELDS_NAME] = [
-            x.strip() for x in data[self.DEFAULT_CHOSEN_FIELDS_NAME].split(",") if x.strip()
+            x.strip()
+            for x in data[self.DEFAULT_CHOSEN_FIELDS_NAME].split(",")
+            if x.strip()
         ]
         return super().to_internal_value(data)
 
@@ -135,7 +169,7 @@ class NewSourceSerializer(serializers.Serializer):
         chosen_errors = []
         value = data[self.DEFAULT_CHOSEN_FIELDS_NAME]
         if not value:
-            raise [SerializeErrorMsg.EMPTY_FIELD]
+            raise serializers.ValidationError(SerializeErrorMsg.EMPTY_FIELD)
 
         for field_name in data[self.DEFAULT_CHOSEN_FIELDS_NAME]:
             if field_name not in data["fields"]:
@@ -152,9 +186,11 @@ class NewSourceSerializer(serializers.Serializer):
         errors = {}
 
         if value is None:
-            raise SerializeErrorMsg.EMPTY_FIELD
-        if value not in data["fields"]:
-            errors[self.SEVERITY_FIELD_NAME] = f"field {value} was not found in fields list"
+            raise serializers.ValidationError(SerializeErrorMsg.EMPTY_FIELD)
+        if value and value not in data["fields"]:
+            errors[self.SEVERITY_FIELD_NAME] = (
+                f"field {value} was not found in fields list"
+            )
         return errors
 
     def type_validate_time_field(self, data):
@@ -164,7 +200,9 @@ class NewSourceSerializer(serializers.Serializer):
         if not value:
             raise ValueError(SerializeErrorMsg.EMPTY_FIELD)
 
-        field_type = convert_to_base_ch(data["fields"].get(value, {}).get("type", "").lower())
+        field_type = convert_to_base_ch(
+            data["fields"].get(value, {}).get("type", "").lower()
+        )
 
         if field_type not in ALLOWED_TIME_FIELD_TYPES:
             errors[self.TIME_FIELD_NAME] = SerializeErrorMsg.TIME_FIELD_TYPE
@@ -182,15 +220,6 @@ class NewSourceSerializer(serializers.Serializer):
 
         return data
 
-    def validate_slug(self, value):
-        if Source.objects.filter(slug=value).exists():
-            raise serializers.ValidationError(SerializeErrorMsg.SLUG_SOURCE_EXIST)
-        if value.startswith("-"):
-            raise serializers.ValidationError(SerializeErrorMsg.SLUG_START_WITH_DASH)
-        if value.endswith("-"):
-            raise serializers.ValidationError(SerializeErrorMsg.SLUG_END_WITH_DASH)
-        return value
-
     def validate_default_chosen_fields(self, value):
         if not value:
             raise serializers.ValidationError(SerializeErrorMsg.EMPTY_FIELD)
@@ -202,7 +231,20 @@ class NewSourceSerializer(serializers.Serializer):
         return value
 
 
-class UpdateSourceSerializer(NewSourceSerializer):
+class NewDockerSourceSerializer(NewBaseSourceSerializer):
+    connection = DockerConnectionSerializer()
+
+
+class UpdateDockerSourceSerializer(NewDockerSourceSerializer):
+    def validate_slug(self, value):
+        return value
+
+
+class NewClickhouseSourceSerializer(NewBaseSourceSerializer):
+    pass
+
+
+class UpdateClickhouseSourceSerializer(NewClickhouseSourceSerializer):
     def validate_slug(self, value):
         return value
 
@@ -239,6 +281,7 @@ class SourceDataRequestSerializer(serializers.Serializer):
     _from = serializers.CharField()
     to = serializers.CharField()
     limit = serializers.IntegerField()
+    context_fields = serializers.JSONField(allow_null=True, required=False)
 
     def get_fields(self):
         fields = super().get_fields()
@@ -272,14 +315,30 @@ class SourceDataRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError(help_text)
         return value
 
+    def validate_context_fields(self, value):
+        source = self.context["source"]
+        if source.context_fields:
+            for field_name in value.keys():
+                if field_name not in source.context_fields:
+                    raise serializers.ValidationError(
+                        f"unknown context field: {field_name}"
+                    )
+        return value
+
     def validate(self, data):
         if data.get("raw_query"):
+            if not self.context["source"].support_raw_query:
+                raise serializers.ValidationError(
+                    SerializeErrorMsg.RAW_QUERIES_NOT_SUPPORTED
+                )
             if not user_has_source_permissions(
                 self.context["user"],
                 source_slug=self.context["source"].slug,
                 required_permissions=[permissions.Source.RAW_QUERY.value],
             ):
-                raise serializers.ValidationError(SerializeErrorMsg.RAW_QUERIES_PERMISSIONS)
+                raise serializers.ValidationError(
+                    SerializeErrorMsg.RAW_QUERIES_PERMISSIONS
+                )
         return data
 
 

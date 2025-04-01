@@ -41,18 +41,28 @@ from telescope.serializers.source import (
     SubjectSerializer,
     SourceRoleSerializer,
     SourceRoleBindingSerializer,
-    ConnectionSerializer,
+    ClickhouseConnectionSerializer,
+    DockerConnectionSerializer,
     SourceWithConnectionSerializer,
     SourceFieldSerializer,
-    NewSourceSerializer,
-    UpdateSourceSerializer,
+    SourceKindSerializer,
+    NewClickhouseSourceSerializer,
+    NewDockerSourceSerializer,
+    UpdateClickhouseSourceSerializer,
+    UpdateDockerSourceSerializer,
     SourceDataRequestSerializer,
     SourceGraphDataRequestSerializer,
     SourceAutocompleteRequestSerializer,
+    SourceContextFieldDataSerializer,
 )
 
 
 logger = logging.getLogger("telescope.views.source")
+
+CONNECTION_KIND_TO_SERIALIZER = {
+    "clickhouse": ClickhouseConnectionSerializer,
+    "docker": DockerConnectionSerializer,
+}
 
 
 class SourceRoleBindingView(APIView):
@@ -116,14 +126,24 @@ class SourceView(APIView):
         response = UIResponse()
 
         try:
-            serializer = NewSourceSerializer(data=request.data)
+            kind_serializer = SourceKindSerializer(data=request.data)
+            if not kind_serializer.is_valid():
+                response.validation["result"] = False
+                response.validation["fields"] = serializer.errors
+                return Response(response.as_dict())
+            kind = kind_serializer.data["kind"]
+            if kind == "clickhouse":
+                serializer_cls = NewClickhouseSourceSerializer
+            elif kind == "docker":
+                serializer_cls = NewDockerSourceSerializer
+            serializer = serializer_cls(data=request.data)
             if not serializer.is_valid():
                 response.validation["result"] = False
                 response.validation["fields"] = serializer.errors
             else:
                 with transaction.atomic():
                     source = Source.create(
-                        serializer.data, username=request.user.username
+                        kind, serializer.data, username=request.user.username
                     )
                     grant_source_role(
                         source=source, role=SourceRole.OWNER.value, user=request.user
@@ -146,7 +166,11 @@ class SourceView(APIView):
 
         try:
             source = Source.objects.get(slug=slug)
-            serializer = UpdateSourceSerializer(data=request.data)
+            if source.kind == "clickhouse":
+                serializer_cls = UpdateClickhouseSourceSerializer
+            elif source.kind == "docker":
+                serializer_cls = UpdateDockerSourceSerializer
+            serializer = serializer_cls(data=request.data)
             if not serializer.is_valid():
                 response.validation["result"] = False
                 response.validation["fields"] = serializer.errors
@@ -182,44 +206,6 @@ class SourceView(APIView):
         else:
             response.add_msg(f"source {slug} has been deleted")
         return Response(response.as_dict())
-
-
-def get_client_kwargs(data):
-    return {
-        "host": data["host"],
-        "port": data["port"],
-        "user": data["user"],
-        "password": data["password"],
-        "secure": data["ssl"],
-    }
-
-
-def get_telescope_field(name, _type):
-    data = {
-        "name": name,
-        "display_name": "",
-        "values": "",
-        "type": _type,
-        "jsonstring": False,
-        "autocomplete": True,
-        "suggest": True,
-        "group_by": True,
-    }
-    if "datetime" in _type.lower():
-        data["autocomplete"] = False
-        data["group_by"] = False
-    elif _type.startswith("Enum"):
-        try:
-            data["values"] = ",".join(
-                [
-                    x.split(" = ")[0].strip().replace("'", "")
-                    for x in _type.split("(")[1].split(")")[0].split(",")
-                ]
-            )
-        except Exception:
-            pass
-
-    return data
 
 
 class SourceRoleView(APIView):
@@ -367,18 +353,50 @@ class SourceDataView(APIView):
                 time_from=serializer.validated_data["from"],
                 time_to=serializer.validated_data["to"],
                 limit=serializer.validated_data["limit"],
+                context_fields=serializer.validated_data["context_fields"],
             )
             data_response = fetcher.fetch_data(
                 data_request,
                 timezone=ZoneInfo("UTC"),
             )
         except Exception as err:
+            logger.exception(f"unhandled exception: {err}")
             response.mark_failed(str(err))
         else:
             response.data = {
                 "fields": [f.as_dict() for f in serializer.validated_data["fields"]],
                 "rows": [row.as_dict() for row in data_response.rows],
             }
+        return Response(response.as_dict())
+
+
+class SourceContextFieldDataView(APIView):
+    @method_decorator(login_required)
+    def post(self, request, slug):
+        response = UIResponse()
+
+        require_source_permissions(
+            user=request.user,
+            source_slug=slug,
+            required_permissions=[permissions.Source.USE.value],
+        )
+
+        source = Source.objects.get(slug=slug)
+
+        serializer = SourceContextFieldDataSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            response.validation["result"] = False
+            response.validation["fields"] = serializer.errors
+            return Response(response.as_dict())
+        try:
+            fetcher = get_fetchers()[source.kind]
+            response.data["data"] = fetcher.get_context_field_data(
+                source, serializer.validated_data["field"]
+            )
+        except Exception as err:
+            logger.exception("unhandled exception", err)
+            response.mark_failed(str(err))
         return Response(response.as_dict())
 
 
@@ -412,6 +430,7 @@ class SourceGraphDataView(APIView):
                 time_from=serializer.validated_data["from"],
                 time_to=serializer.validated_data["to"],
                 group_by=serializer.validated_data["group_by"],
+                context_fields=serializer.validated_data["context_fields"],
             )
             graph_data_response = fetcher.fetch_graph_data(graph_data_request)
         except Exception as err:
@@ -428,50 +447,23 @@ class SourceGraphDataView(APIView):
 
 class SourceTestConnectionView(APIView):
     @method_decorator(login_required)
-    def post(self, request):
+    def post(self, request, kind):
         response = UIResponse()
-        test_data = {
-            "reachability": {
-                "result": False,
-                "error": "",
-            },
-            "schema": {
-                "result": False,
-                "error": "",
-                "data": {},
-            },
-        }
+        fetcher = get_fetchers()[kind]
+
+        serializer_cls = CONNECTION_KIND_TO_SERIALIZER.get(kind)
+        if not serializer_cls:
+            response.mark_failed(f"Unsupported source kind: {kind}")
+            Response(response.as_dict())
+
         try:
-            serializer = ConnectionSerializer(data=request.data)
+            serializer = serializer_cls(data=request.data)
             if not serializer.is_valid():
                 response.validation["result"] = False
                 response.validation["fields"] = serializer.errors
             else:
-                with Client(**get_client_kwargs(serializer.data)) as client:
-                    target = (
-                        f"`{serializer.data['database']}`.`{serializer.data['table']}`"
-                    )
-                    try:
-                        client.execute(f"SELECT 1 FROM {target} LIMIT 1")
-                    except Exception as err:
-                        test_data["reachability"]["error"] = str(err)
-                        test_data["schema"][
-                            "error"
-                        ] = "Skipped due to reachability test failed"
-                    else:
-                        test_data["reachability"]["result"] = True
-                        try:
-                            result = client.execute(
-                                f"DESCRIBE TABLE {target} FORMAT JSON"
-                            )
-                        except Exception as err:
-                            test_data["schema"]["error"] = str(err)
-                        else:
-                            test_data["schema"]["result"] = True
-                            test_data["schema"]["data"] = [
-                                get_telescope_field(x[0], x[1]) for x in result
-                            ]
-                response.data = test_data
+                connection_test_response = fetcher.test_connection(serializer.data)
+                response.data = connection_test_response.as_dict()
         except Exception as err:
             response.mark_failed(f"failed to test connection: {err}")
         return Response(response.as_dict())

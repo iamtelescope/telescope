@@ -71,8 +71,8 @@
                 </div>
             </div>
         </div>
-        <ConnectionTest :data="connectionTestData" :loading="connectionTestIsActive" v-if="connectionTestCalled">
-        </ConnectionTest>
+        <ConnectionTestResult :data="connectionTestData" :loading="connectionTestIsActive" v-if="connectionTestCalled">
+        </ConnectionTestResult>
         <div class="flex pt-5 justify-end">
             <Button label="Validate connection & load schema" icon="pi pi-sync" size="small"
                 @click="handleTestConnection" :loading="connectionTestIsActive" />
@@ -91,7 +91,7 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import InputNumber from 'primevue/inputnumber'
-import ConnectionTest from '@/components/sources/new/ConnectionTest.vue'
+import ConnectionTestResult from '@/components/sources/new/ConnectionTestResult.vue'
 
 import ErrorText from '@/components/common/ErrorText.vue'
 import { SourceService } from '@/sdk/services/Source'
@@ -101,6 +101,7 @@ const props = defineProps(['source', 'startConnectionTest'])
 
 const toast = useToast()
 const sourceSrv = new SourceService()
+const kind = 'clickhouse'
 
 const connectionTestIsActive = ref(false)
 const connectionTestCalled = ref(false)
@@ -113,8 +114,8 @@ const getInitialConnectionData = () => {
         'port': 9000,
         'user': "default",
         'password': "",
-        'database': "logs",
-        'table': "logs",
+        'database': "",
+        'table': "",
         'ssl': false,
     }
     if (props.source) {
@@ -151,7 +152,7 @@ const handleTestConnection = async () => {
     connectionTestCalled.value = true
     connectionTestPassed.value = false
     connectionTestIsActive.value = true
-    let response = await sourceSrv.testConnection(connectionData)
+    let response = await sourceSrv.testConnection(kind, connectionData)
     connectionTestIsActive.value = false
     response.sendToast(toast)
     if (response.result) {
