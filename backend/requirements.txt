@@ -20,6 +20,7 @@ oauthlib==3.2.2
 pycparser==2.22
 python3-openid==3.2.0
 pytz==2024.1
+python-dateutil==2.9.0.post0
 requests-oauthlib==2.0.0
 requests==2.32.3
 sqlparse==0.5.0
