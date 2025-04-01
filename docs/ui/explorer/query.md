@@ -6,9 +6,10 @@ Query input syntax is [FlyQL](https://github.com/iamtelescope/flyql) syntax. Ple
 - For **Docker** sources, queries are evaluated directly in Python using [FlyQL’s matcher](https://github.com/iamtelescope/flyql/blob/main/python/flyql/matcher/evaluator.py), which does **not support `LIKE`-style wildcard matching**.
 
 {% note warning %}
-In Docker sources, expressions like `host=l*ohost` are **not** interpreted using SQL-style `LIKE`. Instead, you should use `=~` for pattern matching, e.g. `host=~"^l.*ohost$"`.
-{% endnote %}
 
+In Docker sources, expressions like `host=l*ohost` are **not** interpreted using SQL-style `LIKE`. Instead, you should use `=~` for pattern matching, e.g. `host=~"^l.*ohost$"`.
+
+{% endnote %}
 
 Despite the fact that the documentation for flyql and flyql ClickHouse generator is located in their respective repositories, a few query examples are provided here to give a basic understanding of how to query data inside Telescope.
 
