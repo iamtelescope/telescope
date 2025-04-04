@@ -39,6 +39,12 @@ SCHEMA = {
                 "force_github_auth": {
                     "type": "boolean",
                 },
+                "enable_testing_auth": {
+                    "type": "boolean",
+                },
+                "testing_auth_username": {
+                    "type": "string",
+                },
             },
         },
         "django": {
@@ -162,6 +168,8 @@ def get_default_config():
                 },
             },
             "force_github_auth": False,
+            "enable_testing_auth": False,
+            "testing_auth_username": "telescope",
         },
         "frontend": {
             "github_url": "https://github.com/iamtelescope/telescope",

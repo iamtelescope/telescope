@@ -19,7 +19,6 @@ DEBUG = CONFIG["django"].get("DEBUG", False)
 
 ALLOWED_HOSTS = CONFIG["django"].get("ALLOWED_HOSTS", [])
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -48,10 +47,17 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
 ]
+if CONFIG["auth"]["enable_testing_auth"]:
+    MIDDLEWARE.append("telescope.auth.middleware.TestingAuthMiddleware")
+
+MIDDLEWARE.extend(
+    [
+        "django.contrib.messages.middleware.MessageMiddleware",
+        "django.middleware.clickjacking.XFrameOptionsMiddleware",
+        "allauth.account.middleware.AccountMiddleware",
+    ]
+)
 
 CORS_ALLOW_ALL_ORIGINS = True
 CSRF_TRUSTED_ORIGINS = CONFIG["django"].get("CSRF_TRUSTED_ORIGINS", [])

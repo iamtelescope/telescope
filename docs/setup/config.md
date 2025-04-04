@@ -19,8 +19,12 @@ auth:
       secret: ''
       # If specified, users must belong to one of these organizations to log in.
       organizations: []
-  # IF specified, forces login page to redirect to github auth (only available when github auth provider is enabled)
+  # If set to true, forces login page to redirect to github auth (only available when github auth provider is enabled)
   force_github_auth: false
+  # If set to true, the user is always authenticated without any conditions
+  enable_testing_auth: false
+  # If enable_testing_auth is set true, defines the username of the logged-in user
+  testing_auth_username: telescope
 
 # These options are passed to Django settings
 django:

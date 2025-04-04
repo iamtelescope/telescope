@@ -27,6 +27,8 @@ class LoginView(views.LoginView):
     }
 
     def dispatch(self, request, *args, **kwargs):
+        if settings.CONFIG["auth"]["enable_testing_auth"]:
+            return redirect("/")
         if User.objects.filter(is_superuser=True).count() == 0:
             return redirect("/setup")
         return super().dispatch(request, *args, **kwargs)
@@ -36,6 +38,8 @@ class LogoutView(View):
     template_name = "forms/logout.html"
 
     def get(self, request):
+        if settings.CONFIG["auth"]["enable_testing_auth"]:
+            return redirect("/")
         return render(request, "forms/logout.html")
 
     def post(self, request):
@@ -45,6 +49,8 @@ class LogoutView(View):
 
 class SuperuserView(View):
     def dispatch(self, request, *args, **kwargs):
+        if settings.CONFIG["auth"]["enable_testing_auth"]:
+            return redirect("/")
         if User.objects.filter(is_superuser=True).count() > 0:
             return redirect("/login")
         return super().dispatch(request, *args, **kwargs)
