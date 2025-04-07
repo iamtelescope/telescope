@@ -7,6 +7,8 @@ def migrate_source_fields(apps, schema_editor):
     if schema_editor.connection.alias != "default":
         return
 
+    Source = apps.get_model("telescope", "Source")
+
     with transaction.atomic():
         for source in Source.objects.all():
             for key, value in source.fields.items():
