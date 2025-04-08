@@ -1,3 +1,6 @@
+import os
+import logging
+import tempfile
 from typing import List
 
 import clickhouse_driver as clickhouse
@@ -26,6 +29,58 @@ from telescope.fetchers.models import Row
 from telescope.utils import convert_to_base_ch, get_telescope_field
 
 
+logger = logging.getLogger("telescope.fetchers.clickhouse")
+
+
+SSL_CERTS_PARAMS = ["ca_certs", "certfile", "keyfile"]
+OPTIONAL_SSL_PARAMS = ["ssl_version", "ciphers", "server_hostname", "alt_hosts"]
+
+
+class ClickhouseClient:
+    def __init__(self, data: dict):
+        self.data = data
+        self.temp_dir = None
+        self.client = None
+
+    def __enter__(self, *args, **kwargs):
+        client_kwargs = {
+            "host": self.data["host"],
+            "port": self.data["port"],
+            "user": self.data["user"],
+            "password": self.data["password"],
+            "secure": self.data["ssl"],
+            "verify": self.data["verify"],
+        }
+        for name in OPTIONAL_SSL_PARAMS:
+            if self.data[name] != "":
+                client_kwrags[name] = self.data[name]
+
+        self.temp_dir = tempfile.TemporaryDirectory()
+
+        for name in SSL_CERTS_PARAMS:
+            if self.data[name]:
+                path = os.path.join(self.temp_dir.name, f"{name}.pem")
+                with open(path, "w") as fd:
+                    fd.write(self.data[name])
+                client_kwargs[name] = path
+
+        self.client = clickhouse.Client(**client_kwargs)
+        return self.client
+
+    def __exit__(self, *args, **kwargs):
+        try:
+            if self.client:
+                self.client.disconnect()
+        except Exception as err:
+            logger.exception("error while closing clickhouse connection (ignoring): %s", err)
+
+        try:
+            if self.temp_dir:
+                self.temp_dir.cleanup()
+        except Exception as err:
+            logger.exception("error while tempdir cleanup (ignoring): %s", err)
+
+
 def flyql_clickhouse_fields(source_fields: List[SourceField]):
     return {
         field.name: Field(
@@ -36,20 +91,6 @@ def flyql_clickhouse_fields(source_fields: List[SourceField]):
         )
         for _, field in source_fields.items()
     }
-
-
-def get_client_kwargs(data):
-    return {
-        "host": data["host"],
-        "port": data["port"],
-        "user": data["user"],
-        "password": data["password"],
-        "secure": data["ssl"],
-    }
-
-
-def get_source_database_conn_kwargs(source):
-    return get_client_kwargs(source.connection)
 
 
 class ConnectionTestResponse:
@@ -95,7 +136,7 @@ class Fetcher(BaseFetcher):
     def test_connection(cls, data: dict) -> ConnectionTestResponse:
         response = ConnectionTestResponse()
         target = f"`{data['database']}`.`{data['table']}`"
-        with clickhouse.Client(**get_client_kwargs(data)) as client:
+        with ClickhouseClient(data) as client:
             try:
                 client.execute(f"SELECT 1 FROM {target} LIMIT 1")
             except Exception as err:
@@ -120,7 +161,7 @@ class Fetcher(BaseFetcher):
         from_db_table = f"{source.connection['database']}.{source.connection['table']}"
         time_clause = f"{source.time_field} BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
         query = f"SELECT DISTINCT {field} FROM {from_db_table} WHERE {time_clause} and {field} LIKE %(value)s ORDER BY {field} LIMIT 500"
-        with clickhouse.Client(**get_source_database_conn_kwargs(source)) as client:
+        with ClickhouseClient(source.connection) as client:
             result = client.execute(query, {"value": f"%{value}%"})
             items = [str(x[0]) for x in result]
         if len(items) >= 500:
@@ -208,9 +249,7 @@ class Fetcher(BaseFetcher):
             elif time_field_type == "datetime64":
                 stats_time_selector = f"toUnixTimestamp64Milli({to_time_zone})"
 
-        with clickhouse.Client(
-            **get_source_database_conn_kwargs(request.source)
-        ) as client:
+        with ClickhouseClient(request.source.connection) as client:
             stat_sql = f"SELECT {stats_time_selector} as t, COUNT() as Count"
             if group_by_value:
                 stat_sql += f", {group_by_value} as `{group_by.name}`"
@@ -294,9 +333,7 @@ class Fetcher(BaseFetcher):
 
         rows = []
 
-        with clickhouse.Client(
-            **get_source_database_conn_kwargs(request.source)
-        ) as client:
+        with ClickhouseClient(request.source.connection) as client:
             selected_fields = [request.source._record_pseudo_id_field] + fields_names
             for item in client.execute(select_query):
                 rows.append(

@@ -7,6 +7,15 @@
             <div class="flex flex-row">
                 <div class="flex flex-col w-full mr-2">
                     <FloatLabel variant="on">
+                        <InputText id="connection_protocol" v-model="protocol" fluid
+                            :disabled="true" />
+                        <label for="connection_label">Protocol</label>
+                    </FloatLabel>
+                </div>
+            </div>
+            <div class="flex flex-row">
+                <div class="flex flex-col w-full mr-2">
+                    <FloatLabel variant="on">
                         <InputText id="connection_host" v-model="connectionData.host" fluid
                             :disabled="connectionTestIsActive" :invalid="hasError('host')" />
                         <label for="connection_label">Host</label>
@@ -69,6 +78,78 @@
                     </div>
                     <ErrorText :text="connectionFieldErrors.ssl" />
                 </div>
+                <div class="flex flex-col ml-6" v-if="connectionData.ssl">
+                    <div class="flex flex-row items-center">
+                        <label for="connection_verify" class="mr-2 ml-2 font-bold">Verify</label>
+                        <ToggleSwitch id="connection_verify" v-model="connectionData.verify"
+                            :disabled="connectionTestIsActive" :invalid="hasError('verify')" />
+                    </div>
+                    <ErrorText :text="connectionFieldErrors.verify" />
+                </div>
+            </div>
+            <div v-if="connectionData.ssl">
+                <div class="flex flex-col gap-4">
+                    <div class="flex flex-col w-full">
+                        <FloatLabel variant="on">
+                            <Textarea id="connection_ca_certs" v-model="connectionData.ca_certs" fluid
+                                :disabled="connectionTestIsActive" :invalid="hasError('ca_certs')" />
+                            <label for="connection_ca_certs">CA Certs</label>
+                        </FloatLabel>
+                        <ErrorText :text="connectionFieldErrors.ca_certs" />
+                    </div>
+                    <div class="flex flex-col w-full">
+                        <FloatLabel variant="on">
+                            <Textarea id="connection_certfile" v-model="connectionData.certfile" fluid
+                                :disabled="connectionTestIsActive" :invalid="hasError('certfile')" />
+                            <label for="connection_certfile">Cert file</label>
+                        </FloatLabel>
+                        <ErrorText :text="connectionFieldErrors.certfile" />
+                    </div>
+                    <div class="flex flex-col w-full">
+                        <FloatLabel variant="on" class="w-full">
+                            <Textarea id="connection_keyfile" v-model="connectionData.keyfile" fluid
+                                :disabled="connectionTestIsActive" :invalid="hasError('keyfile')" />
+                            <label for="connection_keyfile">Key file</label>
+                        </FloatLabel>
+                        <ErrorText :text="connectionFieldErrors.keyfile" />
+                    </div>
+                    <div class="flex flex-row">
+                        <div class="flex flex-col w-full mr-2">
+                            <FloatLabel variant="on">
+                                <InputText id="connection_ssl_version" v-model="connectionData.ssl_version" fluid
+                                    :disabled="connectionTestIsActive" :invalid="hasError('ssl_version')" />
+                                <label for="connection_ssl_version">SSL Version</label>
+                            </FloatLabel>
+                            <ErrorText :text="connectionFieldErrors.ssl_version" />
+                        </div>
+                        <div class="flex flex-col w-full">
+                            <FloatLabel variant="on" class="w-full">
+                                <InputText id="connection_ciphers" v-model="connectionData.ciphers" fluid
+                                    :disabled="connectionTestIsActive" :invalid="hasError('ciphers')" />
+                                <label for="connection_ciphers">Ciphers</label>
+                            </FloatLabel>
+                            <ErrorText :text="connectionFieldErrors.ciphers" />
+                        </div>
+                    </div>
+                    <div class="flex flex-row">
+                        <div class="flex flex-col w-full mr-2">
+                            <FloatLabel variant="on">
+                                <InputText id="connection_server_hostname" v-model="connectionData.server_hostname" fluid
+                                    :disabled="connectionTestIsActive" :invalid="hasError('server_hostname')" />
+                                <label for="connection_server_hostname">Server Hostname</label>
+                            </FloatLabel>
+                            <ErrorText :text="connectionFieldErrors.server_hostname" />
+                        </div>
+                        <div class="flex flex-col w-full">
+                            <FloatLabel variant="on" class="w-full">
+                                <InputText id="connection_alt_hosts" v-model="connectionData.alt_hosts" fluid
+                                    :disabled="connectionTestIsActive" :invalid="hasError('alt_hosts')" />
+                                <label for="connection_alt_hosts">Alt Hosts</label>
+                            </FloatLabel>
+                            <ErrorText :text="connectionFieldErrors.alt_hosts" />
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <ConnectionTestResult :data="connectionTestData" :loading="connectionTestIsActive" v-if="connectionTestCalled">
@@ -84,13 +165,9 @@
 import { ref, reactive, watch, onMounted } from 'vue'
 
 import { useToast } from 'primevue/usetoast'
-import FloatLabel from 'primevue/floatlabel'
-import Fieldset from 'primevue/fieldset'
-import ToggleSwitch from 'primevue/toggleswitch'
-import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
-import InputNumber from 'primevue/inputnumber'
+
+import { FloatLabel, Fieldset, ToggleSwitch, Button, InputText, Password, InputNumber, Textarea } from 'primevue'
+
 import ConnectionTestResult from '@/components/sources/new/ConnectionTestResult.vue'
 
 import ErrorText from '@/components/common/ErrorText.vue'
@@ -102,6 +179,7 @@ const props = defineProps(['source', 'startConnectionTest'])
 const toast = useToast()
 const sourceSrv = new SourceService()
 const kind = 'clickhouse'
+const protocol = ref('native')
 
 const connectionTestIsActive = ref(false)
 const connectionTestCalled = ref(false)
@@ -117,6 +195,14 @@ const getInitialConnectionData = () => {
         'database': "",
         'table': "",
         'ssl': false,
+        'verify': true,
+        'ciphers': '',
+        'ssl_version': '',
+        'ca_certs': '',
+        'certfile': '',
+        'keyfile': '',
+        'server_hostname': '',
+        'alt_hosts': '',
     }
     if (props.source) {
         data = props.source.connection
@@ -134,6 +220,14 @@ const connectionFieldErrors = reactive({
     'database': "",
     'table': "",
     'ssl': "",
+    'verify': "",
+    'ca_certs': "",
+    'certfile': "",
+    'keyfile': "",
+    'ciphers': "",
+    'ssl_version': "",
+    'server_hostname': "",
+    'alt_hosts': "",
 })
 
 const hasError = (key) => {

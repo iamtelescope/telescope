@@ -465,5 +465,6 @@ class SourceTestConnectionView(APIView):
                 connection_test_response = fetcher.test_connection(serializer.data)
                 response.data = connection_test_response.as_dict()
         except Exception as err:
+            logger.exception(err)
             response.mark_failed(f"failed to test connection: {err}")
         return Response(response.as_dict())

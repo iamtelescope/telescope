@@ -12,6 +12,16 @@ To create a source, you need to fill in the form data.
 - **`table`** – Table name.
 - **`ssl`** – Whether to use a secure connection. (Custom SSL certificates are not yet supported.)
 
+If SSL is enabled, a few additional options become available:
+- **`Verify`** – specifies whether a certificate is required and whether it will be validated after connection. Defaults to True.
+- **`CA Certs`** – see [**ssl.wrap_socket()**](https://docs.python.org/2/library/ssl.html#ssl.wrap_socket) docs
+- **`Cert file`** – see [**ssl.wrap_socket()**](https://docs.python.org/2/library/ssl.html#ssl.wrap_socket) docs
+- **`Key file`** – see [**ssl.wrap_socket()**](https://docs.python.org/2/library/ssl.html#ssl.wrap_socket) docs
+- **`SSL file`** – see [**ssl.wrap_socket()**](https://docs.python.org/2/library/ssl.html#ssl.wrap_socket) docs
+- **`Ciphers`** – see [**ssl.wrap_socket()**](https://docs.python.org/2/library/ssl.html#ssl.wrap_socket) docs
+- **`Server hostname`** – Hostname to use in SSL Wrapper construction. Defaults to None which will send the passed host param during SSL initialization. This param may be used when connecting over an SSH tunnel to correctly identify the desired server via SNI.
+- **`Alt hosts`** – list of alternative hosts for connection.
+
 #### Docker Source
 - **`address`** – The URL of the Docker daemon socket. This is typically something like `unix:///var/run/docker.sock` for local access, or `tcp://<host>:<port>` for remote connections.
 

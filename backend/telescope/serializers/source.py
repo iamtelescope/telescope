@@ -91,6 +91,14 @@ class ClickhouseConnectionSerializer(serializers.Serializer):
     database = serializers.CharField()
     table = serializers.CharField()
     ssl = serializers.BooleanField()
+    verify = serializers.BooleanField()
+    ca_certs = serializers.CharField(allow_blank=True)
+    certfile = serializers.CharField(allow_blank=True)
+    keyfile = serializers.CharField(allow_blank=True)
+    ssl_version = serializers.CharField(allow_blank=True)
+    ciphers = serializers.CharField(allow_blank=True)
+    server_hostname = serializers.CharField(allow_blank=True)
+    alt_hosts = serializers.CharField(allow_blank=True)
 
 
 class DockerConnectionSerializer(serializers.Serializer):
