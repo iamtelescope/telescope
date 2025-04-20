@@ -1,5 +1,22 @@
 # Changelog
 
+## 2025.04.20
+Version: **0.0.17**
+Changes:
+  - Implemented token-based authentication (API tokens) as a foundation for future API access
+  - Bugfixed data section border misalignment in the Explorer. Thanks to [meirdev](https://github.com/meirdev)!
+
+Related issues:
+ - [ISSUE-24](https://github.com/iamtelescope/telescope/issues/24)
+
+Notes:
+
+{% note warning %}
+
+This release requires database migrations to be run.
+
+{% endnote %}
+
 ## 2025.04.08
 Version: **0.0.16**
 Changes:
