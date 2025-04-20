@@ -21,8 +21,7 @@ const useDeleteSource = (slug) => {
                 result.value = await response.json()
                 loading.value = false
             }
-        }
-        catch (err) {
+        } catch (err) {
             error.value = err.message
             loading.value = false
         }

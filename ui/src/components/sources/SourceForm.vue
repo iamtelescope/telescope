@@ -5,47 +5,80 @@
                 <span class="font-bold text-3xl">
                     <i class="pi pi-database text-3xl mr-1"></i>
                     <span class="text-gray-400">Sources: </span>
-                    <span v-if="source">
-                        Edit source: {{ source.slug }}
-                    </span>
-                    <span v-else>
-                        Create new source
-                    </span>
+                    <span v-if="source"> Edit source: {{ source.slug }} </span>
+                    <span v-else> Create new source </span>
                 </span>
             </div>
             <div class="flex flex-row w-full justify-end items-center">
                 <div>
-                    <Button severity="primary" icon="pi pi-check" size="small" :label="submitButtonLabel"
-                        @click="handleFormSubmit" :loading="submitButtonLoading" :disabled="!connectionTestPassed" />
+                    <Button
+                        severity="primary"
+                        icon="pi pi-check"
+                        size="small"
+                        :label="submitButtonLabel"
+                        @click="handleFormSubmit"
+                        :loading="submitButtonLoading"
+                        :disabled="!connectionTestPassed"
+                    />
                 </div>
             </div>
         </div>
     </div>
     <FloatLabel variant="on" class="mb-6">
-        <Select id="source_kind" v-model="sourceKindSelected" fluid :options="sourceKindOptions"
-            :disabled="source != null" />
+        <Select
+            id="source_kind"
+            v-model="sourceKindSelected"
+            fluid
+            :options="sourceKindOptions"
+            :disabled="source != null"
+        />
         <label for="source_kind">Source kind</label>
     </FloatLabel>
 
-    <ClickhouseConnectionStep v-if="sourceKindSelected == 'clickhouse'" :source="source"
-        :startConnectionTest="startConnectionTest" @connectionDataValidated="onConnectionDataValidated"
-        @connectionTestStarted="onConnectionTestStarted" @connectionDataChanged="onConnectionDataChanged">
+    <ClickhouseConnectionStep
+        v-if="sourceKindSelected == 'clickhouse'"
+        :source="source"
+        :startConnectionTest="startConnectionTest"
+        @connectionDataValidated="onConnectionDataValidated"
+        @connectionTestStarted="onConnectionTestStarted"
+        @connectionDataChanged="onConnectionDataChanged"
+    >
     </ClickhouseConnectionStep>
-    <DockerConnectionStep v-else-if="sourceKindSelected == 'docker'" :startConnectionTest="startConnectionTest"
-        @connectionDataValidated="onConnectionDataValidated" @connectionTestStarted="onConnectionTestStarted"
-        @connectionDataChanged="onConnectionDataChanged"></DockerConnectionStep>
+    <DockerConnectionStep
+        v-else-if="sourceKindSelected == 'docker'"
+        :startConnectionTest="startConnectionTest"
+        @connectionDataValidated="onConnectionDataValidated"
+        @connectionTestStarted="onConnectionTestStarted"
+        @connectionDataChanged="onConnectionDataChanged"
+    ></DockerConnectionStep>
     <div v-if="connectionTestPassed">
-        <CommonDataForm :source="source" :formErrors="sourceCommonDataFormErrors"
-            @formDataChanged="onCommonFormDataChange" />
-        <FieldsDataForm :source="source" :schemaFields="schemaFields" :kind="sourceKindSelected.value"
-            :connectionData="connectionData" :formErrors="sourceFieldsDataFormErrors" :settings="fieldsSettings"
-            @dynamicFieldAdded="onSourceDynamicFieldAdded" @dynamicFieldRemoved="onSourceDynamicFieldRemoved"
-            @formDataChanged="onSourceFormDataChanged" />
-
+        <CommonDataForm
+            :source="source"
+            :formErrors="sourceCommonDataFormErrors"
+            @formDataChanged="onCommonFormDataChange"
+        />
+        <FieldsDataForm
+            :source="source"
+            :schemaFields="schemaFields"
+            :kind="sourceKindSelected.value"
+            :connectionData="connectionData"
+            :formErrors="sourceFieldsDataFormErrors"
+            :settings="fieldsSettings"
+            @dynamicFieldAdded="onSourceDynamicFieldAdded"
+            @dynamicFieldRemoved="onSourceDynamicFieldRemoved"
+            @formDataChanged="onSourceFormDataChanged"
+        />
     </div>
     <div class="flex pt-6 pb-6 justify-end">
-        <Button severity="primary" icon="pi pi-check" size="small" :label="submitButtonLabel" @click="handleFormSubmit"
-            :loading="submitButtonLoading" :disabled="!connectionTestPassed" />
+        <Button
+            severity="primary"
+            icon="pi pi-check"
+            size="small"
+            :label="submitButtonLabel"
+            @click="handleFormSubmit"
+            :loading="submitButtonLoading"
+            :disabled="!connectionTestPassed"
+        />
     </div>
 </template>
 
@@ -80,16 +113,16 @@ const submitButtonLabel = computed(() => {
 })
 
 const formFieldsInitialErrors = {
-    'common': {
-        'slug': '',
-        'name': '',
-        'description': '',
+    common: {
+        slug: '',
+        name: '',
+        description: '',
     },
-    'fields': {
-        'time_field': '',
-        'severity_field': '',
-        'default_chosen_fields': '',
-        'fields': {},
+    fields: {
+        time_field: '',
+        severity_field: '',
+        default_chosen_fields: '',
+        fields: {},
     },
 }
 
@@ -109,12 +142,12 @@ const fieldsSettings = computed(() => {
                 default: '',
             },
             severity: {
-                editable: true
+                editable: true,
             },
             defaultChosenFields: {
                 default: '',
-            }
-        }
+            },
+        },
     }
     if (sourceKindSelected.value == 'docker') {
         settings.autoLoadFieldsFromSchema = props.source ? false : true
@@ -189,7 +222,7 @@ const onSourceDynamicFieldRemoved = (fieldName) => {
 
 const resetErrors = () => {
     for (const field in sourceCommonDataFormErrors.value) {
-        sourceCommonDataFormErrors.value[field] = ""
+        sourceCommonDataFormErrors.value[field] = ''
     }
     for (const field in sourceFieldsDataFormErrors.value) {
         if (field == 'fields') {
@@ -197,7 +230,7 @@ const resetErrors = () => {
                 sourceFieldsDataFormErrors.value[field][key] = getSourceDynamicFieldDefaultErrors()
             }
         } else {
-            sourceFieldsDataFormErrors.value[field] = ""
+            sourceFieldsDataFormErrors.value[field] = ''
         }
     }
 }
@@ -238,11 +271,12 @@ const handleFormSubmit = async () => {
                     } else {
                         sourceFieldsDataFormErrors.value[field] = response.validation.fields[field].join(', ')
                     }
-
                 }
             }
         } else {
-            router.push({ name: 'source', params: { sourceSlug: response.data.slug } }).then(() => response.sendToastMessages(toast))
+            router
+                .push({ name: 'source', params: { sourceSlug: response.data.slug } })
+                .then(() => response.sendToastMessages(toast))
         }
     }
 }

@@ -4,30 +4,64 @@
         <div class="flex w-full">
             <div class="flex flex-col mr-3">
                 <label for="From" class="font-bold block mb-2">From</label>
-                <InputText size="small" label="From" v-model="fromInputText" @update:model-value="onFromInputUpdate"
-                    :invalid="!fromInputValid" />
+                <InputText
+                    size="small"
+                    label="From"
+                    v-model="fromInputText"
+                    @update:model-value="onFromInputUpdate"
+                    :invalid="!fromInputValid"
+                />
                 <ErrorText v-if="!fromInputValid" :text="fromInputValidError" />
-                <br>
+                <br />
                 <label for="To" class="font-bold block mb-2">To</label>
-                <InputText size="small" label="To" v-model="toInputText" @update:model-value="onToInputUpdate"
-                    :invalid="!toInputValid" />
+                <InputText
+                    size="small"
+                    label="To"
+                    v-model="toInputText"
+                    @update:model-value="onToInputUpdate"
+                    :invalid="!toInputValid"
+                />
                 <ErrorText v-if="!toInputValid" :text="toInputValidError" />
-                <br>
+                <br />
                 <label for="Timezone" class="font-bold block mb-2">Timezone</label>
-                <Select v-model="selectedZone" :options="zones" optionLabel="name" placeholder="Timezone"
-                    class="w-full md:w-56" size="small" filter autoFilterFocus disabled /><br>
+                <Select
+                    v-model="selectedZone"
+                    :options="zones"
+                    optionLabel="name"
+                    placeholder="Timezone"
+                    class="w-full md:w-56"
+                    size="small"
+                    filter
+                    autoFilterFocus
+                    disabled
+                /><br />
                 <Button label="Apply" severity="primary" size="small" @click="handleApply" />
             </div>
             <div class="border-r border-l pt-0 pb-0 p-2">
-                <DatePicker v-model="dates" selectionMode="range"
+                <DatePicker
+                    v-model="dates"
+                    selectionMode="range"
                     :pt="{ panel: { style: 'border: none; padding: 0px;' } }"
-                    :maxDate="DateTime.now().plus({ days: 1 }).startOf('day').toJSDate()" :manualInput="false"
-                    :selectOtherMonths="true" inline @date-select="onDateSelect" />
+                    :maxDate="DateTime.now().plus({ days: 1 }).startOf('day').toJSDate()"
+                    :manualInput="false"
+                    :selectOtherMonths="true"
+                    inline
+                    @date-select="onDateSelect"
+                />
             </div>
             <div class="flex flex-col">
-                <Listbox :options="ranges" v-model="selectedRelative" optionLabel="label" @change="handleSelectRelative"
-                    fluid scroll-height="21rem"
-                    :pt="{ root: { style: { border: 'none', minWidth: '200px' } }, list: { style: { padding: '0', boxShadow: 'none' } } }" />
+                <Listbox
+                    :options="ranges"
+                    v-model="selectedRelative"
+                    optionLabel="label"
+                    @change="handleSelectRelative"
+                    fluid
+                    scroll-height="21rem"
+                    :pt="{
+                        root: { style: { border: 'none', minWidth: '200px' } },
+                        list: { style: { padding: '0', boxShadow: 'none' } },
+                    }"
+                />
             </div>
         </div>
     </Popover>
@@ -36,7 +70,7 @@
 <script setup>
 import { ref, computed, onMounted, onUpdated } from 'vue'
 
-import { DateTime } from "luxon"
+import { DateTime } from 'luxon'
 
 import Popover from 'primevue/popover'
 import DatePicker from 'primevue/datepicker'
@@ -46,14 +80,21 @@ import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
 
 import ErrorText from '@/components/common/ErrorText.vue'
-import { getRelativeOption, getRelativeOptions, getDatetimeRangeText, dateIsValid, dateTimeFormat, humanRelatedTimeRegex } from '@/utils/datetimeranges.js'
+import {
+    getRelativeOption,
+    getRelativeOptions,
+    getDatetimeRangeText,
+    dateIsValid,
+    dateTimeFormat,
+    humanRelatedTimeRegex,
+} from '@/utils/datetimeranges.js'
 import { tzOptions } from '@/utils/timezones.js'
 
 const props = defineProps(['from', 'to'])
 const emit = defineEmits(['rangeSelect'])
 const dropdown = ref()
 const zones = ref(tzOptions)
-const selectedZone = ref({ 'name': 'UTC', 'code': 'UTC' })
+const selectedZone = ref({ name: 'UTC', code: 'UTC' })
 const dates = ref(props.from.dateObj && props.to.dateObj ? [props.from.dateObj, props.to.dateObj] : [])
 
 const from = ref(props.from.value)
@@ -130,7 +171,6 @@ const handleApply = () => {
     if (fromInputValid.value && toInputValid.value) {
         if (fromInputManually.value) {
             from.value = manualFrom
-
         }
         if (toInputManually.value) {
             to.value = manualTo

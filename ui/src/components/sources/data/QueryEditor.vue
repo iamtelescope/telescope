@@ -1,21 +1,30 @@
 <template>
-    <div :style="{ height: `${editorHeight}px` }" class="editor border rounded-lg border-neutral-300 pl-2 pr-2 dark:border-neutral-600"
-        :class="{ 'border-sky-800 dark:border-sky-700': editorFocused }">
-        <vue-monaco-editor v-model:value="code" :theme="theme" language="flyql" :options="getDefaultMonacoOptions()"
-            @mount="handleMount" @change="onChange" />
+    <div
+        :style="{ height: `${editorHeight}px` }"
+        class="editor border rounded-lg border-neutral-300 pl-2 pr-2 dark:border-neutral-600"
+        :class="{ 'border-sky-800 dark:border-sky-700': editorFocused }"
+    >
+        <vue-monaco-editor
+            v-model:value="code"
+            :theme="theme"
+            language="flyql"
+            :options="getDefaultMonacoOptions()"
+            @mount="handleMount"
+            @change="onChange"
+        />
     </div>
 </template>
 
 <script setup>
 import { ref, computed, shallowRef, nextTick, watch } from 'vue'
 
-import * as monaco from "monaco-editor"
+import * as monaco from 'monaco-editor'
 
 import { useDark } from '@vueuse/core'
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 
 import { Parser, State, Operator, VALID_KEY_VALUE_OPERATORS } from '@/utils/flyql.js'
-import { isNumeric } from "@/utils/utils.js"
+import { isNumeric } from '@/utils/utils.js'
 import { getDefaultMonacoOptions } from '@/utils/monaco.js'
 import { SourceService } from '@/sdk/services/Source.js'
 
@@ -31,7 +40,7 @@ const editorFocused = ref(false)
 
 const editorHeight = computed(() => {
     const lines = (code.value.match(/\n/g) || '').length + 1
-    return 24 + (lines * 20)
+    return 24 + lines * 20
 })
 
 const theme = computed(() => {
@@ -47,14 +56,17 @@ const editorRef = shallowRef()
 
 const getSuggestionsFromList = (params) => {
     const suggestions = []
-    let defaultPostfix = (params.postfix === undefined) ? '' : params.postfix
+    let defaultPostfix = params.postfix === undefined ? '' : params.postfix
 
-    const range = (params.range === undefined) ? {
-        startLineNumber: params.position.lineNumber,
-        endLineNumber: params.position.lineNumber,
-        startColumn: params.position.column,
-        endColumn: params.position.column,
-    } : params.range
+    const range =
+        params.range === undefined
+            ? {
+                  startLineNumber: params.position.lineNumber,
+                  endLineNumber: params.position.lineNumber,
+                  startColumn: params.position.column,
+                  endColumn: params.position.column,
+              }
+            : params.range
 
     for (const item of params.items) {
         let label = null
@@ -66,10 +78,10 @@ const getSuggestionsFromList = (params) => {
         } else {
             label = item.label
             sortText = item.sortText
-            sortText = (item.sortText === undefined) ? label : item.sortText
-            postfix = (item.postfix === undefined) ? defaultPostfix : item.postfix
+            sortText = item.sortText === undefined ? label : item.sortText
+            postfix = item.postfix === undefined ? defaultPostfix : item.postfix
         }
-        let insertText = (item.insertText === undefined) ? label : item.insertText
+        let insertText = item.insertText === undefined ? label : item.insertText
         suggestions.push({
             label: label,
             kind: params.kind,
@@ -78,7 +90,7 @@ const getSuggestionsFromList = (params) => {
             insertText: insertText + postfix,
             command: {
                 id: 'editor.action.triggerSuggest',
-            }
+            },
         })
     }
     return suggestions
@@ -100,18 +112,27 @@ const getOperatorsSuggestions = (field, position) => {
             { label: Operator.NOT_EQUALS_REGEX, sortText: 'd' },
         ])
     }
-    return getSuggestionsFromList({ position: position, items: operators, kind: monaco.languages.CompletionItemKind.Operator })
+    return getSuggestionsFromList({
+        position: position,
+        items: operators,
+        kind: monaco.languages.CompletionItemKind.Operator,
+    })
 }
 
 const getBooleanOperatorsSuggestions = (range) => {
-    return getSuggestionsFromList({ range: range, items: ['and', 'or'], kind: monaco.languages.CompletionItemKind.Enum, postfix: ' ' })
+    return getSuggestionsFromList({
+        range: range,
+        items: ['and', 'or'],
+        kind: monaco.languages.CompletionItemKind.Enum,
+        postfix: ' ',
+    })
 }
 
 const getKeySuggestions = (range) => {
     const suggestions = []
     for (const name of sourceFieldsNames) {
         if (props.source.fields[name].suggest) {
-            let documentation = "Field (" + props.source.fields[name].type + ")"
+            let documentation = 'Field (' + props.source.fields[name].type + ')'
             suggestions.push({
                 label: name,
                 kind: monaco.languages.CompletionItemKind.Keyword,
@@ -120,7 +141,7 @@ const getKeySuggestions = (range) => {
                 insertText: name,
                 command: {
                     id: 'editor.action.triggerSuggest',
-                }
+                },
             })
         }
     }
@@ -128,8 +149,8 @@ const getKeySuggestions = (range) => {
 }
 
 const prepareSuggestionValues = (items, quoteChar) => {
-    const quoted = (quoteChar === undefined) ? false : true
-    const defaultQuoteChar = (quoteChar === undefined) ? '"' : quoteChar
+    const quoted = quoteChar === undefined ? false : true
+    const defaultQuoteChar = quoteChar === undefined ? '"' : quoteChar
     const result = []
     for (const item of items) {
         if (isNumeric(item)) {
@@ -153,7 +174,6 @@ const prepareSuggestionValues = (items, quoteChar) => {
     return result
 }
 
-
 const getValueSuggestions = async (key, value, range, quoteChar) => {
     const result = {
         suggestions: [],
@@ -165,15 +185,12 @@ const getValueSuggestions = async (key, value, range, quoteChar) => {
             if (props.source.fields[key].values.length > 0) {
                 items = prepareSuggestionValues(props.source.fields[key].values, quoteChar)
             } else {
-                let resp = await sourceSrv.autocomplete(
-                    props.source.slug,
-                    {
-                        field: key,
-                        value: value,
-                        from: props.from,
-                        to: props.to
-                    },
-                )
+                let resp = await sourceSrv.autocomplete(props.source.slug, {
+                    field: key,
+                    value: value,
+                    from: props.from,
+                    to: props.to,
+                })
                 items = prepareSuggestionValues(resp.data.items, quoteChar)
                 result.incomplete = resp.data.incomplete
             }
@@ -183,7 +200,6 @@ const getValueSuggestions = async (key, value, range, quoteChar) => {
                 kind: monaco.languages.CompletionItemKind.Text,
                 postfix: ' ',
             })
-
         }
     }
     return result
@@ -198,7 +214,6 @@ const getSuggestions = async (word, position, textBeforeCursor) => {
         startColumn: word.startColumn,
         endColumn: word.endColumn,
     }
-
 
     const parser = new Parser()
     parser.parse(textBeforeCursor, false, true)
@@ -216,7 +231,11 @@ const getSuggestions = async (word, position, textBeforeCursor) => {
             incomplete = result.incomplete
             suggestions = result.suggestions
         }
-    } else if (parser.state == State.VALUE || parser.state == State.DOUBLE_QUOTED_VALUE || parser.state == State.SINGLE_QUOTED_VALUE) {
+    } else if (
+        parser.state == State.VALUE ||
+        parser.state == State.DOUBLE_QUOTED_VALUE ||
+        parser.state == State.SINGLE_QUOTED_VALUE
+    ) {
         range.startColumn = word.endColumn - parser.value.length
         let quoteChar = ''
         if (parser.state == State.DOUBLE_QUOTED_VALUE) {
@@ -238,7 +257,7 @@ const getSuggestions = async (word, position, textBeforeCursor) => {
     }
 }
 
-const handleMount = editor => {
+const handleMount = (editor) => {
     monaco.languages.registerCompletionItemProvider('flyql', {
         provideCompletionItems: async (model, position) => {
             let word = model.getWordUntilPosition(position)
@@ -251,38 +270,32 @@ const handleMount = editor => {
             const textBeforeCursor = model.getValueInRange(textBeforeCursorRange)
             return await getSuggestions(word, position, textBeforeCursor)
         },
-        triggerCharacters: ["=", "!=", ">", "<", "=~", "!~", " "],
+        triggerCharacters: ['=', '!=', '>', '<', '=~', '!~', ' '],
     })
     editorRef.value = editor
-    editor.updateOptions({placeholder: props.source.generateFlyQLExample()})
+    editor.updateOptions({ placeholder: props.source.generateFlyQLExample() })
     editor.addAction({
         id: 'submit',
         label: 'submit',
         keybindings: [
-            monaco.KeyMod.chord(
-                monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
-            ),
-            monaco.KeyMod.chord(
-                monaco.KeyMod.Shift | monaco.KeyCode.Enter,
-            )
+            monaco.KeyMod.chord(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter),
+            monaco.KeyMod.chord(monaco.KeyMod.Shift | monaco.KeyCode.Enter),
         ],
         run: (e) => {
             emit('submit')
-        }
+        },
     })
     editor.addAction({
         id: 'triggerSugggest',
         label: 'triggerSuggest',
-        keybindings: [
-            monaco.KeyCode.Tab
-        ],
+        keybindings: [monaco.KeyCode.Tab],
         run: (e) => {
             editor.trigger('triggerSuggest', 'editor.action.triggerSuggest', {})
-        }
+        },
     })
     monaco.editor.addKeybindingRule({
         keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF,
-        command: null
+        command: null,
     })
     editor.onDidFocusEditorWidget(() => {
         editorFocused.value = true
@@ -293,7 +306,7 @@ const handleMount = editor => {
     nextTick(() => {
         editor.focus()
     })
-    editor.getContribution("editor.contrib.suggestController").widget.value._setDetailsVisible(true);
+    editor.getContribution('editor.contrib.suggestController').widget.value._setDetailsVisible(true)
 }
 
 const onChange = () => {

@@ -1,5 +1,5 @@
 import { format, parse, isValid } from 'date-fns'
-import { DateTime } from "luxon"
+import { DateTime } from 'luxon'
 
 const dateTimeFormat = 'yyyy-MM-dd HH:mm:ss.SSS'
 
@@ -7,41 +7,41 @@ const humanRelatedTimeRegex = new RegExp('^now(?:-(?<value>[0-9]+)(?<unit>[dhms]
 
 const datetimeRanges = {
     'Last 1 minute': {
-        'from': 'now-1m',
-        'to': 'now',
+        from: 'now-1m',
+        to: 'now',
     },
     'Last 5 minutes': {
-        'from': 'now-5m',
-        'to': 'now',
+        from: 'now-5m',
+        to: 'now',
     },
     'Last 15 minutes': {
-        'from': 'now-15m',
-        'to': 'now',
+        from: 'now-15m',
+        to: 'now',
     },
     'Last 30 minutes': {
-        'from': 'now-30m',
-        'to': 'now',
+        from: 'now-30m',
+        to: 'now',
     },
     'Last 1 hour': {
-        'from': 'now-1h',
-        'to': 'now',
+        from: 'now-1h',
+        to: 'now',
     },
     'Last 2 hours': {
-        'from': 'now-2h',
-        'to': 'now',
+        from: 'now-2h',
+        to: 'now',
     },
     'Last 6 hours': {
-        'from': 'now-6h',
-        'to': 'now',
+        from: 'now-6h',
+        to: 'now',
     },
     'Last 12 hours': {
-        'from': 'now-12h',
-        'to': 'now',
+        from: 'now-12h',
+        to: 'now',
     },
     'Last 24 hours': {
-        'from': 'now-24h',
-        'to': 'now',
-    }
+        from: 'now-24h',
+        to: 'now',
+    },
 }
 
 const datetimeRangesReversed = {}
@@ -78,7 +78,7 @@ function getRelativeOption(from, to) {
     let key = `${from} - ${to}`
     let text = datetimeRangesReversed[key]
     if (text) {
-        return { "label": text, 'from': from, 'to': to }
+        return { label: text, from: from, to: to }
     } else {
         return null
     }
@@ -87,7 +87,7 @@ function getRelativeOption(from, to) {
 function getRelativeOptions() {
     let options = []
     for (const key in datetimeRanges) {
-        options.push({ 'label': key, 'from': datetimeRanges[key].from, 'to': datetimeRanges[key].to })
+        options.push({ label: key, from: datetimeRanges[key].from, to: datetimeRanges[key].to })
     }
     return options
 }
@@ -174,4 +174,16 @@ function dateIsValid(dateString) {
     return [parsedDate, valid]
 }
 
-export { TelescopeDate, datetimeRanges, dateTimeFormat, humanRelatedTimeRegex, getStrDateOrStrRelative, getDatetimeRangeText, getRelativeOption, getRelativeOptions, getDateIfTimestamp, fmt, dateIsValid }
+export {
+    TelescopeDate,
+    datetimeRanges,
+    dateTimeFormat,
+    humanRelatedTimeRegex,
+    getStrDateOrStrRelative,
+    getDatetimeRangeText,
+    getRelativeOption,
+    getRelativeOptions,
+    getDateIfTimestamp,
+    fmt,
+    dateIsValid,
+}

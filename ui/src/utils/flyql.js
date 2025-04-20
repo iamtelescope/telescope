@@ -1,39 +1,32 @@
-import { isNumeric } from "@/utils/utils.js"
+import { isNumeric } from '@/utils/utils.js'
 
-
-const DELIMITER = " "
-const DOT = "."
-const UNDERSCORE = "_"
-const COLON = ":"
-const SLASH = "/"
-const BACKSLASH = "\\"
-const BRACKET_OPEN = "("
-const BRACKET_CLOSE = ")"
-const EQUAL_SIGN = "="
-const EXCL_MARK = "!"
-const TILDE = "~"
-const LOWER_THAN = "<"
-const GREATER_THAN = ">"
+const DELIMITER = ' '
+const DOT = '.'
+const UNDERSCORE = '_'
+const COLON = ':'
+const SLASH = '/'
+const BACKSLASH = '\\'
+const BRACKET_OPEN = '('
+const BRACKET_CLOSE = ')'
+const EQUAL_SIGN = '='
+const EXCL_MARK = '!'
+const TILDE = '~'
+const LOWER_THAN = '<'
+const GREATER_THAN = '>'
 const DOUBLE_QUOTE = '"'
 const SINGLE_QUOTE = "'"
-const NEWLINE = "\n"
+const NEWLINE = '\n'
 
 const CharType = Object.freeze({
-    KEY: "flyqlKey",
-    VALUE: "flyqkValue",
-    OPERATOR: "flyqlOperator",
-    NUMBER: "number",
-    STRING: "string",
-    SPACE: "space",
+    KEY: 'flyqlKey',
+    VALUE: 'flyqkValue',
+    OPERATOR: 'flyqlOperator',
+    NUMBER: 'number',
+    STRING: 'string',
+    SPACE: 'space',
 })
 
-const tokenTypes = [
-    CharType.KEY,
-    CharType.VALUE,
-    CharType.OPERATOR,
-    CharType.NUMBER,
-    CharType.STRING,
-]
+const tokenTypes = [CharType.KEY, CharType.VALUE, CharType.OPERATOR, CharType.NUMBER, CharType.STRING]
 
 class Token {
     constructor(char, charType) {
@@ -53,7 +46,7 @@ class Token {
 class FlyqlError extends Error {
     constructor(message) {
         super(message)
-        this.name = "FlyqlError"
+        this.name = 'FlyqlError'
     }
 }
 
@@ -81,12 +74,12 @@ const State = Object.freeze({
     DOUBLE_QUOTED_VALUE: 'DoubleQuotedValue',
     KEY_VALUE_OPERATOR: 'KeyValueOperator',
     BOOL_OP_DELIMITER: 'BoolOpDelimiter',
-    EXPECT_BOOL_OP: 'ExpectBoolOp'
+    EXPECT_BOOL_OP: 'ExpectBoolOp',
 })
 
 const BoolOperator = Object.freeze({
     AND: 'and',
-    OR: 'or'
+    OR: 'or',
 })
 
 const Operator = Object.freeze({
@@ -97,7 +90,7 @@ const Operator = Object.freeze({
     GREATER_THAN: '>',
     LOWER_THAN: '<',
     GREATER_OR_EQUALS_THAN: '>=',
-    LOWER_OR_EQUALS_THAN: '<='
+    LOWER_OR_EQUALS_THAN: '<=',
 })
 
 const VALID_KEY_VALUE_OPERATORS = [
@@ -108,21 +101,12 @@ const VALID_KEY_VALUE_OPERATORS = [
     Operator.GREATER_THAN,
     Operator.LOWER_THAN,
     Operator.GREATER_OR_EQUALS_THAN,
-    Operator.LOWER_OR_EQUALS_THAN
+    Operator.LOWER_OR_EQUALS_THAN,
 ]
 
-const VALID_BOOL_OPERATORS = [
-    BoolOperator.AND,
-    BoolOperator.OR
-]
+const VALID_BOOL_OPERATORS = [BoolOperator.AND, BoolOperator.OR]
 
-const VALID_BOOL_OPERATORS_CHARS = [
-    'a',
-    'n',
-    'd',
-    'o',
-    'r'
-]
+const VALID_BOOL_OPERATORS_CHARS = ['a', 'n', 'd', 'o', 'r']
 
 class Expression {
     constructor(key, operator, value) {
@@ -136,11 +120,10 @@ class Expression {
     }
 }
 
-
 class Node {
     constructor(boolOperator, expression, left, right) {
         if ((left || right) && expression) {
-            throw new FlyqlError("either (left or right) or expression at same time")
+            throw new FlyqlError('either (left or right) or expression at same time')
         }
 
         this.boolOperator = boolOperator
@@ -254,17 +237,17 @@ class Parser {
         this.pos = 0
         this.line = 0
         this.linePos = 0
-        this.text = ""
+        this.text = ''
         this.state = State.INITIAL
         this.char = null
-        this.key = ""
-        this.value = ""
-        this.keyValueOperator = ""
-        this.boolOperator = "and"
+        this.key = ''
+        this.value = ''
+        this.keyValueOperator = ''
+        this.boolOperator = 'and'
         this.currentNode = null
         this.nodesStack = []
         this.boolOpStack = []
-        this.errorText = ""
+        this.errorText = ''
         this.errno = 0
         this.root = null
         this.typedChars = []
@@ -298,15 +281,15 @@ class Parser {
     }
 
     resetKey() {
-        this.key = ""
+        this.key = ''
     }
 
     resetValue() {
-        this.value = ""
+        this.value = ''
     }
 
     resetKeyValueOperator() {
-        this.keyValueOperator = ""
+        this.keyValueOperator = ''
     }
 
     resetData() {
@@ -316,7 +299,7 @@ class Parser {
     }
 
     resetBoolOperator() {
-        this.boolOperator = ""
+        this.boolOperator = ''
     }
 
     extendKey() {
@@ -348,47 +331,23 @@ class Parser {
         return new Node(boolOperator, expression, left, right)
     }
     newExpression() {
-        return new Expression(
-            this.key,
-            this.keyValueOperator,
-            this.value
-        )
+        return new Expression(this.key, this.keyValueOperator, this.value)
     }
     storeTypedChar(charType) {
         this.typedChars.push([this.char, charType])
     }
     extendTree() {
         if (this.currentNode && !this.currentNode.left) {
-            const node = this.newNode(
-                "",
-                this.newExpression(),
-                null,
-                null
-            )
+            const node = this.newNode('', this.newExpression(), null, null)
             this.currentNode.setLeft(node)
             this.currentNode.setBoolOperator(this.boolOperator)
         } else if (this.currentNode && !this.currentNode.right) {
-            const node = this.newNode(
-                "",
-                this.newExpression(),
-                null,
-                null
-            )
+            const node = this.newNode('', this.newExpression(), null, null)
             this.currentNode.setRight(node)
             this.currentNode.setBoolOperator(this.boolOperator)
         } else {
-            const right = this.newNode(
-                "",
-                this.newExpression(),
-                null,
-                null
-            )
-            const node = this.newNode(
-                this.boolOperator,
-                null,
-                this.currentNode,
-                right
-            )
+            const right = this.newNode('', this.newExpression(), null, null)
+            const node = this.newNode(this.boolOperator, null, this.currentNode, right)
             this.setCurrentNode(node)
         }
     }
@@ -399,25 +358,13 @@ class Parser {
             node.setBoolOperator(boolOperator)
             this.setCurrentNode(node)
         } else {
-            const newNode = this.newNode(
-                boolOperator,
-                null,
-                node,
-                this.currentNode
-            )
+            const newNode = this.newNode(boolOperator, null, node, this.currentNode)
             this.setCurrentNode(newNode)
         }
     }
     inStateInitial() {
         this.resetData()
-        this.setCurrentNode(
-            this.newNode(
-                this.boolOperator,
-                null,
-                null,
-                null
-            )
-        )
+        this.setCurrentNode(this.newNode(this.boolOperator, null, null, null))
 
         if (this.char.isGroupOpen()) {
             this.extendNodesStack()
@@ -432,14 +379,14 @@ class Parser {
             this.setState(State.KEY)
             this.storeTypedChar(CharType.KEY)
         } else {
-            this.setErrorState("invalid character", 1)
+            this.setErrorState('invalid character', 1)
             return
         }
     }
     inStateKey() {
         if (this.char.isDelimiter()) {
             this.storeTypedChar(CharType.SPACE)
-            this.setErrorState("unexpected delimiter in key", 2)
+            this.setErrorState('unexpected delimiter in key', 2)
             return
         } else if (this.char.isKey()) {
             this.extendKey()
@@ -449,14 +396,14 @@ class Parser {
             this.setState(State.KEY_VALUE_OPERATOR)
             this.storeTypedChar(CharType.OPERATOR)
         } else {
-            this.setErrorState("invalid character", 3)
+            this.setErrorState('invalid character', 3)
             return
         }
     }
     inStateKeyValueOperator() {
         if (this.char.isDelimiter()) {
             this.storeTypedChar(CharType.SPACE)
-            this.setErrorState("unexpected delimiter in operator", 4)
+            this.setErrorState('unexpected delimiter in operator', 4)
         } else if (this.char.isOp()) {
             this.extendKeyValueOperator()
             this.storeTypedChar(CharType.OPERATOR)
@@ -483,7 +430,7 @@ class Parser {
                 this.storeTypedChar(CharType.VALUE)
             }
         } else {
-            this.setErrorState("invalid character", 4)
+            this.setErrorState('invalid character', 4)
         }
     }
     inStateValue() {
@@ -498,7 +445,7 @@ class Parser {
             this.resetBoolOperator()
         } else if (this.char.isGroupClose()) {
             if (!this.nodesStack.length) {
-                this.setErrorState("unmatched parenthesis", 9)
+                this.setErrorState('unmatched parenthesis', 9)
                 return
             } else {
                 this.extendTree()
@@ -512,7 +459,7 @@ class Parser {
                 this.storeTypedChar(CharType.OPERATOR)
             }
         } else {
-            this.setErrorState("invalid character", 10)
+            this.setErrorState('invalid character', 10)
             return
         }
     }
@@ -522,7 +469,7 @@ class Parser {
             this.extendValue()
         } else if (this.char.isSingleQuote()) {
             const prevPos = this.char.pos - 1
-            if (this.text[prevPos] === "\\") {
+            if (this.text[prevPos] === '\\') {
                 this.extendValue()
             } else {
                 this.setState(State.EXPECT_BOOL_OP)
@@ -531,7 +478,7 @@ class Parser {
                 this.resetBoolOperator()
             }
         } else {
-            this.setErrorState("invalid character", 11)
+            this.setErrorState('invalid character', 11)
             return
         }
     }
@@ -541,7 +488,7 @@ class Parser {
             this.extendValue()
         } else if (this.char.isDoubleQuote()) {
             const prevPos = this.char.pos - 1
-            if (this.text[prevPos] === "\\") {
+            if (this.text[prevPos] === '\\') {
                 this.extendValue()
             } else {
                 this.setState(State.EXPECT_BOOL_OP)
@@ -550,7 +497,7 @@ class Parser {
                 this.resetBoolOperator()
             }
         } else {
-            this.setErrorState("invalid character", 11)
+            this.setErrorState('invalid character', 11)
             return
         }
     }
@@ -570,7 +517,7 @@ class Parser {
         } else if (this.char.isGroupClose()) {
             this.storeTypedChar(CharType.OPERATOR)
             if (this.nodesStack.length) {
-                this.setErrorState("unmatched parenthesis", 15)
+                this.setErrorState('unmatched parenthesis', 15)
                 return
             } else {
                 this.resetData()
@@ -578,7 +525,7 @@ class Parser {
                 this.setState(State.EXPECT_BOOL_OP)
             }
         } else {
-            this.setErrorState("invalid character", 18)
+            this.setErrorState('invalid character', 18)
             return
         }
     }
@@ -588,7 +535,7 @@ class Parser {
             return
         } else if (this.char.isGroupClose()) {
             if (!this.nodesStack.length) {
-                this.setErrorState("unmatched parenthesis", 19)
+                this.setErrorState('unmatched parenthesis', 19)
                 return
             } else {
                 if (this.key && this.value && this.keyValueOperator) {
@@ -604,14 +551,14 @@ class Parser {
             this.extendBoolOperator()
             this.storeTypedChar(CharType.OPERATOR)
             if (this.boolOperator.length > 3 || !VALID_BOOL_OPERATORS_CHARS.includes(this.char.value)) {
-                this.setErrorState("invalid character", 20)
+                this.setErrorState('invalid character', 20)
             } else {
                 if (VALID_BOOL_OPERATORS.includes(this.boolOperator)) {
                     const nextPos = this.char.pos + 1
                     if (this.text.length > nextPos) {
                         const nextChar = new Char(this.text[nextPos], nextPos, 0, 0)
                         if (!nextChar.isDelimiter()) {
-                            this.setErrorState("expected delimiter after bool operator", 23)
+                            this.setErrorState('expected delimiter after bool operator', 23)
                             return
                         } else {
                             this.setState(State.BOOL_OP_DELIMITER)
@@ -623,19 +570,19 @@ class Parser {
     }
     inStateLastChar() {
         if (this.state === State.INITIAL && !this.nodesStack.length) {
-            this.setErrorState("empty input", 24)
+            this.setErrorState('empty input', 24)
         } else if (this.state === State.INITIAL || this.state === State.KEY) {
-            this.setErrorState("unexpected EOF", 25)
+            this.setErrorState('unexpected EOF', 25)
         } else if (this.state === State.VALUE) {
             this.extendTree()
             this.resetBoolOperator()
         } else if (this.state === State.BOOL_OP_DELIMITER && this.state !== State.EXPECT_BOOL_OP) {
-            this.setErrorState("unexpected EOF", 26)
+            this.setErrorState('unexpected EOF', 26)
             return
         }
 
         if (this.state !== State.ERROR && this.nodesStack.length) {
-            this.setErrorState("unmatched parenthesis", 27)
+            this.setErrorState('unmatched parenthesis', 27)
             return
         }
     }

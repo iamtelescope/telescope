@@ -1,11 +1,10 @@
-
 :root {
     --p-primary-50: #e0e5f8;
     --p-primary-100: #b3c1e6;
     --p-primary-200: #80a3d4;
     --p-primary-300: #4d85c2;
     --p-primary-400: #1a67b0;
-    --p-primary-500: #385DAB;
+    --p-primary-500: #385dab;
     --p-primary-600: #2e4e8d;
     --p-primary-700: #27457d;
     --p-primary-800: #1f3a6d;
@@ -26,9 +25,8 @@
     --p-content-border-radius: 6px;
 }
 
-
 :root.dark {
-    --p-surface-900: #2D2C33;
+    --p-surface-900: #2d2c33;
     --p-surface-950: #201f24;
     --p-button-primary-color: #d7d7d7;
     --p-select-color: #d7d7d7;
@@ -41,7 +39,7 @@
     --p-primary-contrast-color: var(--p-surface-900);
     --p-togglebutton-checked-color: var(--p-primary-200);
     --p-floatlabel-focus-color: var(--p-primary-200);
-    --p-iftalabel-focus-color:  var(--p-primary-200);
+    --p-iftalabel-focus-color: var(--p-primary-200);
     --p-primary-hover-color: var(--p-primary-300);
     --p-primary-active-color: var(--p-primary-200);
     --p-content-border-color: var(--p-surface-700);
@@ -75,7 +73,7 @@
 html,
 body {
     height: 100%;
-    font-family: "Open Sans";
+    font-family: 'Open Sans';
     font-size: 13px;
 }
 
@@ -88,7 +86,7 @@ body:where(.dark, .dark *) {
     height: 100vh;
 }
 
-.avaimg>img {
+.avaimg > img {
     border-radius: 5px !important;
 }
 

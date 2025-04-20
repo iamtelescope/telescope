@@ -1,10 +1,10 @@
-import { ref, computed } from "vue"
-import { useRoute } from "vue-router"
-import { defineStore } from "pinia"
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { defineStore } from 'pinia'
 
 import { useToast } from 'primevue'
 
-import { DateTime } from "luxon"
+import { DateTime } from 'luxon'
 
 import { Parser as FieldsParser } from '@/utils/fields.js'
 import { BoolOperator as FlyQLBoolOperator } from '@/utils/flyql.js'
@@ -20,7 +20,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const init = computed(() => {
         return (source) => {
             if (route.params.sourceSlug in data.value) {
-                throw new Error("Store is already initialized");
+                throw new Error('Store is already initialized')
             }
             const initData = {
                 fields: route.query.fields ?? source.defaultChosenFields.join(', '),
@@ -31,13 +31,13 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
                 graphGroupBy: route.query.graph_group_by ?? source.severityField,
                 showGraph: getBooleanFromString(route.query.show_graph, true),
                 timezone: 'UTC',
-                limit: { "value": 50 },
+                limit: { value: 50 },
                 contextFields: {},
             }
             if (route.query.limit) {
                 let intLimit = parseInt(route.query.limit)
                 if (!isNaN(intLimit)) {
-                    initData.limit = { "value": intLimit }
+                    initData.limit = { value: intLimit }
                 }
             }
             data.value[route.params.sourceSlug] = initData
@@ -112,7 +112,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             limit: limit.value.value,
             from: from.value.isRelative ? from.value.value : from.value.dateObj.setZone('UTC').toMillis(),
             to: to.value.isRelative ? to.value.value : to.value.dateObj.setZone('UTC').toMillis(),
-            graph_group_by: graphGroupBy.value || "",
+            graph_group_by: graphGroupBy.value || '',
             show_graph: showGraph.value,
             context_fields: structuredClone(contextFields.value),
         }
@@ -172,7 +172,9 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     function setFrom(value) {
         if (!humanRelatedTimeRegex.exec(value)) {
             if (value instanceof Date) {
-                value = DateTime.fromJSDate(value).setZone(data.value[route.params.sourceSlug].timezone, { keepLocalTime: true }).toMillis()
+                value = DateTime.fromJSDate(value)
+                    .setZone(data.value[route.params.sourceSlug].timezone, { keepLocalTime: true })
+                    .toMillis()
             } else {
                 let intValue = parseInt(value)
                 if (isNaN(intValue)) {
@@ -186,7 +188,9 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     function setTo(value) {
         if (!humanRelatedTimeRegex.exec(value)) {
             if (value instanceof Date) {
-                value = DateTime.fromJSDate(value).setZone(data.value[route.params.sourceSlug].timezone, { keepLocalTime: true }).toMillis()
+                value = DateTime.fromJSDate(value)
+                    .setZone(data.value[route.params.sourceSlug].timezone, { keepLocalTime: true })
+                    .toMillis()
             } else {
                 let intValue = parseInt(value)
                 if (isNaN(intValue)) {
@@ -215,15 +219,15 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
     function addQueryExpression(field, operator, value) {
         let currentQuery = query.value
-        if (currentQuery != "") {
+        if (currentQuery != '') {
             currentQuery += ` ${FlyQLBoolOperator.AND} `
         }
-        if (typeof value === "string") {
+        if (typeof value === 'string') {
             value = '"' + value.replace(/"/g, '\\"') + '"'
         }
         currentQuery += `${field}${operator}${value}`
         data.value[route.params.sourceSlug].query = currentQuery
-        toast.add({ severity: 'success', summary: 'Success', detail: 'Query was updated', life: 3000 });
+        toast.add({ severity: 'success', summary: 'Success', detail: 'Query was updated', life: 3000 })
     }
 
     return {
@@ -254,6 +258,6 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         dataRequestParams,
         graphRequestParams,
         showGraph,
-        contextFields
+        contextFields,
     }
 })

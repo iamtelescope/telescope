@@ -1,15 +1,30 @@
 <template>
-    <Button icon="pi pi-chart-bar" class="mr-2" :class="{ 'text-red-500': groupByInvalid }" label="Graph setup" text
-        size="small" @click="toggleSettings" />
+    <Button
+        icon="pi pi-chart-bar"
+        class="mr-2"
+        :class="{ 'text-red-500': groupByInvalid }"
+        label="Graph setup"
+        text
+        size="small"
+        @click="toggleSettings"
+    />
     <Popover ref="dropdown" :pt="{ content: { class: 'p-0' } }">
         <div class="flex w-full">
             <div class="flex flex-col">
                 <DataRow name="Visible" class="pl-3 pr-2" :showBorder="showGraph">
-                    <ToggleSwitch v-model="showGraph" @change="onShowGraphChange"  class="mt-2"/>
+                    <ToggleSwitch v-model="showGraph" @change="onShowGraphChange" class="mt-2" />
                 </DataRow>
                 <DataRow v-if="showGraph" name="Group By" :showBorder="false" class="pl-3 pr-2">
-                    <Select size="small" v-model="groupBy" :options="groupByOptions" optionLabel="name" editable
-                        :showClear="groupBy != ''" @change="onGraphGroupByChange" :invalid="groupByInvalid">
+                    <Select
+                        size="small"
+                        v-model="groupBy"
+                        :options="groupByOptions"
+                        optionLabel="name"
+                        editable
+                        :showClear="groupBy != ''"
+                        @change="onGraphGroupByChange"
+                        :invalid="groupByInvalid"
+                    >
                     </Select>
                 </DataRow>
             </div>
@@ -22,10 +37,10 @@ import { ref, computed } from 'vue'
 
 import { Popover, Button, ToggleSwitch, Select } from 'primevue'
 
-import { useSourceControlsStore } from "@/stores/sourceControls"
+import { useSourceControlsStore } from '@/stores/sourceControls'
 import DataRow from '@/components/common/DataRow.vue'
 
-const props = defineProps(["source", "groupByInvalid"])
+const props = defineProps(['source', 'groupByInvalid'])
 const emit = defineEmits(['graphVisibilityChanged'])
 
 const sourceControlsStore = useSourceControlsStore()
@@ -35,7 +50,7 @@ const groupBy = ref(sourceControlsStore.graphGroupBy ? sourceControlsStore.graph
 
 const onGraphGroupByChange = (event) => {
     let value = event.value
-    if (typeof (value) == 'object') {
+    if (typeof value == 'object') {
         if (value === null) {
             value = ''
         } else {

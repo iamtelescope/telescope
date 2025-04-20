@@ -40,7 +40,6 @@ const useGetSimpleGroups = () => {
     return { groups, error, loading, load }
 }
 
-
 const useGetGroup = (groupId) => {
     const group = ref(null)
     const loading = ref(null)

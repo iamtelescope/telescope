@@ -1,5 +1,5 @@
 <template>
-    <div style="height: 200px; max-height: 800px;">
+    <div style="height: 200px; max-height: 800px">
         <div id="yaggrChart" class="w-full h-full"></div>
     </div>
 </template>
@@ -20,6 +20,5 @@ watch(props, () => {
     chart.value.dispose()
     chart.value = new Yagr(yaggrChart, props.settings)
     chart.value.setTheme(props.theme)
-
 })
 </script>

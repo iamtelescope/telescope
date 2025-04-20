@@ -1,5 +1,5 @@
-import getCSRFToken from "@/utils/csrf"
-import UIResponse from "@/sdk/models/response"
+import getCSRFToken from '@/utils/csrf'
+import UIResponse from '@/sdk/models/response'
 
 class HTTP {
     Request = async (url, method, data) => {
@@ -8,9 +8,9 @@ class HTTP {
             let requestOptions = {
                 method: method,
                 headers: {
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'Content-Type': 'application/json',
-                }
+                },
             }
             if (method == 'POST' || method == 'DELETE' || method == 'PATCH') {
                 requestOptions.headers['X-CSRFToken'] = getCSRFToken()
@@ -30,8 +30,7 @@ class HTTP {
                 response.validation = data.validation
                 response.result = data.result
             }
-        }
-        catch (err) {
+        } catch (err) {
             response.result = false
             response.errors = [err.message]
         }

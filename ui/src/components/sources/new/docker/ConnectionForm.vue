@@ -7,8 +7,13 @@
             <div class="flex flex-row">
                 <div class="flex flex-col w-full mr-2">
                     <FloatLabel variant="on">
-                        <InputText id="connection_address" v-model="connectionData.address" fluid
-                            :disabled="connectionTestIsActive" :invalid="hasError('address')" />
+                        <InputText
+                            id="connection_address"
+                            v-model="connectionData.address"
+                            fluid
+                            :disabled="connectionTestIsActive"
+                            :invalid="hasError('address')"
+                        />
                         <label for="connection_label">Address</label>
                     </FloatLabel>
                     <ErrorText :text="connectionFieldErrors.address" />
@@ -18,8 +23,13 @@
         <ConnectionTestResult :data="connectionTestData" :loading="connectionTestIsActive" v-if="connectionTestCalled">
         </ConnectionTestResult>
         <div class="flex pt-5 justify-end">
-            <Button label="Validate connection" icon="pi pi-sync" size="small" @click="handleTestConnection"
-                :loading="connectionTestIsActive" />
+            <Button
+                label="Validate connection"
+                icon="pi pi-sync"
+                size="small"
+                @click="handleTestConnection"
+                :loading="connectionTestIsActive"
+            />
         </div>
     </Fieldset>
 </template>
@@ -51,7 +61,7 @@ const connectionTestPassed = ref(false)
 
 const getInitialConnectionData = () => {
     let data = {
-        'address': 'unix:///var/run/docker.sock',
+        address: 'unix:///var/run/docker.sock',
     }
     if (props.source) {
         data = props.source.connection
@@ -62,16 +72,16 @@ const getInitialConnectionData = () => {
 const connectionData = reactive(getInitialConnectionData())
 
 const connectionFieldErrors = reactive({
-    'address': '',
+    address: '',
 })
 
 const hasError = (key) => {
-    return connectionFieldErrors[key] != ""
+    return connectionFieldErrors[key] != ''
 }
 
 const resetErrors = () => {
     for (const field in connectionFieldErrors) {
-        connectionFieldErrors[field] = ""
+        connectionFieldErrors[field] = ''
     }
 }
 
@@ -111,6 +121,4 @@ onMounted(() => {
         handleTestConnection()
     }
 })
-
-
 </script>

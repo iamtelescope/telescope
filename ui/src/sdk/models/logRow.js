@@ -1,5 +1,5 @@
 class LogRow {
-    constructor (data) {
+    constructor(data) {
         this.data = data
     }
 }

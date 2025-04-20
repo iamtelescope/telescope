@@ -1,9 +1,25 @@
-import he from "he"
-import hljs from "highlight.js"
-import { format as sqlformat } from "sql-formatter"
+import he from 'he'
+import hljs from 'highlight.js'
+import { format as sqlformat } from 'sql-formatter'
 
-const SQLKeyWords = ['select', 'insert', 'update', 'create', 'grant', 'revoke', 'alter', 'drop', 'begin', 'commit', 'rollback', 'with', 'explain', 'show', 'set', 'start']
-
+const SQLKeyWords = [
+    'select',
+    'insert',
+    'update',
+    'create',
+    'grant',
+    'revoke',
+    'alter',
+    'drop',
+    'begin',
+    'commit',
+    'rollback',
+    'with',
+    'explain',
+    'show',
+    'set',
+    'start',
+]
 
 function mod_chars(value, from, to) {
     let args
@@ -27,7 +43,10 @@ function mod_lines(value, from, to) {
         } else {
             args = [from, to]
         }
-        return value.split(/\r?\n/).slice(...args).join('\n')
+        return value
+            .split(/\r?\n/)
+            .slice(...args)
+            .join('\n')
     } catch (e) {
         return value
     }
@@ -112,7 +131,7 @@ function mod_json(value) {
 
 function mod_str(value) {
     try {
-        if (typeof (value) === 'object') {
+        if (typeof value === 'object') {
             return JSON.stringify(value)
         } else {
             return String(value)
@@ -124,7 +143,7 @@ function mod_str(value) {
 
 function mod_type(value) {
     try {
-        return typeof (value)
+        return typeof value
     } catch (e) {
         return value
     }
@@ -132,7 +151,7 @@ function mod_type(value) {
 
 function detectLang(value) {
     let language
-    if (typeof (value) === 'object') {
+    if (typeof value === 'object') {
         return 'json'
     }
     if (value.startsWith('{') || value.startsWith('[')) {
@@ -149,7 +168,6 @@ function detectLang(value) {
         if (first_word.length > 0 && SQLKeyWords.includes(first_word)) {
             language = 'sql'
         }
-
     }
     return language
 }
@@ -163,15 +181,14 @@ function mod_fmt(value, language) {
     }
     try {
         if (language == 'sql') {
-            return sqlformat(value, { language: "sql" });
+            return sqlformat(value, { language: 'sql' })
         } else if (language == 'json') {
-            if (typeof (value) === 'object') {
+            if (typeof value === 'object') {
                 return JSON.stringify(value, '', 4)
             } else {
                 return JSON.stringify(JSON.parse(value), '', 4)
             }
         }
-
     } catch (e) {
         return value
     }
@@ -179,7 +196,7 @@ function mod_fmt(value, language) {
 
 function mod_href(value, urlTemplate, urlValue) {
     if (!value) {
-        return value;
+        return value
     }
     try {
         if (urlValue === undefined) {
@@ -201,7 +218,7 @@ function mod_href(value, urlTemplate, urlValue) {
 
 function mod_highlight(value, language) {
     try {
-        if (typeof (value) === 'object') {
+        if (typeof value === 'object') {
             value = JSON.stringify(value)
         }
         if (language === undefined) {
@@ -212,11 +229,9 @@ function mod_highlight(value, language) {
         }
         return hljs.highlight(value, { language: language }).value
     } catch (e) {
-
         return value
     }
 }
-
 
 const MODIFIERS = {
     chars: { func: mod_chars, type: 'value' },

@@ -16,10 +16,7 @@
                 <DataRow name="First name">{{ user.firstName || '–' }}</DataRow>
                 <DataRow name="Last name">{{ user.lastName || '–' }}</DataRow>
                 <DataRow name="Permissions">
-                    <div
-                        class="flex flex-wrap gap-2"
-                        v-if="user.permissions.length > 0"
-                    >
+                    <div class="flex flex-wrap gap-2" v-if="user.permissions.length > 0">
                         <Badge
                             v-for="perm in user.permissions"
                             :key="perm"
@@ -31,10 +28,7 @@
                     <span v-else>–</span>
                 </DataRow>
                 <DataRow name="Groups">
-                    <div
-                        class="flex flex-wrap gap-2"
-                        v-if="user.groups.length > 0"
-                    >
+                    <div class="flex flex-wrap gap-2" v-if="user.groups.length > 0">
                         <Badge
                             v-for="group in user.groups"
                             :key="group"
@@ -48,11 +42,7 @@
             </div>
             <div class="w-full">
                 <div class="flex flex-row w-full mt-9 align-middle">
-                    <div
-                        class="flex items-center font-bold text-xl text-nowrap"
-                    >
-                        API Tokens
-                    </div>
+                    <div class="flex items-center font-bold text-xl text-nowrap">API Tokens</div>
                     <div class="flex items-center w-full justify-end">
                         <Button
                             severity="primary"
@@ -85,17 +75,12 @@
                             v-model:selection="selectedTokens"
                             dataKey="token"
                         >
-                            <Column
-                                selectionMode="multiple"
-                                headerStyle="width: 3rem"
-                            ></Column>
+                            <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
 
                             <Column field="name" sortable header="Name" />
                             <Column sortable header="Created">
                                 <template #body="slotProps">
-                                    <DateTimeFormatted
-                                        :value="slotProps.data.created"
-                                    />
+                                    <DateTimeFormatted :value="slotProps.data.created" />
                                 </template>
                             </Column>
                             <Column header="Token" bodyClass="font-mono">
@@ -154,15 +139,13 @@ const deleteTokenBtnLabel = computed(() => {
 })
 
 const handleApiTokenCreate = () => {
-  router.push({ name: 'apiTokenNew' })
+    router.push({ name: 'apiTokenNew' })
 }
 
 const handleDeleteTokens = async () => {
     deleteTokenBtnLoading.value = true
 
-    let response = await authSrv.deleteCurrentUserAPITokens(
-        selectedTokens.value.map((t) => t.token),
-    )
+    let response = await authSrv.deleteCurrentUserAPITokens(selectedTokens.value.map((t) => t.token))
     deleteTokenBtnLoading.value = false
     selectedTokens.value = []
 

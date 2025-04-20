@@ -3,7 +3,8 @@
         <DataView :loading="loading" :error="error">
             <div class="flex flex-col min-w-1000">
                 <div class="mb-14">
-                    <span class="font-bold text-3xl">Edit group: {{ group.name }}</span><br>
+                    <span class="font-bold text-3xl">Edit group: {{ group.name }}</span
+                    ><br />
                 </div>
                 <div class="flex flex-row mb-5 items-start">
                     <div class="flex justify-start items-start" style="width: 190px">
@@ -11,16 +12,28 @@
                     </div>
                     <div class="flex justify-end w-full items-center">
                         <div class="flex flex-col w-full">
-                            <InputText id="name" v-model="groupData.name" fluid :invalid="saveFieldErrors.name != ''"
-                                @keyup.enter="handleSave" />
-                            <span v-if="saveFieldErrors.name != ''" class="text-rose-500">{{ saveFieldErrors.name
-                                }}</span>
+                            <InputText
+                                id="name"
+                                v-model="groupData.name"
+                                fluid
+                                :invalid="saveFieldErrors.name != ''"
+                                @keyup.enter="handleSave"
+                            />
+                            <span v-if="saveFieldErrors.name != ''" class="text-rose-500">{{
+                                saveFieldErrors.name
+                            }}</span>
                         </div>
                     </div>
                 </div>
                 <div class="flex flex-row justify-end w-full">
-                    <Button class="ml-2 pl-6 pr-6" severity="primary" label="Save" @click="handleSave"
-                        :loading="saveButtonLoading" size="small" />
+                    <Button
+                        class="ml-2 pl-6 pr-6"
+                        severity="primary"
+                        label="Save"
+                        @click="handleSave"
+                        :loading="saveButtonLoading"
+                        size="small"
+                    />
                 </div>
             </div>
         </DataView>
@@ -48,24 +61,21 @@ const saveButtonLoading = ref(false)
 const navStored = ref(false)
 
 const groupData = ref({
-    'name': '',
+    name: '',
 })
 const saveFieldErrors = ref({
-    'name': ''
+    name: '',
 })
 const saveNonFieldErrors = ref([])
 
 const { group, error, loading } = useGetGroup(route.params.groupId)
 const groupSrv = new GroupService()
 
-navStore.update([
-    { label: 'Role-Based Access Control' },
-    { label: 'Groups', url: '/rbac/groups' },
-])
+navStore.update([{ label: 'Role-Based Access Control' }, { label: 'Groups', url: '/rbac/groups' }])
 
 watch(group, () => {
     if (!navStored.value) {
-        navStore.append({ label: group.value.name, 'url': `/rbac/groups/${group.value.id}` })
+        navStore.append({ label: group.value.name, url: `/rbac/groups/${group.value.id}` })
         navStore.append({ label: 'edit' })
         navStored.value = true
         groupData.value.name = group.value.name

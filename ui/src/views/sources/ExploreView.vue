@@ -1,15 +1,15 @@
 <template>
-  <div v-if="loading">
-    <Loader />
-  </div>
-  <div v-else>
-    <div v-if="error">
-      <Error :error="error" />
+    <div v-if="loading">
+        <Loader />
     </div>
     <div v-else>
-      <SourceData :source="source" v-if="source" />
+        <div v-if="error">
+            <Error :error="error" />
+        </div>
+        <div v-else>
+            <SourceData :source="source" v-if="source" />
+        </div>
     </div>
-  </div>
 </template>
 
 <script setup>

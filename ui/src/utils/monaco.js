@@ -1,9 +1,8 @@
-import * as monaco from "monaco-editor"
-import { loader } from "@guolao/vue-monaco-editor"
+import * as monaco from 'monaco-editor'
+import { loader } from '@guolao/vue-monaco-editor'
 
 import { Parser as FieldsParser, tokenTypes as fieldsTokenTypes } from '@/utils/fields.js'
 import { Parser as FlyqlParser, tokenTypes as flyqlTokenTypes } from '@/utils/flyql.js'
-
 
 function getDefaultMonacoOptions() {
     return {
@@ -14,7 +13,7 @@ function getDefaultMonacoOptions() {
             bottom: 6,
         },
         contextmenu: false,
-        tabCompletion: "on",
+        tabCompletion: 'on',
         overviewRulerLanes: 0,
         lineNumbersMinChars: 0,
         scrollBeyondLastLine: false,
@@ -31,7 +30,7 @@ function getDefaultMonacoOptions() {
             autoFindInSelection: 'never',
             seedSearchStringFromSelection: false,
         },
-        wordBasedSuggestions: "off",
+        wordBasedSuggestions: 'off',
         lineNumbersMinChars: 0,
         lineDecorationsWidth: 0,
         hideCursorInOverviewRuler: true,
@@ -66,7 +65,7 @@ function initMonacoSetup() {
             { token: 'flyqlKey', foreground: '0451a5' },
             { token: 'flyqlOperator', foreground: '0089ab' },
             { token: 'flyqlValue', foreground: '8b0000' },
-            
+
             { token: 'identifier', foreground: '0451a5' },
             { token: 'string.sql', foreground: '8b0000' },
             { token: 'operator.sql', foreground: '0089ab' },
@@ -96,14 +95,12 @@ function initMonacoSetup() {
     })
     monaco.languages.register({ id: 'fields' })
     monaco.languages.setLanguageConfiguration('fields', {
-        autoClosingPairs: [
-            { open: '(', close: ')' },
-        ],
+        autoClosingPairs: [{ open: '(', close: ')' }],
     })
     monaco.languages.registerDocumentSemanticTokensProvider('fields', {
         getLegend: () => ({
             tokenTypes: fieldsTokenTypes,
-            tokenModifiers: []
+            tokenModifiers: [],
         }),
         provideDocumentSemanticTokens: (model) => {
             const parser = new FieldsParser()
@@ -116,14 +113,14 @@ function initMonacoSetup() {
                 resultId: null,
             }
         },
-        releaseDocumentSemanticTokens: () => { }
+        releaseDocumentSemanticTokens: () => {},
     })
 
     monaco.languages.register({ id: 'flyql' })
     monaco.languages.registerDocumentSemanticTokensProvider('flyql', {
         getLegend: () => ({
             tokenTypes: flyqlTokenTypes,
-            tokenModifiers: []
+            tokenModifiers: [],
         }),
         provideDocumentSemanticTokens: (model) => {
             const parser = new FlyqlParser()
@@ -136,9 +133,8 @@ function initMonacoSetup() {
                 resultId: null,
             }
         },
-        releaseDocumentSemanticTokens: () => { }
+        releaseDocumentSemanticTokens: () => {},
     })
-
 }
 
 export { initMonacoSetup, getDefaultMonacoOptions }

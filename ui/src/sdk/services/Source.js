@@ -33,34 +33,34 @@ class SourceService {
     }
     grantSourceRole = async (sourceSlug, user, group, role) => {
         let data = {
-            'subject': {
-                'kind': null,
-                'name': null,
+            subject: {
+                kind: null,
+                name: null,
             },
-            'role': role.name,
+            role: role.name,
         }
         if (user != null) {
-            data['subject'] = { 'kind': 'user', 'name': user.username }
+            data['subject'] = { kind: 'user', name: user.username }
         }
         if (group != null) {
-            data['subject'] = { 'kind': 'group', 'name': group.name }
+            data['subject'] = { kind: 'group', name: group.name }
         }
         let response = await http.Post(`/ui/v1/sources/${sourceSlug}/grantRole`, data)
         return response
     }
     revokeSourceRole = async (sourceSlug, user, group, role) => {
         let data = {
-            'subject': {
-                'kind': null,
-                'pk': null,
+            subject: {
+                kind: null,
+                pk: null,
             },
-            'role': role,
+            role: role,
         }
         if (user != null) {
-            data['subject'] = { 'kind': 'user', 'name': user.username }
+            data['subject'] = { kind: 'user', name: user.username }
         }
         if (group != null) {
-            data['subject'] = { 'kind': 'group', 'name': group.name }
+            data['subject'] = { kind: 'group', name: group.name }
         }
         let response = await http.Post(`/ui/v1/sources/${sourceSlug}/revokeRole`, data)
         return response

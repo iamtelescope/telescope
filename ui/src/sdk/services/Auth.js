@@ -16,7 +16,7 @@ class AuthService {
         return response
     }
     deleteCurrentUserAPITokens = async (tokens) => {
-        let data = {'tokens': tokens}
+        let data = { tokens: tokens }
         let response = await http.Post('/ui/v1/auth/api_tokens/delete', data)
         return response
     }

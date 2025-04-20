@@ -1,7 +1,7 @@
 <template>
-  <div class="d-flex justify-center">
-    <pre class="whitespace-pre-wrap"><Message severity="error">{{ error }}</Message></pre>
-  </div>
+    <div class="d-flex justify-center">
+        <pre class="whitespace-pre-wrap"><Message severity="error">{{ error }}</Message></pre>
+    </div>
 </template>
 
 <script setup>

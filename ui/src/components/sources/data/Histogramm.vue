@@ -1,15 +1,21 @@
 <template>
     <div>
         <div class="flex flex-row">
-            <SelectButton v-model="chartType" :defaultValue="chartDefaultType" :allowEmpty="false"
-                :options="chartTypeOptions" @change="onChartTypeSelect">
+            <SelectButton
+                v-model="chartType"
+                :defaultValue="chartDefaultType"
+                :allowEmpty="false"
+                :options="chartTypeOptions"
+                @change="onChartTypeSelect"
+            >
                 <template #option="slotProps">
                     <font-awesome-icon :icon="`fa-solid fa-chart-${slotProps.option}`" />
                 </template>
             </SelectButton>
-            <div class="flex items-center pl-4"><span class="text-gray-500">group by:</span> <span
-                    class="pl-2 font-bold">{{
-                        groupByLabel || '–' }}</span></div>
+            <div class="flex items-center pl-4">
+                <span class="text-gray-500">group by:</span>
+                <span class="pl-2 font-bold">{{ groupByLabel || '–' }}</span>
+            </div>
         </div>
         <div class="flex flex-col" id="histogramm">
             <YagrChart v-if="chartSettings" :theme="theme" :settings="chartSettings" />
@@ -18,8 +24,8 @@
 </template>
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
-import { format } from "date-fns"
-import uPlot from "uplot"
+import { format } from 'date-fns'
+import uPlot from 'uplot'
 
 import { SelectButton } from 'primevue'
 
@@ -67,7 +73,7 @@ const calcRenderOptions = (type) => {
 
         // left-rigth padding of graph
         let padding = 70
-        // spaces between columns 
+        // spaces between columns
         let totalSpacing = columns + 2
 
         // calculate expected graph width
@@ -101,18 +107,19 @@ const calcPlotLines = () => {
             if (plotPercent == 0) {
                 color = 'rgba(0, 0, 255, 0.2)'
             }
-            plotLines = [{
-                value: [newest_row, oldest_row],
-                color: color,
-            }]
+            plotLines = [
+                {
+                    value: [newest_row, oldest_row],
+                    color: color,
+                },
+            ]
         }
     }
     return plotLines
-
 }
 
 const tooltipRender = (data) => {
-    let html = `<div class="font-bold pb-2 dark:text-neutral-300">${format(uPlot.tzDate(new Date(data.x), 'UTC'), "yyyy-MM-dd HH:mm:ss")}</div><table class='p-0 m-0 w-full'>`
+    let html = `<div class="font-bold pb-2 dark:text-neutral-300">${format(uPlot.tzDate(new Date(data.x), 'UTC'), 'yyyy-MM-dd HH:mm:ss')}</div><table class='p-0 m-0 w-full'>`
     let label = props.groupByLabel
     if (!label) {
         label = 'Name'
@@ -187,15 +194,15 @@ const getChartSettings = (type) => {
                 plotLines: calcPlotLines(),
                 values: [
                     // tick incr default year month day hour min sec mode
-                    [3600 * 24 * 365 * 1000, "{YYYY} {MMM}", null, null, null, null, null, null, 1],
-                    [3600 * 24 * 28 * 1000, "{MMM}", null, null, null, null, null, null, 1],
-                    [3600 * 24 * 1000, "{MMM} {DD}", null, null, null, null, null, null, 1],
-                    [3600 * 1000, "{HH}:{mm}", null, null, null, null, null, null, 1],
-                    [60 * 1000, "{HH}:{mm}", null, null, null, null, null, null, 1],
-                    [1 * 1000, "{HH}:{mm}:{ss}", null, null, null, null, null, null, 1],
-                    [0.001 * 1000, "{HH}:{mm}:{ss}.{fff}", null, null, null, null, null, null, 1],
+                    [3600 * 24 * 365 * 1000, '{YYYY} {MMM}', null, null, null, null, null, null, 1],
+                    [3600 * 24 * 28 * 1000, '{MMM}', null, null, null, null, null, null, 1],
+                    [3600 * 24 * 1000, '{MMM} {DD}', null, null, null, null, null, null, 1],
+                    [3600 * 1000, '{HH}:{mm}', null, null, null, null, null, null, 1],
+                    [60 * 1000, '{HH}:{mm}', null, null, null, null, null, null, 1],
+                    [1 * 1000, '{HH}:{mm}:{ss}', null, null, null, null, null, null, 1],
+                    [0.001 * 1000, '{HH}:{mm}:{ss}.{fff}', null, null, null, null, null, null, 1],
                 ],
-            }
+            },
         },
         hooks: {
             onSelect: [(e) => emit('rangeSelected', { from: e.from, to: e.to })],
@@ -203,7 +210,7 @@ const getChartSettings = (type) => {
         series: series,
         editUplotOptions: (opts) => {
             opts.tzDate = (ts) => uPlot.tzDate(new Date(ts), 'Etc/UTC')
-            return opts;
+            return opts
         },
     }
 }
@@ -215,5 +222,4 @@ onMounted(() => {
 watch(props, () => {
     chartSettings.value = getChartSettings(chartType.value)
 })
-
 </script>

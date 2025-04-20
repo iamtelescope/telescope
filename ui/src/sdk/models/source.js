@@ -1,9 +1,7 @@
 import { getDefaultIfUndefined } from '@/utils/utils'
 import { User, Group } from '@/sdk/models/rbac'
 
-const SourceKinds = [
-    'clickhouse'
-]
+const SourceKinds = ['clickhouse']
 
 class Source {
     constructor(data) {
@@ -55,7 +53,7 @@ class Source {
         }
         return fields.join(', ')
     }
-    
+
     generateFlyQLExample() {
         let text = ''
         let fields = []
@@ -67,7 +65,7 @@ class Source {
         if (fields.length == 1) {
             text += `${fields[0]}=*value*`
         } else if (fields.length == 2 || fields.length == 3) {
-            text += `${fields[0]}=*value* and ${fields[1]!="value"}`
+            text += `${fields[0]}=*value* and ${fields[1] != 'value'}`
         }
         if (fields.length == 4) {
             text += `${fields[0]}="*like value*" and ${fields[1]}!=value or (${fields[2]}=~".*rege[xX]$" and ${fields[3]}!~"reg ex$")`
@@ -106,4 +104,4 @@ class SourceRoleBiding {
     }
 }
 
-export { Source, SourceKinds, SourceRoleBiding}
+export { Source, SourceKinds, SourceRoleBiding }

@@ -1,4 +1,3 @@
-
 const timezones = [
     'Africa/Abidjan',
     'Africa/Accra',
@@ -599,6 +598,6 @@ const timezones = [
 ]
 const tzOptions = []
 for (const tz of timezones) {
-    tzOptions.push({'name': tz, 'code': tz})
+    tzOptions.push({ name: tz, code: tz })
 }
 export { timezones, tzOptions }

@@ -5,22 +5,34 @@
                 <span class="font-bold text-3xl">
                     <i class="pi pi-users text-3xl mr-1"></i>
                     <span class="text-gray-400">Groups: </span>
-                    Create new group</span>
+                    Create new group</span
+                >
             </div>
             <div class="flex flex-row mb-5 items-start">
                 <div class="flex justify-end w-full items-center">
                     <div class="flex flex-col w-full">
                         <FloatLabel variant="on">
-                            <InputText id="name" v-model="groupData.name" fluid :invalid="createFieldErrors.name != ''"
-                                @keyup.enter="handleCreate" /> <label for="name">Name</label>
+                            <InputText
+                                id="name"
+                                v-model="groupData.name"
+                                fluid
+                                :invalid="createFieldErrors.name != ''"
+                                @keyup.enter="handleCreate"
+                            />
+                            <label for="name">Name</label>
                         </FloatLabel>
                         <ErrorText :text="createFieldErrors.name" />
                     </div>
                 </div>
             </div>
             <div class="flex flex-row justify-end w-full">
-                <Button class="ml-2 pl-6 pr-6" severity="primary" label="Create" @click="handleCreate"
-                    :loading="createButtonLoading" />
+                <Button
+                    class="ml-2 pl-6 pr-6"
+                    severity="primary"
+                    label="Create"
+                    @click="handleCreate"
+                    :loading="createButtonLoading"
+                />
             </div>
         </div>
     </div>
@@ -43,10 +55,10 @@ const router = useRouter()
 const toast = useToast()
 const navStore = useNavStore()
 const groupData = ref({
-    'name': "",
+    name: '',
 })
 const createFieldErrors = ref({
-    'name': ""
+    name: '',
 })
 const createButtonLoading = ref(false)
 

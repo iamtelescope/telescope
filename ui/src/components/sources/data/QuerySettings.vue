@@ -4,8 +4,13 @@
         <div class="flex w-full">
             <div class="flex flex-col">
                 <DataRow name="Enable raw query editor" class="pl-3 pr-2">
-                    <ToggleSwitch v-model="enableRawQueryEditor" @change="onEnableRawQueryEditorChange"
-                        :readonly="!source.isRawQueryAllowed()" v-tooltip="enableRawQueryEditorTooltip" class="mt-2"/>
+                    <ToggleSwitch
+                        v-model="enableRawQueryEditor"
+                        @change="onEnableRawQueryEditorChange"
+                        :readonly="!source.isRawQueryAllowed()"
+                        v-tooltip="enableRawQueryEditorTooltip"
+                        class="mt-2"
+                    />
                 </DataRow>
             </div>
         </div>
@@ -19,9 +24,8 @@ import { Popover, Button, ToggleSwitch } from 'primevue'
 
 import DataRow from '@/components/common/DataRow.vue'
 
-const props = defineProps(["source", "enableRawQueryEditorInitial"])
+const props = defineProps(['source', 'enableRawQueryEditorInitial'])
 const emit = defineEmits(['enableRawQueryEditorChange'])
-
 
 const dropdown = ref()
 const enableRawQueryEditor = ref(props.enableRawQueryEditorInitial)

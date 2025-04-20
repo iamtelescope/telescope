@@ -1,8 +1,14 @@
 <template>
     <Fieldset class="text-wrap pb-0" :class="bgClass">
         <template #legend>
-            <ProgressSpinner v-if="loading" style="width: 12px; height: 12px; color:blue" strokeWidth="1"
-                fill="transparent" animationDuration="1s" /> <span class="font-bold">Connection test results</span>
+            <ProgressSpinner
+                v-if="loading"
+                style="width: 12px; height: 12px; color: blue"
+                strokeWidth="1"
+                fill="transparent"
+                animationDuration="1s"
+            />
+            <span class="font-bold">Connection test results</span>
         </template>
         <div v-if="loading">
             <div class="flex flex-row">
@@ -18,7 +24,8 @@
             <div v-if="data">
                 <DataRow name="REACHABILITY" :showBorder="true" :noPadding="true" v-if="data.reachability">
                     <span v-if="data.reachability.result" class="text-green-600">
-                        <i class="pi pi-check-circle"></i></span>
+                        <i class="pi pi-check-circle"></i
+                    ></span>
                     <span v-else class="text-red-600">
                         <pre class="text-wrap"><i class="pi pi-times-circle"></i> {{ data.reachability.error }}</pre>
                     </span>
@@ -40,7 +47,7 @@
 <script setup>
 import { computed } from 'vue'
 import Fieldset from 'primevue/fieldset'
-import ProgressSpinner from 'primevue/progressspinner';
+import ProgressSpinner from 'primevue/progressspinner'
 
 import DataRow from '@/components/common/DataRow.vue'
 import Skeleton from 'primevue/skeleton'

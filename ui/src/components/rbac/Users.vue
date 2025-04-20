@@ -5,17 +5,30 @@
                 <div class="flex flex-row w-full mb-14 align-middle">
                     <div class="flex flex-col w-full">
                         <span class="font-bold text-3xl"><i class="pi pi-user text-3xl"></i> Users</span>
-                        <span class="text-gray-400">Users are members of your organization with specific
-                            permissions that control their access and actions</span>
+                        <span class="text-gray-400"
+                            >Users are members of your organization with specific permissions that control their access
+                            and actions</span
+                        >
                     </div>
                 </div>
                 <div class="mb-6">
-                    <InputText placeholder="Filter by username" v-model="filters.global.value" fluid
-                        class="placeholder-gray-300" />
+                    <InputText
+                        placeholder="Filter by username"
+                        v-model="filters.global.value"
+                        fluid
+                        class="placeholder-gray-300"
+                    />
                 </div>
                 <DataView :loading="loading" :error="error">
-                    <DataTable :value="users" v-model:filters="filters" sortField="username" :sortOrder="1" paginator
-                        :rows="20" removableSort>
+                    <DataTable
+                        :value="users"
+                        v-model:filters="filters"
+                        sortField="username"
+                        :sortOrder="1"
+                        paginator
+                        :rows="20"
+                        removableSort
+                    >
                         <Column field="isActive" sortable header="Is active" class="font-bold"></Column>
                         <Column field="username" sortable header="Username" class="font-bold"></Column>
                         <Column field="displayFirstName" sortable header="First name" class="text-nowrap"></Column>
@@ -24,8 +37,13 @@
                         <Column field="displayGroups" sortable header="Groups" class="w-1/2">
                             <template #body="slotProps">
                                 <div class="flex flex-wrap gap-2">
-                                    <Badge v-for="group in slotProps.data.sortedGroups" :key="group.name"
-                                        :value="group.name" severity="secondary" size="large"></Badge>
+                                    <Badge
+                                        v-for="group in slotProps.data.sortedGroups"
+                                        :key="group.name"
+                                        :value="group.name"
+                                        severity="secondary"
+                                        size="large"
+                                    ></Badge>
                                 </div>
                             </template>
                         </Column>

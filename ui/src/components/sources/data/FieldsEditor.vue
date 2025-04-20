@@ -1,9 +1,17 @@
 <template>
-    <div :style="{ height: `${editorHeight}px` }"
+    <div
+        :style="{ height: `${editorHeight}px` }"
         class="editor border rounded-lg mt-1 border-neutral-300 pl-2 pr-2 dark:border-neutral-600"
-        :class="{ 'border-sky-800 dark:border-sky-700': editorFocused }">
-        <vue-monaco-editor v-model:value="code" theme="telescope" language="fields" :options="getDefaultMonacoOptions()"
-            @mount="handleMount" @change="onChange" />
+        :class="{ 'border-sky-800 dark:border-sky-700': editorFocused }"
+    >
+        <vue-monaco-editor
+            v-model:value="code"
+            theme="telescope"
+            language="fields"
+            :options="getDefaultMonacoOptions()"
+            @mount="handleMount"
+            @change="onChange"
+        />
     </div>
 </template>
 
@@ -17,14 +25,14 @@ import { MODIFIERS } from '@/utils/modifiers'
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 import { getDefaultMonacoOptions } from '@/utils/monaco.js'
 
-const emit = defineEmits(['change', 'submit',])
+const emit = defineEmits(['change', 'submit'])
 const props = defineProps(['source', 'value'])
 
 const editorFocused = ref(false)
 
 const editorHeight = computed(() => {
     const lines = (code.value.match(/\n/g) || '').length + 1
-    return 24 + (lines * 20)
+    return 24 + lines * 20
 })
 
 const code = ref(props.value)
@@ -48,7 +56,7 @@ const getFieldsNameSuggestions = (existingFields, range) => {
                     insertText: name + ',',
                     command: {
                         id: 'editor.action.triggerSuggest',
-                    }
+                    },
                 })
             }
         }
@@ -66,7 +74,7 @@ const getModifiersSuggestions = (range) => {
             range: range,
             command: {
                 id: 'editor.action.triggerSuggest',
-            }
+            },
         })
     }
     return suggestions
@@ -82,14 +90,13 @@ const getSuggestions = (word, range, textFull, textBeforeCursor) => {
         if (!Object.keys(MODIFIERS).includes(word)) {
             suggestions = getModifiersSuggestions(range)
         }
-    }
-    else if (parser.state == State.EXPECT_NAME || parser.state == State.NAME) {
+    } else if (parser.state == State.EXPECT_NAME || parser.state == State.NAME) {
         suggestions = getFieldsNameSuggestions(getExistingFields(textFull), range)
     }
     return suggestions
 }
 
-const handleMount = editor => {
+const handleMount = (editor) => {
     monaco.languages.registerCompletionItemProvider('fields', {
         provideCompletionItems: function (model, position) {
             let word = model.getWordUntilPosition(position)
@@ -120,12 +127,8 @@ const handleMount = editor => {
         id: 'submit',
         label: 'submit',
         keybindings: [
-            monaco.KeyMod.chord(
-                monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
-            ),
-            monaco.KeyMod.chord(
-                monaco.KeyMod.Shift | monaco.KeyCode.Enter,
-            )
+            monaco.KeyMod.chord(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter),
+            monaco.KeyMod.chord(monaco.KeyMod.Shift | monaco.KeyCode.Enter),
         ],
         run: (e) => {
             emit('submit')
@@ -134,17 +137,15 @@ const handleMount = editor => {
     editor.addAction({
         id: 'triggerSugggest',
         label: 'triggerSuggest',
-        keybindings: [
-            monaco.KeyCode.Tab
-        ],
+        keybindings: [monaco.KeyCode.Tab],
         run: (e) => {
             editor.trigger('triggerSuggest', 'editor.action.triggerSuggest', {})
-        }
+        },
     })
     monaco.editor.addKeybindingRule({
         keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF,
-        command: null
-    });
+        command: null,
+    })
     editor.onDidFocusEditorWidget(() => {
         editorFocused.value = true
     })

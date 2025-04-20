@@ -7,19 +7,33 @@
                         <span class="font-bold text-3xl">
                             <i class="pi pi-database text-3xl"></i>
                             <span class="text-gray-400"> Sources: </span>
-                            {{ source.slug }}</span>
-                        <span class="text-gray-400">Sources define how to connect to your data and the access policy for
-                            that data.
+                            {{ source.slug }}</span
+                        >
+                        <span class="text-gray-400"
+                            >Sources define how to connect to your data and the access policy for that data.
                         </span>
                     </div>
                     <div class="flex flex-row w-full justify-end items-center">
                         <div>
-                            <Button class="mr-1" severity="secondary" icon="pi pi-pencil" label="Edit" size="small"
-                                @click="handleSourceEdit" v-if="source.isEditable()" />
+                            <Button
+                                class="mr-1"
+                                severity="secondary"
+                                icon="pi pi-pencil"
+                                label="Edit"
+                                size="small"
+                                @click="handleSourceEdit"
+                                v-if="source.isEditable()"
+                            />
                             <ConfirmPopup />
-                            <Button severity="danger" icon="pi pi-trash" label="Delete"
-                                @click="sourceDeleteConfirm($event)" :loading="sourceDeleteButtonLoading" size="small"
-                                v-if="source.isEditable()" />
+                            <Button
+                                severity="danger"
+                                icon="pi pi-trash"
+                                label="Delete"
+                                @click="sourceDeleteConfirm($event)"
+                                :loading="sourceDeleteButtonLoading"
+                                size="small"
+                                v-if="source.isEditable()"
+                            />
                         </div>
                     </div>
                 </div>
@@ -48,8 +62,9 @@
                                     <Column field="name" sortable header="NAME" />
                                     <Column sortable header="DISPLAY NAME">
                                         <template #body="slotProps">
-                                            <span v-if="slotProps.data.display_name">{{ slotProps.data.display_name
-                                                }}</span>
+                                            <span v-if="slotProps.data.display_name">{{
+                                                slotProps.data.display_name
+                                            }}</span>
                                             <span v-else>&ndash;</span>
                                         </template>
                                     </Column>
@@ -77,7 +92,8 @@
                                     <Column sortable header="VALUES">
                                         <template #body="slotProps">
                                             <span v-if="slotProps.data.values.length">{{
-                                                slotProps.data.values.join(', ') }}</span>
+                                                slotProps.data.values.join(', ')
+                                            }}</span>
                                             <span v-else>&ndash;</span>
                                         </template>
                                     </Column>
@@ -85,8 +101,11 @@
                             </Fieldset>
                         </TabPanel>
                         <TabPanel value="accessControl" v-if="source.isEditable()">
-                            <SourceAccessControl :source="source" @roleGranted="onRoleGranted"
-                                @roleRevoked="onRoleRevoked" />
+                            <SourceAccessControl
+                                :source="source"
+                                @roleGranted="onRoleGranted"
+                                @roleRevoked="onRoleRevoked"
+                            />
                         </TabPanel>
                     </TabPanels>
                 </Tabs>
@@ -130,9 +149,7 @@ const sourceSrv = new SourceService()
 const activeTab = ref('overview')
 const sourceDeleteButtonLoading = ref(false)
 
-navStore.updatev2([
-    { label: 'Sources', url: '/sources', icon: 'pi pi-database' },
-])
+navStore.updatev2([{ label: 'Sources', url: '/sources', icon: 'pi pi-database' }])
 
 const { source, error, loading, load } = useGetSource(route.params.sourceSlug)
 
@@ -143,7 +160,7 @@ if (route.query.tab) {
 const sourceFields = computed(() => {
     const result = []
     for (const [key, value] of Object.entries(source.value.fields)) {
-        let item = Object.assign({ 'name': key }, value)
+        let item = Object.assign({ name: key }, value)
         result.push(item)
     }
     return result
@@ -161,11 +178,11 @@ const sourceDeleteConfirm = (event) => {
         rejectProps: {
             label: 'Cancel',
             severity: 'secondary',
-            outlined: true
+            outlined: true,
         },
         acceptProps: {
             label: 'Yes, delete',
-            severity: 'danger'
+            severity: 'danger',
         },
         accept: async () => {
             sourceDeleteButtonLoading.value = true
@@ -173,10 +190,10 @@ const sourceDeleteConfirm = (event) => {
             sourceDeleteButtonLoading.value = false
             response.sendToastErrors(toast)
             if (response.result) {
-                router.push({ 'name': 'root' }).then(() => response.sendToastMessages(toast))
+                router.push({ name: 'root' }).then(() => response.sendToastMessages(toast))
             }
         },
-    });
+    })
 }
 const onRoleGranted = () => {
     load()
@@ -188,8 +205,7 @@ const onRoleRevoked = () => {
 
 watch(activeTab, () => {
     const url = new URL(window.location)
-    url.searchParams.set("tab", activeTab.value)
-    history.pushState(null, '', url);
+    url.searchParams.set('tab', activeTab.value)
+    history.pushState(null, '', url)
 })
-
 </script>

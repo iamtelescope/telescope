@@ -5,22 +5,44 @@
                 <div class="flex flex-row w-full mb-14 align-middle">
                     <div class="flex flex-col w-full">
                         <span class="font-bold text-3xl"><i class="pi pi-users text-3xl"></i> Groups</span>
-                        <span class="text-gray-400">Groups let you manage permissions and access for teams within your
-                            organization more efficiently</span>
+                        <span class="text-gray-400"
+                            >Groups let you manage permissions and access for teams within your organization more
+                            efficiently</span
+                        >
                     </div>
                     <div class="flex items-center w-full justify-end">
-                        <Button size="small" severity="primary" icon="pi pi-plus" label="Create" @click="handleGroupCreate" />
+                        <Button
+                            size="small"
+                            severity="primary"
+                            icon="pi pi-plus"
+                            label="Create"
+                            @click="handleGroupCreate"
+                        />
                     </div>
                 </div>
                 <div class="mb-6">
-                    <InputText placeholder="Filter by group name" v-model="filters.global.value" fluid
-                        class="placeholder-gray-300" />
+                    <InputText
+                        placeholder="Filter by group name"
+                        v-model="filters.global.value"
+                        fluid
+                        class="placeholder-gray-300"
+                    />
                 </div>
                 <DataView :loading="loading" :error="error">
                     <div class="flex flex-row w-full mt-5">
-                        <DataTable v-if="groups.length" :value="groups" v-model:filters="filters" sortField="name" removableSort
-                            :sortOrder="1" paginator :rows="20" :row-hover="true"
-                            @row-click="handleRowClick" class="w-full cursor-pointer">
+                        <DataTable
+                            v-if="groups.length"
+                            :value="groups"
+                            v-model:filters="filters"
+                            sortField="name"
+                            removableSort
+                            :sortOrder="1"
+                            paginator
+                            :rows="20"
+                            :row-hover="true"
+                            @row-click="handleRowClick"
+                            class="w-full cursor-pointer"
+                        >
                             <Column field="name" sortable header="NAME"></Column>
                             <Column field="userCount" sortable header="MEMBERS"></Column>
                         </DataTable>
@@ -36,7 +58,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { FilterMatchMode } from '@primevue/core/api';
+import { FilterMatchMode } from '@primevue/core/api'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
@@ -44,7 +66,7 @@ import Button from 'primevue/button'
 
 import { useNavStore } from '@/stores/nav'
 import DataView from '@/components/common/DataView'
-import { useGetGroups } from '@/composables/rbac/useGroupService';
+import { useGetGroups } from '@/composables/rbac/useGroupService'
 
 const navStore = useNavStore()
 const router = useRouter()

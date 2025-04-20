@@ -1,12 +1,19 @@
 <template>
-    <div class="flex flex-col h-full w-full overflow-y-auto border-t-4"
-        :style="{ borderColor: getColor(row.data[source.severityField]) }">
+    <div
+        class="flex flex-col h-full w-full overflow-y-auto border-t-4"
+        :style="{ borderColor: getColor(row.data[source.severityField]) }"
+    >
         <div class="flex flex-col">
             <div class="p-4" v-if="source.severityField.length != 0">
-                <Tag value="Primary"
-                    :style="{ backgroundColor: getColor(row.data[source.severityField]), color: getContrastColor(getColor(row.data[source.severityField])) }"
-                    class="text-gray-900 mr-2 text-bold">{{ source.severityField }}: {{
-                        row.data[source.severityField] }}</Tag>
+                <Tag
+                    value="Primary"
+                    :style="{
+                        backgroundColor: getColor(row.data[source.severityField]),
+                        color: getContrastColor(getColor(row.data[source.severityField])),
+                    }"
+                    class="text-gray-900 mr-2 text-bold"
+                    >{{ source.severityField }}: {{ row.data[source.severityField] }}</Tag
+                >
                 <span class="font-mono">{{ row.time.datetime }}.{{ row.time.microseconds }}</span>
             </div>
             <Tabs value="0">
@@ -19,13 +26,38 @@
                         <DataTable :value="flattenRow" :row-hover="true" removableSort>
                             <Column field="path" header="PATH" sortable class="font-bold text-nowrap">
                                 <template #body="slotProps">
-                                    <Button size="small" class="mr-2" :label="FlyQLOperator.EQUALS" severity="secondary"
-                                        @click="updateQuery(FlyQLOperator.EQUALS, slotProps.data.path.join(':'), slotProps.data.value)"></Button>
-                                    <Button size="small" class="mr-2" :label="FlyQLOperator.NOT_EQUALS"
+                                    <Button
+                                        size="small"
+                                        class="mr-2"
+                                        :label="FlyQLOperator.EQUALS"
                                         severity="secondary"
-                                        @click="updateQuery(FlyQLOperator.NOT_EQUALS, slotProps.data.path.join(':'), slotProps.data.value)"></Button>
-                                    <span class="pr-2 cursor-pointer text-xl"
-                                        :class="{ 'text-blue-400': selectedFields.includes(slotProps.data.path.join(':')) }"></span>
+                                        @click="
+                                            updateQuery(
+                                                FlyQLOperator.EQUALS,
+                                                slotProps.data.path.join(':'),
+                                                slotProps.data.value,
+                                            )
+                                        "
+                                    ></Button>
+                                    <Button
+                                        size="small"
+                                        class="mr-2"
+                                        :label="FlyQLOperator.NOT_EQUALS"
+                                        severity="secondary"
+                                        @click="
+                                            updateQuery(
+                                                FlyQLOperator.NOT_EQUALS,
+                                                slotProps.data.path.join(':'),
+                                                slotProps.data.value,
+                                            )
+                                        "
+                                    ></Button>
+                                    <span
+                                        class="pr-2 cursor-pointer text-xl"
+                                        :class="{
+                                            'text-blue-400': selectedFields.includes(slotProps.data.path.join(':')),
+                                        }"
+                                    ></span>
                                     <span class="font-mono">{{ slotProps.data.path.join(':') }}</span>
                                 </template>
                             </Column>
@@ -33,16 +65,19 @@
                                 <template #body="slotProps">
                                     <span v-if="slotProps.data.value">
                                         <pre
-                                            style="white-space: pre-wrap; word-wrap: break-all; word-break: break-all">{{ slotProps.data.value }}</pre>
-                                    </span><span v-else>&ndash;</span>
+                                            style="white-space: pre-wrap; word-wrap: break-all; word-break: break-all"
+                                            >{{ slotProps.data.value }}</pre
+                                        ></span
+                                    ><span v-else>&ndash;</span>
                                 </template>
                             </Column>
                         </DataTable>
                     </TabPanel>
                     <TabPanel value="1">
                         <div class="p-4">
-                            <pre
-                                style="white-space: pre-wrap; word-wrap: break-all; word-break: break-all">{{ row }}</pre>
+                            <pre style="white-space: pre-wrap; word-wrap: break-all; word-break: break-all">{{
+                                row
+                            }}</pre>
                         </div>
                     </TabPanel>
                 </TabPanels>
@@ -101,5 +136,4 @@ function flat_json(result, value, path) {
 const flattenRow = computed(() => {
     return flat_json([], props.row.data, [])
 })
-
 </script>

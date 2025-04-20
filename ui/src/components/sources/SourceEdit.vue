@@ -2,7 +2,7 @@
     <div class="flex flex-row justify-center mt-10">
         <div class="flex flex-col min-w-1280 max-w-1280">
             <DataView :loading="loading" :error="error" v-if="source && source.isEditable()">
-                <SourceForm :source="source" :startConnectionTest="true"/>
+                <SourceForm :source="source" :startConnectionTest="true" />
             </DataView>
         </div>
     </div>
@@ -20,11 +20,7 @@ import SourceForm from '@/components/sources/SourceForm.vue'
 const route = useRoute()
 const navStore = useNavStore()
 
-navStore.updatev2([
-    'sources',
-    { label: route.params.sourceSlug, 'url': `/sources/${route.params.sourceSlug}` },
-    'edit',
-])
+navStore.updatev2(['sources', { label: route.params.sourceSlug, url: `/sources/${route.params.sourceSlug}` }, 'edit'])
 
 const { source, error, loading } = useGetSource(route.params.sourceSlug)
 </script>

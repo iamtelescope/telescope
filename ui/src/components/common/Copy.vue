@@ -5,11 +5,7 @@ const props = defineProps(['value'])
 </script>
 
 <template>
-    <UseClipboard
-        :copiedDuring="300"
-        v-slot="{ copy, copied, isSupported }"
-        :source="value"
-    >
+    <UseClipboard :copiedDuring="300" v-slot="{ copy, copied, isSupported }" :source="value">
         <i
             v-if="isSupported"
             class="pi pi-copy copy-button cursor-pointer"

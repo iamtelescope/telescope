@@ -11,7 +11,7 @@ const usePatchSource = () => {
             let requestOptions = {
                 method: 'PATCH',
                 headers: {},
-                body: JSON.stringify(data)   
+                body: JSON.stringify(data),
             }
 
             let response = await fetch(url, requestOptions)
@@ -22,8 +22,7 @@ const usePatchSource = () => {
                 result.value = await response.json()
                 loading.value = false
             }
-        }
-        catch (err) {
+        } catch (err) {
             error.value = err.message
             loading.value = false
         }

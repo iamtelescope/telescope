@@ -1,6 +1,8 @@
 <template>
-    <div class="flex flex-row items-center dark:border-neutral-700"
-        :class="{ 'border-b': showBorder, 'pb-2 pt-2': !noPadding }">
+    <div
+        class="flex flex-row items-center dark:border-neutral-700"
+        :class="{ 'border-b': showBorder, 'pb-2 pt-2': !noPadding }"
+    >
         <div class="font-bold max-w-190 min-w-190" :class="nameClass">
             {{ name }}
         </div>
@@ -15,7 +17,7 @@
 <script setup>
 import { ref } from 'vue'
 
-import { getDefaultIfUndefined } from '@/utils/utils';
+import { getDefaultIfUndefined } from '@/utils/utils'
 
 const props = defineProps(['name', 'value', 'showBorder', 'nameClass', 'noPadding'])
 const showBorder = ref(getDefaultIfUndefined(props.showBorder, true))

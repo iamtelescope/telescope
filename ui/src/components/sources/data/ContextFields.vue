@@ -1,5 +1,10 @@
 <template>
-    <DockerContextFields v-if="source.kind == 'docker'" :source="source" :containers="contextFields.container" @fieldChanged="onFieldChanged"/>
+    <DockerContextFields
+        v-if="source.kind == 'docker'"
+        :source="source"
+        :containers="contextFields.container"
+        @fieldChanged="onFieldChanged"
+    />
 </template>
 <script setup>
 import DockerContextFields from '@/components/sources/data/DockerContextFields.vue'

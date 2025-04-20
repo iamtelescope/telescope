@@ -1,13 +1,14 @@
 <template>
-
     <div class="flex flex-row justify-center mt-10">
         <div class="flex flex-col min-w-1280 max-w-1280">
             <div class="w-full">
                 <div class="flex flex-row w-full mb-14 align-middle">
                     <div class="flex flex-col w-full">
                         <span class="font-bold text-3xl"><i class="pi pi-key text-3xl"></i> Roles</span>
-                        <span class="text-gray-400">Roles determine the access levels and permissions assigned to users, 
-                            enabling control over actions within your organization</span>
+                        <span class="text-gray-400"
+                            >Roles determine the access levels and permissions assigned to users, enabling control over
+                            actions within your organization</span
+                        >
                     </div>
                 </div>
                 <DataView :loading="loading" :error="error">
