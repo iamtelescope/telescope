@@ -18,3 +18,10 @@ I want to evaluate each feature in terms of its usefulness and alignment with my
 If we agree that a feature is needed, I would like to discuss the implementation details—at least at a high level—before development starts.
 
 Following these steps will help keep the project moving in the right direction according to my vision and will also prevent contributors from wasting time on changes that might not be accepted.
+
+
+### Pull request target branch
+
+Please open all pull requests against the `development` branch.
+
+The `main` branch is reserved for stable releases and should not be the target of contributions.
