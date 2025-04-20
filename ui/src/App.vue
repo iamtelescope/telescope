@@ -108,6 +108,14 @@ const sidebarItems = ref([
     label: 'Account',
     items: [
       {
+        label: 'Profile',
+        icon: 'pi pi-user-edit',
+        command: () => {
+          router.push({name: 'userProfile'})
+          sidebarVisible.value = false
+        }
+      },
+      {
         label: 'Sign out',
         icon: 'pi pi-sign-out',
         command: () => {

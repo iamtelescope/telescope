@@ -15,6 +15,16 @@ const routes = [
     component: HomeView,
   },
   {
+    path: '/profile',
+    name: 'userProfile',
+    component: () => import('@/components/user/UserProfile.vue'),
+  },
+      {
+    path: '/profile/new_api_token',
+    name: 'apiTokenNew',
+    component: () => import('@/components/user/ApiTokenNew.vue'),
+  },
+  {
     path: '/sources',
     name: 'sources',
     component: () => import('@/components/sources/Sources.vue')

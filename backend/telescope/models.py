@@ -1,3 +1,4 @@
+import secrets
 import logging
 from typing import List, Dict
 
@@ -97,3 +98,18 @@ class GlobalRoleBinding(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True)
     role = models.CharField(max_length=32)
+
+
+class APIToken(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    token = models.CharField(max_length=40, unique=True, db_index=True)
+    created = models.DateTimeField(auto_now_add=True)
+    name = models.CharField(max_length=64)
+
+    @classmethod
+    def create(self, user, name):
+        return APIToken.objects.create(
+            name=name,
+            user=user,
+            token=secrets.token_hex(20),
+        )

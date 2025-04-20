@@ -12,7 +12,14 @@ from allauth.socialaccount.models import SocialAccount
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from telescope.serializers.auth import (
+    WhoAmISerializer,
+    APITokenSerializer,
+    APITokensDeleteRequestSerializer,
+    APITokenCreateRequestSerializer,
+)
 from telescope.response import UIResponse
+from telescope.models import APIToken
 from telescope.auth.forms import LoginForm, SuperuserForm
 from telescope.rbac.helpers import get_user_global_permissions
 
@@ -85,17 +92,76 @@ class WhoAmIView(APIView):
         social_account = None
         if result:
             social_account = result[0]
-        response.data = {
+
+        data = {
             "username": request.user.username,
             "first_name": request.user.first_name,
             "last_name": request.user.last_name,
-            "permissions": get_user_global_permissions(request.user),
+            "permissions": list(get_user_global_permissions(request.user)),
             "type": "local",
-            "avatar_url": None,
+            "avatar_url": "",
         }
         if social_account and social_account.provider == "github":
             user_data = social_account.get_provider_account().get_user_data()
-            response.data["type"] = social_account.provider
-            response.data["username"] = user_data["login"]
-            response.data["avatar_url"] = user_data["avatar_url"]
+            data["type"] = social_account.provider
+            data["username"] = user_data["login"]
+            data["avatar_url"] = user_data["avatar_url"]
+        serializer = WhoAmISerializer(data=data)
+        if not serializer.is_valid():
+            response.mark_failed(str(serializer.errors))
+        else:
+            response.data = serializer.data
+        return Response(response.as_dict())
+
+
+class UserAPITokenView(APIView):
+    @method_decorator(login_required)
+    def get(self, request):
+        response = UIResponse()
+        tokens = APIToken.objects.filter(user=request.user)
+        serializer = APITokenSerializer(tokens, many=True)
+
+        response.data = serializer.data
+        return Response(response.as_dict())
+
+    @method_decorator(login_required)
+    def post(selfself, request):
+        response = UIResponse()
+        try:
+            serializer = APITokenCreateRequestSerializer(data=request.data)
+            if not serializer.is_valid():
+                response.validation["result"] = False
+                response.validation["fields"] = serializer.errors
+                response.mark_failed(str(serializer.errors))
+            else:
+                with transaction.atomic():
+                    token = APIToken.create(
+                        user=request.user, name=serializer.data["name"]
+                    )
+                    response.add_msg(f"API token {token.name} has been created")
+        except Exception as err:
+            response.mark_failed("unhandled exception: {}".format(err))
+
+        return Response(response.as_dict())
+
+
+class UserAPITokensDeleteView(APIView):
+    @method_decorator(login_required)
+    def post(self, request):
+        response = UIResponse()
+        serializer = APITokensDeleteRequestSerializer(data=request.data)
+        try:
+            if not serializer.is_valid():
+                response.mark_failed(str(serializer.errors))
+            else:
+                with transaction.atomic():
+                    for token in APIToken.objects.filter(
+                        user=request.user, token__in=serializer.data["tokens"]
+                    ):
+                        name = token.name
+                        token.delete()
+                        response.add_msg(f"API token {name} has been deleted")
+        except Exception as err:
+            response.mark_failed("unhandled exception: {}".format(err))
+
         return Response(response.as_dict())

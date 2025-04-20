@@ -13,6 +13,8 @@ urlpatterns = [
     path("setup", auth.SuperuserView.as_view(), name="setup"),
     path("ui/v1/config", index.ConfigView.as_view()),
     path("ui/v1/auth/whoami", auth.WhoAmIView.as_view()),
+    path("ui/v1/auth/api_tokens", auth.UserAPITokenView.as_view()),
+    path("ui/v1/auth/api_tokens/delete", auth.UserAPITokensDeleteView.as_view()),
     path("ui/v1/rbac/simpleusers", rbac.SimpleUserListView.as_view()),
     path("ui/v1/rbac/users", rbac.UserView.as_view()),
     path("ui/v1/rbac/users/<int:pk>", rbac.UserView.as_view()),

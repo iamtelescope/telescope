@@ -72,7 +72,9 @@ class ClickhouseClient:
             if self.client:
                 self.client.disconnect()
         except Exception as err:
-            logger.exception("error while closing clickhouse connection (ignoring): %s", err)
+            logger.exception(
+                "error while closing clickhouse connection (ignoring): %s", err
+            )
 
         try:
             if self.temp_dir:
