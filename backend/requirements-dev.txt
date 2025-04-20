@@ -1,0 +1,6 @@
+-r requirements.txt
+
+pytest
+pytest-env
+pytest-django
+black
