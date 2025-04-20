@@ -251,6 +251,9 @@ class UserView(APIView):
 
 class SimpleUserListView(APIView):
     @method_decorator(login_required)
+    @method_decorator(
+        global_permission_required([permissions.Global.MANAGE_RBAC.value])
+    )
     def get(self, request):
         response = UIResponse()
         users = User.objects.all()
@@ -261,6 +264,9 @@ class SimpleUserListView(APIView):
 
 class SimpleGroupListView(APIView):
     @method_decorator(login_required)
+    @method_decorator(
+        global_permission_required([permissions.Global.MANAGE_RBAC.value])
+    )
     def get(self, request):
         response = UIResponse()
         groups = Group.objects.all()
