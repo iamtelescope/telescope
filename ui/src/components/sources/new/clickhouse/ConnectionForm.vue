@@ -251,7 +251,7 @@ import { FloatLabel, Fieldset, ToggleSwitch, Button, InputText, Password, InputN
 import ConnectionTestResult from '@/components/sources/new/ConnectionTestResult.vue'
 
 import ErrorText from '@/components/common/ErrorText.vue'
-import { SourceService } from '@/sdk/services/Source'
+import { SourceService } from '@/sdk/services/source'
 
 const emit = defineEmits(['connectionDataValidated', 'connectionTestStarted', 'connectionDataChanged'])
 const props = defineProps(['source', 'startConnectionTest'])

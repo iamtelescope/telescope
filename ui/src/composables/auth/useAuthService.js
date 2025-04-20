@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { User } from '@/sdk/models/rbac'
 import { APIToken } from '@/sdk/models/auth'
-import { AuthService } from '@/sdk/services/Auth'
+import { AuthService } from '@/sdk/services/auth'
 import { Source } from '@/sdk/models/source'
 
 const srv = new AuthService()

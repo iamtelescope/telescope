@@ -136,7 +136,7 @@ import DataRow from '@/components/common/DataRow.vue'
 import DataView from '@/components/common/DataView.vue'
 import SourceAccessControl from '@/components/sources/SourceAccessControl.vue'
 
-import { SourceService } from '@/sdk/services/Source'
+import { SourceService } from '@/sdk/services/source'
 import { useGetSource } from '@/composables/sources/useSourceService'
 
 const route = useRoute()

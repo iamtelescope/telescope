@@ -173,7 +173,7 @@ import DataRow from '@/components/common/DataRow.vue'
 import DataView from '@/components/common/DataView.vue'
 import { useGetGroup } from '@/composables/rbac/useGroupService'
 import { useGetUsers } from '@/composables/rbac/useUserService'
-import { GroupService } from '@/sdk/services/Group'
+import { GroupService } from '@/sdk/services/group'
 
 const router = useRouter()
 const toast = useToast()

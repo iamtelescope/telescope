@@ -103,7 +103,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { Badge, Button, Column, DataTable, useToast } from 'primevue'
-import { AuthService } from '@/sdk/services/Auth'
+import { AuthService } from '@/sdk/services/auth'
 import { useAuthStore } from '@/stores/auth'
 import { useNavStore } from '@/stores/nav'
 import Copy from '@/components/common/Copy.vue'

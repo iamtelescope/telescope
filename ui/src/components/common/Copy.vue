@@ -1,9 +1,3 @@
-<script setup>
-import { UseClipboard } from '@vueuse/components'
-
-const props = defineProps(['value'])
-</script>
-
 <template>
     <UseClipboard :copiedDuring="300" v-slot="{ copy, copied, isSupported }" :source="value">
         <i
@@ -14,6 +8,12 @@ const props = defineProps(['value'])
         />
     </UseClipboard>
 </template>
+
+<script setup>
+import { UseClipboard } from '@vueuse/components'
+
+const props = defineProps(['value'])
+</script>
 
 <style scoped>
 .copy-button.faded {

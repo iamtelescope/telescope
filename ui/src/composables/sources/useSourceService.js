@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { Source, SourceRoleBiding } from '@/sdk/models/source'
-import { SourceService } from '@/sdk/services/Source'
+import { SourceService } from '@/sdk/services/source'
 
 const srv = new SourceService()
 

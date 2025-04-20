@@ -169,7 +169,7 @@ import DataView from '@/components/common/DataView.vue'
 import { useGetSimpleGroups } from '@/composables/rbac/useGroupService'
 import { useGetSimpleUsers } from '@/composables/rbac/useUserService'
 import { useGetSourceRoleBidings } from '@/composables/sources/useSourceService'
-import { SourceService } from '@/sdk/services/Source'
+import { SourceService } from '@/sdk/services/source'
 
 const props = defineProps(['source'])
 const emit = defineEmits(['roleGranted', 'roleRevoked'])

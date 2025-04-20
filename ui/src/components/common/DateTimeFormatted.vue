@@ -1,3 +1,7 @@
+<template>
+    <span>{{ formattedValue }}</span>
+</template>
+
 <script setup>
 import { computed } from 'vue'
 import { DateTime } from 'luxon'
@@ -8,9 +12,3 @@ const formattedValue = computed(() => {
     return DateTime.fromISO(props.value).toFormat('yyyy-MM-dd HH:mm:ss ZZZZ')
 })
 </script>
-
-<template>
-    <span>{{ formattedValue }}</span>
-</template>
-
-<style scoped></style>

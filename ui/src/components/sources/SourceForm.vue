@@ -94,7 +94,7 @@ import FieldsDataForm from '@/components/sources/new/FieldsDataForm.vue'
 import ClickhouseConnectionStep from '@/components/sources/new/clickhouse/ConnectionForm.vue'
 import DockerConnectionStep from '@/components/sources/new/docker/ConnectionForm.vue'
 
-import { SourceService } from '@/sdk/services/Source'
+import { SourceService } from '@/sdk/services/source'
 
 const props = defineProps(['source', 'startConnectionTest'])
 const toast = useToast()

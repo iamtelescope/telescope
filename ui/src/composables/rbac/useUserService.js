@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { User } from '@/sdk/models/rbac'
-import { UserService } from '@/sdk/services/User'
+import { UserService } from '@/sdk/services/user'
 
 const srv = new UserService()
 

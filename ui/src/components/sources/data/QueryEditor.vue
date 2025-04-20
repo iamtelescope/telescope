@@ -26,7 +26,7 @@ import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 import { Parser, State, Operator, VALID_KEY_VALUE_OPERATORS } from '@/utils/flyql.js'
 import { isNumeric } from '@/utils/utils.js'
 import { getDefaultMonacoOptions } from '@/utils/monaco.js'
-import { SourceService } from '@/sdk/services/Source.js'
+import { SourceService } from '@/sdk/services/source.js'
 
 const sourceSrv = new SourceService()
 

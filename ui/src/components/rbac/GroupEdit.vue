@@ -49,7 +49,7 @@ import { useNavStore } from '@/stores/nav'
 import { useGetGroup } from '@/composables/rbac/useGroupService'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
-import { GroupService } from '@/sdk/services/Group'
+import { GroupService } from '@/sdk/services/group'
 import { useToast } from 'primevue/usetoast'
 
 const navStore = useNavStore()

@@ -49,7 +49,7 @@ import Button from 'primevue/button'
 
 import { useNavStore } from '@/stores/nav'
 import ErrorText from '@/components/common/ErrorText.vue'
-import { GroupService } from '@/sdk/services/Group'
+import { GroupService } from '@/sdk/services/group'
 
 const router = useRouter()
 const toast = useToast()
