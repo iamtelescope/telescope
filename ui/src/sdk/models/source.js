@@ -10,6 +10,7 @@ class Source {
         this.name = data.name
         this.description = data.description
         this.timeField = data.time_field
+        this.dateField = data.date_field
         this.severityField = data.severity_field
         this.fields = data.fields
         this.contextFields = data.context_fields

@@ -157,6 +157,12 @@ ALLOWED_TIME_FIELD_TYPES: List[str] = [
 ]
 
 
+ALLOWED_DATE_FIELD_TYPES: List[str] = [
+    "date",
+    "date32",
+]
+
+
 class DefaultJSONRenderer(JSONRenderer):
     # copied from https://github.com/encode/django-rest-framework/blob/28d0261afcd6702900512e00c37f4e264c117d83/rest_framework/renderers.py#L85
     # to save same behaivour

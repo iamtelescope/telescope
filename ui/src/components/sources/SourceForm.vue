@@ -120,6 +120,7 @@ const formFieldsInitialErrors = {
     },
     fields: {
         time_field: '',
+        date_field: '',
         severity_field: '',
         default_chosen_fields: '',
         fields: {},
@@ -144,6 +145,9 @@ const fieldsSettings = computed(() => {
             severity: {
                 editable: true,
             },
+            date: {
+              editable: true,
+            },
             defaultChosenFields: {
                 default: '',
             },
@@ -153,6 +157,7 @@ const fieldsSettings = computed(() => {
         settings.autoLoadFieldsFromSchema = props.source ? false : true
         settings.allowAddManualFields = false
         settings.fields.time.default = 'time'
+        settings.fields.date.editable = false
         settings.fields.severity.editable = false
         settings.fields.defaultChosenFields.default = 'container_short_id, stream, message'
     }

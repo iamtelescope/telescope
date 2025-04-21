@@ -47,10 +47,11 @@
                             <DataRow name="KIND" :value="source.kind" />
                             <DataRow name="SLUG" :value="source.slug" />
                             <DataRow name="NAME" :value="source.name" />
-                            <DataRow name="DESCRIPTION" :value="source.description" />
+                            <DataRow name="DESCRIPTION" :value="source.description || '&ndash;'" />
                             <DataRow name="TIME FIELD" :value="source.timeField" />
+                            <DataRow name="DATE FIELD" :value="source.dateField || '&ndash;'" />
                             <!--<DataRow name="UNIQ FIELD" :value="source.uniqField" />-->
-                            <DataRow name="SEVERITY FIELD" :value="source.severityField || '&dash;'" />
+                            <DataRow name="SEVERITY FIELD" :value="source.severityField || '&ndash;'" />
                             <DataRow name="DEFAULT CHOSEN FEILDS" :showBorder="false">
                                 {{ source.defaultChosenFields.join(', ') }}
                             </DataRow>

@@ -37,6 +37,7 @@ class Source(models.Model):
     name = models.CharField(max_length=64)
     description = models.TextField()
     time_field = models.CharField(max_length=128)
+    date_field = models.CharField(max_length=128)
     uniq_field = models.CharField(max_length=128)
     severity_field = models.CharField(max_length=128)
     fields = models.JSONField()
