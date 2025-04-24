@@ -10,7 +10,7 @@
             />
             <span class="font-bold">Connection test results</span>
         </template>
-        <div v-if="loading">
+        <div v-if="loading" class="pb-4">
             <div class="flex flex-row">
                 <Skeleton width="10rem" class="mb-2 mr-2"></Skeleton>
                 <Skeleton width="10rem" class="mb-2"></Skeleton>

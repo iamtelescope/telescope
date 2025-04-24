@@ -14,7 +14,11 @@ from telescope.fetchers import get_fetchers
 from telescope.rbac.helpers import user_has_source_permissions
 from telescope.rbac import permissions
 
-from telescope.utils import ALLOWED_TIME_FIELD_TYPES, ALLOWED_DATE_FIELD_TYPES, convert_to_base_ch
+from telescope.utils import (
+    ALLOWED_TIME_FIELD_TYPES,
+    ALLOWED_DATE_FIELD_TYPES,
+    convert_to_base_ch,
+)
 
 
 SUPPORTED_KINDS = {"clickhouse", "docker"}
@@ -153,7 +157,7 @@ class NewBaseSourceSerializer(serializers.Serializer):
     description = serializers.CharField(allow_blank=True)
 
     time_field = serializers.CharField()
-    date_field = serializers.CharField(allow_blank=True, allow_null=True)
+    date_field = serializers.CharField(allow_blank=True, allow_null=True, default="")
     severity_field = serializers.CharField(allow_blank=True, allow_null=True)
     default_chosen_fields = serializers.ListField(child=serializers.CharField())
     fields = serializers.DictField(child=SourceFieldSerializer())
@@ -274,6 +278,14 @@ class NewClickhouseSourceSerializer(NewBaseSourceSerializer):
 class UpdateClickhouseSourceSerializer(NewClickhouseSourceSerializer):
     def validate_slug(self, value):
         return value
+
+
+class SourceCreateResponseSerializer(serializers.Serializer):
+    slug = serializers.SlugField(max_length=64, required=True)
+
+
+class SourceUpdateResponseSerializer(SourceCreateResponseSerializer):
+    pass
 
 
 class SourceAutocompleteRequestSerializer(serializers.Serializer):

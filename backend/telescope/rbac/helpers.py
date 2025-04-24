@@ -1,11 +1,15 @@
+import logging
+
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
 from telescope.rbac.roles import ROLES
 from telescope.rbac import permissions
 from telescope.models import GlobalRoleBinding, SourceRoleBinding, Source
+
+
+logger = logging.getLogger("telescope.rbac.helpers")
 
 
 def roles_to_permissions(roles, kind):
@@ -97,6 +101,19 @@ def revoke_source_role(source, role, user=None, group=None):
     return deleted
 
 
+def require_global_permissions(
+    user,
+    required_permissions,
+):
+    user_permissions = get_user_global_permissions(user)
+    for permission in required_permissions:
+        if permission not in user_permissions:
+            logger.debug(
+                "use %s has no global permission: %s", user.username, permission
+            )
+            raise PermissionDenied("Insufficient permissions")
+
+
 def require_source_permissions(
     user, source_slug, required_permissions, raise_exception=True
 ):
@@ -185,9 +202,9 @@ def get_sources(user, source_slug=None, source_filter=None, required_permissions
         )
 
     if source_slug and not sources:
-        raise ObjectDoesNotExist(f"object with pk {source_slug} does not exist")
+        raise Source.DoesNotExist(f"object with pk {source_slug} does not exist")
     elif source_slug and len(sources) > 1:
-        raise MultipleObjectsReturned(
+        raise Source.MultipleObjectsReturned(
             f"returnted mor than one Source -- it returned {len(sources)}!"
         )
     elif source_slug and len(sources) == 1:

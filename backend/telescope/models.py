@@ -53,7 +53,7 @@ class Source(models.Model):
         self.permissions = set()
 
     @classmethod
-    def create(self, kind, data, username):
+    def create(cls, kind, data):
         data["context_fields"] = {}
         data["support_raw_query"] = True
         if kind == "docker":
@@ -108,7 +108,7 @@ class APIToken(models.Model):
     name = models.CharField(max_length=64)
 
     @classmethod
-    def create(self, user, name):
+    def create(cls, user, name):
         return APIToken.objects.create(
             name=name,
             user=user,

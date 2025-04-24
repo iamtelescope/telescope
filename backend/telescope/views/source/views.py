@@ -24,6 +24,8 @@ from telescope.rbac.helpers import (
     user_has_source_permissions,
 )
 
+from telescope.services.source import SourceService
+from telescope.services.exceptions import SerializerValidationError
 from telescope.fetchers import get_fetchers
 from telescope.fetchers.request import DataRequest, GraphDataRequest
 from telescope.rbac.roles import SourceRole
@@ -64,6 +66,8 @@ CONNECTION_KIND_TO_SERIALIZER = {
     "docker": DockerConnectionSerializer,
 }
 
+source_srv = SourceService()
+
 
 class SourceRoleBindingView(APIView):
     @method_decorator(login_required)
@@ -90,65 +94,28 @@ class SourceView(APIView):
     @method_decorator(login_required)
     def get(self, request, slug=None):
         response = UIResponse()
+
         try:
             if slug is None:
-                sources = get_sources(
-                    request.user, required_permissions=[permissions.Source.READ.value]
-                )
-                serializer = SourceSerializer(sources, many=True)
+                data = source_srv.list(user=request.user)
             else:
-                source = get_source(
-                    request.user,
-                    slug=slug,
-                    required_permissions=[permissions.Source.READ.value],
-                )
-                if user_has_source_permissions(
-                    request.user,
-                    source_slug=slug,
-                    required_permissions=[permissions.Source.EDIT.value],
-                ):
-                    serializer_class = SourceWithConnectionSerializer
-                else:
-                    serializer_class = SourceSerializer
-                serializer = serializer_class(source)
+                data = source_srv.get(user=request.user, slug=slug)
         except Exception as err:
             logger.exception(err)
             response.mark_failed(f"failed to get sources: {err}")
         else:
-            response.data = serializer.data
+            response.data = data
         return Response(response.as_dict())
 
     @method_decorator(login_required)
-    @method_decorator(
-        global_permission_required([permissions.Global.CREATE_SOURCE.value])
-    )
     def post(self, request):
         response = UIResponse()
 
         try:
-            kind_serializer = SourceKindSerializer(data=request.data)
-            if not kind_serializer.is_valid():
-                response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
-                return Response(response.as_dict())
-            kind = kind_serializer.data["kind"]
-            if kind == "clickhouse":
-                serializer_cls = NewClickhouseSourceSerializer
-            elif kind == "docker":
-                serializer_cls = NewDockerSourceSerializer
-            serializer = serializer_cls(data=request.data)
-            if not serializer.is_valid():
-                response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
-            else:
-                with transaction.atomic():
-                    source = Source.create(
-                        kind, serializer.data, username=request.user.username
-                    )
-                    grant_source_role(
-                        source=source, role=SourceRole.OWNER.value, user=request.user
-                    )
-                    response.data = {"slug": source.slug}
+            response.data = source_srv.create(user=request.user, data=request.data)
+        except SerializerValidationError as err:
+            response.validation["result"] = False
+            response.validation["fields"] = err.serializer.errors
         except Exception as err:
             logger.exception(err)
             response.mark_failed(f"failed to create source: {err}")
@@ -158,48 +125,24 @@ class SourceView(APIView):
     def patch(self, request, slug):
         response = UIResponse()
 
-        require_source_permissions(
-            user=request.user,
-            source_slug=slug,
-            required_permissions=[permissions.Source.EDIT.value],
-        )
-
         try:
-            source = Source.objects.get(slug=slug)
-            if source.kind == "clickhouse":
-                serializer_cls = UpdateClickhouseSourceSerializer
-            elif source.kind == "docker":
-                serializer_cls = UpdateDockerSourceSerializer
-            serializer = serializer_cls(data=request.data)
-            if not serializer.is_valid():
-                response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
-            else:
-                with transaction.atomic():
-                    for key, value in serializer.data.items():
-                        if key != "slug":
-                            setattr(source, key, value)
-                    source.save()
-
-                    response.data = {"slug": source.slug}
+            response.data = source_srv.update(
+                user=request.user, slug=slug, data=request.data
+            )
+        except SerializerValidationError as err:
+            response.validation["result"] = False
+            response.validation["fields"] = err.serializer.errors
         except Exception as err:
             logger.exception(err)
-            response.mark_failed(f"failed to update source: {err}")
+            response.mark_failed(f"failed to create source: {err}")
         return Response(response.as_dict())
 
     @method_decorator(login_required)
     def delete(self, request, slug):
         response = UIResponse()
 
-        require_source_permissions(
-            user=request.user,
-            source_slug=slug,
-            required_permissions=[permissions.Source.DELETE.value],
-        )
-
         try:
-            with transaction.atomic():
-                Source.objects.get(slug=slug).delete()
+            source_srv.delete(user=request.user, slug=slug)
         except Exception as err:
             logger.exception("unhandled exception: %s", err)
             response.mark_failed(f"failed to delete source: {err}")

@@ -114,6 +114,7 @@ class ConnectionTestResponse:
             "result": False,
             "error": "",
             "data": [],
+            "raw": "",
         }
 
     def as_dict(self) -> dict:
@@ -162,6 +163,15 @@ class Fetcher(BaseFetcher):
                     response.schema["data"] = [
                         get_telescope_field(x[0], x[1]) for x in result
                     ]
+                try:
+                    result = client.execute(f"SHOW CREATE TABLE {target}")
+                    response.schema["raw"] = result[0][0]
+                    print(result)
+                except Exception as err:
+                    logger.exception(
+                        "failed to get raw table schema (ignoring): %s", err
+                    )
+
         return response
 
     @classmethod
