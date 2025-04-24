@@ -3,4 +3,5 @@
 pytest
 pytest-env
 pytest-django
+django-stubs
 black
