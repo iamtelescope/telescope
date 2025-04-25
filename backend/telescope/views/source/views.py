@@ -1,63 +1,37 @@
-import json
 import logging
 
 from zoneinfo import ZoneInfo
 
-from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User, Group
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import serializers
-
-from clickhouse_driver import Client
 
 from telescope.rbac.helpers import (
-    get_sources,
-    get_source,
     grant_source_role,
     revoke_source_role,
     require_source_permissions,
-    user_has_source_permissions,
 )
 
 from telescope.services.source import SourceService
 from telescope.services.exceptions import SerializerValidationError
 from telescope.fetchers import get_fetchers
 from telescope.fetchers.request import DataRequest, GraphDataRequest
-from telescope.rbac.roles import SourceRole
 from telescope.rbac import permissions
-from telescope.auth.decorators import global_permission_required
-from telescope.fields import parse as parse_fields
-from telescope.fields import ParserError as FieldsParserError
 from telescope.response import UIResponse
 from telescope.models import Source, SourceRoleBinding
 from telescope.serializers.source import (
-    SourceAdminSerializer,
-    SourceSerializer,
-    UserSerializer,
-    GroupSerializer,
-    SubjectSerializer,
     SourceRoleSerializer,
     SourceRoleBindingSerializer,
     ClickhouseConnectionSerializer,
     DockerConnectionSerializer,
-    SourceWithConnectionSerializer,
-    SourceFieldSerializer,
-    SourceKindSerializer,
-    NewClickhouseSourceSerializer,
-    NewDockerSourceSerializer,
-    UpdateClickhouseSourceSerializer,
-    UpdateDockerSourceSerializer,
     SourceDataRequestSerializer,
     SourceGraphDataRequestSerializer,
     SourceAutocompleteRequestSerializer,
     SourceContextFieldDataSerializer,
 )
-
 
 logger = logging.getLogger("telescope.views.source")
 

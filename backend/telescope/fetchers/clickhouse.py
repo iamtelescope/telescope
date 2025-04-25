@@ -166,7 +166,6 @@ class Fetcher(BaseFetcher):
                 try:
                     result = client.execute(f"SHOW CREATE TABLE {target}")
                     response.schema["raw"] = result[0][0]
-                    print(result)
                 except Exception as err:
                     logger.exception(
                         "failed to get raw table schema (ignoring): %s", err

@@ -58,10 +58,10 @@ class SourceService:
         )
         return SourceSerializer(sources, many=True).data
 
-    def create(self, user: User, data: Dict[str, Any]):
+    def create(self, user: User, data: Dict[str, Any], raise_is_valid=False):
         require_global_permissions(user, [permissions.Global.CREATE_SOURCE.value])
         kind_serializer = SourceKindSerializer(data=data)
-        if not kind_serializer.is_valid():
+        if not kind_serializer.is_valid(raise_exception=raise_is_valid):
             raise SerializerValidationError(kind_serializer)
 
         kind = kind_serializer.data["kind"]
@@ -70,7 +70,7 @@ class SourceService:
         elif kind == "docker":
             serializer_cls = NewDockerSourceSerializer
         serializer = serializer_cls(data=data)
-        if not serializer.is_valid():
+        if not serializer.is_valid(raise_exception=raise_is_valid):
             raise SerializerValidationError(serializer)
         else:
             with transaction.atomic():
@@ -78,7 +78,7 @@ class SourceService:
                 grant_source_role(source=source, role=SourceRole.OWNER.value, user=user)
                 return SourceCreateResponseSerializer(source).data
 
-    def update(self, user: User, slug: str, data: Dict[str, Any]):
+    def update(self, user: User, slug: str, data: Dict[str, Any], raise_is_valid=False):
         require_source_permissions(
             user=user,
             source_slug=slug,
@@ -94,7 +94,7 @@ class SourceService:
             raise ValueError("Unknown kind")
 
         serializer = serializer_cls(data=data)
-        if not serializer.is_valid():
+        if not serializer.is_valid(raise_exception=raise_is_valid):
             raise SerializerValidationError(serializer)
         else:
             with transaction.atomic():
