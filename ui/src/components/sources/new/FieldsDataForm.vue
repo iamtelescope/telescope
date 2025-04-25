@@ -2,7 +2,7 @@
   <div class="flex flex-col w-full">
     <Fieldset class="text-wrap">
       <template #legend>
-        <span class="font-bold">Fields setup</span>
+        <span class="font-medium">Fields setup</span>
       </template>
       <div class="flex flex-col w-full">
         <div class="flex flex-col w-full">
@@ -93,7 +93,7 @@
         <BorderCard v-for="field in sourceDynamicFieldsList" :key="field.name" class="mb-4 pb-2 pl-4 pr-4">
           <div class="flex flex-row w-full pb-6">
             <div class="flex w-full justify-start">
-              <span class="font-bold text-lg">{{ field.name }}</span>
+              <span class="font-medium text-lg">{{ field.name }}</span>
             </div>
             <div class="flex w-full justify-end">
                             <span

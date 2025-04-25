@@ -1,7 +1,7 @@
 <template>
     <Fieldset class="text-wrap" :class="'mb-9'">
         <template #legend>
-            <span class="font-bold">Connection data</span>
+            <span class="font-medium">Connection data</span>
         </template>
         <div class="flex flex-col w-full flex-wrap gap-4">
             <div class="flex flex-row">
@@ -104,7 +104,7 @@
             <div class="flex flex-row">
                 <div class="flex flex-col">
                     <div class="flex flex-row items-center">
-                        <label for="connection_ssl" class="mr-2 ml-2 font-bold">Use SSL</label>
+                        <label for="connection_ssl" class="mr-2 ml-2 font-medium">Use SSL</label>
                         <ToggleSwitch
                             id="connection_ssl"
                             v-model="connectionData.ssl"
@@ -116,7 +116,7 @@
                 </div>
                 <div class="flex flex-col ml-6" v-if="connectionData.ssl">
                     <div class="flex flex-row items-center">
-                        <label for="connection_verify" class="mr-2 ml-2 font-bold">Verify</label>
+                        <label for="connection_verify" class="mr-2 ml-2 font-medium">Verify</label>
                         <ToggleSwitch
                             id="connection_verify"
                             v-model="connectionData.verify"

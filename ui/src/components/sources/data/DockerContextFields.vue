@@ -25,7 +25,7 @@
                             }"
                         ></i>
                         <div class="pl-2">[{{ slotProps.option.status }}]</div>
-                        <div class="pl-2 font-bold">{{ slotProps.option.name }}</div>
+                        <div class="pl-2 font-medium">{{ slotProps.option.name }}</div>
                     </div>
                 </div>
             </template>

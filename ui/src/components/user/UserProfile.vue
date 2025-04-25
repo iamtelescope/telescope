@@ -3,7 +3,7 @@
         <div class="flex flex-col min-w-[1000px] w-[1000px] max-w-[1000px]">
             <div class="flex flex-row mb-14">
                 <div class="flex flex-col justify-start text-nowrap">
-                    <span class="font-bold text-3xl">
+                    <span class="font-medium text-3xl">
                         <i class="pi pi-user text-3xl mr-1"></i>
                         <span class="text-gray-400">User profile: </span>
                         {{ user.username }}
@@ -42,7 +42,7 @@
             </div>
             <div class="w-full">
                 <div class="flex flex-row w-full mt-9 align-middle">
-                    <div class="flex items-center font-bold text-xl text-nowrap">API Tokens</div>
+                    <div class="flex items-center font-medium text-xl text-nowrap">API Tokens</div>
                     <div class="flex items-center w-full justify-end">
                         <Button
                             severity="primary"

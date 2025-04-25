@@ -2,7 +2,7 @@
     <div class="flex flex-row justify-center mt-10">
         <div class="flex flex-col min-w-1280 max-w-1280">
             <div class="mb-14">
-                <span class="font-bold text-3xl">
+                <span class="font-medium text-3xl">
                     <i class="pi pi-users text-3xl mr-1"></i>
                     <span class="text-gray-400">Groups: </span>
                     Create new group</span

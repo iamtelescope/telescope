@@ -2,7 +2,7 @@
     <div class="flex flex-row justify-center mt-10">
         <div class="flex flex-col min-w-[1000px] w-[1000px] max-w-[1000px]">
             <div class="mb-14">
-                <span class="font-bold text-3xl">
+                <span class="font-medium text-3xl">
                     <i class="pi pi-user text-3xl mr-1"></i>
                     <span class="text-gray-400">User profile: </span>
                     Create new API Token</span

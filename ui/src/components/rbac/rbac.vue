@@ -3,7 +3,7 @@
         <div class="flex flex-wrap justify-start min-w-1280 max-w-1280 gap-2">
             <div class="w-full">
                 <div class="flex flex-col w-full mb-14 align-middle">
-                    <span class="font-bold text-3xl"
+                    <span class="font-medium text-3xl"
                         ><i class="pi pi-shield text-3xl"></i> Role-Based Access Control</span
                     >
                     <span class="text-gray-400"

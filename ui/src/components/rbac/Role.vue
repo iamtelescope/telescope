@@ -4,7 +4,7 @@
             <DataView :loading="loading" :error="error">
                 <div class="flex flex-row mb-14">
                     <div class="flex flex-col justify-start text-nowrap">
-                        <span class="font-bold text-3xl">
+                        <span class="font-medium text-3xl">
                             <i class="pi pi-key text-3xl mr-1"></i>
                             <span class="text-gray-400">Roles: </span>
                             {{ role.name }}</span

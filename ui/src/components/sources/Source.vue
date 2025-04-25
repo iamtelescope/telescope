@@ -4,7 +4,7 @@
             <DataView :loading="loading" :error="error">
                 <div class="flex flex-row mb-9">
                     <div class="flex flex-col justify-start text-nowrap">
-                        <span class="font-bold text-3xl">
+                        <span class="font-medium text-3xl">
                             <i class="pi pi-database text-3xl"></i>
                             <span class="text-gray-400"> Sources: </span>
                             {{ source.slug }}</span
@@ -57,7 +57,7 @@
                             </DataRow>
                             <Fieldset class="text-wrap mt-5">
                                 <template #legend>
-                                    <span class="font-bold">Fields</span>
+                                    <span class="font-medium">Fields</span>
                                 </template>
                                 <DataTable :value="sourceFields">
                                     <Column field="name" sortable header="NAME" />

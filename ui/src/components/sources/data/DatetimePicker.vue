@@ -3,7 +3,7 @@
     <Popover ref="dropdown" :pt="{ content: { class: 'pr-0' } }">
         <div class="flex w-full">
             <div class="flex flex-col mr-3">
-                <label for="From" class="font-bold block mb-2">From</label>
+                <label for="From" class="font-medium block mb-2">From</label>
                 <InputText
                     size="small"
                     label="From"
@@ -13,7 +13,7 @@
                 />
                 <ErrorText v-if="!fromInputValid" :text="fromInputValidError" />
                 <br />
-                <label for="To" class="font-bold block mb-2">To</label>
+                <label for="To" class="font-medium block mb-2">To</label>
                 <InputText
                     size="small"
                     label="To"
@@ -23,7 +23,7 @@
                 />
                 <ErrorText v-if="!toInputValid" :text="toInputValidError" />
                 <br />
-                <label for="Timezone" class="font-bold block mb-2">Timezone</label>
+                <label for="Timezone" class="font-medium block mb-2">Timezone</label>
                 <Select
                     v-model="selectedZone"
                     :options="zones"

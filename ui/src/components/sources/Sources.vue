@@ -4,7 +4,7 @@
             <div class="w-full">
                 <div class="flex flex-row w-full mb-14 align-middle">
                     <div class="flex flex-col w-full">
-                        <span class="font-bold text-3xl"><i class="pi pi-database text-3xl"></i> Sources</span>
+                        <span class="font-medium text-3xl"><i class="pi pi-database text-3xl"></i> Sources</span>
                         <span class="text-gray-400"
                             >Sources define how to connect to your data and the access policy for that data.
                         </span>
@@ -52,7 +52,7 @@
                                 </div>
                             </template>
                         </Column>
-                        <Column field="name" header="Name" class="w-1 text-nowrap font-bold" sortable></Column>
+                        <Column field="name" header="Name" class="w-1 text-nowrap font-medium" sortable></Column>
                         <Column field="slug" header="Slug" class="w-1 text-nowrap text-gray-500" sortable></Column>
                         <Column field="description" header="Description" sortable></Column>
                         <Column>

@@ -75,6 +75,8 @@ body {
     height: 100%;
     font-family: "Open Sans";
     font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 body:where(.dark, .dark *) {

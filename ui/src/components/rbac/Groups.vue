@@ -4,7 +4,7 @@
             <div class="w-full">
                 <div class="flex flex-row w-full mb-14 align-middle">
                     <div class="flex flex-col w-full">
-                        <span class="font-bold text-3xl"><i class="pi pi-users text-3xl"></i> Groups</span>
+                        <span class="font-medium text-3xl"><i class="pi pi-users text-3xl"></i> Groups</span>
                         <span class="text-gray-400"
                             >Groups let you manage permissions and access for teams within your organization more
                             efficiently</span

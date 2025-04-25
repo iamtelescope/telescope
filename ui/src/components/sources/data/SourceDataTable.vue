@@ -12,11 +12,11 @@
                         v-if="source.severityField.length != 0"
                         class="border-b border-neutral-200 dark:border-neutral-700"
                     ></th>
-                    <th class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700">
+                    <th class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700 font-medium">
                         Time
                     </th>
                     <th
-                        class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700"
+                        class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700 font-medium"
                         v-for="field in fields"
                         :key="field.name"
                     >
@@ -69,7 +69,7 @@
         </table>
     </div>
     <div v-else>
-        <p class="font-bold">No data to display</p>
+        <p class="font-medium">No data to display</p>
         <p>The query was successful, but returned no results. Please check your filters or time range.</p>
     </div>
 </template>

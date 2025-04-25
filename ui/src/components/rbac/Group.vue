@@ -4,7 +4,7 @@
             <DataView :loading="groupLoading" :error="groupError">
                 <div class="flex flex-row mb-14">
                     <div class="flex flex-col justify-start text-nowrap">
-                        <span class="font-bold text-3xl">
+                        <span class="font-medium text-3xl">
                             <i class="pi pi-users text-3xl mr-1"></i>
                             <span class="text-gray-400">Groups: </span>
                             {{ group.name }}</span
@@ -49,7 +49,7 @@
                     <br />
                     <Fieldset>
                         <template #legend>
-                            <span class="font-bold text-xl">Grant role (global)</span>
+                            <span class="font-medium text-xl">Grant role (global)</span>
                         </template>
                         <div class="flex flex-row">
                             <Select
@@ -82,7 +82,7 @@
                     </Fieldset>
                     <Fieldset>
                         <template #legend>
-                            <span class="font-bold text-xl">Add group members</span>
+                            <span class="font-medium text-xl">Add group members</span>
                         </template>
                         <div class="flex flex-row">
                             <Select
@@ -117,7 +117,7 @@
                 </div>
                 <div class="w-full">
                     <div class="flex flex-row w-full mt-9 align-middle">
-                        <div class="flex items-center font-bold text-xl text-nowrap">Group members</div>
+                        <div class="flex items-center font-medium text-xl text-nowrap">Group members</div>
                         <div class="flex items-center w-full justify-end">
                             <Button
                                 severity="danger"
@@ -142,7 +142,7 @@
                         class="w-full"
                     >
                         <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
-                        <Column field="username" sortable header="USERNAME" class="font-bold"></Column>
+                        <Column field="username" sortable header="USERNAME" class="font-medium"></Column>
                         <Column field="displayFirstName" sortable header="FIRST NAME"></Column>
                         <Column field="displayLastName" sortable header="LAST NAME"></Column>
                     </DataTable>
