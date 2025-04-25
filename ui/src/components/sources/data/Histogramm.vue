@@ -14,7 +14,7 @@
             </SelectButton>
             <div class="flex items-center pl-4">
                 <span class="text-gray-500">group by:</span>
-                <span class="pl-2 font-bold">{{ groupByLabel || '–' }}</span>
+                <span class="pl-2 font-medium">{{ groupByLabel || '–' }}</span>
             </div>
         </div>
         <div class="flex flex-col" id="histogramm">
@@ -119,7 +119,7 @@ const calcPlotLines = () => {
 }
 
 const tooltipRender = (data) => {
-    let html = `<div class="font-bold pb-2 dark:text-neutral-300">${format(uPlot.tzDate(new Date(data.x), 'UTC'), 'yyyy-MM-dd HH:mm:ss')}</div><table class='p-0 m-0 w-full'>`
+    let html = `<div class="font-medium pb-2 dark:text-neutral-300">${format(uPlot.tzDate(new Date(data.x), 'UTC'), 'yyyy-MM-dd HH:mm:ss')}</div><table class='p-0 m-0 w-full'>`
     let label = props.groupByLabel
     if (!label) {
         label = 'Name'

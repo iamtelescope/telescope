@@ -3,12 +3,12 @@
         <DataView :loading="loading" :error="error">
             <div class="flex flex-col min-w-1000">
                 <div class="mb-14">
-                    <span class="font-bold text-3xl">Edit group: {{ group.name }}</span
+                    <span class="font-medium text-3xl">Edit group: {{ group.name }}</span
                     ><br />
                 </div>
                 <div class="flex flex-row mb-5 items-start">
                     <div class="flex justify-start items-start" style="width: 190px">
-                        <label class="text-lg font-bold mb-2">NAME</label>
+                        <label class="text-lg font-medium mb-2">NAME</label>
                     </div>
                     <div class="flex justify-end w-full items-center">
                         <div class="flex flex-col w-full">

@@ -3,7 +3,7 @@
         <div class="w-full" v-if="source.isGrantable()">
             <Fieldset>
                 <template #legend>
-                    <span class="font-bold text-xl">Grant role </span>
+                    <span class="font-medium text-xl">Grant role </span>
                 </template>
                 <SelectButton
                     v-model="grantType"
@@ -81,7 +81,7 @@
                 </div>
             </Fieldset>
             <div class="flex flex-row w-full mt-9 align-middle">
-                <div class="flex items-center font-bold text-xl text-nowrap">Users bindings</div>
+                <div class="flex items-center font-medium text-xl text-nowrap">Users bindings</div>
             </div>
         </div>
         <div class="flex flex-col mt-5">
@@ -116,7 +116,7 @@
         </div>
         <div class="w-full">
             <div class="flex flex-row w-full mt-9 align-middle">
-                <div class="flex items-center font-bold text-xl text-nowrap">Groups bindings</div>
+                <div class="flex items-center font-medium text-xl text-nowrap">Groups bindings</div>
             </div>
         </div>
         <div class="flex flex-row mt-5">

@@ -4,7 +4,7 @@
         ><br />
         <span v-if="validation.non_fields">{{ validation.non_field }}<br /></span>
         <span v-for="name in Object.keys(validation.fields)" :key="name"
-            ><span class="font-bold">{{ name }}</span
+            ><span class="font-medium">{{ name }}</span
             >: {{ validation.fields[name].join(', ') }}<br
         /></span>
     </Message>

@@ -75,6 +75,8 @@ body {
     height: 100%;
     font-family: 'Open Sans';
     font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 body:where(.dark, .dark *) {
@@ -121,15 +123,18 @@ body:where(.dark, .dark *) {
 .min-w-190 {
     min-width: 190px;
 }
+
 .yagr-tooltip {
     font-family: 'Open Sans' !important;
     border: 1px solid #dbdbdb !important;
 }
+
 .yagr-tooltip:where(.dark, .dark *) {
     background-color: var(--p-surface-900) !important;
     border: 1px solid var(--p-surface-600) !important;
     color: gray !important;
 }
+
 .text-primary {
     color: var(--p-primary-color);
 }

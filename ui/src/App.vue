@@ -6,13 +6,13 @@
                 <div class="flex flex-col">
                     <div v-if="user.avatarUrl" class="flex flex-row items-center pl-4 mb-4 pt-3.5 telescope-avatar">
                         <Avatar :image="user.avatarUrl" class="avaimg" />
-                        <span class="font-bold text-xl pl-2.5"
+                        <span class="font-medium text-xl pl-2.5"
                             ><i v-if="user.type == 'github'" class="pi pi-github text-gray-300"></i>
                             {{ user.username }}</span
                         >
                     </div>
                     <div v-else class="flex flex-row items-center pl-4 mb-4 pt-3.5 telescope-avatar">
-                        <Avatar icon="pi pi-user" /> <span class="font-bold text-xl pl-2.5">{{ user.username }}</span>
+                        <Avatar icon="pi pi-user" /> <span class="font-medium text-xl pl-2.5">{{ user.username }}</span>
                     </div>
                     <div class="flex flex-col" style="height: 100%; padding-top: 15px">
                         <Menu
@@ -31,7 +31,7 @@
             >
                 <div class="flex flex-row justify-start align-items-top cursor-pointer" @click="toHome">
                     <img src="@/assets/logo.png" height="26px" width="26px" />
-                    <span id="logo" class="mr-9 pl-2.5 text-2xl font-bold">Telescope</span>
+                    <span id="logo" class="mr-9 pl-2.5 text-2xl font-medium">Telescope</span>
                 </div>
                 <div class="flex flex-row w-full justify-start items-center">
                     <Breadcrumb :home="home" :model="navStore.items" class="p-2 ml-4" />

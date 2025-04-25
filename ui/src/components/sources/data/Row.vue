@@ -24,7 +24,7 @@
                 <TabPanels :pt="{ root: { className: 'p-0' } }">
                     <TabPanel value="0">
                         <DataTable :value="flattenRow" :row-hover="true" removableSort>
-                            <Column field="path" header="PATH" sortable class="font-bold text-nowrap">
+                            <Column field="path" header="PATH" sortable class="font-medium text-nowrap">
                                 <template #body="slotProps">
                                     <Button
                                         size="small"

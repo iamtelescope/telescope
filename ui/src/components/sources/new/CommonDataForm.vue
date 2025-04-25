@@ -2,7 +2,7 @@
     <div class="flex flex-col w-full">
         <Fieldset class="text-wrap" :class="'mb-9'">
             <template #legend>
-                <span class="font-bold">Common data</span>
+                <span class="font-medium">Common data</span>
             </template>
             <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col w-full">

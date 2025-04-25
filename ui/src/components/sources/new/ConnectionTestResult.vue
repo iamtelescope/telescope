@@ -8,7 +8,7 @@
                 fill="transparent"
                 animationDuration="1s"
             />
-            <span class="font-bold">Connection test results</span>
+            <span class="font-medium">Connection test results</span>
         </template>
         <div v-if="loading" class="pb-4">
             <div class="flex flex-row">

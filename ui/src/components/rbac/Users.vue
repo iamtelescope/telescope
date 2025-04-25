@@ -4,7 +4,7 @@
             <div class="w-full">
                 <div class="flex flex-row w-full mb-14 align-middle">
                     <div class="flex flex-col w-full">
-                        <span class="font-bold text-3xl"><i class="pi pi-user text-3xl"></i> Users</span>
+                        <span class="font-medium text-3xl"><i class="pi pi-user text-3xl"></i> Users</span>
                         <span class="text-gray-400"
                             >Users are members of your organization with specific permissions that control their access
                             and actions</span
@@ -29,8 +29,8 @@
                         :rows="20"
                         removableSort
                     >
-                        <Column field="isActive" sortable header="Is active" class="font-bold"></Column>
-                        <Column field="username" sortable header="Username" class="font-bold"></Column>
+                        <Column field="isActive" sortable header="Is active" class="font-medium"></Column>
+                        <Column field="username" sortable header="Username" class="font-medium"></Column>
                         <Column field="displayFirstName" sortable header="First name" class="text-nowrap"></Column>
                         <Column field="displayLastName" sortable header="Last name" class="text-nowrap"></Column>
                         <Column field="displayLastLogin" sortable header="Last login" class="text-nowrap"></Column>

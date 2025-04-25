@@ -2,7 +2,7 @@
     <div class="mb-14">
         <div class="flex flex-row">
             <div class="flex flex-col justify-start text-nowrap">
-                <span class="font-bold text-3xl">
+                <span class="font-medium text-3xl">
                     <i class="pi pi-database text-3xl mr-1"></i>
                     <span class="text-gray-400">Sources: </span>
                     <span v-if="source"> Edit source: {{ source.slug }} </span>

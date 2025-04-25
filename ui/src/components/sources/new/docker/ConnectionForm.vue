@@ -1,7 +1,7 @@
 <template>
     <Fieldset class="text-wrap" :class="'mb-9'">
         <template #legend>
-            <span class="font-bold">Connection data</span>
+            <span class="font-medium">Connection data</span>
         </template>
         <div class="flex flex-col w-full flex-wrap gap-4">
             <div class="flex flex-row">
