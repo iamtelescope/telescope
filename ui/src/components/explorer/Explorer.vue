@@ -40,7 +40,7 @@
                 :rowsCount="rows.length"
                 :totalCount="graphData.total"
             ></LimitMessage>
-            <SourceDataTable
+            <ExplorerTable
                 v-if="showSourceDataTable"
                 :source="source"
                 :rows="rows"
@@ -63,13 +63,13 @@ import { Skeleton } from 'primevue'
 import { useSourceControlsStore } from '@/stores/sourceControls'
 import { useGetSourceData, useGetSourceGraphData } from '@/composables/sources/useSourceService'
 
-import Controls from '@/components/sources/data/Controls.vue'
+import Controls from '@/components/explorer/Controls.vue'
 import BorderCard from '@/components/common/BorderCard.vue'
 import Error from '@/components/common/Error.vue'
 import ValidationError from '@/components/common/ValidationError.vue'
-import SourceDataTable from '@/components/sources/data/SourceDataTable.vue'
-import Histogramm from '@/components/sources/data/Histogramm.vue'
-import LimitMessage from '@/components/sources/data/LimitMessage.vue'
+import ExplorerTable from '@/components/explorer/ExplorerTable.vue'
+import Histogramm from '@/components/explorer/Histogramm.vue'
+import LimitMessage from '@/components/explorer/LimitMessage.vue'
 
 const controlsRef = ref(null)
 

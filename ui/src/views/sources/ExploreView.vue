@@ -7,7 +7,7 @@
             <Error :error="error" />
         </div>
         <div v-else>
-            <SourceData :source="source" v-if="source" />
+            <Explorer :source="source" v-if="source" />
         </div>
     </div>
 </template>
@@ -19,7 +19,7 @@ import { useGetSource } from '@/composables/sources/useSourceService'
 
 import Error from '@/components/common/Error.vue'
 import Loader from '@/components/common/Loader.vue'
-import SourceData from '@/components/sources/data/SourceData.vue'
+import Explorer from '@/components/explorer/Explorer.vue'
 
 const route = useRoute()
 const { source, error, loading } = useGetSource(route.params.sourceSlug)

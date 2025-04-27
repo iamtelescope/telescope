@@ -244,8 +244,6 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setShowGraph,
         setContextField,
         from,
-        from,
-        to,
         to,
         timezone,
         limit,
