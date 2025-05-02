@@ -65,7 +65,7 @@ Features planned for future implementation ([Telescope 1.0.0 milestone](https://
 - [Snapshot storage for long-term retention of log records, preventing data loss due to rotation](https://github.com/iamtelescope/telescope/issues/32).
 - [Live log trailing](https://github.com/iamtelescope/telescope/issues/31).
 - Server-side modifiers (e.g., utilizing ClickHouse functions).
-- Time zone support for the datetime selector.
+- [Time zone support for the datetime selector](https://github.com/iamtelescope/telescope/issues/33).
 - [Helm chart](https://github.com/iamtelescope/telescope/issues/30).
 - SAML and other authentication methods support.
 - Audit log for any changes inside system.
