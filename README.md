@@ -62,7 +62,7 @@ Features planned for future implementation ([Telescope 1.0.0 milestone](https://
 
 - [Ability to store fields and query presets for easier log searches](https://github.com/iamtelescope/telescope/issues/3).
 - Display records in context.
-- Snapshot storage for long-term retention of log records, preventing data loss due to rotation.
+- [Snapshot storage for long-term retention of log records, preventing data loss due to rotation](https://github.com/iamtelescope/telescope/issues/32).
 - [Live log trailing](https://github.com/iamtelescope/telescope/issues/31).
 - Server-side modifiers (e.g., utilizing ClickHouse functions).
 - Time zone support for the datetime selector.
