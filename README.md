@@ -61,7 +61,7 @@ Patches are welcome! Please take a look at [Contributing guidelines](CONTRIBUTIN
 Features planned for future implementation ([Telescope 1.0.0 milestone](https://github.com/iamtelescope/telescope/milestone/1))
 
 - [Ability to store fields and query presets for easier log searches](https://github.com/iamtelescope/telescope/issues/3).
-- Display records in context.
+- [Display records in context](https://github.com/iamtelescope/telescope/issues/35).
 - [Snapshot storage for long-term retention of log records, preventing data loss due to rotation](https://github.com/iamtelescope/telescope/issues/32).
 - [Live log trailing](https://github.com/iamtelescope/telescope/issues/31).
 - Server-side modifiers (e.g., utilizing ClickHouse functions).
