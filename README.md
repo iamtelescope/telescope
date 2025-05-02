@@ -66,6 +66,6 @@ Features planned for future implementation ([Telescope 1.0.0 milestone](https://
 - Live log trailing.
 - Server-side modifiers (e.g., utilizing ClickHouse functions).
 - Time zone support for the datetime selector.
-- Helm chart.
+- [Helm chart](https://github.com/iamtelescope/telescope/issues/30).
 - SAML and other authentication methods support.
 - Audit log for any changes inside system.
