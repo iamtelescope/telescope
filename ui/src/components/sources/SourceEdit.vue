@@ -1,7 +1,7 @@
 <template>
     <div class="flex flex-row justify-center mt-10">
         <div class="flex flex-col min-w-1280 max-w-1280">
-            <DataView :loading="loading" :error="error" v-if="source && source.isEditable()">
+            <DataView :loadings="[loading]" :errors="[error]" v-if="source && source.isEditable()">
                 <SourceForm :source="source" :startConnectionTest="true" />
             </DataView>
         </div>

@@ -63,7 +63,7 @@
                         />
                     </div>
                 </div>
-                <DataView :loading="loading" :error="error">
+                <DataView :loadings="[loading]" :errors="[error]">
                     <div class="flex flex-row w-full mt-5">
                         <DataTable
                             v-if="tokens.length"

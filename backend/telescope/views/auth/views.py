@@ -94,6 +94,7 @@ class WhoAmIView(APIView):
             social_account = result[0]
 
         data = {
+            "id": request.user.id,
             "username": request.user.username,
             "first_name": request.user.first_name,
             "last_name": request.user.last_name,

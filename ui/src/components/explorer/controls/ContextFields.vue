@@ -7,7 +7,7 @@
     />
 </template>
 <script setup>
-import DockerContextFields from '@/components/explorer/DockerContextFields.vue'
+import DockerContextFields from '@/components/explorer/controls/DockerContextFields.vue'
 const props = defineProps(['source', 'contextFields'])
 const emit = defineEmits(['fieldChanged'])
 

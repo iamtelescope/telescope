@@ -19,7 +19,7 @@
                         class="placeholder-gray-300"
                     />
                 </div>
-                <DataView :loading="loading" :error="error">
+                <DataView :loadings="[loading]" :errors="[error]">
                     <DataTable
                         :value="users"
                         v-model:filters="filters"
@@ -63,7 +63,7 @@ import Column from 'primevue/column'
 import { Badge } from 'primevue'
 
 import { useNavStore } from '@/stores/nav'
-import DataView from '@/components/common/DataView'
+import DataView from '@/components/common/DataView.vue'
 
 import { useGetUsers } from '@/composables/rbac/useUserService'
 

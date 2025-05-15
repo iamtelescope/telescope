@@ -80,7 +80,7 @@ import { format } from 'date-fns'
 
 import Drawer from 'primevue/drawer'
 
-import Row from '@/components/explorer/Row.vue'
+import Row from '@/components/explorer/results/Row.vue'
 
 import { getColor } from '@/utils/colors.js'
 import { MODIFIERS } from '@/utils/modifiers.js'

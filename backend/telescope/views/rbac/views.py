@@ -7,7 +7,6 @@ from django.contrib.auth.models import User, Group
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import serializers
 
 from telescope.response import UIResponse
 from telescope.rbac.roles import ROLES
@@ -16,11 +15,9 @@ from telescope.rbac import permissions
 from telescope.auth.decorators import global_permission_required
 from telescope.models import GlobalRoleBinding
 from telescope.serializers.rbac import (
-    UserGroupSerializer,
     UserSerializer,
     SimpleUserSerializer,
     SimpleGroupSerializer,
-    GroupUserSerializer,
     GroupSerializer,
     NewGroupSerializer,
     UpdateGroupSerializer,

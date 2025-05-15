@@ -1,7 +1,7 @@
 <template>
     <div class="flex flex-row justify-center mt-10">
         <div class="flex flex-col min-w-1280">
-            <DataView :loading="loading" :error="error">
+            <DataView :loadings="[loading]" :errors="[error]">
                 <div class="flex flex-row mb-14">
                     <div class="flex flex-col justify-start text-nowrap">
                         <span class="font-medium text-3xl">

@@ -28,7 +28,7 @@
                         class="placeholder-gray-300"
                     />
                 </div>
-                <DataView :loading="loading" :error="error">
+                <DataView :loadings="[loading]" :errors="[error]">
                     <div class="flex flex-row w-full mt-5">
                         <DataTable
                             v-if="groups.length"
@@ -65,7 +65,7 @@ import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 
 import { useNavStore } from '@/stores/nav'
-import DataView from '@/components/common/DataView'
+import DataView from '@/components/common/DataView.vue'
 import { useGetGroups } from '@/composables/rbac/useGroupService'
 
 const navStore = useNavStore()

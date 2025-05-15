@@ -3,7 +3,7 @@ from django.contrib.auth.models import User, Group
 
 from rest_framework import serializers
 
-from telescope.models import Source, SourceRoleBinding
+from telescope.models import Source, SavedView, SourceRoleBinding
 from telescope.utils import parse_time
 from telescope.fields import (
     parse as parse_fields,
@@ -19,7 +19,6 @@ from telescope.utils import (
     ALLOWED_DATE_FIELD_TYPES,
     convert_to_base_ch,
 )
-
 
 SUPPORTED_KINDS = {"clickhouse", "docker"}
 
@@ -56,6 +55,34 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "first_name", "last_name"]
+
+
+class SourceSavedViewSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    permissions = serializers.ListField(child=serializers.CharField())
+    kind = serializers.CharField()
+
+    class Meta:
+        model = SavedView
+        fields = "__all__"
+
+
+class SourceSavedViewScopeSerializer(serializers.Serializer):
+    scope = serializers.ChoiceField(
+        required=True,
+        choices=[("personal", "personal"), ("source", "source")],
+    )
+
+
+class NewSourceSavedViewSerializer(serializers.Serializer):
+    name = serializers.CharField(required=True, max_length=255)
+    description = serializers.CharField(max_length=4096, allow_blank=True)
+    shared = serializers.BooleanField()
+    data = serializers.JSONField()
+
+
+class UpdateSourceSavedViewSerializer(NewSourceSavedViewSerializer):
+    pass
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -315,7 +342,7 @@ class SourceAutocompleteRequestSerializer(serializers.Serializer):
 
 class SourceDataRequestSerializer(serializers.Serializer):
     fields = serializers.CharField()
-    query = serializers.CharField(allow_blank=True)
+    query = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     raw_query = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     _from = serializers.CharField()
     to = serializers.CharField()
@@ -348,6 +375,8 @@ class SourceDataRequestSerializer(serializers.Serializer):
         return value
 
     def validate_query(self, value):
+        if not value:
+            return ""
         fetcher = get_fetchers()[self.context["source"].kind]
         result, help_text = fetcher.validate_query(self.context["source"], value)
         if not result:

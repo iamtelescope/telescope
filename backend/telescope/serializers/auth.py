@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 
 class WhoAmISerializer(serializers.Serializer):
+    id = serializers.IntegerField()
     username = serializers.CharField()
     first_name = serializers.CharField(allow_blank=True)
     last_name = serializers.CharField(allow_blank=True)

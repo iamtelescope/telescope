@@ -23,6 +23,11 @@ class Source(Enum):
     RAW_QUERY = "raw_query"
 
 
+class SavedView(Enum):
+    READ = "read"
+    EDIT = "edit"
+
+
 GLOBAL_TO_SOURCE = {
     Global.READ_SOURCE.value: Source.READ.value,
     Global.EDIT_SOURCE.value: Source.EDIT.value,

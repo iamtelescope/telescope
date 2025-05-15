@@ -32,7 +32,6 @@ const sourceSrv = new SourceService()
 
 const emit = defineEmits(['change', 'submit'])
 const props = defineProps(['source', 'value', 'from', 'to'])
-
 const isDark = useDark()
 const sourceFieldsNames = Object.keys(props.source.fields)
 
