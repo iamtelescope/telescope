@@ -84,14 +84,6 @@ body:where(.dark, .dark *) {
     color: color-mix(in srgb, var(--p-surface-0) calc(100% * var(--tw-text-opacity, 1)), transparent);
 }
 
-a {
-    color: var(--p-button-text-primary-color);
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
 #app {
     height: 100vh;
 }

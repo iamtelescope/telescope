@@ -5,7 +5,7 @@
       Saved Views
     </div>
     <DataView :loadings="[loading]" :errors="[error]">
-      <div class="p-4 w-full" v-if="savedViewsPrepared.length > 0">
+      <div class="p-4 w-full" v-if="savedViews.length > 0">
         <IconField>
           <InputIcon>
             <i class="pi pi-filter"/>
@@ -67,10 +67,10 @@
           </div>
         </template>
       </DataTable>
-      <div v-else-if="savedViewFilter" class="pl-4 pr-4">
+      <div v-else-if="savedViewFilter" class="pl-4 pr-4 mb-2">
         <Message severity="warn">No saved views match your filter.</Message>
       </div>
-      <div v-else class="p-4">
+      <div v-else class="p-4 mb-2">
         <Message severity="info">You don't have any saved views yet.</Message>
       </div>
     </DataView>

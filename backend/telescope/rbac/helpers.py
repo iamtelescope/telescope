@@ -3,6 +3,7 @@ import logging
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.contrib.auth.models import User
 
 from telescope.constants import (
     VIEW_SCOPE_PERSONAL,
@@ -80,7 +81,7 @@ def grant_source_role(source, role, user=None, group=None):
     binding = None
 
     if not SourceRoleBinding.objects.filter(
-            user=user, group=group, source=source, role=role
+        user=user, group=group, source=source, role=role
     ).exists():
         created = True
         binding = SourceRoleBinding.objects.create(
@@ -108,8 +109,8 @@ def revoke_source_role(source, role, user=None, group=None):
 
 
 def require_global_permissions(
-        user,
-        required_permissions,
+    user,
+    required_permissions,
 ):
     user_permissions = get_user_global_permissions(user)
     for permission in required_permissions:
@@ -121,7 +122,7 @@ def require_global_permissions(
 
 
 def require_source_permissions(
-        user, source_slug, required_permissions, raise_exception=True
+    user, source_slug, required_permissions, raise_exception=True
 ):
     groups = user.groups.all()
     global_user_permissions = get_user_global_permissions(user, groups=groups)
@@ -241,6 +242,11 @@ def calculate_view_permissions(user, source, view):
     return view_permissions
 
 
+def require_saved_view_ownership(user: User, view: SavedView):
+    if view.user != user:
+        raise PermissionDenied("Insufficient permissions")
+
+
 def get_source(user, slug, required_permissions):
     return get_sources(
         user, source_slug=slug, required_permissions=required_permissions
@@ -261,9 +267,9 @@ def get_source_saved_views(user, source_slug, required_permissions):
     source = get_source(user, source_slug, required_permissions)
     views = []
     for view in SavedView.objects.filter(
-            Q(source=source, user=user, scope=VIEW_SCOPE_PERSONAL)
-            | Q(source=source, scope=VIEW_SCOPE_SOURCE)
-            | Q(source=source, scope=VIEW_SCOPE_PERSONAL, shared=True),
+        Q(source=source, user=user, scope=VIEW_SCOPE_PERSONAL)
+        | Q(source=source, scope=VIEW_SCOPE_SOURCE)
+        | Q(source=source, scope=VIEW_SCOPE_PERSONAL, shared=True),
     ):
         view.add_perms(calculate_view_permissions(user, source, view))
         view.set_kind(get_saved_view_kind(user, view))

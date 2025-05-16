@@ -344,3 +344,16 @@ def get_clickhouse_source_data(slug, kind="clickhouse"):
             "alt_hosts": "",
         },
     }
+
+
+def get_saved_view_data():
+    return {
+        "fields": "message",
+        "query": "",
+        "from": "now",
+        "to": "now-5m",
+        "limit": 50,
+        "graph_group_by": "",
+        "show_graph": True,
+        "context_fields": {},
+    }
