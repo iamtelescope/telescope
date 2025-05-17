@@ -1,3 +1,6 @@
+from copy import deepcopy
+
+
 class UIResponse:
     def __init__(self):
         self.result = True
@@ -25,6 +28,13 @@ class UIResponse:
     def mark_ok(self, message):
         self.add_msg(message)
         self.result = True
+
+    def mark_invalid(self, errors):
+        if errors:
+            errors = deepcopy(errors)
+            self.validation["result"] = False
+            self.validation["non_field"] = errors.pop("non_field_errors", [])
+            self.validation["fields"] = errors
 
     def as_dict(self):
         return {

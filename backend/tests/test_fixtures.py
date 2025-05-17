@@ -2,7 +2,8 @@ import pytest
 
 from django.contrib.auth.models import User
 
-from telescope.models import Source, SourceField
+from telescope.models import Source, SourceField, SavedView
+from telescope.constants import VIEW_SCOPE_SOURCE, VIEW_SCOPE_PERSONAL
 
 
 @pytest.mark.django_db
@@ -19,6 +20,14 @@ def test_user_exist(test_user):
     assert test_user.username == "test_user"
     assert test_user.is_superuser is False
     assert User.objects.filter(username="test_user").exists()
+
+
+@pytest.mark.django_db
+def test_hacker_user_exist(hacker_user):
+    assert isinstance(hacker_user, User)
+    assert hacker_user.username == "test_hacker"
+    assert hacker_user.is_superuser is False
+    assert User.objects.filter(username="test_hacker").exists()
 
 
 @pytest.mark.django_db
@@ -57,3 +66,69 @@ def test_clickhouse_source_fixture(clickhouse_source):
     for key, value in clickhouse_source._fields.items():
         assert isinstance(key, str)
         assert isinstance(value, SourceField)
+
+
+@pytest.mark.django_db
+def test_personal_saved_view_fixture(personal_saved_view, test_user, docker_source):
+    assert isinstance(personal_saved_view, SavedView)
+    assert personal_saved_view.slug == "test-view-personal"
+    assert personal_saved_view.name == "Test View Personal"
+    assert personal_saved_view.description == "test view description"
+    assert personal_saved_view.scope == VIEW_SCOPE_PERSONAL
+    assert personal_saved_view.source == docker_source
+    assert personal_saved_view.user == test_user
+    assert personal_saved_view.shared is False
+
+
+@pytest.mark.django_db
+def test_personal_saved_view_fixture(
+    shared_personal_saved_view, test_user, docker_source
+):
+    assert isinstance(shared_personal_saved_view, SavedView)
+    assert shared_personal_saved_view.slug == "test-view-personal-shared"
+    assert shared_personal_saved_view.name == "Test View Personal Shared"
+    assert shared_personal_saved_view.description == "test view description"
+    assert shared_personal_saved_view.scope == VIEW_SCOPE_PERSONAL
+    assert shared_personal_saved_view.source == docker_source
+    assert shared_personal_saved_view.user == test_user
+    assert shared_personal_saved_view.shared is True
+
+
+@pytest.mark.django_db
+def test_source_saved_view(source_saved_view, root_user, docker_source):
+    assert isinstance(source_saved_view, SavedView)
+    assert source_saved_view.slug == "test-view-source-scoped"
+    assert source_saved_view.name == "Test View Source Scoped"
+    assert source_saved_view.description == "test view description"
+    assert source_saved_view.scope == VIEW_SCOPE_SOURCE
+    assert source_saved_view.source == docker_source
+    assert source_saved_view.user == root_user
+    assert source_saved_view.shared is False
+
+
+@pytest.mark.django_db
+def test_personal_root_saved_view_fixture(
+    personal_root_saved_view, root_user, docker_source
+):
+    assert isinstance(personal_root_saved_view, SavedView)
+    assert personal_root_saved_view.slug == "test-view-personal-root"
+    assert personal_root_saved_view.name == "Test View Personal Root"
+    assert personal_root_saved_view.description == "test view description"
+    assert personal_root_saved_view.scope == VIEW_SCOPE_PERSONAL
+    assert personal_root_saved_view.source == docker_source
+    assert personal_root_saved_view.user == root_user
+    assert personal_root_saved_view.shared is False
+
+
+@pytest.mark.django_db
+def test_personal_root_shared_saved_view_fixture(
+    personal_root_shared_saved_view, root_user, docker_source
+):
+    assert isinstance(personal_root_shared_saved_view, SavedView)
+    assert personal_root_shared_saved_view.slug == "test-view-personal-root-shared"
+    assert personal_root_shared_saved_view.name == "Test View Personal Root Shared"
+    assert personal_root_shared_saved_view.description == "test view description"
+    assert personal_root_shared_saved_view.scope == VIEW_SCOPE_PERSONAL
+    assert personal_root_shared_saved_view.source == docker_source
+    assert personal_root_shared_saved_view.user == root_user
+    assert personal_root_shared_saved_view.shared is True

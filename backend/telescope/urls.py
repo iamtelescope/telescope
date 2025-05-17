@@ -39,6 +39,11 @@ urlpatterns = [
         source.SourceTestConnectionView.as_view(),
     ),
     path("ui/v1/sources/<slug:slug>", source.SourceView.as_view()),
+    path("ui/v1/sources/<slug:slug>/savedViews", source.SourceSavedViewView.as_view()),
+    path(
+        "ui/v1/sources/<slug:slug>/savedViews/<slug:view_slug>",
+        source.SourceSavedViewView.as_view(),
+    ),
     path("ui/v1/sources/<slug:slug>/data", source.SourceDataView.as_view()),
     path("ui/v1/sources/<slug:slug>/graphData", source.SourceGraphDataView.as_view()),
     path(

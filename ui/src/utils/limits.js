@@ -11,7 +11,7 @@ function getLimits(selected) {
     values.add(selected)
     let limits = []
     for (let value of values) {
-        limits.push({ value: value })
+        limits.push(value)
     }
     return limits
 }

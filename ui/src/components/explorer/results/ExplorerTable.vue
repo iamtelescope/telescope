@@ -80,7 +80,7 @@ import { format } from 'date-fns'
 
 import Drawer from 'primevue/drawer'
 
-import Row from '@/components/sources/data/Row.vue'
+import Row from '@/components/explorer/results/Row.vue'
 
 import { getColor } from '@/utils/colors.js'
 import { MODIFIERS } from '@/utils/modifiers.js'
@@ -116,7 +116,7 @@ const containsHtmlModifiers = (field) => {
 const getRowValue = (field, data) => {
     let value = ''
     if (field.jsonstring) {
-        // data contains object
+        // explorer contains object
         value = extractJsonPath(field, data)
     } else if (field.name.includes(':')) {
         if (Array.isArray(data[field.root_name])) {

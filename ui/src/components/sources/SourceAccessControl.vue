@@ -1,5 +1,5 @@
 <template>
-    <DataView :loading="loading" :error="error">
+    <DataView :loadings="[loading]" :errors="[error]">
         <div class="w-full" v-if="source.isGrantable()">
             <Fieldset>
                 <template #legend>

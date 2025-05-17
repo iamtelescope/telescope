@@ -11,7 +11,7 @@
                         >
                     </div>
                 </div>
-                <DataView :loading="loading" :error="error">
+                <DataView :loadings="[loading]" :errors="[error]">
                     <DataTable :value="roles" :row-hover="true" @row-click="handleRowClick" class="cursor-pointer">
                         <Column field="name" sortable header="NAME" class="font-medium"></Column>
                         <Column field="type" sortable header="TYPE"></Column>
@@ -31,7 +31,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
 import { useNavStore } from '@/stores/nav'
-import DataView from '@/components/common/DataView'
+import DataView from '@/components/common/DataView.vue'
 import { useGetRoles } from '@/composables/rbac/useRoleService'
 
 const router = useRouter()

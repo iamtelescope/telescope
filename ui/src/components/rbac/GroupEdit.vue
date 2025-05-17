@@ -1,6 +1,6 @@
 <template>
     <div class="flex flex-row justify-center mt-10">
-        <DataView :loading="loading" :error="error">
+        <DataView :loadings="[loading]" :errors="[error]">
             <div class="flex flex-col min-w-1000">
                 <div class="mb-14">
                     <span class="font-medium text-3xl">Edit group: {{ group.name }}</span
