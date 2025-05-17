@@ -3,13 +3,18 @@ import pytest
 from django.contrib.auth.models import User
 
 from telescope.models import Source, SavedView
-from telescope.rbac.helpers import grant_source_role
-from telescope.rbac.roles import SourceRole
+from telescope.services.source import SourceService
+
 from tests.data import (
     get_docker_source_data,
     get_clickhouse_source_data,
     get_saved_view_data,
 )
+
+
+@pytest.fixture
+def service():
+    return SourceService()
 
 
 @pytest.fixture
