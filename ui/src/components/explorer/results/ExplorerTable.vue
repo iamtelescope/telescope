@@ -12,7 +12,9 @@
                         v-if="source.severityField.length != 0"
                         class="border-b border-neutral-200 dark:border-neutral-700"
                     ></th>
-                    <th class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700 font-medium">
+                    <th
+                        class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700 font-medium"
+                    >
                         Time
                     </th>
                     <th

@@ -1,4 +1,4 @@
-import {getDefaultIfUndefined} from '@/utils/utils'
+import { getDefaultIfUndefined } from '@/utils/utils'
 
 class User {
     constructor(data) {
@@ -90,4 +90,4 @@ class Role {
     }
 }
 
-export {User, Group, Role}
+export { User, Group, Role }

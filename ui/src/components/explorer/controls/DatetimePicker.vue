@@ -1,80 +1,80 @@
 <template>
-  <Button icon="pi pi-calendar" class="mr-2" :label="daterangelabel" text size="small" @click="toggleRangeSelect"/>
-  <Popover ref="dropdown" :pt="{ content: { class: 'pr-0' } }">
-    <div class="flex w-full">
-      <div class="flex flex-col mr-3">
-        <div class="flex flex-col">
-          <label for="From" class="font-medium block">From</label>
-          <InputText
-              size="small"
-              label="From"
-              v-model="fromInputText"
-              @update:model-value="onFromInputUpdate"
-              :invalid="!fromInputValid"
-          />
-          <ErrorText v-if="!fromInputValid" :text="fromInputValidError"/>
-        </div>
-        <div class="flex flex-col mt-2">
-          <label for="To" class="font-medium block">To</label>
-          <InputText
-              size="small"
-              label="To"
-              v-model="toInputText"
-              @update:model-value="onToInputUpdate"
-              :invalid="!toInputValid"
-          />
-          <ErrorText v-if="!toInputValid" :text="toInputValidError"/>
-        </div>
-        <div class="flex flex-col mt-2">
-        <label for="Timezone" class="font-medium block">Timezone</label>
-        <Select
-            v-model="selectedZone"
-            :options="zones"
-            optionLabel="name"
-            placeholder="Timezone"
-            class="w-full md:w-56"
-            size="small"
-            filter
-            autoFilterFocus
-            disabled
-        />
-          </div>
-        <Button label="Apply" severity="primary" size="small" class="mt-4" @click="handleApply"/>
-      </div>
-      <div class="border-r border-l pt-0 pb-0 p-2">
-        <DatePicker
-            v-model="dates"
-            selectionMode="range"
-            :pt="{ panel: { style: 'border: none; padding: 0px;' } }"
-            :maxDate="DateTime.now().plus({ days: 1 }).startOf('day').toJSDate()"
-            :manualInput="false"
-            :selectOtherMonths="true"
-            inline
-            @date-select="onDateSelect"
-        />
-      </div>
-      <div class="flex flex-col">
-        <Listbox
-            :options="ranges"
-            v-model="selectedRelative"
-            optionLabel="label"
-            @change="handleSelectRelative"
-            fluid
-            scroll-height="21rem"
-            :pt="{
+    <Button icon="pi pi-calendar" class="mr-2" :label="daterangelabel" text size="small" @click="toggleRangeSelect" />
+    <Popover ref="dropdown" :pt="{ content: { class: 'pr-0' } }">
+        <div class="flex w-full">
+            <div class="flex flex-col mr-3">
+                <div class="flex flex-col">
+                    <label for="From" class="font-medium block">From</label>
+                    <InputText
+                        size="small"
+                        label="From"
+                        v-model="fromInputText"
+                        @update:model-value="onFromInputUpdate"
+                        :invalid="!fromInputValid"
+                    />
+                    <ErrorText v-if="!fromInputValid" :text="fromInputValidError" />
+                </div>
+                <div class="flex flex-col mt-2">
+                    <label for="To" class="font-medium block">To</label>
+                    <InputText
+                        size="small"
+                        label="To"
+                        v-model="toInputText"
+                        @update:model-value="onToInputUpdate"
+                        :invalid="!toInputValid"
+                    />
+                    <ErrorText v-if="!toInputValid" :text="toInputValidError" />
+                </div>
+                <div class="flex flex-col mt-2">
+                    <label for="Timezone" class="font-medium block">Timezone</label>
+                    <Select
+                        v-model="selectedZone"
+                        :options="zones"
+                        optionLabel="name"
+                        placeholder="Timezone"
+                        class="w-full md:w-56"
+                        size="small"
+                        filter
+                        autoFilterFocus
+                        disabled
+                    />
+                </div>
+                <Button label="Apply" severity="primary" size="small" class="mt-4" @click="handleApply" />
+            </div>
+            <div class="border-r border-l pt-0 pb-0 p-2">
+                <DatePicker
+                    v-model="dates"
+                    selectionMode="range"
+                    :pt="{ panel: { style: 'border: none; padding: 0px;' } }"
+                    :maxDate="DateTime.now().plus({ days: 1 }).startOf('day').toJSDate()"
+                    :manualInput="false"
+                    :selectOtherMonths="true"
+                    inline
+                    @date-select="onDateSelect"
+                />
+            </div>
+            <div class="flex flex-col">
+                <Listbox
+                    :options="ranges"
+                    v-model="selectedRelative"
+                    optionLabel="label"
+                    @change="handleSelectRelative"
+                    fluid
+                    scroll-height="21rem"
+                    :pt="{
                         root: { style: { border: 'none', minWidth: '200px' } },
                         list: { style: { padding: '0', boxShadow: 'none' } },
                     }"
-        />
-      </div>
-    </div>
-  </Popover>
+                />
+            </div>
+        </div>
+    </Popover>
 </template>
 
 <script setup>
-import {ref, computed, onMounted, onUpdated, watch} from 'vue'
+import { ref, computed, onMounted, onUpdated, watch } from 'vue'
 
-import {DateTime} from 'luxon'
+import { DateTime } from 'luxon'
 
 import Popover from 'primevue/popover'
 import DatePicker from 'primevue/datepicker'
@@ -85,20 +85,20 @@ import Select from 'primevue/select'
 
 import ErrorText from '@/components/common/ErrorText.vue'
 import {
-  getRelativeOption,
-  getRelativeOptions,
-  getDatetimeRangeText,
-  dateIsValid,
-  dateTimeFormat,
-  humanRelatedTimeRegex,
+    getRelativeOption,
+    getRelativeOptions,
+    getDatetimeRangeText,
+    dateIsValid,
+    dateTimeFormat,
+    humanRelatedTimeRegex,
 } from '@/utils/datetimeranges.js'
-import {tzOptions} from '@/utils/timezones.js'
+import { tzOptions } from '@/utils/timezones.js'
 
 const props = defineProps(['from', 'to'])
 const emit = defineEmits(['rangeSelect'])
 const dropdown = ref()
 const zones = ref(tzOptions)
-const selectedZone = ref({name: 'UTC', code: 'UTC'})
+const selectedZone = ref({ name: 'UTC', code: 'UTC' })
 const dates = ref(props.from.dateObj && props.to.dateObj ? [props.from.dateObj, props.to.dateObj] : [])
 
 const from = computed(() => props.from.value)
@@ -117,115 +117,114 @@ const ranges = ref(getRelativeOptions())
 const selectedRelative = ref(getRelativeOption(props.from.strValue, props.to.strValue))
 
 const onFromInputUpdate = () => {
-  fromInputManually.value = true
+    fromInputManually.value = true
 }
 
 const onToInputUpdate = () => {
-  toInputManually.value = true
+    toInputManually.value = true
 }
 
 const initValues = () => {
-  fromInputText.value = props.from.strValue
-  toInputText.value = props.to.strValue
+    fromInputText.value = props.from.strValue
+    toInputText.value = props.to.strValue
 
-  if (props.from.dateObj && props.to.dateObj) {
-    dates.value = [props.from.dateObj.toJSDate(), props.to.dateObj.toJSDate()]
-  }
-  emit('rangeSelect', {
-    from: from.value,
-    to: to.value,
-  })
+    if (props.from.dateObj && props.to.dateObj) {
+        dates.value = [props.from.dateObj.toJSDate(), props.to.dateObj.toJSDate()]
+    }
+    emit('rangeSelect', {
+        from: from.value,
+        to: to.value,
+    })
 }
 
 onMounted(() => {
-  initValues()
+    initValues()
 })
 
 onUpdated(() => {
-  initValues()
+    initValues()
 })
 
 const daterangelabel = computed(() => {
-  return getDatetimeRangeText(props.from.strValue, props.to.strValue) + ` [${selectedZone.value.name}]`
+    return getDatetimeRangeText(props.from.strValue, props.to.strValue) + ` [${selectedZone.value.name}]`
 })
 
 const handleApply = () => {
-  let isValid = true
-  let manualFrom = null
-  let manualTo = null
+    let isValid = true
+    let manualFrom = null
+    let manualTo = null
 
-  if (fromInputManually.value) {
-    const [parsedFrom, fromIsValid] = dateIsValid(fromInputText.value)
-    fromInputValid.value = fromIsValid
-    if (fromIsValid) {
-      manualFrom = parsedFrom
-    } else {
-      fromInputValidError.value = `Invalid date: expect ${dateTimeFormat}  or regex ${humanRelatedTimeRegex.toString()}`
-    }
-  }
-  if (toInputManually.value) {
-    const [parsedTo, toIsValid] = dateIsValid(toInputText.value)
-    toInputValid.value = toIsValid
-    if (toIsValid) {
-      manualTo = parsedTo
-    } else {
-      toInputValidError.value = `Invalid date: expect date ${dateTimeFormat} or regex ${humanRelatedTimeRegex.toString()}`
-    }
-  }
-  if (fromInputValid.value && toInputValid.value) {
     if (fromInputManually.value) {
-      from.value = manualFrom
+        const [parsedFrom, fromIsValid] = dateIsValid(fromInputText.value)
+        fromInputValid.value = fromIsValid
+        if (fromIsValid) {
+            manualFrom = parsedFrom
+        } else {
+            fromInputValidError.value = `Invalid date: expect ${dateTimeFormat}  or regex ${humanRelatedTimeRegex.toString()}`
+        }
     }
     if (toInputManually.value) {
-      to.value = manualTo
+        const [parsedTo, toIsValid] = dateIsValid(toInputText.value)
+        toInputValid.value = toIsValid
+        if (toIsValid) {
+            manualTo = parsedTo
+        } else {
+            toInputValidError.value = `Invalid date: expect date ${dateTimeFormat} or regex ${humanRelatedTimeRegex.toString()}`
+        }
     }
-  } else {
-    isValid = false
-  }
+    if (fromInputValid.value && toInputValid.value) {
+        if (fromInputManually.value) {
+            from.value = manualFrom
+        }
+        if (toInputManually.value) {
+            to.value = manualTo
+        }
+    } else {
+        isValid = false
+    }
 
-  if (isValid) {
-    emit('rangeSelect', {
-      from: from.value,
-      to: to.value,
-    })
-    dropdown.value.toggle()
-  }
+    if (isValid) {
+        emit('rangeSelect', {
+            from: from.value,
+            to: to.value,
+        })
+        dropdown.value.toggle()
+    }
 }
 
 const handleSelectRelative = (event) => {
-  if (event.value) {
-    fromInputManually.value = false
-    toInputManually.value = false
-    dates.value = []
-    emit('rangeSelect', {
-      from: event.value.from,
-      to: event.value.to,
-    })
-  }
+    if (event.value) {
+        fromInputManually.value = false
+        toInputManually.value = false
+        dates.value = []
+        emit('rangeSelect', {
+            from: event.value.from,
+            to: event.value.to,
+        })
+    }
 }
 
 const onDateSelect = () => {
-  if (dates.value[0] && dates.value[1]) {
-    fromInputManually.value = false
-    toInputManually.value = false
-    selectedRelative.value = null
-    emit('rangeSelect', {
-      from: dates.value[0],
-      to: dates.value[1],
-    })
-  }
+    if (dates.value[0] && dates.value[1]) {
+        fromInputManually.value = false
+        toInputManually.value = false
+        selectedRelative.value = null
+        emit('rangeSelect', {
+            from: dates.value[0],
+            to: dates.value[1],
+        })
+    }
 }
 
 const toggleRangeSelect = (event) => {
-  dropdown.value.toggle(event)
+    dropdown.value.toggle(event)
 }
 
 watch(
-  () => [props.from, props.to],
-  () => {
-    initValues()
-  },
-  { deep: true }
+    () => [props.from, props.to],
+    () => {
+        initValues()
+    },
+    { deep: true },
 )
-
 </script>

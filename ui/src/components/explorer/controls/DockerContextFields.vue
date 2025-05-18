@@ -73,17 +73,17 @@ watch(data, () => {
 })
 
 watch(
-  () => props.containers,
-  (newContainers) => {
-    selectedContainers.value = []
-    if (newContainers && data.value) {
-      for (const container of data.value) {
-        if (newContainers.includes(container.name)) {
-          selectedContainers.value.push(container)
+    () => props.containers,
+    (newContainers) => {
+        selectedContainers.value = []
+        if (newContainers && data.value) {
+            for (const container of data.value) {
+                if (newContainers.includes(container.name)) {
+                    selectedContainers.value.push(container)
+                }
+            }
         }
-      }
-    }
-  },
-  { deep: true }
+    },
+    { deep: true },
 )
 </script>

@@ -1,4 +1,4 @@
-import {getDefaultIfUndefined} from "@/utils/utils";
+import { getDefaultIfUndefined } from '@/utils/utils'
 
 class SavedView {
     constructor(data) {
@@ -22,4 +22,4 @@ class SavedView {
     }
 }
 
-export {SavedView}
+export { SavedView }

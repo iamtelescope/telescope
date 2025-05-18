@@ -40,10 +40,10 @@ class SourceService {
             role: role.name,
         }
         if (user != null) {
-            data['subject'] = {kind: 'user', name: user.username}
+            data['subject'] = { kind: 'user', name: user.username }
         }
         if (group != null) {
-            data['subject'] = {kind: 'group', name: group.name}
+            data['subject'] = { kind: 'group', name: group.name }
         }
         let response = await http.Post(`/ui/v1/sources/${sourceSlug}/grantRole`, data)
         return response
@@ -57,10 +57,10 @@ class SourceService {
             role: role,
         }
         if (user != null) {
-            data['subject'] = {kind: 'user', name: user.username}
+            data['subject'] = { kind: 'user', name: user.username }
         }
         if (group != null) {
-            data['subject'] = {kind: 'group', name: group.name}
+            data['subject'] = { kind: 'group', name: group.name }
         }
         let response = await http.Post(`/ui/v1/sources/${sourceSlug}/revokeRole`, data)
         return response
@@ -96,7 +96,6 @@ class SourceService {
     deleteSavedView = async (sourceSlug, viewSlug) => {
         return await http.Delete(`/ui/v1/sources/${sourceSlug}/savedViews/${viewSlug}`)
     }
-
 }
 
-export {SourceService}
+export { SourceService }

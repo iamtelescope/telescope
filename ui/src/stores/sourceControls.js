@@ -1,17 +1,17 @@
-import {ref, computed} from 'vue'
-import {useRoute} from 'vue-router'
-import {defineStore} from 'pinia'
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { defineStore } from 'pinia'
 
-import {useToast} from 'primevue'
+import { useToast } from 'primevue'
 
-import {DateTime} from 'luxon'
+import { DateTime } from 'luxon'
 
-import {Parser as FieldsParser} from '@/utils/fields.js'
-import {BoolOperator as FlyQLBoolOperator} from '@/utils/flyql.js'
-import {getBooleanFromString} from '@/utils/utils'
+import { Parser as FieldsParser } from '@/utils/fields.js'
+import { BoolOperator as FlyQLBoolOperator } from '@/utils/flyql.js'
+import { getBooleanFromString } from '@/utils/utils'
 
-import {TelescopeDate, humanRelatedTimeRegex} from '@/utils/datetimeranges.js'
-import * as viewParam from "autoprefixer";
+import { TelescopeDate, humanRelatedTimeRegex } from '@/utils/datetimeranges.js'
+import * as viewParam from 'autoprefixer'
 
 export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const toast = useToast()
@@ -309,25 +309,24 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         }
         currentQuery += `${field}${operator}${value}`
         setQuery(currentQuery)
-        toast.add({severity: 'success', summary: 'Success', detail: 'Query was updated', life: 3000})
+        toast.add({ severity: 'success', summary: 'Success', detail: 'Query was updated', life: 3000 })
     }
 
     function toTelescopeDate(value) {
         return new TelescopeDate({
-            value: value, timezone: _timezone.value,
+            value: value,
+            timezone: _timezone.value,
         })
     }
 
     function tryToMillis(value) {
         if (!humanRelatedTimeRegex.exec(value)) {
             if (value instanceof Date) {
-                value = DateTime.fromJSDate(value)
-                    .setZone(_timezone.value, {keepLocalTime: true})
-                    .toMillis()
+                value = DateTime.fromJSDate(value).setZone(_timezone.value, { keepLocalTime: true }).toMillis()
             } else {
                 let intValue = parseInt(value)
                 if (isNaN(intValue)) {
-                    value = value.toMillis({zone: _timezone.value})
+                    value = value.toMillis({ zone: _timezone.value })
                 }
             }
         }

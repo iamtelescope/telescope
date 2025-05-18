@@ -146,7 +146,7 @@ const fieldsSettings = computed(() => {
                 editable: true,
             },
             date: {
-              editable: true,
+                editable: true,
             },
             defaultChosenFields: {
                 default: '',

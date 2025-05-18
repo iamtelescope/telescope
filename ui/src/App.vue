@@ -1,5 +1,5 @@
 <template>
-    <Toast class="break-all" position="top-center"/>
+    <Toast class="break-all" position="top-center" />
     <Drawer v-model:visible="sidebarVisible" v-if="isLoggedIn" position="right">
         <template #container>
             <div class="flex flex-col h-full">
@@ -137,7 +137,7 @@ const manageMenuItems = ref([
     },
 ])
 const toHome = () => {
-  router.push({ name: 'root' })
+    router.push({ name: 'root' })
 }
 const toggleManageMenu = (event) => {
     manageMenu.value.toggle(event)
