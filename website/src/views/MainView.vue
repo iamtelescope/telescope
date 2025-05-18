@@ -179,11 +179,10 @@
                                     restrictions</span>.</div>
                         </template>
                     </Card>
-                    <Card class="shadow-lg text-left h-full flex flex-col bg-gray-200">
+                    <Card class="shadow-lg text-left h-full flex flex-col">
                         <template #title>
-                            <div class="pb-2 flex flex-row"><i class="pi pi-clock text-gray-600 text-3xl pr-4"></i>
-                                Coming soon...</div>
-                            <div class="font-medium">Saved Searches and Collaboration</div>
+                            <div class="pb-2"><i class="pi pi-bookmark text-lime-500 text-3xl"></i></div>
+                            <div class="font-medium">Saved Views and Collaboration</div>
                         </template>
                         <template #content>
                             <div class="text-lg">Save <span class="bold">query presets</span> and share log views with
