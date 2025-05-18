@@ -16,7 +16,7 @@
 </template>
 
 <script setup>
-import { ref, computed, shallowRef, nextTick, watch } from 'vue'
+import { ref, computed, shallowRef, nextTick, watch, onBeforeUnmount } from 'vue'
 
 import * as monaco from 'monaco-editor'
 
@@ -34,6 +34,7 @@ const emit = defineEmits(['change', 'submit'])
 const props = defineProps(['source', 'value', 'from', 'to'])
 const isDark = useDark()
 const sourceFieldsNames = Object.keys(props.source.fields)
+const completionProvider = ref(null)
 
 const editorFocused = ref(false)
 
@@ -257,7 +258,7 @@ const getSuggestions = async (word, position, textBeforeCursor) => {
 }
 
 const handleMount = (editor) => {
-    monaco.languages.registerCompletionItemProvider('flyql', {
+    completionProvider.value = monaco.languages.registerCompletionItemProvider('flyql', {
         provideCompletionItems: async (model, position) => {
             let word = model.getWordUntilPosition(position)
             const textBeforeCursorRange = {
@@ -314,5 +315,9 @@ const onChange = () => {
 
 watch(props, () => {
     code.value = props.value
+})
+
+onBeforeUnmount(() => {
+    completionProvider.value?.dispose()
 })
 </script>

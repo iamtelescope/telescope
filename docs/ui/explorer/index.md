@@ -39,6 +39,10 @@ A detailed description of the `query input` is located on a separate [page](./qu
 ### Raw Query input
 A detailed description of the `raw query input` is located on a separate [page](./raw_query.md).
 
+### Saved views
+![Saved views controls](_assets/saved_views_controls.png "Saved views controls")
+A detailed description of the `saved views` is located on a separate [page](./saved_views.md).
+
 ## Results
 ![Results](_assets/results.png "Results")
 

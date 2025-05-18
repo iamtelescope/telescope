@@ -13,6 +13,7 @@ from telescope.fields import (
 from telescope.fetchers import get_fetchers
 from telescope.rbac.helpers import user_has_source_permissions
 from telescope.rbac import permissions
+from telescope.constants import VIEW_SCOPE_SOURCE, VIEW_SCOPE_PERSONAL
 
 from telescope.utils import (
     ALLOWED_TIME_FIELD_TYPES,
@@ -70,7 +71,10 @@ class SourceSavedViewSerializer(serializers.ModelSerializer):
 class SourceSavedViewScopeSerializer(serializers.Serializer):
     scope = serializers.ChoiceField(
         required=True,
-        choices=[("personal", "personal"), ("source", "source")],
+        choices=[
+            (VIEW_SCOPE_PERSONAL, VIEW_SCOPE_PERSONAL),
+            (VIEW_SCOPE_SOURCE, VIEW_SCOPE_SOURCE),
+        ],
     )
 
 
@@ -81,7 +85,9 @@ class NewSourceSavedViewSerializer(serializers.Serializer):
     data = serializers.JSONField()
 
 
-class UpdateSourceSavedViewSerializer(NewSourceSavedViewSerializer):
+class UpdateSourceSavedViewSerializer(
+    NewSourceSavedViewSerializer, SourceSavedViewScopeSerializer
+):
     pass
 
 

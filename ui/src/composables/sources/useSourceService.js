@@ -1,7 +1,7 @@
-import {ref} from 'vue'
-import {Source, SourceRoleBiding} from '@/sdk/models/source'
-import {SourceService} from '@/sdk/services/source'
-import {SavedView} from "@/sdk/models/savedView";
+import { ref } from 'vue'
+import { Source, SourceRoleBiding } from '@/sdk/models/source'
+import { SourceService } from '@/sdk/services/source'
+import { SavedView } from '@/sdk/models/savedView'
 
 const srv = new SourceService()
 
@@ -20,7 +20,7 @@ const useGetSources = () => {
         loading.value = false
     }
     load()
-    return {sources, error, loading, load}
+    return { sources, error, loading, load }
 }
 
 const useGetSource = (sourceSlug) => {
@@ -38,7 +38,7 @@ const useGetSource = (sourceSlug) => {
         loading.value = false
     }
     load()
-    return {source, error, loading, load}
+    return { source, error, loading, load }
 }
 
 const useGetSourceRoleBidings = (sourceSlug) => {
@@ -56,7 +56,7 @@ const useGetSourceRoleBidings = (sourceSlug) => {
         loading.value = false
     }
     load()
-    return {bindings, error, loading, load}
+    return { bindings, error, loading, load }
 }
 
 const useGetSourceData = () => {
@@ -81,7 +81,7 @@ const useGetSourceData = () => {
         }
         loading.value = false
     }
-    return {rows, fields, error, loading, validation, load, controller}
+    return { rows, fields, error, loading, validation, load, controller }
 }
 
 const useGetSourceGraphData = () => {
@@ -104,7 +104,7 @@ const useGetSourceGraphData = () => {
         }
         loading.value = false
     }
-    return {data, error, loading, validation, load, controller}
+    return { data, error, loading, validation, load, controller }
 }
 
 const useGetSourceContextFieldData = () => {
@@ -123,7 +123,7 @@ const useGetSourceContextFieldData = () => {
         validation.value = response.validation
         loading.value = false
     }
-    return {data, error, loading, validation, load}
+    return { data, error, loading, validation, load }
 }
 
 const useGetSavedView = (slug, viewSlug) => {
@@ -143,7 +143,7 @@ const useGetSavedView = (slug, viewSlug) => {
         loading.value = false
     }
     load()
-    return {savedView, error, loading, load}
+    return { savedView, error, loading, load }
 }
 
 const useGetSavedViews = (slug) => {
@@ -162,7 +162,7 @@ const useGetSavedViews = (slug) => {
         loading.value = false
     }
     load()
-    return {savedViews, error, loading, load}
+    return { savedViews, error, loading, load }
 }
 
 export {

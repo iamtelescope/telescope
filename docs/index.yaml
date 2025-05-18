@@ -1,7 +1,13 @@
 title: Telescope
 description:
   - >-
-    <strong>Telescope</strong> is a web application designed to provide an intuitive interface for exploring log data. It is built to work with any type of logs, as long as they are stored in <strong><a href="https://github.com/ClickHouse/ClickHouse" target="_blank">ClickHouse</a></strong>. Users can easily configure connections to their ClickHouse databases and run queries to filter, search, and analyze logs efficiently. While ClickHouse is the primary supported storage backend, future versions of Telescope may introduce support for additional data sources.
+    <strong>Telescope</strong> is a web application that provides an intuitive interface for exploring log data.
+    It supports multiple data sources, including <strong><a href="https://github.com/ClickHouse/ClickHouse" target="_blank">ClickHouse</a></strong> and 
+    <strong><a href="https://www.docker.com/" target="_blank">Docker</a></strong>. Users can configure connections, filter and search logs, and 
+    build visualizations through a unified and user-friendly interface. Telescope uses FlyQL as a query abstraction layer, 
+    offering a consistent and secure querying experience across different source types. While ClickHouse remains the primary backend 
+    for structured log storage, support for additional sources is continuously evolving.
+
 meta:
   title: Telescope docs
 links:

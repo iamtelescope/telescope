@@ -1,4 +1,4 @@
-import {getDefaultIfUndefined} from '@/utils/utils'
+import { getDefaultIfUndefined } from '@/utils/utils'
 
 class UIResponse {
     constructor() {
@@ -31,7 +31,7 @@ class UIResponse {
         lifetime = getDefaultIfUndefined(lifetime, 6000)
 
         for (const idx in this.errors) {
-            toast.add({severity: 'error', summary: 'Error', detail: this.errors[idx], life: lifetime})
+            toast.add({ severity: 'error', summary: 'Error', detail: this.errors[idx], life: lifetime })
         }
     }
 

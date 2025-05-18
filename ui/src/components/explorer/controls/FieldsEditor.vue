@@ -16,7 +16,7 @@
 </template>
 
 <script setup>
-import { ref, computed, shallowRef, watch } from 'vue'
+import { ref, computed, shallowRef, watch, onBeforeUnmount } from 'vue'
 
 import * as monaco from 'monaco-editor'
 
@@ -27,6 +27,8 @@ import { getDefaultMonacoOptions } from '@/utils/monaco.js'
 
 const emit = defineEmits(['change', 'submit'])
 const props = defineProps(['source', 'value'])
+
+const completionProvider = ref(null)
 
 const editorFocused = ref(false)
 
@@ -97,7 +99,7 @@ const getSuggestions = (word, range, textFull, textBeforeCursor) => {
 }
 
 const handleMount = (editor) => {
-    monaco.languages.registerCompletionItemProvider('fields', {
+    completionProvider.value = monaco.languages.registerCompletionItemProvider('fields', {
         provideCompletionItems: function (model, position) {
             let word = model.getWordUntilPosition(position)
             let range = {
@@ -159,5 +161,9 @@ const onChange = () => {
 
 watch(props, () => {
     code.value = props.value
+})
+
+onBeforeUnmount(() => {
+    completionProvider.value?.dispose()
 })
 </script>
