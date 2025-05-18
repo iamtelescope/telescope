@@ -54,8 +54,8 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _query.value = route.query.query ?? viewParam?.data?.query ?? ''
         _rawQuery.value = route.query.raw_query ?? ''
         _timezone.value = 'UTC'
-        _from.value = toTelescopeDate(tryToMillis(route.query.from ?? viewParam?.data?.from ?? 'now'))
-        _to.value = toTelescopeDate(tryToMillis(route.query.to ?? viewParam?.data?.to ?? 'now-5m'))
+        _from.value = toTelescopeDate(tryToMillis(route.query.from ?? viewParam?.data?.from ?? 'now-5m'))
+        _to.value = toTelescopeDate(tryToMillis(route.query.to ?? viewParam?.data?.to ?? 'now'))
         _graphGroupBy.value = route.query.graph_group_by ?? viewParam?.data?.graph_group_by ?? source.severityField
         _showGraph.value = true
         _limit.value = 50
