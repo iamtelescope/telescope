@@ -1,22 +1,33 @@
 <template>
     <div class="flex flex-row justify-center mt-10">
         <div class="flex flex-col min-w-1280">
-            <DataView :loading="groupLoading" :error="groupError">
+            <DataView :loadings="[groupLoading]" :errors="[groupError]">
                 <div class="flex flex-row mb-14">
                     <div class="flex flex-col justify-start text-nowrap">
-                        <span class="font-bold text-3xl">
+                        <span class="font-medium text-3xl">
                             <i class="pi pi-users text-3xl mr-1"></i>
                             <span class="text-gray-400">Groups: </span>
-                            {{ group.name }}</span>
+                            {{ group.name }}</span
+                        >
                         <span class="text-gray-400">{{ group.userCount }} members</span>
                     </div>
                     <div class="flex flex-row w-full justify-end items-center">
                         <div>
-                            <Button class="mr-1" severity="secondary" label="Edit" @click="handleGroupEdit"
-                                size="small" />
+                            <Button
+                                class="mr-1"
+                                severity="secondary"
+                                label="Edit"
+                                @click="handleGroupEdit"
+                                size="small"
+                            />
                             <ConfirmPopup></ConfirmPopup>
-                            <Button severity="danger" label="Delete" @click="groupDeleteConfirm($event)"
-                                :loading="deleteButtonLoading" size="small" />
+                            <Button
+                                severity="danger"
+                                label="Delete"
+                                @click="groupDeleteConfirm($event)"
+                                :loading="deleteButtonLoading"
+                                size="small"
+                            />
                         </div>
                     </div>
                 </div>
@@ -25,23 +36,45 @@
                     <DataRow name="NAME" :value="group.name" />
                     <DataRow name="ROLE BINDINGS (GLOBAL)" :showBorder="false">
                         <div class="flex flex-wrap gap-2" v-if="group.roles.length > 0">
-                            <Chip v-for="role in group.roles" :key="role" :label="role" removable
-                                @remove="handleRevokeGlobalRole(role)" />
+                            <Chip
+                                v-for="role in group.roles"
+                                :key="role"
+                                :label="role"
+                                removable
+                                @remove="handleRevokeGlobalRole(role)"
+                            />
                         </div>
                         <div v-else class="text-gray-400">&ndash;</div>
                     </DataRow>
-                    <br>
+                    <br />
                     <Fieldset>
                         <template #legend>
-                            <span class="font-bold text-xl">Grant role (global)</span>
+                            <span class="font-medium text-xl">Grant role (global)</span>
                         </template>
                         <div class="flex flex-row">
-                            <Select v-model="selectedGlobalRole" :options="addableRoles" optionLabel="name" size="small"
-                                placeholder="&#8211;" class="w-full" filter showClear autoFilterFocus
-                                @change="handleGlobalRoleSelect" :disabled="selectGlobalRoleDisabled" />
-                            <Button class="ml-2 pl-6 pr-6" severity="primary" label="Grant"
-                                :outlined="!grantButtonActive" @click="handleGrantGlobalRole"
-                                :disabled="!grantButtonActive" :loading="grantButtonLoading" size="small" />
+                            <Select
+                                v-model="selectedGlobalRole"
+                                :options="addableRoles"
+                                optionLabel="name"
+                                size="small"
+                                placeholder="&#8211;"
+                                class="w-full"
+                                filter
+                                showClear
+                                autoFilterFocus
+                                @change="handleGlobalRoleSelect"
+                                :disabled="selectGlobalRoleDisabled"
+                            />
+                            <Button
+                                class="ml-2 pl-6 pr-6"
+                                severity="primary"
+                                label="Grant"
+                                :outlined="!grantButtonActive"
+                                @click="handleGrantGlobalRole"
+                                :disabled="!grantButtonActive"
+                                :loading="grantButtonLoading"
+                                size="small"
+                            />
                         </div>
                         <div v-if="usersError" class="flex flex-row mt-2">
                             <Message severity="error">{{ usersError }}</Message>
@@ -49,16 +82,33 @@
                     </Fieldset>
                     <Fieldset>
                         <template #legend>
-                            <span class="font-bold text-xl">Add group members</span>
+                            <span class="font-medium text-xl">Add group members</span>
                         </template>
                         <div class="flex flex-row">
-                            <Select v-model="selectedUser" :loading="usersLoading" :options="addableUsers"
-                                optionLabel="displayFull" size="small" placeholder="&#8211;" class="w-full" filter
-                                showClear autoFilterFocus :disabled="selectUserDisabled || usersLoading"
-                                @change="handleUserSelect" />
-                            <Button class="ml-2 pl-6 pr-6" severity="primary" label="Add" :outlined="!addButtonActive"
-                                @click="handleAddUser" :disabled="!addButtonActive" :loading="addButtonLoading"
-                                size="small" />
+                            <Select
+                                v-model="selectedUser"
+                                :loading="usersLoading"
+                                :options="addableUsers"
+                                optionLabel="displayFull"
+                                size="small"
+                                placeholder="&#8211;"
+                                class="w-full"
+                                filter
+                                showClear
+                                autoFilterFocus
+                                :disabled="selectUserDisabled || usersLoading"
+                                @change="handleUserSelect"
+                            />
+                            <Button
+                                class="ml-2 pl-6 pr-6"
+                                severity="primary"
+                                label="Add"
+                                :outlined="!addButtonActive"
+                                @click="handleAddUser"
+                                :disabled="!addButtonActive"
+                                :loading="addButtonLoading"
+                                size="small"
+                            />
                         </div>
                         <div v-if="usersError" class="flex flex-row mt-2">
                             <Message severity="error">{{ usersError }}</Message>
@@ -67,19 +117,32 @@
                 </div>
                 <div class="w-full">
                     <div class="flex flex-row w-full mt-9 align-middle">
-                        <div class="flex items-center font-bold text-xl text-nowrap">Group members</div>
+                        <div class="flex items-center font-medium text-xl text-nowrap">Group members</div>
                         <div class="flex items-center w-full justify-end">
-                            <Button severity="danger" :label="removeBtnLabel" @click="handleRemoveUsers"
-                                :disabled="selectedUsers.length == 0" :outlined="selectedUsers.length == 0"
-                                :loading="removeButtonLoading" />
+                            <Button
+                                severity="danger"
+                                :label="removeBtnLabel"
+                                @click="handleRemoveUsers"
+                                :disabled="selectedUsers.length == 0"
+                                :outlined="selectedUsers.length == 0"
+                                :loading="removeButtonLoading"
+                            />
                         </div>
                     </div>
                 </div>
                 <div class="flex flex-row mt-5">
-                    <DataTable v-if="group.users.length" v-model:selection="selectedUsers" sortField="username"
-                        :sortOrder="1" removableSort dataKey="id" :value="group.users" class="w-full">
+                    <DataTable
+                        v-if="group.users.length"
+                        v-model:selection="selectedUsers"
+                        sortField="username"
+                        :sortOrder="1"
+                        removableSort
+                        dataKey="id"
+                        :value="group.users"
+                        class="w-full"
+                    >
                         <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
-                        <Column field="username" sortable header="USERNAME" class="font-bold"></Column>
+                        <Column field="username" sortable header="USERNAME" class="font-medium"></Column>
                         <Column field="displayFirstName" sortable header="FIRST NAME"></Column>
                         <Column field="displayLastName" sortable header="LAST NAME"></Column>
                     </DataTable>
@@ -110,7 +173,7 @@ import DataRow from '@/components/common/DataRow.vue'
 import DataView from '@/components/common/DataView.vue'
 import { useGetGroup } from '@/composables/rbac/useGroupService'
 import { useGetUsers } from '@/composables/rbac/useUserService'
-import { GroupService } from '@/sdk/services/Group'
+import { GroupService } from '@/sdk/services/group'
 
 const router = useRouter()
 const toast = useToast()
@@ -127,9 +190,7 @@ const grantButtonActive = ref(false)
 const grantButtonLoading = ref(false)
 const confirm = useConfirm()
 const navStored = ref(false)
-const globalRoles = [
-    { 'name': 'admin' },
-]
+const globalRoles = [{ name: 'admin' }]
 const selectedGlobalRole = ref(null)
 const selectGlobalRoleDisabled = ref(false)
 
@@ -145,14 +206,14 @@ const { group, error: groupError, loading: groupLoading, load: groupLoad } = use
 
 watch(group, () => {
     if (!navStored.value) {
-        navStore.append({ label: group.value.name, 'url': `/rbac/groups/${group.value.id}` })
+        navStore.append({ label: group.value.name, url: `/rbac/groups/${group.value.id}` })
         navStored.value = true
     }
 })
 
 const addableUsers = computed(() => {
     if (users.value != null) {
-        let groupUsers = group.value.users.map(u => u.id)
+        let groupUsers = group.value.users.map((u) => u.id)
         return users.value.filter((u) => !groupUsers.includes(u.id))
     }
 })
@@ -164,9 +225,9 @@ const addableRoles = computed(() => {
 })
 
 const removeBtnLabel = computed(() => {
-    let text = "Remove"
+    let text = 'Remove'
     let size = selectedUsers.value.length
-    let str_size = ""
+    let str_size = ''
     if (size > 0) {
         str_size = `${size} `
     }
@@ -194,7 +255,7 @@ const handleGlobalRoleSelect = () => {
 }
 
 const handleGroupEdit = () => {
-    router.push({ 'name': 'rbacGroupEdit' })
+    router.push({ name: 'rbacGroupEdit' })
 }
 
 const handleGrantGlobalRole = async () => {
@@ -233,11 +294,11 @@ const groupDeleteConfirm = (event) => {
         rejectProps: {
             label: 'Cancel',
             severity: 'secondary',
-            outlined: true
+            outlined: true,
         },
         acceptProps: {
             label: 'Yes, delete',
-            severity: 'danger'
+            severity: 'danger',
         },
         accept: async () => {
             deleteButtonLoading.value = true
@@ -245,11 +306,11 @@ const groupDeleteConfirm = (event) => {
             deleteButtonLoading.value = false
             response.sendToast(toast)
             if (response.result) {
-                router.push({ 'name': 'rbacGroups' })
+                router.push({ name: 'rbacGroups' })
             }
         },
-    });
-};
+    })
+}
 
 const handleAddUser = async () => {
     addButtonLoading.value = true
@@ -268,7 +329,10 @@ const handleAddUser = async () => {
 const handleRemoveUsers = async () => {
     removeButtonLoading.value = true
 
-    let response = await groupSrv.removeUsers(group.value.id, selectedUsers.value.map(u => u.id))
+    let response = await groupSrv.removeUsers(
+        group.value.id,
+        selectedUsers.value.map((u) => u.id),
+    )
     removeButtonLoading.value = false
     selectedUsers.value = []
 

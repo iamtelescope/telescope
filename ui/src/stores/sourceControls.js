@@ -1,67 +1,95 @@
-import { ref, computed } from "vue"
-import { useRoute } from "vue-router"
-import { defineStore } from "pinia"
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { defineStore } from 'pinia'
 
 import { useToast } from 'primevue'
 
-import { DateTime } from "luxon"
+import { DateTime } from 'luxon'
 
 import { Parser as FieldsParser } from '@/utils/fields.js'
 import { BoolOperator as FlyQLBoolOperator } from '@/utils/flyql.js'
 import { getBooleanFromString } from '@/utils/utils'
 
 import { TelescopeDate, humanRelatedTimeRegex } from '@/utils/datetimeranges.js'
+import * as viewParam from 'autoprefixer'
 
 export const useSourceControlsStore = defineStore('sourceDataControls', () => {
-    const data = ref({})
-    const route = useRoute()
     const toast = useToast()
+    const route = useRoute()
 
-    const init = computed(() => {
-        return (source) => {
-            if (route.params.sourceSlug in data.value) {
-                throw new Error("Store is already initialized");
-            }
-            const initData = {
-                fields: route.query.fields ?? source.defaultChosenFields.join(', '),
-                query: route.query.query ?? '',
-                rawQuery: route.query.raw_query ?? '',
-                from: route.query.from ?? 'now-5m',
-                to: route.query.to ?? 'now',
-                graphGroupBy: route.query.graph_group_by ?? source.severityField,
-                showGraph: getBooleanFromString(route.query.show_graph, true),
-                timezone: 'UTC',
-                limit: { "value": 50 },
-                contextFields: {},
-            }
-            if (route.query.limit) {
-                let intLimit = parseInt(route.query.limit)
-                if (!isNaN(intLimit)) {
-                    initData.limit = { "value": intLimit }
-                }
-            }
-            data.value[route.params.sourceSlug] = initData
-            for (const [key, value] of Object.entries(route.query)) {
-                if (key.startsWith('ctx')) {
-                    let field = key.slice(4)
-                    initData.contextFields[field] = value
-                }
-            }
-            return true
+    const _source = ref(null)
+    const _fields = ref(null)
+    const _query = ref(null)
+    const _rawQuery = ref(null)
+    const _from = ref(null)
+    const _to = ref(null)
+    const _graphGroupBy = ref(null)
+    const _showGraph = ref(null)
+    const _timezone = ref(null)
+    const _limit = ref(null)
+    const _contextFields = ref(null)
+    const _view = ref(null)
+
+    function $reset() {
+        _fields.value = null
+        _query.value = null
+        _rawQuery.value = null
+        _from.value = null
+        _to.value = null
+        _graphGroupBy.value = null
+        _showGraph.value = null
+        _timezone.value = null
+        _limit.value = null
+        _contextFields.value = null
+        _view.value = null
+    }
+
+    function init(source, viewParam) {
+        if (!source) {
+            source = _source.value
+        } else {
+            _source.value = source
         }
-    })
+        _fields.value = route.query.fields ?? viewParam?.data?.fields ?? source.defaultChosenFields.join(', ')
+        _query.value = route.query.query ?? viewParam?.data?.query ?? ''
+        _rawQuery.value = route.query.raw_query ?? ''
+        _timezone.value = 'UTC'
+        _from.value = toTelescopeDate(tryToMillis(route.query.from ?? viewParam?.data?.from ?? 'now'))
+        _to.value = toTelescopeDate(tryToMillis(route.query.to ?? viewParam?.data?.to ?? 'now-5m'))
+        _graphGroupBy.value = route.query.graph_group_by ?? viewParam?.data?.graph_group_by ?? source.severityField
+        _showGraph.value = true
+        _limit.value = 50
+        _contextFields.value = {}
+        _view.value = viewParam
 
-    const fields = computed(() => {
-        return data.value[route.params.sourceSlug].fields
-    })
-
-    const query = computed(() => {
-        return data.value[route.params.sourceSlug].query
-    })
-
-    const rawQuery = computed(() => {
-        return data.value[route.params.sourceSlug].rawQuery
-    })
+        if (viewParam?.data?.show_graph !== undefined) {
+            _showGraph.value = viewParam?.data?.show_graph
+        }
+        if (route.query.show_graph !== undefined) {
+            _showGraph.value = getBooleanFromString(route.query.show_graph, true)
+        }
+        if (route.query.limit) {
+            let intLimit = parseInt(route.query.limit)
+            if (!isNaN(intLimit)) {
+                _limit.value = intLimit
+            }
+        } else if (viewParam?.data?.limit) {
+            _limit.value = viewParam.data.limit
+        }
+        for (const [key, value] of Object.entries(route.query)) {
+            if (key.startsWith('ctx')) {
+                let field = key.slice(4)
+                _contextFields.value[field] = value
+            }
+        }
+        if (viewParam?.data?.context_fields) {
+            for (const [key, value] of Object.entries(viewParam?.data?.context_fields)) {
+                if (!(key in _contextFields.value)) {
+                    _contextFields.value[key] = value
+                }
+            }
+        }
+    }
 
     const parsedFields = computed(() => {
         return (source) => {
@@ -72,71 +100,103 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     })
 
     const from = computed(() => {
-        return new TelescopeDate({
-            value: data.value[route.params.sourceSlug].from,
-            timezone: data.value[route.params.sourceSlug].timezone,
-        })
+        return _from.value
     })
 
     const to = computed(() => {
-        return new TelescopeDate({
-            value: data.value[route.params.sourceSlug].to,
-            timezone: data.value[route.params.sourceSlug].timezone,
-        })
+        return _to.value
+    })
+
+    const view = computed(() => {
+        return _view.value
+    })
+
+    const fields = computed(() => {
+        return _fields.value
+    })
+
+    const query = computed(() => {
+        return _query.value
+    })
+
+    const rawQuery = computed(() => {
+        return _rawQuery.value
     })
 
     const timezone = computed(() => {
-        return data.value[route.params.sourceSlug].timezone
+        return _timezone.value
     })
 
     const limit = computed(() => {
-        return data.value[route.params.sourceSlug].limit
+        return _limit.value
     })
 
     const graphGroupBy = computed(() => {
-        return data.value[route.params.sourceSlug].graphGroupBy
+        return _graphGroupBy.value
     })
 
     const showGraph = computed(() => {
-        return data.value[route.params.sourceSlug].showGraph
+        return _showGraph.value
     })
 
     const contextFields = computed(() => {
-        return data.value[route.params.sourceSlug].contextFields
+        return _contextFields.value
     })
 
     const queryParams = computed(() => {
         let params = {
-            query: query.value,
             fields: fields.value,
-            limit: limit.value.value,
-            from: from.value.isRelative ? from.value.value : from.value.dateObj.setZone('UTC').toMillis(),
-            to: to.value.isRelative ? to.value.value : to.value.dateObj.setZone('UTC').toMillis(),
-            graph_group_by: graphGroupBy.value || "",
+            limit: limit.value,
+            from: from.value.toRequestRepresentation(),
+            to: to.value.toRequestRepresentation(),
+            graph_group_by: graphGroupBy.value || '',
             show_graph: showGraph.value,
             context_fields: structuredClone(contextFields.value),
         }
-        if (rawQuery.value) {
-            params.raw_query = rawQuery.value
+        if (_view.value) {
+            params.view = _view.value.slug
+        }
+        if (_query.value) {
+            params.query = _query.value
+        }
+        if (_rawQuery.value) {
+            params.raw_query = _rawQuery.value
         }
         return params
     })
 
-    const queryString = computed(() => {
-        let params = []
-        for (const [key, value] of Object.entries(queryParams.value)) {
-            if (key == 'context_fields') {
-                for (const [ctxkey, ctxvalue] of Object.entries(value)) {
-                    let k = `ctx_${ctxkey}`
-                    for (const i of ctxvalue) {
-                        params.push([k, i])
+    const routeQuery = computed(() => {
+        let params = structuredClone(queryParams.value)
+
+        if (_view.value) {
+            const viewData = _view.value.data
+
+            for (const [key, value] of Object.entries(params)) {
+                if (key === 'context_fields') {
+                    for (const [ctxKey, ctxValue] of Object.entries(value)) {
+                        const viewCtxValue = viewData.context_fields?.[ctxKey]
+                        if (JSON.stringify(ctxValue) !== JSON.stringify(viewCtxValue)) {
+                            params[`ctx_${ctxKey}`] = ctxValue
+                        }
+                    }
+                } else {
+                    if (JSON.stringify(value) === JSON.stringify(viewData[key])) {
+                        delete params[key]
                     }
                 }
-            } else {
-                params.push([key, value])
+            }
+        } else {
+            for (const [key, value] of Object.entries(params.context_fields)) {
+                params[`ctx_${key}`] = value
             }
         }
-        return new URLSearchParams(params).toString()
+
+        delete params.context_fields
+        return params
+    })
+
+    const queryString = computed(() => {
+        return new URLSearchParams(Object.entries(routeQuery.value)).toString()
     })
 
     const dataRequestParams = computed(() => {
@@ -154,80 +214,129 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         return params
     })
 
-    function setFields(value) {
-        data.value[route.params.sourceSlug].fields = value
+    const viewParams = computed(() => {
+        return {
+            fields: fields.value,
+            query: query.value,
+            from: from.value.toRequestRepresentation(),
+            to: to.value.toRequestRepresentation(),
+            limit: limit.value,
+            graph_group_by: graphGroupBy.value,
+            show_graph: showGraph.value,
+            context_fields: contextFields.value,
+        }
+    })
+
+    function setView(value) {
+        if (!value) {
+            resetView()
+            return
+        }
+        _view.value = value
+        setFields(value.data.fields)
+        setQuery(value.data.query)
+        setFrom(value.data.from)
+        setTo(value.data.to)
+        setLimit(value.data.limit)
+        setGraphGroupBy(value.data.graph_group_by)
+        setShowGraph(value.data.show_graph)
+        setContextFields(value.data.context_fields)
     }
+
+    function resetView() {
+        _view.value = null
+        $reset()
+        init()
+    }
+
+    function setFields(value) {
+        _fields.value = value
+    }
+
     function setQuery(value) {
-        data.value[route.params.sourceSlug].query = value
+        _query.value = value
     }
 
     function setRawQuery(value) {
-        data.value[route.params.sourceSlug].rawQuery = value
+        _rawQuery.value = value
     }
 
     function setLimit(value) {
-        data.value[route.params.sourceSlug].limit = value
+        _limit.value = value
     }
 
     function setFrom(value) {
-        if (!humanRelatedTimeRegex.exec(value)) {
-            if (value instanceof Date) {
-                value = DateTime.fromJSDate(value).setZone(data.value[route.params.sourceSlug].timezone, { keepLocalTime: true }).toMillis()
-            } else {
-                let intValue = parseInt(value)
-                if (isNaN(intValue)) {
-                    value = value.toMillis({ zone: data.value[route.params.sourceSlug].timezone })
-                }
-            }
+        let newFrom = toTelescopeDate(tryToMillis(value))
+        if (newFrom.value !== _from.value.value) {
+            _from.value = newFrom
         }
-        data.value[route.params.sourceSlug].from = value
     }
 
     function setTo(value) {
-        if (!humanRelatedTimeRegex.exec(value)) {
-            if (value instanceof Date) {
-                value = DateTime.fromJSDate(value).setZone(data.value[route.params.sourceSlug].timezone, { keepLocalTime: true }).toMillis()
-            } else {
-                let intValue = parseInt(value)
-                if (isNaN(intValue)) {
-                    value = value.toMillis({ zone: data.value[route.params.sourceSlug].timezone })
-                }
-            }
+        let newTo = toTelescopeDate(tryToMillis(value))
+        if (newTo.value !== _to.value.value) {
+            _to.value = newTo
         }
-        data.value[route.params.sourceSlug].to = value
     }
 
     function setTimezone(value) {
-        data.value[route.params.sourceSLug].timezone = value
+        _timezone.value = value
     }
 
     function setGraphGroupBy(value) {
-        data.value[route.params.sourceSlug].graphGroupBy = value
+        _graphGroupBy.value = value
     }
 
     function setShowGraph(value) {
-        data.value[route.params.sourceSlug].showGraph = value
+        _showGraph.value = value
     }
 
     function setContextField(field, value) {
-        data.value[route.params.sourceSlug].contextFields[field] = value
+        _contextFields.value[field] = value
+    }
+
+    function setContextFields(value) {
+        _contextFields.value = value
     }
 
     function addQueryExpression(field, operator, value) {
-        let currentQuery = query.value
-        if (currentQuery != "") {
+        let currentQuery = _query.value
+        if (currentQuery !== '') {
             currentQuery += ` ${FlyQLBoolOperator.AND} `
         }
-        if (typeof value === "string") {
+        if (typeof value === 'string') {
             value = '"' + value.replace(/"/g, '\\"') + '"'
         }
         currentQuery += `${field}${operator}${value}`
-        data.value[route.params.sourceSlug].query = currentQuery
-        toast.add({ severity: 'success', summary: 'Success', detail: 'Query was updated', life: 3000 });
+        setQuery(currentQuery)
+        toast.add({ severity: 'success', summary: 'Success', detail: 'Query was updated', life: 3000 })
+    }
+
+    function toTelescopeDate(value) {
+        return new TelescopeDate({
+            value: value,
+            timezone: _timezone.value,
+        })
+    }
+
+    function tryToMillis(value) {
+        if (!humanRelatedTimeRegex.exec(value)) {
+            if (value instanceof Date) {
+                value = DateTime.fromJSDate(value).setZone(_timezone.value, { keepLocalTime: true }).toMillis()
+            } else {
+                let intValue = parseInt(value)
+                if (isNaN(intValue)) {
+                    value = value.toMillis({ zone: _timezone.value })
+                }
+            }
+        }
+        return value
     }
 
     return {
         init,
+        $reset,
+        setView,
         setFields,
         setQuery,
         setRawQuery,
@@ -240,9 +349,8 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setShowGraph,
         setContextField,
         from,
-        from,
         to,
-        to,
+        view,
         timezone,
         limit,
         fields,
@@ -251,9 +359,12 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         parsedFields,
         graphGroupBy,
         queryString,
+        queryParams,
+        routeQuery,
+        viewParams,
         dataRequestParams,
         graphRequestParams,
         showGraph,
-        contextFields
+        contextFields,
     }
 })

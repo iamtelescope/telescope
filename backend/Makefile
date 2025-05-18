@@ -1,0 +1,5 @@
+fmt:
+	black .
+
+test:
+	pytest

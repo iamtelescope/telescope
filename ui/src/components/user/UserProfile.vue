@@ -3,7 +3,7 @@
         <div class="flex flex-col min-w-[1000px] w-[1000px] max-w-[1000px]">
             <div class="flex flex-row mb-14">
                 <div class="flex flex-col justify-start text-nowrap">
-                    <span class="font-bold text-3xl">
+                    <span class="font-medium text-3xl">
                         <i class="pi pi-user text-3xl mr-1"></i>
                         <span class="text-gray-400">User profile: </span>
                         {{ user.username }}
@@ -16,10 +16,7 @@
                 <DataRow name="First name">{{ user.firstName || '–' }}</DataRow>
                 <DataRow name="Last name">{{ user.lastName || '–' }}</DataRow>
                 <DataRow name="Permissions">
-                    <div
-                        class="flex flex-wrap gap-2"
-                        v-if="user.permissions.length > 0"
-                    >
+                    <div class="flex flex-wrap gap-2" v-if="user.permissions.length > 0">
                         <Badge
                             v-for="perm in user.permissions"
                             :key="perm"
@@ -31,10 +28,7 @@
                     <span v-else>–</span>
                 </DataRow>
                 <DataRow name="Groups">
-                    <div
-                        class="flex flex-wrap gap-2"
-                        v-if="user.groups.length > 0"
-                    >
+                    <div class="flex flex-wrap gap-2" v-if="user.groups.length > 0">
                         <Badge
                             v-for="group in user.groups"
                             :key="group"
@@ -48,11 +42,7 @@
             </div>
             <div class="w-full">
                 <div class="flex flex-row w-full mt-9 align-middle">
-                    <div
-                        class="flex items-center font-bold text-xl text-nowrap"
-                    >
-                        API Tokens
-                    </div>
+                    <div class="flex items-center font-medium text-xl text-nowrap">API Tokens</div>
                     <div class="flex items-center w-full justify-end">
                         <Button
                             severity="primary"
@@ -73,7 +63,7 @@
                         />
                     </div>
                 </div>
-                <DataView :loading="loading" :error="error">
+                <DataView :loadings="[loading]" :errors="[error]">
                     <div class="flex flex-row w-full mt-5">
                         <DataTable
                             v-if="tokens.length"
@@ -85,17 +75,12 @@
                             v-model:selection="selectedTokens"
                             dataKey="token"
                         >
-                            <Column
-                                selectionMode="multiple"
-                                headerStyle="width: 3rem"
-                            ></Column>
+                            <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
 
                             <Column field="name" sortable header="Name" />
                             <Column sortable header="Created">
                                 <template #body="slotProps">
-                                    <DateTimeFormatted
-                                        :value="slotProps.data.created"
-                                    />
+                                    <DateTimeFormatted :value="slotProps.data.created" />
                                 </template>
                             </Column>
                             <Column header="Token" bodyClass="font-mono">
@@ -118,7 +103,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { Badge, Button, Column, DataTable, useToast } from 'primevue'
-import { AuthService } from '@/sdk/services/Auth'
+import { AuthService } from '@/sdk/services/auth'
 import { useAuthStore } from '@/stores/auth'
 import { useNavStore } from '@/stores/nav'
 import Copy from '@/components/common/Copy.vue'
@@ -154,15 +139,13 @@ const deleteTokenBtnLabel = computed(() => {
 })
 
 const handleApiTokenCreate = () => {
-  router.push({ name: 'apiTokenNew' })
+    router.push({ name: 'apiTokenNew' })
 }
 
 const handleDeleteTokens = async () => {
     deleteTokenBtnLoading.value = true
 
-    let response = await authSrv.deleteCurrentUserAPITokens(
-        selectedTokens.value.map((t) => t.token),
-    )
+    let response = await authSrv.deleteCurrentUserAPITokens(selectedTokens.value.map((t) => t.token))
     deleteTokenBtnLoading.value = false
     selectedTokens.value = []
 

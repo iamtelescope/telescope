@@ -1,5 +1,5 @@
 <template>
-  <Sources />
+    <Sources />
 </template>
 
 <script setup>

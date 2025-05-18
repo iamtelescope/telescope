@@ -1,15 +1,14 @@
 function getDefaultIfUndefined(value, defaultValue) {
     if (value == undefined) {
-        return defaultValue;
+        return defaultValue
     } else {
         return value
     }
 }
 
 function isNumeric(str) {
-    if (typeof str != "string") return false
-    return !isNaN(str) &&
-        !isNaN(parseFloat(str))
+    if (typeof str != 'string') return false
+    return !isNaN(str) && !isNaN(parseFloat(str))
 }
 
 function getBooleanFromString(value, defaultIfUndefined) {
@@ -24,4 +23,4 @@ function getBooleanFromString(value, defaultIfUndefined) {
     }
 }
 
-export { getDefaultIfUndefined, isNumeric, getBooleanFromString}
+export { getDefaultIfUndefined, isNumeric, getBooleanFromString }

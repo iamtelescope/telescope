@@ -64,7 +64,7 @@
             </div>
             <div id="promodata"
                 class="flex flex-col items-center text-center w-full justify-center pt-[150px] px-6 space-y-12 mb-20">
-                <h1 class="text-5xl font-bold text-gray-900">Open-source web-based <span
+                <h1 class="text-5xl font-medium text-gray-900">Open-source web-based <span
                         class="bg-gradient-to-r from-blue-500 to-green-800 bg-clip-text text-transparent">Log Viewer
                     </span>UI</h1>
                 <p class="text-xl text-gray-700 max-w-4xl">
@@ -73,7 +73,7 @@
                     Powered by <img src="@/assets/clickhouse.png" alt="ClickHouse Logo"
                         class="inline-block h-6 w-6 mb-1 ml-1 align-middle"> <a
                         href="https://github.com/ClickHouse/ClickHouse" target="_blank"
-                        class="font-bold text-blue-600">ClickHouse</a>.
+                        class="font-medium text-blue-600">ClickHouse</a>.
                 </p>
                 <div class="flex flex-row space-x-4">
                     <Button label="Live Demo" icon="pi pi-caret-right" severity="primary" class="px-6" as="a"
@@ -92,18 +92,18 @@
                     </template>
                 </Galleria>
 
-                <h2 class="text-3xl font-bold text-gray-900">Features</h2>
+                <h2 class="text-3xl font-medium text-gray-900">Features</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
                     <Card class="shadow-lg text-left h-full flex flex-col">
                         <template #title>
                             <div class="pb-2"><i class="pi pi-database text-yellow-600 text-3xl"></i></div>
-                            <div class="font-bold">Sources Management</div>
+                            <div class="font-medium">Sources Management</div>
                         </template>
                         <template #content>
                             <div class="text-lg">
-                                Manage <span class="font-bold">multiple</span> log sources, including <span class="font-bold">ClickHouse</span>
-                                and <span class="font-bold">Docker</span>.
-                                Configure field <span class="font-bold">visibility, autocompletion,
+                                Manage <span class="font-medium">multiple</span> log sources, including <span class="font-medium">ClickHouse</span>
+                                and <span class="font-medium">Docker</span>.
+                                Configure field <span class="font-medium">visibility, autocompletion,
                                     and permissions</span> for precise data control.
                             </div>
                         </template>
@@ -111,21 +111,21 @@
                     <Card class="shadow-lg text-left h-full flex flex-col ">
                         <template #title>
                             <div class="pb-2"><i class="pi pi-search text-blue-600 text-3xl"></i></div>
-                            <div class="font-bold"> Efficient Log Search</div>
+                            <div class="font-medium"> Efficient Log Search</div>
                         </template>
                         <template #content>
-                            <div class="text-lg"><span class="font-bold">Fast</span> and <span
-                                    class="font-bold">precise</span> log
+                            <div class="text-lg"><span class="font-medium">Fast</span> and <span
+                                    class="font-medium">precise</span> log
                                 searches are enabled through structured filtering, removing the need for raw SQL.</div>
                         </template>
                     </Card>
                     <Card class="shadow-lg text-left h-full flex flex-col">
                         <template #title>
                             <div class="pb-2"><i class="pi pi-chart-bar text-green-600 text-3xl"></i></div>
-                            <div class="font-bold">Data Visualization</div>
+                            <div class="font-medium">Data Visualization</div>
                         </template>
                         <template #content>
-                            <div class="text-lg">A <span class="font-bold">simple yet effective</span> data
+                            <div class="text-lg">A <span class="font-medium">simple yet effective</span> data
                                 visualization allows users
                                 to group logs and track trends through an interactive graph for quick analysis.
                             </div>
@@ -135,11 +135,11 @@
                     <Card class="shadow-lg text-left h-full flex flex-col">
                         <template #title>
                             <div class="pb-2"><i class="pi pi-lock text-red-700 text-3xl"></i></div>
-                            <div class="font-bold">Security</div>
+                            <div class="font-medium">Security</div>
                         </template>
                         <template #content>
                             <div class="text-lg">
-                                Ensure <span class="font-bold">secure access with role-based permissions</span>, GitHub
+                                Ensure <span class="font-medium">secure access with role-based permissions</span>, GitHub
                                 authentication, and controlled query execution to prevent unauthorized data exposure.
                             </div>
                         </template>
@@ -147,11 +147,11 @@
                     <Card class="shadow-lg text-left h-full flex flex-col">
                         <template #title>
                             <div class="pb-2"><i class="pi pi-bolt text-purple-600 text-3xl"></i></div>
-                            <div class="font-bold"> High-Performance Log Exploration</div>
+                            <div class="font-medium"> High-Performance Log Exploration</div>
                         </template>
                         <template #content>
                             <div class="text-lg">
-                                Experience a <span class="font-bold">lightning-fast UI</span> optimized for seamless
+                                Experience a <span class="font-medium">lightning-fast UI</span> optimized for seamless
                                 navigation, powered by ClickHouse efficient query execution on large datasets.
                             </div>
                         </template>
@@ -159,10 +159,10 @@
                     <Card class="shadow-lg text-left h-full flex flex-col">
                         <template #title>
                             <div class="pb-2"><i class="pi pi-cog text-teal-600 text-3xl"></i></div>
-                            <div class="font-bold">Flexible Data Display and Formatting</div>
+                            <div class="font-medium">Flexible Data Display and Formatting</div>
                         </template>
                         <template #content>
-                            <div class="text-lg">Customize data display with <span class="font-bold">field selection,
+                            <div class="text-lg">Customize data display with <span class="font-medium">field selection,
                                     formatting
                                     options, and structured query filtering</span> for a tailored log exploration
                                 experience.</div>
@@ -171,10 +171,10 @@
                     <Card class="shadow-lg text-left h-full flex flex-col">
                         <template #title>
                             <div class="pb-2"><i class="pi pi-code text-sky-600 text-3xl"></i></div>
-                            <div class="font-bold">True Open Source</div>
+                            <div class="font-medium">True Open Source</div>
                         </template>
                         <template #content>
-                            <div class="text-lg">Fully open-source under the <span class="font-bold">MIT license</span>,
+                            <div class="text-lg">Fully open-source under the <span class="font-medium">MIT license</span>,
                                 providing the freedom to <span class="bold">use, modify, and extend without
                                     restrictions</span>.</div>
                         </template>
@@ -183,11 +183,11 @@
                         <template #title>
                             <div class="pb-2 flex flex-row"><i class="pi pi-clock text-gray-600 text-3xl pr-4"></i>
                                 Coming soon...</div>
-                            <div class="font-bold">Saved Searches and Collaboration</div>
+                            <div class="font-medium">Saved Searches and Collaboration</div>
                         </template>
                         <template #content>
                             <div class="text-lg">Save <span class="bold">query presets</span> and share log views with
-                                teammates for <span class="font-bold">faster troubleshooting</span> and consistency.
+                                teammates for <span class="font-medium">faster troubleshooting</span> and consistency.
                             </div>
                         </template>
                     </Card>
@@ -195,10 +195,10 @@
                         <template #title>
                             <div class="pb-2 flex flex-row"><i class="pi pi-clock text-gray-600 text-3xl pr-4"></i>
                                 Coming soon...</div>
-                            <div class="font-bold">Live Log Streaming and Real-time Updates</div>
+                            <div class="font-medium">Live Log Streaming and Real-time Updates</div>
                         </template>
                         <template #content>
-                            <div class="text-lg">Continuously <span class="font-bold">stream log updates in
+                            <div class="text-lg">Continuously <span class="font-medium">stream log updates in
                                     real-time</span> for immediate insights.</div>
                         </template>
                     </Card>

@@ -1,11 +1,22 @@
+import logging
+
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+from django.contrib.auth.models import User
 
+from telescope.constants import (
+    VIEW_SCOPE_PERSONAL,
+    VIEW_SCOPE_SOURCE,
+    VIEW_KIND_USER,
+    VIEW_KIND_SHARED,
+    VIEW_KIND_SOURCE,
+)
 from telescope.rbac.roles import ROLES
 from telescope.rbac import permissions
-from telescope.models import GlobalRoleBinding, SourceRoleBinding, Source
+from telescope.models import GlobalRoleBinding, SourceRoleBinding, Source, SavedView
+
+logger = logging.getLogger("telescope.rbac.helpers")
 
 
 def roles_to_permissions(roles, kind):
@@ -97,6 +108,19 @@ def revoke_source_role(source, role, user=None, group=None):
     return deleted
 
 
+def require_global_permissions(
+    user,
+    required_permissions,
+):
+    user_permissions = get_user_global_permissions(user)
+    for permission in required_permissions:
+        if permission not in user_permissions:
+            logger.debug(
+                "use %s has no global permission: %s", user.username, permission
+            )
+            raise PermissionDenied("Insufficient permissions")
+
+
 def require_source_permissions(
     user, source_slug, required_permissions, raise_exception=True
 ):
@@ -185,10 +209,10 @@ def get_sources(user, source_slug=None, source_filter=None, required_permissions
         )
 
     if source_slug and not sources:
-        raise ObjectDoesNotExist(f"object with pk {source_slug} does not exist")
+        raise Source.DoesNotExist(f"object with pk {source_slug} does not exist")
     elif source_slug and len(sources) > 1:
-        raise MultipleObjectsReturned(
-            f"returnted mor than one Source -- it returned {len(sources)}!"
+        raise Source.MultipleObjectsReturned(
+            f"returned mor than one Source -- it returned {len(sources)}!"
         )
     elif source_slug and len(sources) == 1:
         return sources[0]
@@ -196,7 +220,69 @@ def get_sources(user, source_slug=None, source_filter=None, required_permissions
         return sources
 
 
+def calculate_view_permissions(user, source, view):
+    # should never happens
+    if view.source_id != source.pk:
+        raise ValueError
+
+    view_permissions = set()
+    if view.is_personal_scope():
+        if view.user == user:
+            view_permissions.add(permissions.SavedView.READ.value)
+            view_permissions.add(permissions.SavedView.EDIT.value)
+        else:
+            if view.shared:
+                view_permissions.add(permissions.SavedView.READ.value)
+    else:
+        if permissions.Source.READ.value in source.permissions:
+            view_permissions.add(permissions.SavedView.READ.value)
+        if permissions.Source.EDIT.value in source.permissions:
+            view_permissions.add(permissions.SavedView.EDIT.value)
+
+    return view_permissions
+
+
+def require_saved_view_ownership(user: User, view: SavedView):
+    if view.user != user:
+        raise PermissionDenied("Insufficient permissions")
+
+
 def get_source(user, slug, required_permissions):
     return get_sources(
         user, source_slug=slug, required_permissions=required_permissions
     )
+
+
+def get_saved_view_kind(user, view):
+    if view.scope == VIEW_SCOPE_SOURCE:
+        return VIEW_KIND_SOURCE
+    else:
+        if view.user == user:
+            return VIEW_KIND_USER
+        else:
+            return VIEW_KIND_SHARED
+
+
+def get_source_saved_views(user, source_slug, required_permissions):
+    source = get_source(user, source_slug, required_permissions)
+    views = []
+    for view in SavedView.objects.filter(
+        Q(source=source, user=user, scope=VIEW_SCOPE_PERSONAL)
+        | Q(source=source, scope=VIEW_SCOPE_SOURCE)
+        | Q(source=source, scope=VIEW_SCOPE_PERSONAL, shared=True),
+    ):
+        view.add_perms(calculate_view_permissions(user, source, view))
+        view.set_kind(get_saved_view_kind(user, view))
+        views.append(view)
+    return views
+
+
+def get_source_saved_view(user, source_slug, view_slug, required_permissions):
+    source = get_source(user, source_slug, required_permissions)
+    view = SavedView.objects.get(
+        Q(slug=view_slug, source=source, user=user, scope=VIEW_SCOPE_PERSONAL)
+        | Q(slug=view_slug, source=source, scope=VIEW_SCOPE_SOURCE)
+    )
+    view.add_perms(calculate_view_permissions(user, source, view))
+    view.set_kind(get_saved_view_kind(user, view))
+    return view

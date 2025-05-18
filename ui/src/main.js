@@ -4,8 +4,8 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 
-import "@fontsource/open-sans"
-import "@fontsource/open-sans/500.css"
+import '@fontsource/open-sans'
+import '@fontsource/open-sans/500.css'
 
 import PrimeVue from 'primevue/config'
 
@@ -45,9 +45,9 @@ app.use(PrimeVue, {
             cssLayer: {
                 name: 'primevue',
                 order: 'tailwind-base, primevue, tailwind-utilities',
-            }
-        }
-    }
+            },
+        },
+    },
 })
 app.use(ConfirmationService)
 app.use(ToastService)

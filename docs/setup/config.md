@@ -44,6 +44,11 @@ gunicorn:
   timeout: 120
   workers: 8
 
+# Section defines various per-user or system-wide constraints for Telescope.
+limits:
+  # Specifies the maximum number of saved views a single user can create. If set to `0`, the limit is disabled and users can create unlimited views.
+  max_saved_views_per_user: 0
+  
 # Options provided to vuejs app after loading config via `/ui/v1/config` handler
 frontend:
     show_github_url: true  # show or not github url on top panel

@@ -1,26 +1,22 @@
 <template>
-  <div v-if="loading">
-    <Loader />
-  </div>
-  <div v-else>
-    <div v-if="error">
-      <Error :error="error" />
-    </div>
-    <div v-else>
-      <SourceData :source="source" v-if="source" />
-    </div>
-  </div>
+    <DataView :loadings="[sourceLoading, savedViewLoading]" :errors="[sourceError, savedViewError]">
+        <Explorer :source="source" :savedView="savedView" v-if="source" />
+    </DataView>
 </template>
 
 <script setup>
 import { useRoute } from 'vue-router'
 
-import { useGetSource } from '@/composables/sources/useSourceService'
+import { useGetSource, useGetSavedView } from '@/composables/sources/useSourceService'
 
-import Error from '@/components/common/Error.vue'
-import Loader from '@/components/common/Loader.vue'
-import SourceData from '@/components/sources/data/SourceData.vue'
+import DataView from '@/components/common/DataView.vue'
+import Explorer from '@/components/explorer/Explorer.vue'
 
 const route = useRoute()
-const { source, error, loading } = useGetSource(route.params.sourceSlug)
+const { source, error: sourceError, loading: sourceLoading } = useGetSource(route.params.sourceSlug)
+const {
+    savedView: savedView,
+    error: savedViewError,
+    loading: savedViewLoading,
+} = useGetSavedView(route.params.sourceSlug, route.query.view)
 </script>

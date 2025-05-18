@@ -1,61 +1,37 @@
-import json
 import logging
 
 from zoneinfo import ZoneInfo
 
-from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User, Group
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import serializers
-
-from clickhouse_driver import Client
 
 from telescope.rbac.helpers import (
-    get_sources,
-    get_source,
     grant_source_role,
     revoke_source_role,
     require_source_permissions,
-    user_has_source_permissions,
 )
 
+from telescope.services.source import SourceService, SourceSavedViewService
+from telescope.services.exceptions import SerializerValidationError
 from telescope.fetchers import get_fetchers
 from telescope.fetchers.request import DataRequest, GraphDataRequest
-from telescope.rbac.roles import SourceRole
 from telescope.rbac import permissions
-from telescope.auth.decorators import global_permission_required
-from telescope.fields import parse as parse_fields
-from telescope.fields import ParserError as FieldsParserError
 from telescope.response import UIResponse
-from telescope.models import Source, SourceRoleBinding
+from telescope.models import Source, SourceRoleBinding, SavedView
 from telescope.serializers.source import (
-    SourceAdminSerializer,
-    SourceSerializer,
-    UserSerializer,
-    GroupSerializer,
-    SubjectSerializer,
     SourceRoleSerializer,
     SourceRoleBindingSerializer,
     ClickhouseConnectionSerializer,
     DockerConnectionSerializer,
-    SourceWithConnectionSerializer,
-    SourceFieldSerializer,
-    SourceKindSerializer,
-    NewClickhouseSourceSerializer,
-    NewDockerSourceSerializer,
-    UpdateClickhouseSourceSerializer,
-    UpdateDockerSourceSerializer,
     SourceDataRequestSerializer,
     SourceGraphDataRequestSerializer,
     SourceAutocompleteRequestSerializer,
     SourceContextFieldDataSerializer,
 )
-
 
 logger = logging.getLogger("telescope.views.source")
 
@@ -63,6 +39,8 @@ CONNECTION_KIND_TO_SERIALIZER = {
     "clickhouse": ClickhouseConnectionSerializer,
     "docker": DockerConnectionSerializer,
 }
+
+source_srv = SourceService()
 
 
 class SourceRoleBindingView(APIView):
@@ -86,69 +64,100 @@ class SourceRoleBindingView(APIView):
         return Response(response.as_dict())
 
 
+class SourceSavedViewView(APIView):
+    @method_decorator(login_required)
+    def get(self, request, slug, view_slug=None):
+        response = UIResponse()
+        saved_view_srv = SourceSavedViewService(slug=slug)
+
+        try:
+            if view_slug is None:
+                data = saved_view_srv.list(user=request.user)
+            else:
+                data = saved_view_srv.get(user=request.user, view_slug=view_slug)
+        except Exception as err:
+            logger.exception(err)
+            response.mark_failed(f"failed to list source saved views: {err}")
+        else:
+            response.data = data
+        return Response(response.as_dict())
+
+    @method_decorator(login_required)
+    def post(self, request, slug):
+        response = UIResponse()
+        saved_view_srv = SourceSavedViewService(slug=slug)
+
+        try:
+            response.data = saved_view_srv.create(
+                user=request.user, slug=slug, data=request.data
+            )
+        except SerializerValidationError as err:
+            response.mark_invalid(err.serializer.errors)
+        except Exception as err:
+            logger.exception(err)
+            response.mark_failed(f"failed to create saved view: {err}")
+        else:
+            response.add_msg("View has been created")
+        return Response(response.as_dict())
+
+    @method_decorator(login_required)
+    def patch(self, request, slug, view_slug):
+        response = UIResponse()
+        saved_view_srv = SourceSavedViewService(slug=slug)
+
+        try:
+            response.data = saved_view_srv.update(
+                user=request.user, slug=view_slug, data=request.data
+            )
+        except SerializerValidationError as err:
+            response.mark_invalid(err.serializer.errors)
+        except Exception as err:
+            logger.exception(err)
+            response.mark_failed(f"failed to update saved view: {err}")
+        else:
+            response.add_msg("View has been updated")
+        return Response(response.as_dict())
+
+    @method_decorator(login_required)
+    def delete(self, request, slug, view_slug):
+        response = UIResponse()
+        saved_view_srv = SourceSavedViewService(slug=slug)
+
+        try:
+            saved_view_srv.delete(user=request.user, view_slug=view_slug)
+        except Exception as err:
+            logger.exception(err)
+            response.mark_failed(f"failed to delete saved view: {err}")
+        else:
+            response.add_msg(f"View {view_slug} has been deleted")
+        return Response(response.as_dict())
+
+
 class SourceView(APIView):
     @method_decorator(login_required)
     def get(self, request, slug=None):
         response = UIResponse()
+
         try:
             if slug is None:
-                sources = get_sources(
-                    request.user, required_permissions=[permissions.Source.READ.value]
-                )
-                serializer = SourceSerializer(sources, many=True)
+                data = source_srv.list(user=request.user)
             else:
-                source = get_source(
-                    request.user,
-                    slug=slug,
-                    required_permissions=[permissions.Source.READ.value],
-                )
-                if user_has_source_permissions(
-                    request.user,
-                    source_slug=slug,
-                    required_permissions=[permissions.Source.EDIT.value],
-                ):
-                    serializer_class = SourceWithConnectionSerializer
-                else:
-                    serializer_class = SourceSerializer
-                serializer = serializer_class(source)
+                data = source_srv.get(user=request.user, slug=slug)
         except Exception as err:
             logger.exception(err)
             response.mark_failed(f"failed to get sources: {err}")
         else:
-            response.data = serializer.data
+            response.data = data
         return Response(response.as_dict())
 
     @method_decorator(login_required)
-    @method_decorator(
-        global_permission_required([permissions.Global.CREATE_SOURCE.value])
-    )
     def post(self, request):
         response = UIResponse()
 
         try:
-            kind_serializer = SourceKindSerializer(data=request.data)
-            if not kind_serializer.is_valid():
-                response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
-                return Response(response.as_dict())
-            kind = kind_serializer.data["kind"]
-            if kind == "clickhouse":
-                serializer_cls = NewClickhouseSourceSerializer
-            elif kind == "docker":
-                serializer_cls = NewDockerSourceSerializer
-            serializer = serializer_cls(data=request.data)
-            if not serializer.is_valid():
-                response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
-            else:
-                with transaction.atomic():
-                    source = Source.create(
-                        kind, serializer.data, username=request.user.username
-                    )
-                    grant_source_role(
-                        source=source, role=SourceRole.OWNER.value, user=request.user
-                    )
-                    response.data = {"slug": source.slug}
+            response.data = source_srv.create(user=request.user, data=request.data)
+        except SerializerValidationError as err:
+            response.mark_invalid(err.serializer.errors)
         except Exception as err:
             logger.exception(err)
             response.mark_failed(f"failed to create source: {err}")
@@ -158,48 +167,23 @@ class SourceView(APIView):
     def patch(self, request, slug):
         response = UIResponse()
 
-        require_source_permissions(
-            user=request.user,
-            source_slug=slug,
-            required_permissions=[permissions.Source.EDIT.value],
-        )
-
         try:
-            source = Source.objects.get(slug=slug)
-            if source.kind == "clickhouse":
-                serializer_cls = UpdateClickhouseSourceSerializer
-            elif source.kind == "docker":
-                serializer_cls = UpdateDockerSourceSerializer
-            serializer = serializer_cls(data=request.data)
-            if not serializer.is_valid():
-                response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
-            else:
-                with transaction.atomic():
-                    for key, value in serializer.data.items():
-                        if key != "slug":
-                            setattr(source, key, value)
-                    source.save()
-
-                    response.data = {"slug": source.slug}
+            response.data = source_srv.update(
+                user=request.user, slug=slug, data=request.data
+            )
+        except SerializerValidationError as err:
+            response.mark_invalid(err.serializer.errors)
         except Exception as err:
             logger.exception(err)
-            response.mark_failed(f"failed to update source: {err}")
+            response.mark_failed(f"failed to create source: {err}")
         return Response(response.as_dict())
 
     @method_decorator(login_required)
     def delete(self, request, slug):
         response = UIResponse()
 
-        require_source_permissions(
-            user=request.user,
-            source_slug=slug,
-            required_permissions=[permissions.Source.DELETE.value],
-        )
-
         try:
-            with transaction.atomic():
-                Source.objects.get(slug=slug).delete()
+            source_srv.delete(user=request.user, slug=slug)
         except Exception as err:
             logger.exception("unhandled exception: %s", err)
             response.mark_failed(f"failed to delete source: {err}")
@@ -348,7 +332,7 @@ class SourceDataView(APIView):
             fetcher = get_fetchers()[source.kind]
             data_request = DataRequest(
                 source=source,
-                query=serializer.validated_data["query"],
+                query=serializer.validated_data.get("query", ""),
                 raw_query=serializer.validated_data.get("raw_query", ""),
                 time_from=serializer.validated_data["from"],
                 time_to=serializer.validated_data["to"],
@@ -425,7 +409,7 @@ class SourceGraphDataView(APIView):
             fetcher = get_fetchers()[source.kind]
             graph_data_request = GraphDataRequest(
                 source=source,
-                query=serializer.validated_data["query"],
+                query=serializer.validated_data.get("query", ""),
                 raw_query=serializer.validated_data.get("raw_query", ""),
                 time_from=serializer.validated_data["from"],
                 time_to=serializer.validated_data["to"],

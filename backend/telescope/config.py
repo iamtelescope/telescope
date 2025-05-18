@@ -47,6 +47,11 @@ SCHEMA = {
                 },
             },
         },
+        "limits": {
+            "max_saved_views_per_user": {
+                "type": "integer",
+            },
+        },
         "django": {
             "type": "object",
             "properties": {
@@ -157,6 +162,9 @@ def get_default_config():
                     "NAME": "telescope-default-db.sqlite3",
                 },
             },
+        },
+        "limits": {
+            "max_saved_views_per_user": 0,
         },
         "auth": {
             "providers": {

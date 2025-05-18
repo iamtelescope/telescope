@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { Role } from '@/sdk/models/rbac'
-import { RoleService } from '@/sdk/services/Role'
+import { RoleService } from '@/sdk/services/role'
 
 const srv = new RoleService()
 

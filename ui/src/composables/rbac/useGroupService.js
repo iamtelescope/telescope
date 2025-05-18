@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { Group } from '@/sdk/models/rbac'
-import { GroupService } from '@/sdk/services/Group'
+import { GroupService } from '@/sdk/services/group'
 
 const srv = new GroupService()
 
@@ -39,7 +39,6 @@ const useGetSimpleGroups = () => {
     load()
     return { groups, error, loading, load }
 }
-
 
 const useGetGroup = (groupId) => {
     const group = ref(null)

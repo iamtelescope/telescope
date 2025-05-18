@@ -13,8 +13,5 @@ import SourceForm from '@/components/sources/SourceForm.vue'
 
 const navStore = useNavStore()
 
-navStore.updatev2([
-    'sources',
-    'New',
-])
+navStore.updatev2(['sources', 'New'])
 </script>

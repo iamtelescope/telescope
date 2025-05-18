@@ -1,22 +1,21 @@
-import { isNumeric } from "@/utils/utils.js"
+import { isNumeric } from '@/utils/utils.js'
 
-
-const DOT = "."
+const DOT = '.'
 const DOUBLE_QUOTE = '"'
 const SINGLE_QUOTE = "'"
-const MODIFIER_OPERATOR = "|"
-const MODIFIER_ARGUMENT_DELIMITER = ","
-const FIELDS_DELIMITER = ","
-const SPACE = " "
-const ALIAS_DELIMITER = " "
-const COLON = ":"
-const SLASH = "/"
-const BACKSLASH = "\\"
-const BRACKET_OPEN = "("
-const BRACKET_CLOSE = ")"
-const UNDERSCORE = "_"
-const NEWLINE = "\n"
-const VALID_ALIAS_OPERATOR = "as"
+const MODIFIER_OPERATOR = '|'
+const MODIFIER_ARGUMENT_DELIMITER = ','
+const FIELDS_DELIMITER = ','
+const SPACE = ' '
+const ALIAS_DELIMITER = ' '
+const COLON = ':'
+const SLASH = '/'
+const BACKSLASH = '\\'
+const BRACKET_OPEN = '('
+const BRACKET_CLOSE = ')'
+const UNDERSCORE = '_'
+const NEWLINE = '\n'
+const VALID_ALIAS_OPERATOR = 'as'
 
 const CHARS = {
     DOT,
@@ -53,25 +52,25 @@ class ParserError extends Error {
 }
 
 const escapeSequences = Object.freeze({
-    'b': '\b',
-    'f': '\f',
-    'n': '\n',
-    'r': '\r',
-    't': '\t',
-    'v': '\v',
+    b: '\b',
+    f: '\f',
+    n: '\n',
+    r: '\r',
+    t: '\t',
+    v: '\v',
     '\\': '\\',
 })
 
 const CharType = Object.freeze({
-    FIELD: "field",
-    ARGUMENT: "argument",
-    OPERATOR: "operator",
-    MODIFIER: "modifier",
-    DELIMITER: "delimiter",
-    ALIAS: "alias",
-    ERROR: "error",
-    NUMBER: "number",
-    STRING: "string",
+    FIELD: 'field',
+    ARGUMENT: 'argument',
+    OPERATOR: 'operator',
+    MODIFIER: 'modifier',
+    DELIMITER: 'delimiter',
+    ALIAS: 'alias',
+    ERROR: 'error',
+    NUMBER: 'number',
+    STRING: 'string',
 })
 
 const tokenTypes = [
@@ -86,24 +85,24 @@ const tokenTypes = [
 ]
 
 const State = Object.freeze({
-    ERROR: "Error",
-    NAME: "Name",
-    EXPECT_NAME: "ExpectName",
-    EXPECT_ALIAS: "ExpectAlias",
-    EXPECT_ALIAS_OPERATOR: "ExpectAliasOperator",
-    EXPECT_ALIAS_DELIMITER: "ExpectAliasDelimiter",
-    EXPECT_MODIFIER: "ExpectModifier",
-    MODIFIER: "Modifier",
-    MODIFIER_COMPLETE: "ModifierComplete",
-    MODIFIER_OPERATOR: "ModifierOperator",
-    MODIFIER_ARGUMENT: "ModifierArgument",
-    MODIFIER_ARGUMENT_DOUBLE_QUOTED: "ModifierArgumentDoubleQuoted",
-    MODIFIER_ARGUMENT_SINGLE_QUOTED: "ModifierArgumentSingleQuoted",
-    EXPECT_MODIFIER_ARGUMENT: "ExpectModifierArgument",
-    EXPECT_MODIFIER_ARGUMENT_DELIMITER: "ExpectModifierArgumentDelimiter",
-    SINGLE_QUOTED_ARGUMENT: "SingleQuotedArgument",
-    DOUBLE_QUOTED_ARGUMENT: "DoubleQuotedArgument",
-    MODIFIER_ARGUMENT_DELIMITER: "ArgumentDelimiter"
+    ERROR: 'Error',
+    NAME: 'Name',
+    EXPECT_NAME: 'ExpectName',
+    EXPECT_ALIAS: 'ExpectAlias',
+    EXPECT_ALIAS_OPERATOR: 'ExpectAliasOperator',
+    EXPECT_ALIAS_DELIMITER: 'ExpectAliasDelimiter',
+    EXPECT_MODIFIER: 'ExpectModifier',
+    MODIFIER: 'Modifier',
+    MODIFIER_COMPLETE: 'ModifierComplete',
+    MODIFIER_OPERATOR: 'ModifierOperator',
+    MODIFIER_ARGUMENT: 'ModifierArgument',
+    MODIFIER_ARGUMENT_DOUBLE_QUOTED: 'ModifierArgumentDoubleQuoted',
+    MODIFIER_ARGUMENT_SINGLE_QUOTED: 'ModifierArgumentSingleQuoted',
+    EXPECT_MODIFIER_ARGUMENT: 'ExpectModifierArgument',
+    EXPECT_MODIFIER_ARGUMENT_DELIMITER: 'ExpectModifierArgumentDelimiter',
+    SINGLE_QUOTED_ARGUMENT: 'SingleQuotedArgument',
+    DOUBLE_QUOTED_ARGUMENT: 'DoubleQuotedArgument',
+    MODIFIER_ARGUMENT_DELIMITER: 'ArgumentDelimiter',
 })
 
 class Token {
@@ -138,11 +137,7 @@ class Char {
         )
     }
     isModifierArgumentValue() {
-        return (
-            this.value !== MODIFIER_ARGUMENT_DELIMITER &&
-            this.value !== BRACKET_OPEN &&
-            this.value !== BRACKET_CLOSE
-        )
+        return this.value !== MODIFIER_ARGUMENT_DELIMITER && this.value !== BRACKET_OPEN && this.value !== BRACKET_CLOSE
     }
 
     isModifierDoubleQuotedArgumentValue() {
@@ -157,7 +152,7 @@ class Char {
     }
 
     isAliasChar() {
-        return ["A", "a", "S", "s"].includes(this.value)
+        return ['A', 'a', 'S', 's'].includes(this.value)
     }
 
     isBracketOpen() {
@@ -211,14 +206,14 @@ class Parser {
         this.linePos = 0
         this.char = null
         this.state = State.EXPECT_NAME
-        this.errorText = ""
+        this.errorText = ''
         this.errno = 0
-        this.field = ""
-        this.alias = ""
-        this.aliasOperator = ""
-        this.modifier = ""
-        this.modifierArgument = ""
-        this.modifierArgumentType = "auto"
+        this.field = ''
+        this.alias = ''
+        this.aliasOperator = ''
+        this.modifier = ''
+        this.modifierArgument = ''
+        this.modifierArgumentType = 'auto'
         this.modifiers = []
         this.modifierArguments = []
         this.fields = []
@@ -232,28 +227,27 @@ class Parser {
         this.fields.push({
             name: this.field,
             modifiers: this.modifiers,
-            alias: this.alias
+            alias: this.alias,
         })
         this.resetData()
     }
     storeModifier() {
         this.modifiers.push({
             name: this.modifier,
-            arguments: this.modifierArguments
+            arguments: this.modifierArguments,
         })
         this.resetModifier()
     }
     storeArgument() {
         let value = this.modifierArgument
 
-        if (this.modifierArgumentType === "auto") {
+        if (this.modifierArgumentType === 'auto') {
             try {
                 value = parseInt(value)
             } catch (e) {
                 try {
                     value = parseFloat(value)
                 } catch (e) {
-
                     // value remains as it is
                 }
             }
@@ -274,20 +268,20 @@ class Parser {
     }
 
     resetModifier() {
-        this.modifier = ""
+        this.modifier = ''
         this.modifierArguments = []
-        this.modifierArgument = ""
+        this.modifierArgument = ''
     }
     resetField() {
-        this.field = ""
+        this.field = ''
     }
 
     resetAliasOperator() {
-        this.aliasOperator = ""
+        this.aliasOperator = ''
     }
 
     resetAlias() {
-        this.alias = ""
+        this.alias = ''
     }
 
     resetModifiers() {
@@ -295,8 +289,8 @@ class Parser {
     }
 
     resetModifierArgument() {
-        this.modifierArgument = ""
-        this.modifierArgumentType = "auto"
+        this.modifierArgument = ''
+        this.modifierArgumentType = 'auto'
     }
     resetData() {
         this.resetField()
@@ -383,13 +377,11 @@ class Parser {
     }
     getFields(source, raiseError) {
         const data = []
-        this.fields.forEach(field => {
-            const sourceFieldName = field.name.split(":")[0]
+        this.fields.forEach((field) => {
+            const sourceFieldName = field.name.split(':')[0]
             if (!source.fields[sourceFieldName]) {
                 if (raiseError) {
-                    throw new ParserError(
-                        `Source has no '${sourceFieldName}' field`, 100
-                    )
+                    throw new ParserError(`Source has no '${sourceFieldName}' field`, 100)
                 } else {
                     return
                 }
@@ -475,7 +467,7 @@ class Parser {
             if (raiseError) {
                 throw new ParserError({
                     message: this.errorText,
-                    errno: this.errno
+                    errno: this.errno,
                 })
             } else {
                 return
@@ -488,7 +480,7 @@ class Parser {
             if (raiseError) {
                 throw new ParserError({
                     message: this.errorText,
-                    errno: this.errno
+                    errno: this.errno,
                 })
             } else {
                 return
@@ -516,7 +508,10 @@ class Parser {
         } else if (this.state === State.MODIFIER_COMPLETE) {
             this.storeModifier()
             this.storeField()
-        } else if (this.state === State.MODIFIER_ARGUMENT_DOUBLE_QUOTED || this.state === State.MODIFIER_ARGUMENT_SINGLE_QUOTED) {
+        } else if (
+            this.state === State.MODIFIER_ARGUMENT_DOUBLE_QUOTED ||
+            this.state === State.MODIFIER_ARGUMENT_SINGLE_QUOTED
+        ) {
             this.setErrorState(`unexpected end of quoted argument value`, 12)
         } else if (this.state === State.EXPECT_MODIFIER_ARGUMENT_DELIMITER) {
             this.setErrorState(`unexpected end of arguments list`, 15)
@@ -597,11 +592,11 @@ class Parser {
             return
         }
         if (this.char.isDoubleQuote()) {
-            this.modifierArgumentType = "str"
+            this.modifierArgumentType = 'str'
             this.setState(State.MODIFIER_ARGUMENT_DOUBLE_QUOTED)
             this.storeTypedChar(CharType.ARGUMENT)
         } else if (this.char.isSingleQuote()) {
-            this.modifierArgumentType = "str"
+            this.modifierArgumentType = 'str'
             this.setState(State.MODIFIER_ARGUMENT_SINGLE_QUOTED)
             this.storeTypedChar(CharType.ARGUMENT)
         } else if (this.char.isModifierArgumentValue()) {
@@ -638,10 +633,7 @@ class Parser {
             this.setState(State.MODIFIER_COMPLETE)
         } else {
             this.storeTypedChar(CharType.ERROR)
-            this.setErrorState(
-                `invalid character. Expected bracket close or modifier argument delimiter`,
-                9
-            )
+            this.setErrorState(`invalid character. Expected bracket close or modifier argument delimiter`, 9)
             return
         }
     }
@@ -732,7 +724,7 @@ class Parser {
             }
             if (this.aliasOperator.length === 2) {
                 if (this.aliasOperator.toLowerCase() !== VALID_ALIAS_OPERATOR) {
-                    this.setErrorState("invalid character", 3)
+                    this.setErrorState('invalid character', 3)
                 } else {
                     this.setState(State.EXPECT_ALIAS_DELIMITER)
                     this.resetAliasOperator()
@@ -742,7 +734,7 @@ class Parser {
             }
         } else {
             this.storeTypedChar(CharType.ERROR)
-            this.setErrorState("invalid character, expected alias operator", 4)
+            this.setErrorState('invalid character, expected alias operator', 4)
         }
     }
     inStateExpectAlias() {
@@ -763,7 +755,7 @@ class Parser {
             this.setState(State.EXPECT_ALIAS)
         } else {
             this.storeTypedChar(CharType.ERROR)
-            this.setErrorState("invalid character, expected alias delimiter", 5)
+            this.setErrorState('invalid character, expected alias delimiter', 5)
         }
     }
 }

@@ -1,14 +1,19 @@
 <template>
     <Fieldset class="text-wrap" :class="'mb-9'">
         <template #legend>
-            <span class="font-bold">Connection data</span>
+            <span class="font-medium">Connection data</span>
         </template>
         <div class="flex flex-col w-full flex-wrap gap-4">
             <div class="flex flex-row">
                 <div class="flex flex-col w-full mr-2">
                     <FloatLabel variant="on">
-                        <InputText id="connection_address" v-model="connectionData.address" fluid
-                            :disabled="connectionTestIsActive" :invalid="hasError('address')" />
+                        <InputText
+                            id="connection_address"
+                            v-model="connectionData.address"
+                            fluid
+                            :disabled="connectionTestIsActive"
+                            :invalid="hasError('address')"
+                        />
                         <label for="connection_label">Address</label>
                     </FloatLabel>
                     <ErrorText :text="connectionFieldErrors.address" />
@@ -18,8 +23,13 @@
         <ConnectionTestResult :data="connectionTestData" :loading="connectionTestIsActive" v-if="connectionTestCalled">
         </ConnectionTestResult>
         <div class="flex pt-5 justify-end">
-            <Button label="Validate connection" icon="pi pi-sync" size="small" @click="handleTestConnection"
-                :loading="connectionTestIsActive" />
+            <Button
+                label="Validate connection"
+                icon="pi pi-sync"
+                size="small"
+                @click="handleTestConnection"
+                :loading="connectionTestIsActive"
+            />
         </div>
     </Fieldset>
 </template>
@@ -35,7 +45,7 @@ import InputText from 'primevue/inputtext'
 import ConnectionTestResult from '@/components/sources/new/ConnectionTestResult.vue'
 
 import ErrorText from '@/components/common/ErrorText.vue'
-import { SourceService } from '@/sdk/services/Source'
+import { SourceService } from '@/sdk/services/source'
 
 const emit = defineEmits(['connectionDataValidated', 'connectionTestStarted', 'connectionDataChanged'])
 const props = defineProps(['source', 'startConnectionTest'])
@@ -51,7 +61,7 @@ const connectionTestPassed = ref(false)
 
 const getInitialConnectionData = () => {
     let data = {
-        'address': 'unix:///var/run/docker.sock',
+        address: 'unix:///var/run/docker.sock',
     }
     if (props.source) {
         data = props.source.connection
@@ -62,16 +72,16 @@ const getInitialConnectionData = () => {
 const connectionData = reactive(getInitialConnectionData())
 
 const connectionFieldErrors = reactive({
-    'address': '',
+    address: '',
 })
 
 const hasError = (key) => {
-    return connectionFieldErrors[key] != ""
+    return connectionFieldErrors[key] != ''
 }
 
 const resetErrors = () => {
     for (const field in connectionFieldErrors) {
-        connectionFieldErrors[field] = ""
+        connectionFieldErrors[field] = ''
     }
 }
 
@@ -111,6 +121,4 @@ onMounted(() => {
         handleTestConnection()
     }
 })
-
-
 </script>

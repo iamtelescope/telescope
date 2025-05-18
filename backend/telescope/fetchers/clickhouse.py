@@ -36,6 +36,13 @@ SSL_CERTS_PARAMS = ["ca_certs", "certfile", "keyfile"]
 OPTIONAL_SSL_PARAMS = ["ssl_version", "ciphers", "server_hostname", "alt_hosts"]
 
 
+def build_time_clause(time_field, date_field, time_from, time_to):
+    date_clause = ""
+    if date_field:
+        date_clause = f"{date_field} BETWEEN toDate(fromUnixTimestamp64Milli({time_from})) and toDate(fromUnixTimestamp64Milli({time_to})) AND "
+    return f"{date_clause}{time_field} BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
+
+
 class ClickhouseClient:
     def __init__(self, data: dict):
         self.data = data
@@ -107,6 +114,7 @@ class ConnectionTestResponse:
             "result": False,
             "error": "",
             "data": [],
+            "raw": "",
         }
 
     def as_dict(self) -> dict:
@@ -155,13 +163,23 @@ class Fetcher(BaseFetcher):
                     response.schema["data"] = [
                         get_telescope_field(x[0], x[1]) for x in result
                     ]
+                try:
+                    result = client.execute(f"SHOW CREATE TABLE {target}")
+                    response.schema["raw"] = result[0][0]
+                except Exception as err:
+                    logger.exception(
+                        "failed to get raw table schema (ignoring): %s", err
+                    )
+
         return response
 
     @classmethod
     def autocomplete(cls, source, field, time_from, time_to, value):
         incomplete = False
         from_db_table = f"{source.connection['database']}.{source.connection['table']}"
-        time_clause = f"{source.time_field} BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
+        time_clause = build_time_clause(
+            source.time_field, source.date_field, time_from, time_to
+        )
         query = f"SELECT DISTINCT {field} FROM {from_db_table} WHERE {time_clause} and {field} LIKE %(value)s ORDER BY {field} LIMIT 500"
         with ClickhouseClient(source.connection) as client:
             result = client.execute(query, {"value": f"%{value}%"})
@@ -211,7 +229,12 @@ class Fetcher(BaseFetcher):
                 group_by_value = f"toString({group_by.root_name})"
 
         total = 0
-        time_clause = f"{request.source.time_field} BETWEEN fromUnixTimestamp64Milli({request.time_from}) and fromUnixTimestamp64Milli({request.time_to})"
+        time_clause = build_time_clause(
+            request.source.time_field,
+            request.source.date_field,
+            request.time_from,
+            request.time_to,
+        )
         from_db_table = f"{request.source.connection['database']}.{request.source.connection['table']}"
 
         time_field_type = convert_to_base_ch(
@@ -313,7 +336,12 @@ class Fetcher(BaseFetcher):
         order_by_clause = f"ORDER BY {request.source.time_field} DESC"
         raw_where_clause = request.raw_query or "true"
 
-        time_clause = f"{request.source.time_field} BETWEEN fromUnixTimestamp64Milli({request.time_from}) and fromUnixTimestamp64Milli({request.time_to})"
+        time_clause = build_time_clause(
+            request.source.time_field,
+            request.source.date_field,
+            request.time_from,
+            request.time_to,
+        )
         from_db_table = f"{request.source.connection['database']}.{request.source.connection['table']}"
 
         fields_names = sorted(request.source._fields.keys())

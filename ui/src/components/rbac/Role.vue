@@ -1,15 +1,17 @@
 <template>
     <div class="flex flex-row justify-center mt-10">
         <div class="flex flex-col min-w-1280">
-            <DataView :loading="loading" :error="error">
+            <DataView :loadings="[loading]" :errors="[error]">
                 <div class="flex flex-row mb-14">
                     <div class="flex flex-col justify-start text-nowrap">
-                        <span class="font-bold text-3xl">
-                            <i class="pi pi-key text-3xl mr-1"></i> 
+                        <span class="font-medium text-3xl">
+                            <i class="pi pi-key text-3xl mr-1"></i>
                             <span class="text-gray-400">Roles: </span>
-                            {{ role.name }}</span>
-                        <span class="text-gray-400">assigned to {{ role.users }} users and {{ role.groups }}
-                            groups</span>
+                            {{ role.name }}</span
+                        >
+                        <span class="text-gray-400"
+                            >assigned to {{ role.users }} users and {{ role.groups }} groups</span
+                        >
                     </div>
                 </div>
                 <div class="w-full">
@@ -17,8 +19,13 @@
                     <DataRow name="TYPE" :value="role.type" />
                     <DataRow name="PERMISSIONS">
                         <div class="flex flex-wrap gap-2">
-                        <Badge v-for="perm in role.permissions" :key="perm" :value="perm" severity="secondary"
-                            size="large"></Badge>
+                            <Badge
+                                v-for="perm in role.permissions"
+                                :key="perm"
+                                :value="perm"
+                                severity="secondary"
+                                size="large"
+                            ></Badge>
                         </div>
                     </DataRow>
                 </div>
@@ -51,7 +58,7 @@ navStore.update([
 
 watch(role, () => {
     if (!navStored.value) {
-        navStore.append({ label: role.value.name, 'url': `/rbac/roles/${role.value.type}/${role.value.name}` })
+        navStore.append({ label: role.value.name, url: `/rbac/roles/${role.value.type}/${role.value.name}` })
         navStored.value = true
     }
 })

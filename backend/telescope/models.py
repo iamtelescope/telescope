@@ -1,10 +1,11 @@
-import secrets
 import logging
+import secrets
 from typing import List, Dict
 
 from django.db import models
 from django.contrib.auth.models import User, Group
 
+from telescope.constants import VIEW_SCOPE_SOURCE, VIEW_SCOPE_PERSONAL
 
 logger = logging.getLogger("telescope.models")
 
@@ -37,6 +38,7 @@ class Source(models.Model):
     name = models.CharField(max_length=64)
     description = models.TextField()
     time_field = models.CharField(max_length=128)
+    date_field = models.CharField(max_length=128)
     uniq_field = models.CharField(max_length=128)
     severity_field = models.CharField(max_length=128)
     fields = models.JSONField()
@@ -51,8 +53,14 @@ class Source(models.Model):
         super(Source, self).__init__(*args, **kwargs)
         self.permissions = set()
 
+    def __str__(self):
+        return self.slug
+
+    def __repr__(self):
+        return str(self)
+
     @classmethod
-    def create(self, kind, data, username):
+    def create(cls, kind, data):
         data["context_fields"] = {}
         data["support_raw_query"] = True
         if kind == "docker":
@@ -87,6 +95,60 @@ class Source(models.Model):
             self.permissions.add(perm)
 
 
+class SavedView(models.Model):
+    slug = models.CharField(max_length=262, blank=True)
+    name = models.CharField(max_length=255)
+    description = models.CharField(max_length=4096)
+    source = models.ForeignKey(
+        Source,
+        on_delete=models.CASCADE,
+    )
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    scope = models.CharField(
+        max_length=8,
+        choices=[
+            (VIEW_SCOPE_PERSONAL, VIEW_SCOPE_PERSONAL),
+            (VIEW_SCOPE_SOURCE, VIEW_SCOPE_SOURCE),
+        ],
+        default=VIEW_SCOPE_PERSONAL,
+    )
+    shared = models.BooleanField(default=False)
+    data = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    updated_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name="updater"
+    )
+    version = models.PositiveIntegerField(default=1)
+
+    def __init__(self, *args, **kwargs):
+        super(SavedView, self).__init__(*args, **kwargs)
+        self.permissions = set()
+        self.kind = ""
+
+    class Meta:
+        unique_together = ("source", "slug", "user")
+
+    def is_personal_scope(self):
+        return self.scope == VIEW_SCOPE_PERSONAL
+
+    def is_source_scope(self):
+        return self.scope == VIEW_SCOPE_SOURCE
+
+    def __str__(self):
+        return f"{self.source_id}-{self.slug}"
+
+    def __repr__(self):
+        return str(self)
+
+    def add_perms(self, perms):
+        for perm in perms:
+            self.permissions.add(perm)
+
+    def set_kind(self, kind):
+        self.kind = kind
+
+
 class SourceRoleBinding(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True)
@@ -107,7 +169,7 @@ class APIToken(models.Model):
     name = models.CharField(max_length=64)
 
     @classmethod
-    def create(self, user, name):
+    def create(cls, user, name):
         return APIToken.objects.create(
             name=name,
             user=user,

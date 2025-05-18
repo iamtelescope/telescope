@@ -3,7 +3,7 @@ from django.contrib.auth.models import User, Group
 
 from rest_framework import serializers
 
-from telescope.models import Source, SourceRoleBinding
+from telescope.models import Source, SavedView, SourceRoleBinding
 from telescope.utils import parse_time
 from telescope.fields import (
     parse as parse_fields,
@@ -13,9 +13,13 @@ from telescope.fields import (
 from telescope.fetchers import get_fetchers
 from telescope.rbac.helpers import user_has_source_permissions
 from telescope.rbac import permissions
+from telescope.constants import VIEW_SCOPE_SOURCE, VIEW_SCOPE_PERSONAL
 
-from telescope.utils import ALLOWED_TIME_FIELD_TYPES, convert_to_base_ch
-
+from telescope.utils import (
+    ALLOWED_TIME_FIELD_TYPES,
+    ALLOWED_DATE_FIELD_TYPES,
+    convert_to_base_ch,
+)
 
 SUPPORTED_KINDS = {"clickhouse", "docker"}
 
@@ -29,6 +33,7 @@ class SerializeErrorMsg:
         SUPPORTED_KINDS
     )
     TIME_FIELD_TYPE = "Field should have a valid time-related type"
+    DATE_FIELD_TYPE = "Field should have a valid date-related type"
     RAW_QUERIES_PERMISSIONS = "Insufficient permissions to use source raw queries"
     RAW_QUERIES_NOT_SUPPORTED = "This source does not support raw queries"
 
@@ -51,6 +56,39 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "first_name", "last_name"]
+
+
+class SourceSavedViewSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    permissions = serializers.ListField(child=serializers.CharField())
+    kind = serializers.CharField()
+
+    class Meta:
+        model = SavedView
+        fields = "__all__"
+
+
+class SourceSavedViewScopeSerializer(serializers.Serializer):
+    scope = serializers.ChoiceField(
+        required=True,
+        choices=[
+            (VIEW_SCOPE_PERSONAL, VIEW_SCOPE_PERSONAL),
+            (VIEW_SCOPE_SOURCE, VIEW_SCOPE_SOURCE),
+        ],
+    )
+
+
+class NewSourceSavedViewSerializer(serializers.Serializer):
+    name = serializers.CharField(required=True, max_length=255)
+    description = serializers.CharField(max_length=4096, allow_blank=True)
+    shared = serializers.BooleanField()
+    data = serializers.JSONField()
+
+
+class UpdateSourceSavedViewSerializer(
+    NewSourceSavedViewSerializer, SourceSavedViewScopeSerializer
+):
+    pass
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -144,6 +182,7 @@ class SourceContextFieldDataSerializer(serializers.Serializer):
 class NewBaseSourceSerializer(serializers.Serializer):
     SEVERITY_FIELD_NAME = "severity_field"
     TIME_FIELD_NAME = "time_field"
+    DATE_FIELD_NAME = "date_field"
     DEFAULT_CHOSEN_FIELDS_NAME = "default_chosen_fields"
 
     slug = serializers.SlugField(max_length=64, required=True)
@@ -151,6 +190,7 @@ class NewBaseSourceSerializer(serializers.Serializer):
     description = serializers.CharField(allow_blank=True)
 
     time_field = serializers.CharField()
+    date_field = serializers.CharField(allow_blank=True, allow_null=True, default="")
     severity_field = serializers.CharField(allow_blank=True, allow_null=True)
     default_chosen_fields = serializers.ListField(child=serializers.CharField())
     fields = serializers.DictField(child=SourceFieldSerializer())
@@ -217,10 +257,26 @@ class NewBaseSourceSerializer(serializers.Serializer):
 
         return errors
 
+    def type_validate_date_field(self, data):
+        value = data.get(self.DATE_FIELD_NAME)
+        errors = {}
+
+        if value:
+
+            field_type = convert_to_base_ch(
+                data["fields"].get(value, {}).get("type", "").lower()
+            )
+
+            if field_type not in ALLOWED_DATE_FIELD_TYPES:
+                errors[self.TIME_FIELD_NAME] = SerializeErrorMsg.DATE_FIELD_TYPE
+
+        return errors
+
     def validate(self, data):
         errors = {}
         errors.update(self.type_validate_severity_field(data))
         errors.update(self.type_validate_time_field(data))
+        errors.update(self.type_validate_date_field(data))
         errors.update(self.type_validate_default_chosen_fields(data))
 
         if errors:
@@ -257,6 +313,14 @@ class UpdateClickhouseSourceSerializer(NewClickhouseSourceSerializer):
         return value
 
 
+class SourceCreateResponseSerializer(serializers.Serializer):
+    slug = serializers.SlugField(max_length=64, required=True)
+
+
+class SourceUpdateResponseSerializer(SourceCreateResponseSerializer):
+    pass
+
+
 class SourceAutocompleteRequestSerializer(serializers.Serializer):
     field = serializers.CharField()
     value = serializers.CharField(allow_blank=True)
@@ -284,7 +348,7 @@ class SourceAutocompleteRequestSerializer(serializers.Serializer):
 
 class SourceDataRequestSerializer(serializers.Serializer):
     fields = serializers.CharField()
-    query = serializers.CharField(allow_blank=True)
+    query = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     raw_query = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     _from = serializers.CharField()
     to = serializers.CharField()
@@ -317,6 +381,8 @@ class SourceDataRequestSerializer(serializers.Serializer):
         return value
 
     def validate_query(self, value):
+        if not value:
+            return ""
         fetcher = get_fetchers()[self.context["source"].kind]
         result, help_text = fetcher.validate_query(self.context["source"], value)
         if not result:
