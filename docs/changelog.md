@@ -1,5 +1,22 @@
 # Changelog
 
+## 2025.05.18
+Version: **0.0.18**
+Changes:
+  - Implemented saved views
+  - Small bugfixes & improvements
+
+Related issues:
+ - [ISSUE-3](https://github.com/iamtelescope/telescope/issues/3)
+
+Notes:
+
+{% note warning %}
+
+This release requires database migrations to be run.
+
+{% endnote %}
+
 ## 2025.04.20
 Version: **0.0.17**
 Changes:
