@@ -7,14 +7,6 @@
             <div class="flex flex-row">
                 <div class="flex flex-col w-full mr-2">
                     <FloatLabel variant="on">
-                        <InputText id="connection_protocol" v-model="protocol" fluid :disabled="true" />
-                        <label for="connection_label">Protocol</label>
-                    </FloatLabel>
-                </div>
-            </div>
-            <div class="flex flex-row">
-                <div class="flex flex-col w-full mr-2">
-                    <FloatLabel variant="on">
                         <InputText
                             id="connection_host"
                             v-model="connectionData.host"
@@ -259,7 +251,6 @@ const props = defineProps(['source', 'startConnectionTest'])
 const toast = useToast()
 const sourceSrv = new SourceService()
 const kind = 'clickhouse'
-const protocol = ref('native')
 
 const connectionTestIsActive = ref(false)
 const connectionTestCalled = ref(false)
@@ -269,12 +260,12 @@ const connectionTestPassed = ref(false)
 const getInitialConnectionData = () => {
     let data = {
         host: 'localhost',
-        port: 9000,
+        port: 8443,
         user: 'default',
         password: '',
         database: '',
         table: '',
-        ssl: false,
+        ssl: true,
         verify: true,
         ciphers: '',
         ssl_version: '',
