@@ -1,4 +1,4 @@
-# [Telescope](https://telescope.humanuser.net/) - web-based log viewer UI
+# [Telescope](https://iamtelescope.net/) - web-based log viewer UI
 _A handy tool that manages to make close what once was far_
 
 ## Introduction
@@ -10,7 +10,7 @@ _A handy tool that manages to make close what once was far_
 
 :framed_picture: **[More Screenshots](screenshots/README.md)**
 
-:blue_book: **[Read the Documentation](https://iamtelescope.github.io/telescope/docs/)**
+:blue_book: **[Read the Documentation](https://docs.iamtelescope.net/)**
 
 :speech_balloon: **[Discord](https://discord.gg/BWrBMnkGZn)**
 :speech_balloon: **[Telegram](https://t.me/+CGnCz48GF8xmY2Yy)**
@@ -18,7 +18,7 @@ _A handy tool that manages to make close what once was far_
 :whale:	**[Run locally using Docker](https://iamtelescope.github.io/telescope/docs/setup/quickstart.html)**
 
 ## 🚀 Live installation
-An live instance is available at [https://demo.telescope.humanuser.net](https://demo.telescope.humanuser.net).
+An live instance is available at [https://demo.iamtelescope.net](https://demo.iamtelescope.net).
 You can log in via GitHub to explore the core features of the system from an end-user perspective.
 > [!NOTE]
 > The live version is intended for demonstration purposes and does not showcase administrative features of the system.
