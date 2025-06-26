@@ -12,8 +12,8 @@
                         color: getContrastColor(getColor(row.data[source.severityField])),
                     }"
                     class="text-gray-900 mr-2 text-bold"
-                    >{{ source.severityField }}: {{ row.data[source.severityField] }}</Tag
-                >
+                    >{{ source.severityField }}: {{ row.data[source.severityField] }}
+                </Tag>
                 <span class="font-mono">{{ row.time.datetime }}.{{ row.time.microseconds }}</span>
             </div>
             <Tabs value="0">
@@ -96,7 +96,7 @@ import TabList from 'primevue/tablist'
 import Tab from 'primevue/tab'
 import TabPanels from 'primevue/tabpanels'
 import TabPanel from 'primevue/tabpanel'
-import { Operator as FlyQLOperator } from '@/utils/flyql.js'
+import { Operator as FlyQLOperator } from 'flyql'
 import { useSourceControlsStore } from '@/stores/sourceControls'
 
 import { getColor, getContrastColor } from '@/utils/colors.js'

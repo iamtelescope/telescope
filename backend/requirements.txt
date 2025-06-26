@@ -11,8 +11,8 @@ docker==7.1.0
 django-allauth==65.2.0
 django-cors-headers==4.3.1
 djangorestframework==3.15.2
-flyql @ git+https://github.com/iamtelescope/flyql.git@13f3dbc93224cad802f163cd04ec6c7754c3740f#subdirectory=python
-flyql_generators @ git+https://github.com/iamtelescope/flyql-generators.git@77f47d0d790555b3ecab9582b8864ecedd2501c9#subdirectory=python
+clickhouse-connect==0.8.17
+flyql @ git+https://github.com/iamtelescope/flyql.git@147a5a56a2ac8fa7d96eae692d1a555b883ecd7e#subdirectory=python
 gunicorn==23.0.0
 idna==3.7
 jsonschema==4.23.0

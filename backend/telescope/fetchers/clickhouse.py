@@ -1,17 +1,15 @@
 import os
 import logging
 import tempfile
-from typing import List
+from typing import Dict
 
-import clickhouse_driver as clickhouse
-from clickhouse_driver.util.escape import escape_param
+import clickhouse_connect
 
-from flyql.parser import parse, ParserError
-from flyql.exceptions import FlyqlError
-from flyql_generators.clickhouse import to_sql, Field
+from flyql.core.parser import parse, ParserError
+from flyql.core.exceptions import FlyqlError
+from flyql.generators.clickhouse.generator import to_sql, Field
 
 from telescope.models import SourceField
-from telescope.fields import ParsedField
 
 from telescope.fetchers.request import (
     AutocompleteRequest,
@@ -35,6 +33,28 @@ logger = logging.getLogger("telescope.fetchers.clickhouse")
 SSL_CERTS_PARAMS = ["ca_certs", "certfile", "keyfile"]
 OPTIONAL_SSL_PARAMS = ["ssl_version", "ciphers", "server_hostname", "alt_hosts"]
 
+ESCAPE_CHARS_MAP = {
+    "\b": "\\b",
+    "\f": "\\f",
+    "\r": "\\r",
+    "\n": "\\n",
+    "\t": "\\t",
+    "\0": "\\0",
+    "\a": "\\a",
+    "\v": "\\v",
+    "\\": "\\\\",
+    "'": "\\'",
+}
+
+
+def escape_param(item: str) -> str:
+    if item is None:
+        return "NULL"
+    elif isinstance(item, str):
+        return "'%s'" % "".join(ESCAPE_CHARS_MAP.get(c, c) for c in item)
+    else:
+        return item
+
 
 def build_time_clause(time_field, date_field, time_from, time_to):
     date_clause = ""
@@ -43,11 +63,20 @@ def build_time_clause(time_field, date_field, time_from, time_to):
     return f"{date_clause}{time_field} BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
 
 
-class ClickhouseClient:
+class ClickhouseConnect:
     def __init__(self, data: dict):
         self.data = data
         self.temp_dir = None
-        self.client = None
+        self._client = None
+        self.client_kwargs = {}
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = clickhouse_connect.get_client(
+                apply_server_timezone=False, **self.client_kwargs
+            )
+        return self._client
 
     def __enter__(self, *args, **kwargs):
         client_kwargs = {
@@ -60,7 +89,7 @@ class ClickhouseClient:
         }
         for name in OPTIONAL_SSL_PARAMS:
             if self.data[name] != "":
-                client_kwrags[name] = self.data[name]
+                client_kwargs[name] = self.data[name]
 
         self.temp_dir = tempfile.TemporaryDirectory()
 
@@ -70,19 +99,10 @@ class ClickhouseClient:
                 with open(path, "w") as fd:
                     fd.write(self.data[name])
                 client_kwargs[name] = path
-
-        self.client = clickhouse.Client(**client_kwargs)
-        return self.client
+        self.client_kwargs = client_kwargs
+        return self
 
     def __exit__(self, *args, **kwargs):
-        try:
-            if self.client:
-                self.client.disconnect()
-        except Exception as err:
-            logger.exception(
-                "error while closing clickhouse connection (ignoring): %s", err
-            )
-
         try:
             if self.temp_dir:
                 self.temp_dir.cleanup()
@@ -90,7 +110,7 @@ class ClickhouseClient:
             logger.exception("error while tempdir cleanup (ignoring): %s", err)
 
 
-def flyql_clickhouse_fields(source_fields: List[SourceField]):
+def flyql_clickhouse_fields(source_fields: Dict[str, SourceField]):
     return {
         field.name: Field(
             name=field.name,
@@ -146,26 +166,29 @@ class Fetcher(BaseFetcher):
     def test_connection(cls, data: dict) -> ConnectionTestResponse:
         response = ConnectionTestResponse()
         target = f"`{data['database']}`.`{data['table']}`"
-        with ClickhouseClient(data) as client:
+        with ClickhouseConnect(data) as c:
             try:
-                client.execute(f"SELECT 1 FROM {target} LIMIT 1")
+                c.client.query(f"SELECT 1 FROM {target} LIMIT 1")
             except Exception as err:
                 response.reachability["error"] = str(err)
                 response.schema["error"] = "Skipped due to reachability test failed"
             else:
                 response.reachability["result"] = True
                 try:
-                    result = client.execute(f"DESCRIBE TABLE {target} FORMAT JSON")
+                    result = c.client.query(
+                        "select name, type from system.columns where database = '%s' and table = '%s'"
+                        % (data["database"], data["table"])
+                    )
                 except Exception as err:
                     response.schema["error"] = str(err)
                 else:
                     response.schema["result"] = True
                     response.schema["data"] = [
-                        get_telescope_field(x[0], x[1]) for x in result
+                        get_telescope_field(x[0], x[1]) for x in result.result_rows
                     ]
                 try:
-                    result = client.execute(f"SHOW CREATE TABLE {target}")
-                    response.schema["raw"] = result[0][0]
+                    result = c.client.query(f"SHOW CREATE TABLE {target}")
+                    response.schema["raw"] = result.result_rows[0][0]
                 except Exception as err:
                     logger.exception(
                         "failed to get raw table schema (ignoring): %s", err
@@ -181,9 +204,9 @@ class Fetcher(BaseFetcher):
             source.time_field, source.date_field, time_from, time_to
         )
         query = f"SELECT DISTINCT {field} FROM {from_db_table} WHERE {time_clause} and {field} LIKE %(value)s ORDER BY {field} LIMIT 500"
-        with ClickhouseClient(source.connection) as client:
-            result = client.execute(query, {"value": f"%{value}%"})
-            items = [str(x[0]) for x in result]
+        with ClickhouseConnect(source.connection) as c:
+            result = c.client.query(query, {"value": f"%{value}%"})
+            items = [str(x[0]) for x in result.result_rows]
         if len(items) >= 500:
             incomplete = True
         return AutocompleteResponse(items=items, incomplete=incomplete)
@@ -201,7 +224,6 @@ class Fetcher(BaseFetcher):
         else:
             filter_clause = "true"
 
-        order_by_clause = f"ORDER BY {request.source.time_field} DESC"
         raw_where_clause = request.raw_query or "true"
 
         group_by_value = ""
@@ -211,9 +233,7 @@ class Fetcher(BaseFetcher):
                 spl = group_by.name.split(":")
                 if group_by.jsonstring:
                     json_path = spl[1:]
-                    json_path = ", ".join(
-                        [escape_param(x, context=None) for x in json_path]
-                    )
+                    json_path = ", ".join([escape_param(x) for x in json_path])
                     group_by_value = (
                         f"JSONExtractString({group_by.root_name}, {json_path})"
                     )
@@ -253,9 +273,7 @@ class Fetcher(BaseFetcher):
                 fields_to_select.append(to_time_zone)
             else:
                 fields_to_select.append(field)
-        fields_to_select = ", ".join(fields_to_select)
 
-        rows = []
         stats = {}
         stats_by_ts = {}
         unique_ts = {request.time_from, request.time_to}
@@ -274,7 +292,7 @@ class Fetcher(BaseFetcher):
             elif time_field_type == "datetime64":
                 stats_time_selector = f"toUnixTimestamp64Milli({to_time_zone})"
 
-        with ClickhouseClient(request.source.connection) as client:
+        with ClickhouseConnect(request.source.connection) as c:
             stat_sql = f"SELECT {stats_time_selector} as t, COUNT() as Count"
             if group_by_value:
                 stat_sql += f", {group_by_value} as `{group_by.name}`"
@@ -282,7 +300,7 @@ class Fetcher(BaseFetcher):
             if group_by_value:
                 stat_sql += f", `{group_by.name}`"
             stat_sql += " ORDER BY t"
-            for item in client.execute(stat_sql):
+            for item in c.client.query(stat_sql).result_rows:
                 if group_by_value:
                     ts, count, groupper = item
                     if not groupper:
@@ -359,13 +377,12 @@ class Fetcher(BaseFetcher):
                 fields_to_select.append(field)
         fields_to_select = ", ".join(fields_to_select)
         select_query = f"SELECT generateUUIDv4(),{fields_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}"
-        count_query = f"SELECT count() as c FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause}"
 
         rows = []
 
-        with ClickhouseClient(request.source.connection) as client:
+        with ClickhouseConnect(request.source.connection) as c:
             selected_fields = [request.source._record_pseudo_id_field] + fields_names
-            for item in client.execute(select_query):
+            for item in c.client.query(select_query).result_rows:
                 rows.append(
                     Row(
                         source=request.source,
