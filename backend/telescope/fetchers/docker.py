@@ -1,19 +1,14 @@
-import re
 import json
 import logging
-from typing import List
-from collections import defaultdict
 
 from dateutil import parser as duparser
 import docker
 
-from flyql.parser import parse, ParserError
-from flyql.exceptions import FlyqlError
+from flyql.core.parser import parse, ParserError
+from flyql.core.exceptions import FlyqlError
 from flyql.matcher.evaluator import Evaluator
 from flyql.matcher.record import Record
 
-from telescope.models import SourceField
-from telescope.fields import ParsedField
 from telescope.utils import get_telescope_field
 
 from telescope.fetchers.request import (

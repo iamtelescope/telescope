@@ -7,11 +7,11 @@ import { useToast } from 'primevue'
 import { DateTime } from 'luxon'
 
 import { Parser as FieldsParser } from '@/utils/fields.js'
-import { BoolOperator as FlyQLBoolOperator } from '@/utils/flyql.js'
+import { BoolOperator as FlyQLBoolOperator } from 'flyql'
+
 import { getBooleanFromString } from '@/utils/utils'
 
 import { TelescopeDate, humanRelatedTimeRegex } from '@/utils/datetimeranges.js'
-import * as viewParam from 'autoprefixer'
 
 export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const toast = useToast()
