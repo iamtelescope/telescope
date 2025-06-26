@@ -377,6 +377,7 @@ class Fetcher(BaseFetcher):
                 fields_to_select.append(field)
         fields_to_select = ", ".join(fields_to_select)
         select_query = f"SELECT generateUUIDv4(),{fields_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}"
+
         rows = []
 
         with ClickhouseConnect(request.source.connection) as c:
