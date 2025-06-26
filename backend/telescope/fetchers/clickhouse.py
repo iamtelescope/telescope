@@ -5,9 +5,9 @@ from typing import Dict
 
 import clickhouse_connect
 
-from flyql.parser import parse, ParserError
-from flyql.exceptions import FlyqlError
-from flyql_generators.clickhouse import to_sql, Field
+from flyql.core.parser import parse, ParserError
+from flyql.core.exceptions import FlyqlError
+from flyql.generators.clickhouse.generator import to_sql, Field
 
 from telescope.models import SourceField
 
@@ -48,7 +48,12 @@ ESCAPE_CHARS_MAP = {
 
 
 def escape_param(item: str) -> str:
-    return "'%s'" % "".join(ESCAPE_CHARS_MAP.get(c, c) for c in item)
+    if item is None:
+        return "NULL"
+    elif isinstance(item, str):
+        return "'%s'" % "".join(ESCAPE_CHARS_MAP.get(c, c) for c in item)
+    else:
+        return item
 
 
 def build_time_clause(time_field, date_field, time_from, time_to):

@@ -2,7 +2,7 @@ import * as monaco from 'monaco-editor'
 import { loader } from '@guolao/vue-monaco-editor'
 
 import { Parser as FieldsParser, tokenTypes as fieldsTokenTypes } from '@/utils/fields.js'
-import { Parser as FlyqlParser, tokenTypes as flyqlTokenTypes } from '@/utils/flyql.js'
+import { Parser as FlyqlParser, tokenTypes as flyqlTokenTypes, generateMonacoTokens } from 'flyql'
 
 function getDefaultMonacoOptions() {
     return {
@@ -31,7 +31,6 @@ function getDefaultMonacoOptions() {
             seedSearchStringFromSelection: false,
         },
         wordBasedSuggestions: 'off',
-        lineNumbersMinChars: 0,
         lineDecorationsWidth: 0,
         hideCursorInOverviewRuler: true,
         glyphMargin: false,
@@ -47,6 +46,7 @@ function getDefaultMonacoOptions() {
         'semanticHighlighting.enabled': true,
     }
 }
+
 function initMonacoSetup() {
     loader.config({ monaco })
     monaco.editor.defineTheme('telescope', {
@@ -124,10 +124,8 @@ function initMonacoSetup() {
         }),
         provideDocumentSemanticTokens: (model) => {
             const parser = new FlyqlParser()
-            parser.parse(model.getValue())
-
-            const data = parser.generateMonacoTokens()
-
+            parser.parse(model.getValue(), false)
+            const data = generateMonacoTokens(parser)
             return {
                 data: new Uint32Array(data),
                 resultId: null,
