@@ -1,0 +1,260 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "nameOverride": {
+      "type": "string"
+    },
+    "fullnameOverride": {
+      "type": "string"
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "repository": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "Never", "IfNotPresent"]
+        }
+      },
+      "required": ["repository", "pullPolicy"]
+    },
+    "replicas": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "limits": {
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            }
+          }
+        },
+        "requests": {
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "listenPort": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "servicePort": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "service": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ClusterIP", "NodePort", "LoadBalancer"]
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        }
+      },
+      "required": ["type", "port"]
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "gunicorn": {
+          "type": "object",
+          "properties": {
+            "bind": {
+              "type": "string"
+            },
+            "workers": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "timeout": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "max_requests": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "max_requests_jitter": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["bind"]
+        },
+        "django": {
+          "type": "object",
+          "properties": {
+            "DEBUG": {
+              "type": "boolean"
+            },
+            "ALLOWED_HOSTS": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "CSRF_TRUSTED_ORIGINS": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": ["DEBUG", "ALLOWED_HOSTS", "CSRF_TRUSTED_ORIGINS"]
+        },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "providers": {
+              "type": "object",
+              "properties": {
+                "github": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "client_id": {
+                      "type": "string"
+                    },
+                    "organizations": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["enabled"]
+                }
+              },
+              "required": ["github"]
+            }
+          },
+          "required": ["providers"]
+        }
+      },
+      "required": ["gunicorn", "django", "auth"]
+    },
+    "secretName": {
+      "type": "string"
+    },
+    "database": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["sqlite", "postgresql"]
+        },
+        "sqlite": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string"
+            }
+          },
+          "required": ["file"]
+        },
+        "postgresql": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "type": "string"
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "name": {
+              "type": "string"
+            },
+            "user": {
+              "type": "string"
+            },
+            "options": {
+              "type": "object"
+            }
+          },
+          "required": ["host", "port", "name", "user"]
+        },
+        "raw": {
+          "type": "object"
+        }
+      },
+      "required": ["type"]
+    },
+    "initContainers": {
+      "type": "object",
+      "properties": {
+        "migrations": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "image": {
+              "type": "object",
+              "properties": {
+                "repository": {
+                  "type": "string"
+                },
+                "tag": {
+                  "type": "string"
+                },
+                "pullPolicy": {
+                  "type": "string"
+                }
+              }
+            },
+            "command": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "resources": {
+              "type": "object"
+            }
+          },
+          "required": ["enabled", "command", "resources"]
+        }
+      }
+    }
+  },
+  "required": [
+    "image",
+    "replicas",
+    "service",
+    "config",
+    "database"
+  ]
+}

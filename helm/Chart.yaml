@@ -1,0 +1,20 @@
+apiVersion: v2
+name: telescope
+description: A Helm chart for Telescope - web-based log viewer UI
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - telescope
+  - observability
+  - logging
+home: https://iamtelescope.net
+sources:
+  - https://github.com/iamtelescope/telescope
+maintainers:
+  - name: Telescope team
+    email: iamtelescope@gmail.com
+    url: https://github.com/iamtelescope/telescope
+annotations:
+  category: Logging
+  licenses: MIT
