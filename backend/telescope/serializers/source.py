@@ -130,7 +130,7 @@ class ClickhouseConnectionSerializer(serializers.Serializer):
     table = serializers.CharField()
     ssl = serializers.BooleanField()
     verify = serializers.BooleanField()
-    ca_certs = serializers.CharField(allow_blank=True)
+    ca_cert = serializers.CharField(allow_blank=True)
     certfile = serializers.CharField(allow_blank=True)
     keyfile = serializers.CharField(allow_blank=True)
     ssl_version = serializers.CharField(allow_blank=True)
