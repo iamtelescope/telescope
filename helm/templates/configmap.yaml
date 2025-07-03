@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "telescope.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "telescope.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    gunicorn:
+      bind: {{ required "config.gunicorn.bind is required" .Values.config.gunicorn.bind }}
+      workers: {{ .Values.config.gunicorn.workers }}
+      timeout: {{ .Values.config.gunicorn.timeout }}
+      max_requests: {{ .Values.config.gunicorn.max_requests }}
+      max_requests_jitter: {{ .Values.config.gunicorn.max_requests_jitter }}
+    django:
+      SECRET_KEY: !env DJANGO_SECRET_KEY
+      DEBUG: {{ .Values.config.django.DEBUG }}
+      ALLOWED_HOSTS:
+        {{- range .Values.config.django.ALLOWED_HOSTS }}
+        - {{ . | quote }}
+        {{- end }}
+      CSRF_TRUSTED_ORIGINS:
+        {{- range .Values.config.django.CSRF_TRUSTED_ORIGINS }}
+        - {{ . | quote }}
+        {{- end }}
+      DATABASES:
+        {{- if .Values.database.raw }}
+        {{- toYaml .Values.database.raw | nindent 8 }}
+        {{- else }}
+        default:
+          {{- if eq .Values.database.type "sqlite" }}
+          ENGINE: "django.db.backends.sqlite3"
+          NAME: {{ .Values.database.sqlite.file | quote }}
+          {{- else if eq .Values.database.type "postgresql" }}
+          ENGINE: "django.db.backends.postgresql"
+          NAME: {{ .Values.database.postgresql.name | quote }}
+          HOST: {{ .Values.database.postgresql.host | quote }}
+          PORT: {{ .Values.database.postgresql.port }}
+          USER: {{ .Values.database.postgresql.user | quote }}
+          PASSWORD: !env DATABASE_PASSWORD
+          {{- if .Values.database.postgresql.options }}
+          OPTIONS:
+            {{- toYaml .Values.database.postgresql.options | nindent 12 }}
+          {{- end }}
+          {{- end }}
+        {{- end }}
+    limits:
+      max_saved_views_per_user: {{ .Values.config.limits.max_saved_views_per_user }}
+    auth:
+      providers:
+        github:
+          enabled: {{ .Values.config.auth.providers.github.enabled }}
+          client_id: {{ .Values.config.auth.providers.github.client_id | quote }}
+          secret: !env GITHUB_SECRET
+          key: {{ .Values.config.auth.providers.github.key | quote }}
+          organizations:
+            {{- range .Values.config.auth.providers.github.organizations }}
+            - {{ . | quote }}
+            {{- end }}
+          default_group: {{ .Values.config.auth.providers.github.default_group }}
+      force_github_auth: {{ .Values.config.auth.force_github_auth }}
+      enable_testing_auth: {{ .Values.config.auth.enable_testing_auth }}
+      testing_auth_username: {{ .Values.config.auth.testing_auth_username | quote }}
+    frontend:
+      github_url: {{ .Values.config.frontend.github_url | quote }}
+      docs_url: {{ .Values.config.frontend.docs_url | quote }}
+      show_docs_url: {{ .Values.config.frontend.show_docs_url }}
+      show_github_url: {{ .Values.config.frontend.show_github_url }}
+    logging:
+      format: {{ .Values.config.logging.format | quote }}
+      levels:
+        django: {{ .Values.config.logging.levels.django | quote }}
+        django.request: {{ index .Values.config.logging.levels "django.request" | quote }}
+        django.template: {{ index .Values.config.logging.levels "django.template" | quote }}
+        django.utils.autoreload: {{ index .Values.config.logging.levels "django.utils.autoreload" | quote }}
+        telescope: {{ .Values.config.logging.levels.telescope | quote }}
+        all: {{ .Values.config.logging.levels.all | quote }}

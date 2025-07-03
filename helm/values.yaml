@@ -1,0 +1,163 @@
+# Override default names
+nameOverride: ""
+fullnameOverride: ""
+
+
+image:
+  repository: ghcr.io/iamtelescope/telescope
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicas: 1
+
+# Note: This is a Django app using forking approach (8 workers by default)
+# and can be memory-intensive when processing large logs datasets
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+listenPort: 8080
+servicePort: 80
+
+service:
+  type: ClusterIP
+  port: 80
+
+config:
+  # Full telescope configuration structure
+  # Secret values are marked with !env and come from environment variables
+  gunicorn:
+    bind: "0.0.0.0:8080"
+    workers: 8
+    timeout: 120
+    max_requests: 50
+    max_requests_jitter: 50
+  django:
+    CSRF_TRUSTED_ORIGINS:
+      - "http://localhost:8080"
+    DEBUG: false
+    ALLOWED_HOSTS: ["*"]
+    # Database configuration is a separated section below
+  limits:
+    max_saved_views_per_user: 0
+  auth:
+    providers:
+      github:
+        enabled: false
+        client_id: ""
+        key: ""
+        organizations: []
+        default_group: null
+    force_github_auth: false
+    enable_testing_auth: false
+    testing_auth_username: "telescope"
+  frontend:
+    github_url: "https://github.com/iamtelescope/telescope"
+    docs_url: "https://docs.iamtelescope.net"
+    show_docs_url: true
+    show_github_url: false
+  logging:
+    format: "default"
+    levels:
+      django: "INFO"
+      "django.request": "INFO"
+      "django.template": "INFO"
+      "django.utils.autoreload": "INFO"
+      telescope: "INFO"
+      all: "INFO"
+
+# Database configuration
+database:
+  # Database type - determines which preset to use
+  type: "sqlite"  # Options: sqlite, postgresql
+
+  # SQLite configuration (when type=sqlite)
+  # ⚠️WARNING: SQLite is for testing/development only!
+  # For production deployments, use PostgreSQL instead.
+  sqlite:
+    # Database file path (will be stored in shared volume at /app/data)
+    file: "/app/data/telescope.sqlite3"
+    # Persistence for SQLite database
+    persistence:
+      enabled: false  # Disabled by default - enable for single-pod persistence
+      size: "1Gi"
+      storageClass: ""  # Use default storage class if empty
+
+  # PostgreSQL configuration (when type=postgresql)
+  postgresql:
+    host: "localhost"
+    port: 5432
+    name: "telescope"
+    user: "telescope"
+    # password should come from environment variable: DATABASE_PASSWORD
+    options: {}  # Additional connection options
+
+  # Raw database configuration override
+  # If provided, completely replaces the generated DATABASES setting
+  # Use this for custom database backends or complex configurations
+  raw: {}
+    # Example:
+    # default:
+    #   ENGINE: 'django.db.backends.postgresql'
+    #   NAME: 'my_custom_db'
+    #   HOST: 'custom-host'
+    #   PORT: 5432
+    #   USER: 'custom_user'
+    #   PASSWORD: '!env CUSTOM_DB_PASSWORD'
+
+# Secret configuration
+# Telescope retrieves sensitive values from a Kubernetes secret as environment variables
+secretName: "telescope-secrets"  # Name of the secret containing required environment variables
+
+# Required secrets in the secret:
+# - DJANGO_SECRET_KEY: Always required for Django security
+# - GITHUB_SECRET: Required only when config.auth.providers.github.enabled=true  
+# - DATABASE_PASSWORD: Required only when database.type="postgresql"
+#
+# To use a custom secret name:
+#   secretName: "my-custom-secrets"
+#
+# Example secret creation:
+#   kubectl create secret generic telescope-secrets \
+#     --from-literal=DJANGO_SECRET_KEY="your-django-secret" \
+#     --from-literal=GITHUB_SECRET="your-github-oauth-secret" \
+#     --from-literal=DATABASE_PASSWORD="your-db-password"
+
+# PodDisruptionBudget for high availability
+# NOTE: Only enable when replicas > 1, otherwise rolling updates will fail
+podDisruptionBudget:
+  enabled: false
+  # Minimum number of pods that must be available during disruptions
+  minAvailable: 1
+  # Maximum number of pods that can be unavailable during disruptions
+  # (use either minAvailable or maxUnavailable, not both)
+  # maxUnavailable: 1
+
+# Init containers (e.g., for database migrations)
+initContainers:
+  # Django migrations init container
+  migrations:
+    enabled: true
+    # Use same image as main container
+    image:
+      repository: ""  # defaults to main image.repository
+      tag: ""         # defaults to main image.tag
+      pullPolicy: ""  # defaults to main image.pullPolicy
+    # Migration command
+    command:
+      - python
+      - manage.py
+      - migrate
+    # Resource limits for init container
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+

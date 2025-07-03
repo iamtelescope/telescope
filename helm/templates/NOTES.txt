@@ -1,0 +1,61 @@
+1. Get the telescope URL by running these commands:
+{{- if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "telescope.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+           You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "telescope.fullname" . }}'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "telescope.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.service.port }}
+{{- else if contains "ClusterIP" .Values.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "telescope.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+{{- end }}
+
+2. Telescope is running with the following configuration:
+   - Replicas: {{ .Values.replicas }}
+   - Image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+   - Resources: {{ .Values.resources.requests.cpu }}/{{ .Values.resources.requests.memory }} (requests)
+
+3. Configuration:
+   - Django DEBUG: {{ .Values.config.django.DEBUG }}
+   - Gunicorn workers: {{ .Values.config.gunicorn.workers }}
+   - GitHub auth: {{ .Values.config.auth.providers.github.enabled }}
+   - Database: {{ .Values.database.type }}
+
+{{- if eq .Values.database.type "sqlite" }}
+⚠️  WARNING: SQLite should be used for testing/development only!
+   For production deployments, use PostgreSQL instead:
+   
+   database:
+     type: "postgresql"
+     postgresql:
+       host: "your-postgres-host"
+       port: 5432
+       name: "telescope"
+       user: "telescope"
+{{- end }}
+
+4. Secret Requirements:
+   Telescope retrieves sensitive values from the Kubernetes secret: {{ .Values.secretName }}
+   
+   Required secrets:
+   - DJANGO_SECRET_KEY: Always required (Django security){{- if .Values.config.auth.providers.github.enabled }}
+   - GITHUB_SECRET: Required (GitHub OAuth enabled){{- end }}{{- if eq .Values.database.type "postgresql" }}
+   - DATABASE_PASSWORD: Required (PostgreSQL database){{- end }}
+
+   Create the secret:
+   kubectl create namespace iamtelescope
+   kubectl create secret generic {{ .Values.secretName }} \
+     --namespace iamtelescope \
+     --from-literal=DJANGO_SECRET_KEY="your-django-secret-key"{{- if .Values.config.auth.providers.github.enabled }} \
+     --from-literal=GITHUB_SECRET="your-github-oauth-secret"{{- end }}{{- if eq .Values.database.type "postgresql" }} \
+     --from-literal=DATABASE_PASSWORD="your-database-password"{{- end }}
+
+   To use a custom secret name, install with:
+   helm install telescope . --set secretName="my-custom-secrets"
+
+For more information, visit: https://github.com/iamtelescope/telescope
