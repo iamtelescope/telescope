@@ -30,7 +30,7 @@ from telescope.utils import convert_to_base_ch, get_telescope_field
 logger = logging.getLogger("telescope.fetchers.clickhouse")
 
 
-SSL_CERTS_PARAMS = ["ca_certs", "certfile", "keyfile"]
+SSL_CERTS_PARAMS = ["ca_cert", "certfile", "keyfile"]
 OPTIONAL_SSL_PARAMS = ["ssl_version", "ciphers", "server_hostname", "alt_hosts"]
 
 ESCAPE_CHARS_MAP = {

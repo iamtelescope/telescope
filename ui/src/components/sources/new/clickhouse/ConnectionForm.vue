@@ -124,15 +124,15 @@
                     <div class="flex flex-col w-full">
                         <FloatLabel variant="on">
                             <Textarea
-                                id="connection_ca_certs"
-                                v-model="connectionData.ca_certs"
+                                id="connection_ca_cert"
+                                v-model="connectionData.ca_cert"
                                 fluid
                                 :disabled="connectionTestIsActive"
-                                :invalid="hasError('ca_certs')"
+                                :invalid="hasError('ca_cert')"
                             />
-                            <label for="connection_ca_certs">CA Certs</label>
+                            <label for="connection_ca_cert">CA Cert</label>
                         </FloatLabel>
-                        <ErrorText :text="connectionFieldErrors.ca_certs" />
+                        <ErrorText :text="connectionFieldErrors.ca_cert" />
                     </div>
                     <div class="flex flex-col w-full">
                         <FloatLabel variant="on">
@@ -269,7 +269,7 @@ const getInitialConnectionData = () => {
         verify: true,
         ciphers: '',
         ssl_version: '',
-        ca_certs: '',
+        ca_cert: '',
         certfile: '',
         keyfile: '',
         server_hostname: '',
@@ -292,7 +292,7 @@ const connectionFieldErrors = reactive({
     table: '',
     ssl: '',
     verify: '',
-    ca_certs: '',
+    ca_cert: '',
     certfile: '',
     keyfile: '',
     ciphers: '',
