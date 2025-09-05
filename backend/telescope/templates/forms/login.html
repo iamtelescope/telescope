@@ -27,11 +27,19 @@
         </div>
         <input class="btn-submit"  type="submit" value="Submit">
       </form>
-      {% if github_enabled %}
+      {% if github_enabled or keycloak_enabled %}
       <div style="display: flex; justify-content: center; align-items:center; margin-top: 10px;">or sign in with</div>
+      {% endif %}
+      {% if github_enabled %}
       <form action="/login/github/login/" method="post">
         {% csrf_token %}
         <input id="github_submit" class="btn-thirdparty" type="submit" value="GitHub">
+      </form>
+      {% endif %}
+      {% if keycloak_enabled %}
+      <form action="/oidc/keycloak/login/" method="post">
+        {% csrf_token %}
+        <input id="keycloak_submit" class="btn-thirdparty" type="submit" value="Keycloak">
       </form>
       {% endif %}
     </div>

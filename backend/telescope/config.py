@@ -145,7 +145,7 @@ def merge_dicts(first, second):
 def get_default_config():
     return {
         "gunicorn": {
-            "bind": "127.0.0.1:9898",
+            "bind": "0.0.0.0:9898",
             "workers": 8,
             "timeout": 120,
             "max_requests": 50,
@@ -162,6 +162,8 @@ def get_default_config():
                     "NAME": "telescope-default-db.sqlite3",
                 },
             },
+            "SITE_DOMAIN": "127.0.0.1:9898",
+            "SITE_NAME": "Default",
         },
         "limits": {
             "max_saved_views_per_user": 0,
@@ -172,6 +174,14 @@ def get_default_config():
                     "enabled": False,
                     "key": "",
                     "organizations": [],
+                    "default_group": None,
+                },
+                "keycloak": {
+                    "enabled": False,
+                    "server_url": "",
+                    "realm": "",
+                    "client_id": "",
+                    "client_secret": None,
                     "default_group": None,
                 },
             },

@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
@@ -38,6 +39,9 @@ INSTALLED_APPS = [
 
 if CONFIG["auth"]["providers"]["github"]["enabled"]:
     INSTALLED_APPS.append("allauth.socialaccount.providers.github")
+
+if CONFIG["auth"]["providers"]["keycloak"]["enabled"]:
+    INSTALLED_APPS.append("allauth.socialaccount.providers.openid_connect")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -150,6 +154,7 @@ SOCIALACCOUNT_PROVIDERS = {}
 ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_EMAIL_REQUIRED = False
 
+
 if CONFIG["auth"]["providers"]["github"]["enabled"]:
     github_config = {
         "APP": {
@@ -163,10 +168,47 @@ if CONFIG["auth"]["providers"]["github"]["enabled"]:
 
     SOCIALACCOUNT_PROVIDERS["github"] = github_config
 
+if CONFIG["auth"]["providers"]["keycloak"]["enabled"]:
+    keycloak_config = CONFIG["auth"]["providers"]["keycloak"]
+    
+    server_url = keycloak_config['server_url']
+    realm = keycloak_config['realm']
+    
+    oidc_endpoint = f"{server_url}/realms/{realm}/.well-known/openid-configuration"
+    
+    app_config = {
+        "provider_id": "keycloak",
+        "name": "Keycloak",
+        "client_id": keycloak_config["client_id"],
+        "settings": {
+            "server_url": oidc_endpoint,
+        },
+    }
+    
+    if keycloak_config.get("client_secret"):
+        app_config["secret"] = keycloak_config["client_secret"]
+        
+    SOCIALACCOUNT_PROVIDERS["openid_connect"] = {
+        "APPS": [app_config],
+        "OAUTH_PKCE_ENABLED": True,
+    }
+
+
+SESSION_COOKIE_AGE = CONFIG["django"].get("SESSION_COOKIE_AGE", 1209600)
+SITE_ID = 1
+SITE_DOMAIN = CONFIG["django"]["SITE_DOMAIN"]
+SITE_NAME = CONFIG["django"]["SITE_NAME"]
+
 LOGIN_REDIRECT_URL = "/"
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "static"
+
+if CONFIG["django"].get("SECURE_PROXY_SSL_HEADER"):
+    SECURE_PROXY_SSL_HEADER = (
+        django_conf["SECURE_PROXY_SSL_HEADER"].get("header"),
+        django_conf["SECURE_PROXY_SSL_HEADER"].get("value"),
+    )
 
 
 # Default primary key field type

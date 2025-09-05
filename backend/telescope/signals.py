@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.dispatch import receiver
 from django.core.exceptions import PermissionDenied
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group
 
 from allauth.account.signals import user_logged_in
 from allauth.socialaccount.signals import pre_social_login
@@ -47,5 +47,18 @@ def add_github_user_to_default_group(request, user, **kwargs):
         return
 
     if user.socialaccount_set.filter(provider="github").exists():
+        default_group, created = Group.objects.get_or_create(name=default_group_name)
+        user.groups.add(default_group)
+
+
+@receiver([user_logged_in])
+def add_keycloak_user_to_default_group(request, user, **kwargs):
+    default_group_name = settings.CONFIG["auth"]["providers"]["keycloak"].get(
+        "default_group"
+    )
+    if not default_group_name:
+        return
+
+    if user.socialaccount_set.filter(provider="keycloak").exists():
         default_group, created = Group.objects.get_or_create(name=default_group_name)
         user.groups.add(default_group)
