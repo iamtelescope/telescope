@@ -50,6 +50,8 @@ spec:
           env:
             - name: TELESCOPE_CONFIG_FILE
               value: "/etc/telescope/config.yaml"
+            - name: DJANGO_COLLECTSTATIC
+              value: {{ .Values.djangoCollectstatic }}
           envFrom:
             - secretRef:
                 name: {{ .Values.secretName }}
