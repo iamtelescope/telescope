@@ -24,6 +24,8 @@ data:
         {{- range .Values.config.django.CSRF_TRUSTED_ORIGINS }}
         - {{ . | quote }}
         {{- end }}
+      SITE_DOMAIN: {{ .Values.config.django.SITE_DOMAIN | quote }}
+      SITE_NAME: {{ .Values.config.django.SITE_NAME | quote }}
       DATABASES:
         {{- if .Values.database.raw }}
         {{- toYaml .Values.database.raw | nindent 8 }}
@@ -59,6 +61,13 @@ data:
             - {{ . | quote }}
             {{- end }}
           default_group: {{ .Values.config.auth.providers.github.default_group }}
+        keycloak:
+          enabled: {{ .Values.config.auth.providers.keycloak.enabled }}
+          server_url: {{ .Values.config.auth.providers.keycloak.server_url | quote }}
+          realm: {{ .Values.config.auth.providers.keycloak.realm | quote }}
+          client_id: {{ .Values.config.auth.providers.keycloak.client_id | quote }}
+          client_secret: !env KEYCLOAK_CLIENT_SECRET
+          default_group: {{ .Values.config.auth.providers.keycloak.default_group }}
       force_github_auth: {{ .Values.config.auth.force_github_auth }}
       enable_testing_auth: {{ .Values.config.auth.enable_testing_auth }}
       testing_auth_username: {{ .Values.config.auth.testing_auth_username | quote }}

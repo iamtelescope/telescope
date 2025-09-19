@@ -127,9 +127,15 @@
               "items": {
                 "type": "string"
               }
+            },
+            "SITE_DOMAIN": {
+              "type": "string"
+            },
+            "SITE_NAME": {
+              "type": "string"
             }
           },
-          "required": ["DEBUG", "ALLOWED_HOSTS", "CSRF_TRUSTED_ORIGINS"]
+          "required": ["DEBUG", "ALLOWED_HOSTS", "CSRF_TRUSTED_ORIGINS", "SITE_DOMAIN", "SITE_NAME"]
         },
         "auth": {
           "type": "object",
@@ -154,9 +160,33 @@
                     }
                   },
                   "required": ["enabled"]
+                },
+                "keycloak": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "server_url": {
+                      "type": "string"
+                    },
+                    "realm": {
+                      "type": "string"
+                    },
+                    "client_id": {
+                      "type": "string"
+                    },
+                    "client_secret": {
+                      "type": "string"
+                    },
+                    "default_group": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["enabled"]
                 }
               },
-              "required": ["github"]
+              "required": ["github", "keycloak"]
             }
           },
           "required": ["providers"]

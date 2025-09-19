@@ -41,6 +41,8 @@ config:
       - "http://localhost:8080"
     DEBUG: false
     ALLOWED_HOSTS: ["*"]
+    SITE_DOMAIN: "127.0.0.1:8080"
+    SITE_NAME: "Default"
     # Database configuration is a separated section below
   limits:
     max_saved_views_per_user: 0
@@ -51,6 +53,13 @@ config:
         client_id: ""
         key: ""
         organizations: []
+        default_group: null
+      keycloak:
+        enabled: false
+        server_url: ""
+        realm: ""
+        client_id: ""
+        client_secret: ""
         default_group: null
     force_github_auth: false
     enable_testing_auth: false
