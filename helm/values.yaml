@@ -112,6 +112,7 @@ database:
 # Secret configuration
 # Telescope retrieves sensitive values from a Kubernetes secret as environment variables
 secretName: "telescope-secrets"  # Name of the secret containing required environment variables
+djangoCollectstatic: 1
 
 # Required secrets in the secret:
 # - DJANGO_SECRET_KEY: Always required for Django security
