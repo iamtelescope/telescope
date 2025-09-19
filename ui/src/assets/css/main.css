@@ -23,6 +23,7 @@
     --p-surface-900: #18181b;
     --p-surface-950: #09090b;
     --p-content-border-radius: 6px;
+    --p-content-background: var(--p-surface-0);
 }
 
 :root.dark {
@@ -43,6 +44,7 @@
     --p-primary-hover-color: var(--p-primary-300);
     --p-primary-active-color: var(--p-primary-200);
     --p-content-border-color: var(--p-surface-700);
+    --p-content-background: var(--p-surface-900);
     --p-content-hover-background: var(--p-surface-800);
     --p-content-hover-color: var(--p-surface-0);
     --p-highlight-background: color-mix(in srgb, var(--p-primary-400), transparent 84%);
