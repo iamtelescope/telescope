@@ -12,7 +12,6 @@ _A handy tool that manages to make close what once was far_
 
 :blue_book: **[Read the Documentation](https://docs.iamtelescope.net/)**
 
-:speech_balloon: **[Discord](https://discord.gg/BWrBMnkGZn)**
 :speech_balloon: **[Telegram](https://t.me/+CGnCz48GF8xmY2Yy)**
 
 :whale:	**[Run locally using Docker](https://iamtelescope.github.io/telescope/docs/setup/quickstart.html)**
