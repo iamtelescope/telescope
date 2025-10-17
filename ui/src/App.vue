@@ -145,7 +145,7 @@ const toggleManageMenu = (event) => {
 
 const home = ref({
     icon: 'pi pi-home',
-    url: '/',
+    url: '',
 })
 
 const themeIcon = computed(() => {

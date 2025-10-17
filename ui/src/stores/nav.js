@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia'
 
 const navs = {
-    rbac: { label: 'Role-Based Access Control', icon: 'pi pi-shield', url: '/rbac' },
-    groups: { label: 'Groups', icon: 'pi pi-users', url: '/rbac/groups' },
-    users: { label: 'Users', icon: 'pi pi-user', url: '/rbac/users' },
-    profile: { label: 'Profile', icon: 'pi pi-user', url: '/profile' },
-    sources: { label: 'Sources', icon: 'pi pi-database', url: '/sources' },
+    rbac: { label: 'Role-Based Access Control', icon: 'pi pi-shield', url: 'rbac' },
+    groups: { label: 'Groups', icon: 'pi pi-users', url: 'rbac/groups' },
+    users: { label: 'Users', icon: 'pi pi-user', url: 'rbac/users' },
+    profile: { label: 'Profile', icon: 'pi pi-user', url: 'profile' },
+    sources: { label: 'Sources', icon: 'pi pi-database', url: 'sources' },
 }
 
 export const useNavStore = defineStore('nav', {

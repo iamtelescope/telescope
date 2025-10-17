@@ -14,7 +14,7 @@ export const useConfigStore = defineStore('config', () => {
     })
 
     async function load() {
-        let response = await http.Get('/ui/v1/config')
+        let response = await http.Get('ui/v1/config')
         config.value = response.data
     }
     return { config, load }

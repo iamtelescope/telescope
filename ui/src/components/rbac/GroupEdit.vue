@@ -71,7 +71,7 @@ const saveNonFieldErrors = ref([])
 const { group, error, loading } = useGetGroup(route.params.groupId)
 const groupSrv = new GroupService()
 
-navStore.update([{ label: 'Role-Based Access Control' }, { label: 'Groups', url: '/rbac/groups' }])
+navStore.update([{ label: 'Role-Based Access Control' }, { label: 'Groups', url: 'rbac/groups' }])
 
 watch(group, () => {
     if (!navStored.value) {

@@ -197,8 +197,8 @@ const selectGlobalRoleDisabled = ref(false)
 const groupSrv = new GroupService()
 
 navStore.update([
-    { label: 'Role-Based Access Control', url: '/rbac' },
-    { label: 'Groups', url: '/rbac/groups' },
+    { label: 'Role-Based Access Control', url: 'rbac' },
+    { label: 'Groups', url: 'rbac/groups' },
 ])
 
 const { users, error: usersError, loading: usersLoading } = useGetUsers()

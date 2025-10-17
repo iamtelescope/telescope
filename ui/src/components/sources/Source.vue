@@ -150,7 +150,7 @@ const sourceSrv = new SourceService()
 const activeTab = ref('overview')
 const sourceDeleteButtonLoading = ref(false)
 
-navStore.updatev2([{ label: 'Sources', url: '/sources', icon: 'pi pi-database' }])
+navStore.updatev2([{ label: 'Sources', url: 'sources', icon: 'pi pi-database' }])
 
 const { source, error, loading, load } = useGetSource(route.params.sourceSlug)
 

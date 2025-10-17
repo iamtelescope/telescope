@@ -11,7 +11,10 @@ from telescope.response import UIResponse
 
 @login_required
 def index(request):
-    return render(request, "index.html")
+    from django.conf import settings
+    return render(request, "index.html", {
+        "base_url": settings.BASE_URL or ""
+    })
 
 
 class ConfigView(APIView):

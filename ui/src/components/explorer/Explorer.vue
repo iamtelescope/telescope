@@ -168,7 +168,7 @@ navStore.update([
     {
         icon: 'pi pi-database',
         label: 'Sources',
-        url: '/',
+        url: '',
     },
     { label: props.source.slug },
     { label: 'explore' },

@@ -77,8 +77,8 @@ const filters = ref({
 const { groups, error, loading } = useGetGroups()
 
 navStore.update([
-    { label: 'Role-Based Access Control', url: '/rbac' },
-    { label: 'Groups', url: '/rbac/groups' },
+    { label: 'Role-Based Access Control', url: 'rbac' },
+    { label: 'Groups', url: 'rbac/groups' },
 ])
 
 const handleGroupCreate = () => {
