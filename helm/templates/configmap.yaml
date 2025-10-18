@@ -67,6 +67,7 @@ data:
       docs_url: {{ .Values.config.frontend.docs_url | quote }}
       show_docs_url: {{ .Values.config.frontend.show_docs_url }}
       show_github_url: {{ .Values.config.frontend.show_github_url }}
+      base_url: {{ .Values.config.frontend.base_url | quote }}
     logging:
       format: {{ .Values.config.logging.format | quote }}
       levels:

@@ -72,8 +72,8 @@ const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
 })
 navStore.update([
-    { label: 'Role-Based Access Control', url: '/rbac' },
-    { label: 'Users', url: '/rbac/users' },
+    { label: 'Role-Based Access Control', url: 'rbac' },
+    { label: 'Users', url: 'rbac/users' },
 ])
 
 const { users, error, loading } = useGetUsers()

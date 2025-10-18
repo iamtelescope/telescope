@@ -8,6 +8,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 CONFIG = get_config()
 
+# Base URL configuration for deployment under subpaths
+BASE_URL = CONFIG["frontend"].get("base_url", "").rstrip('/')
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
@@ -62,6 +65,10 @@ MIDDLEWARE.extend(
 CORS_ALLOW_ALL_ORIGINS = True
 CSRF_TRUSTED_ORIGINS = CONFIG["django"].get("CSRF_TRUSTED_ORIGINS", [])
 
+# Apply base URL configuration
+if BASE_URL:
+    FORCE_SCRIPT_NAME = BASE_URL
+
 ROOT_URLCONF = "base.urls"
 
 TEMPLATES = [
@@ -80,7 +87,7 @@ TEMPLATES = [
     },
 ]
 
-LOGIN_URL = "/login"
+LOGIN_URL = f"{BASE_URL}/login"
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
@@ -163,7 +170,7 @@ if CONFIG["auth"]["providers"]["github"]["enabled"]:
 
     SOCIALACCOUNT_PROVIDERS["github"] = github_config
 
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = f"{BASE_URL}/"
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "static"

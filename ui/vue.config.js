@@ -5,6 +5,7 @@ const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin')
 module.exports = defineConfig({
     outputDir: 'dist',
     assetsDir: 'static',
+    publicPath: './',
     transpileDependencies: true,
     devServer: {
         client: false,

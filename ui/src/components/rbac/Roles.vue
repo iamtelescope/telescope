@@ -37,8 +37,8 @@ import { useGetRoles } from '@/composables/rbac/useRoleService'
 const router = useRouter()
 const navStore = useNavStore()
 navStore.update([
-    { label: 'Role-Based Access Control', url: '/rbac' },
-    { label: 'Roles', url: '/rbac/roles' },
+    { label: 'Role-Based Access Control', url: 'rbac' },
+    { label: 'Roles', url: 'rbac/roles' },
 ])
 
 const { roles, error, loading } = useGetRoles()

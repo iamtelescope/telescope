@@ -52,8 +52,8 @@ const navStore = useNavStore()
 const { role, loading, error } = useGetRole(route.params.roleType, route.params.roleName)
 
 navStore.update([
-    { label: 'Role-Based Access Control', url: '/rbac' },
-    { label: 'Roles', url: '/rbac/roles' },
+    { label: 'Role-Based Access Control', url: 'rbac' },
+    { label: 'Roles', url: 'rbac/roles' },
 ])
 
 watch(role, () => {

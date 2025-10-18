@@ -53,7 +53,7 @@ import Card from 'primevue/card'
 const navStore = useNavStore()
 const router = useRouter()
 
-navStore.update([{ label: 'Role-Based Access Control', url: '/rbac', class: 'text-gray-100' }])
+navStore.update([{ label: 'Role-Based Access Control', url: 'rbac', class: 'text-gray-100' }])
 
 const handleRolesClick = () => {
     router.push({ name: 'rbacRoles' })

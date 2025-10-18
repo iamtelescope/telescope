@@ -1,4 +1,7 @@
 import { ref } from 'vue'
+import HTTP from '@/utils/http'
+
+const http = new HTTP()
 
 const useDeleteSource = (slug) => {
     const result = ref(null)
@@ -7,18 +10,13 @@ const useDeleteSource = (slug) => {
 
     const load = async () => {
         try {
-            let url = `/ui/v1/sources/${slug}`
-            let requestOptions = {
-                method: 'DELETE',
-                headers: {},
-            }
+            let url = `ui/v1/sources/${slug}`
+            let response = await http.Delete(url)
 
-            let response = await fetch(url, requestOptions)
-
-            if (!response.ok) {
-                throw Error(`failed to fetch ${response.url}. ${response.status}: ${response.statusText}`)
+            if (!response.result) {
+                throw Error(response.errors?.[0] || 'Failed to delete source')
             } else {
-                result.value = await response.json()
+                result.value = response.data
                 loading.value = false
             }
         } catch (err) {

@@ -3,11 +3,11 @@
 <div style="height: 100vh; width: 100wh; background: linear-gradient(135deg, rgb(5, 7, 10), rgb(40, 60, 80));">
   <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
     <div style="max-width: 500px; width: 500px; min-width: 500px;display: flex; align-items: left;">
-      <img src="/static/namedlogo.png" style="margin-bottom: 10px; padding-left: 10px;" />
+      <img src="static/namedlogo.png" style="margin-bottom: 10px; padding-left: 10px;" />
     </div>
     <div class="form-box">
       <div class="form-label">Create superuser account</div>
-      <form action="/setup" method="post">
+      <form action="setup" method="post">
         {% csrf_token %}
 
         {% for field in form %}

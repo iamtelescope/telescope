@@ -4,31 +4,31 @@ const http = new HTTP()
 
 class SourceService {
     createSource = async (data) => {
-        let response = await http.Post('/ui/v1/sources', data)
+        let response = await http.Post('ui/v1/sources', data)
         return response
     }
     deleteSource = async (sourceSlug) => {
-        let response = await http.Delete(`/ui/v1/sources/${sourceSlug}`)
+        let response = await http.Delete(`ui/v1/sources/${sourceSlug}`)
         return response
     }
     updateSource = async (sourceSlug, data) => {
-        let response = await http.Patch(`/ui/v1/sources/${sourceSlug}`, data)
+        let response = await http.Patch(`ui/v1/sources/${sourceSlug}`, data)
         return response
     }
     getSource = async (sourceSlug) => {
-        let response = await http.Get(`/ui/v1/sources/${sourceSlug}`)
+        let response = await http.Get(`ui/v1/sources/${sourceSlug}`)
         return response
     }
     getSources = async () => {
-        let response = await http.Get('/ui/v1/sources')
+        let response = await http.Get('ui/v1/sources')
         return response
     }
     getSourceRoleBindings = async (sourceSlug) => {
-        let response = await http.Get(`/ui/v1/sources/${sourceSlug}/roleBindings`)
+        let response = await http.Get(`ui/v1/sources/${sourceSlug}/roleBindings`)
         return response
     }
     testConnection = async (kind, connectionData) => {
-        let response = await http.Post(`/ui/v1/services/testSourceConnection/${kind}`, connectionData)
+        let response = await http.Post(`ui/v1/services/testSourceConnection/${kind}`, connectionData)
         return response
     }
     grantSourceRole = async (sourceSlug, user, group, role) => {
@@ -45,7 +45,7 @@ class SourceService {
         if (group != null) {
             data['subject'] = { kind: 'group', name: group.name }
         }
-        let response = await http.Post(`/ui/v1/sources/${sourceSlug}/grantRole`, data)
+        let response = await http.Post(`ui/v1/sources/${sourceSlug}/grantRole`, data)
         return response
     }
     revokeSourceRole = async (sourceSlug, user, group, role) => {
@@ -62,39 +62,39 @@ class SourceService {
         if (group != null) {
             data['subject'] = { kind: 'group', name: group.name }
         }
-        let response = await http.Post(`/ui/v1/sources/${sourceSlug}/revokeRole`, data)
+        let response = await http.Post(`ui/v1/sources/${sourceSlug}/revokeRole`, data)
         return response
     }
     getData = async (sourceSlug, params, signal) => {
-        let response = await http.Post(`/ui/v1/sources/${sourceSlug}/data`, params, signal)
+        let response = await http.Post(`ui/v1/sources/${sourceSlug}/data`, params, signal)
         return response
     }
     getGraphData = async (sourceSlug, params, signal) => {
-        let response = await http.Post(`/ui/v1/sources/${sourceSlug}/graphData`, params, signal)
+        let response = await http.Post(`ui/v1/sources/${sourceSlug}/graphData`, params, signal)
         return response
     }
     autocomplete = async (sourceSlug, params) => {
-        let response = await http.Post(`/ui/v1/sources/${sourceSlug}/autocomplete`, params)
+        let response = await http.Post(`ui/v1/sources/${sourceSlug}/autocomplete`, params)
         return response
     }
     getContextFieldData = async (sourceSlug, params) => {
-        let response = await http.Post(`/ui/v1/sources/${sourceSlug}/contextFieldData`, params)
+        let response = await http.Post(`ui/v1/sources/${sourceSlug}/contextFieldData`, params)
         return response
     }
     getSavedView = async (sourceSlug, viewSlug) => {
-        return await http.Get(`/ui/v1/sources/${sourceSlug}/savedViews/${viewSlug}`)
+        return await http.Get(`ui/v1/sources/${sourceSlug}/savedViews/${viewSlug}`)
     }
     getSavedViews = async (sourceSlug) => {
-        return await http.Get(`/ui/v1/sources/${sourceSlug}/savedViews`)
+        return await http.Get(`ui/v1/sources/${sourceSlug}/savedViews`)
     }
     updateSavedView = async (sourceSlug, viewSlug, data) => {
-        return await http.Patch(`/ui/v1/sources/${sourceSlug}/savedViews/${viewSlug}`, data)
+        return await http.Patch(`ui/v1/sources/${sourceSlug}/savedViews/${viewSlug}`, data)
     }
     createSavedView = async (sourceSlug, data) => {
-        return await http.Post(`/ui/v1/sources/${sourceSlug}/savedViews`, data)
+        return await http.Post(`ui/v1/sources/${sourceSlug}/savedViews`, data)
     }
     deleteSavedView = async (sourceSlug, viewSlug) => {
-        return await http.Delete(`/ui/v1/sources/${sourceSlug}/savedViews/${viewSlug}`)
+        return await http.Delete(`ui/v1/sources/${sourceSlug}/savedViews/${viewSlug}`)
     }
 }
 

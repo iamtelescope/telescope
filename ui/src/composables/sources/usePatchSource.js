@@ -1,4 +1,7 @@
 import { ref } from 'vue'
+import HTTP from '@/utils/http'
+
+const http = new HTTP()
 
 const usePatchSource = () => {
     const result = ref(null)
@@ -7,19 +10,13 @@ const usePatchSource = () => {
 
     const load = async (slug, data) => {
         try {
-            let url = `/ui/v1/sources/${slug}`
-            let requestOptions = {
-                method: 'PATCH',
-                headers: {},
-                body: JSON.stringify(data),
-            }
+            let url = `ui/v1/sources/${slug}`
+            let response = await http.Patch(url, data)
 
-            let response = await fetch(url, requestOptions)
-
-            if (!response.ok) {
-                throw Error(`failed to fetch ${response.url}. ${response.status}: ${response.statusText}`)
+            if (!response.result) {
+                throw Error(response.errors?.[0] || 'Failed to patch source')
             } else {
-                result.value = await response.json()
+                result.value = response.data
                 loading.value = false
             }
         } catch (err) {
