@@ -133,7 +133,7 @@ const showSourceDataTable = computed(() => {
 })
 
 const onShareURL = () => {
-    let url = window.location.origin + route.path + '?' + sourceControlsStore.queryString
+    let url = window.location.origin + route.fullPath
 
     navigator.clipboard
         .writeText(url)

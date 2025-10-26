@@ -21,11 +21,13 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const _fields = ref(null)
     const _query = ref(null)
     const _rawQuery = ref(null)
+    
     const _from = ref(null)
     const _to = ref(null)
+    const _timeZone = ref(null)
+
     const _graphGroupBy = ref(null)
     const _showGraph = ref(null)
-    const _timezone = ref(null)
     const _limit = ref(null)
     const _contextFields = ref(null)
     const _view = ref(null)
@@ -36,9 +38,9 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _rawQuery.value = null
         _from.value = null
         _to.value = null
+        _timeZone.value = null
         _graphGroupBy.value = null
         _showGraph.value = null
-        _timezone.value = null
         _limit.value = null
         _contextFields.value = null
         _view.value = null
@@ -53,9 +55,9 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _fields.value = route.query.fields ?? viewParam?.data?.fields ?? source.defaultChosenFields.join(', ')
         _query.value = route.query.query ?? viewParam?.data?.query ?? ''
         _rawQuery.value = route.query.raw_query ?? ''
-        _timezone.value = 'UTC'
         _from.value = toTelescopeDate(tryToMillis(route.query.from ?? viewParam?.data?.from ?? 'now-5m'))
         _to.value = toTelescopeDate(tryToMillis(route.query.to ?? viewParam?.data?.to ?? 'now'))
+        _timeZone.value = 'UTC'
         _graphGroupBy.value = route.query.graph_group_by ?? viewParam?.data?.graph_group_by ?? source.severityField
         _showGraph.value = true
         _limit.value = 50
@@ -123,8 +125,8 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         return _rawQuery.value
     })
 
-    const timezone = computed(() => {
-        return _timezone.value
+    const timeZone = computed(() => {
+        return _timeZone.value
     })
 
     const limit = computed(() => {
@@ -143,74 +145,63 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         return _contextFields.value
     })
 
-    const queryParams = computed(() => {
+    const routeQuery = computed(() => {
         let params = {
             fields: fields.value,
             limit: limit.value,
             from: from.value.toRequestRepresentation(),
             to: to.value.toRequestRepresentation(),
             graph_group_by: graphGroupBy.value || '',
-            show_graph: showGraph.value,
-            context_fields: structuredClone(contextFields.value),
+            show_graph: showGraph.value
         }
-        if (_view.value) {
+
+        if (query.value) params.query = query.value
+        if (rawQuery.value) params.raw_query = rawQuery.value
+
+        if (view.value) {
             params.view = _view.value.slug
-        }
-        if (_query.value) {
-            params.query = _query.value
-        }
-        if (_rawQuery.value) {
-            params.raw_query = _rawQuery.value
-        }
-        return params
-    })
-
-    const routeQuery = computed(() => {
-        let params = structuredClone(queryParams.value)
-
-        if (_view.value) {
-            const viewData = _view.value.data
 
             for (const [key, value] of Object.entries(params)) {
-                if (key === 'context_fields') {
-                    for (const [ctxKey, ctxValue] of Object.entries(value)) {
-                        const viewCtxValue = viewData.context_fields?.[ctxKey]
-                        if (JSON.stringify(ctxValue) !== JSON.stringify(viewCtxValue)) {
-                            params[`ctx_${ctxKey}`] = ctxValue
-                        }
-                    }
-                } else {
-                    if (JSON.stringify(value) === JSON.stringify(viewData[key])) {
-                        delete params[key]
-                    }
+                if (JSON.stringify(value) === JSON.stringify(view.value.data[key])) {
+                    delete params[key]
                 }
-            }
-        } else {
-            for (const [key, value] of Object.entries(params.context_fields)) {
-                params[`ctx_${key}`] = value
             }
         }
 
-        delete params.context_fields
-        return params
-    })
+        for (const [key, value] of Object.entries(contextFields.value)) {
+            if (!view.value || JSON.stringify(value) !== JSON.stringify(view.value.data.context_fields?.[key]))
+                params[`ctx_${key}`] = value
+        }
 
-    const queryString = computed(() => {
-        return new URLSearchParams(Object.entries(routeQuery.value)).toString()
+        return params
     })
 
     const dataRequestParams = computed(() => {
-        let params = structuredClone(queryParams.value)
-        delete params.graph_group_by
+        let params = {
+            fields: fields.value,
+            limit: limit.value,
+            from: from.value.toRequestRepresentation(),
+            to: to.value.toRequestRepresentation(),
+            context_fields: structuredClone(contextFields.value),
+        }
+
+        if (query.value) params.query = query.value
+        if (rawQuery.value) params.raw_query = rawQuery.value
+
         return params
     })
 
     const graphRequestParams = computed(() => {
-        let params = structuredClone(queryParams.value)
-        params.group_by = params.graph_group_by
-        delete params.graph_group_by
-        delete params.fields
-        delete params.limit
+        let params = {
+            from: from.value.toRequestRepresentation(),
+            to: to.value.toRequestRepresentation(),
+            group_by: graphGroupBy.value || '',
+            context_fields: structuredClone(contextFields.value),
+        }
+        
+        if (query.value) params.query = query.value
+        if (rawQuery.value) params.raw_query = rawQuery.value
+
         return params
     })
 
@@ -279,8 +270,8 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         }
     }
 
-    function setTimezone(value) {
-        _timezone.value = value
+    function setTimeZone(value) {
+        _timeZone.value = value
     }
 
     function setGraphGroupBy(value) {
@@ -315,18 +306,18 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     function toTelescopeDate(value) {
         return new TelescopeDate({
             value: value,
-            timezone: _timezone.value,
+            timezone: _timeZone.value,
         })
     }
 
     function tryToMillis(value) {
         if (!humanRelatedTimeRegex.exec(value)) {
             if (value instanceof Date) {
-                value = DateTime.fromJSDate(value).setZone(_timezone.value, { keepLocalTime: true }).toMillis()
+                value = DateTime.fromJSDate(value).setZone(_timeZone.value, { keepLocalTime: true }).toMillis()
             } else {
                 let intValue = parseInt(value)
                 if (isNaN(intValue)) {
-                    value = value.toMillis({ zone: _timezone.value })
+                    value = value.toMillis({ zone: _timeZone.value })
                 }
             }
         }
@@ -344,22 +335,20 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setLimit,
         setFrom,
         setTo,
-        setTimezone,
+        setTimeZone,
         setGraphGroupBy,
         setShowGraph,
         setContextField,
         from,
         to,
         view,
-        timezone,
+        timeZone,
         limit,
         fields,
         query,
         rawQuery,
         parsedFields,
         graphGroupBy,
-        queryString,
-        queryParams,
         routeQuery,
         viewParams,
         dataRequestParams,
