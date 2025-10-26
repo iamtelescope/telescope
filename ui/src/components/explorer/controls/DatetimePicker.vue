@@ -87,14 +87,14 @@ import ErrorText from '@/components/common/ErrorText.vue'
 import {
     getRelativeOption,
     getRelativeOptions,
-    getDatetimeRangeText,
     dateIsValid,
     dateTimeFormat,
     humanRelatedTimeRegex,
+    getNiceRangeText,
 } from '@/utils/datetimeranges.js'
 import { tzOptions } from '@/utils/timezones.js'
 
-const props = defineProps(['from', 'to'])
+const props = defineProps(['from', 'to', 'timeZone'])
 const emit = defineEmits(['rangeSelect'])
 const dropdown = ref()
 const zones = ref(tzOptions)
@@ -131,10 +131,6 @@ const initValues = () => {
     if (props.from.dateObj && props.to.dateObj) {
         dates.value = [props.from.dateObj.toJSDate(), props.to.dateObj.toJSDate()]
     }
-    emit('rangeSelect', {
-        from: from.value,
-        to: to.value,
-    })
 }
 
 onMounted(() => {
@@ -146,7 +142,7 @@ onUpdated(() => {
 })
 
 const daterangelabel = computed(() => {
-    return getDatetimeRangeText(props.from.strValue, props.to.strValue) + ` [${selectedZone.value.name}]`
+    return getNiceRangeText(props.from, props.to, props.timeZone) + ` [${selectedZone.value.name}]`
 })
 
 const handleApply = () => {

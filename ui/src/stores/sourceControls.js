@@ -11,7 +11,7 @@ import { BoolOperator as FlyQLBoolOperator } from 'flyql'
 
 import { getBooleanFromString } from '@/utils/utils'
 
-import { TelescopeDate, humanRelatedTimeRegex } from '@/utils/datetimeranges.js'
+import { humanRelatedTimeRegex } from '@/utils/datetimeranges.js'
 
 export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const toast = useToast()
@@ -55,9 +55,9 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _fields.value = route.query.fields ?? viewParam?.data?.fields ?? source.defaultChosenFields.join(', ')
         _query.value = route.query.query ?? viewParam?.data?.query ?? ''
         _rawQuery.value = route.query.raw_query ?? ''
-        _from.value = toTelescopeDate(tryToMillis(route.query.from ?? viewParam?.data?.from ?? 'now-5m'))
-        _to.value = toTelescopeDate(tryToMillis(route.query.to ?? viewParam?.data?.to ?? 'now'))
-        _timeZone.value = 'UTC'
+        _from.value = tryToMillis(route.query.from ?? viewParam?.data?.from ?? 'now-5m')
+        _to.value = tryToMillis(route.query.to ?? viewParam?.data?.to ?? 'now')
+        _timeZone.value = route.query.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
         _graphGroupBy.value = route.query.graph_group_by ?? viewParam?.data?.graph_group_by ?? source.severityField
         _showGraph.value = true
         _limit.value = 50
@@ -149,8 +149,8 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         let params = {
             fields: fields.value,
             limit: limit.value,
-            from: from.value.toRequestRepresentation(),
-            to: to.value.toRequestRepresentation(),
+            from: from.value,
+            to: to.value,
             graph_group_by: graphGroupBy.value || '',
             show_graph: showGraph.value
         }
@@ -180,8 +180,8 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         let params = {
             fields: fields.value,
             limit: limit.value,
-            from: from.value.toRequestRepresentation(),
-            to: to.value.toRequestRepresentation(),
+            from: from.value,
+            to: to.value,
             context_fields: structuredClone(contextFields.value),
         }
 
@@ -193,8 +193,8 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
     const graphRequestParams = computed(() => {
         let params = {
-            from: from.value.toRequestRepresentation(),
-            to: to.value.toRequestRepresentation(),
+            from: from.value,
+            to: to.value,
             group_by: graphGroupBy.value || '',
             context_fields: structuredClone(contextFields.value),
         }
@@ -209,8 +209,8 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         return {
             fields: fields.value,
             query: query.value,
-            from: from.value.toRequestRepresentation(),
-            to: to.value.toRequestRepresentation(),
+            from: from.value,
+            to: to.value,
             limit: limit.value,
             graph_group_by: graphGroupBy.value,
             show_graph: showGraph.value,
@@ -257,17 +257,11 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     }
 
     function setFrom(value) {
-        let newFrom = toTelescopeDate(tryToMillis(value))
-        if (newFrom.value !== _from.value.value) {
-            _from.value = newFrom
-        }
+        _from.value = tryToMillis(value)
     }
 
     function setTo(value) {
-        let newTo = toTelescopeDate(tryToMillis(value))
-        if (newTo.value !== _to.value.value) {
-            _to.value = newTo
-        }
+        _to.value = tryToMillis(value)
     }
 
     function setTimeZone(value) {
@@ -303,25 +297,18 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         toast.add({ severity: 'success', summary: 'Success', detail: 'Query was updated', life: 3000 })
     }
 
-    function toTelescopeDate(value) {
-        return new TelescopeDate({
-            value: value,
-            timezone: _timeZone.value,
-        })
-    }
-
     function tryToMillis(value) {
-        if (!humanRelatedTimeRegex.exec(value)) {
-            if (value instanceof Date) {
-                value = DateTime.fromJSDate(value).setZone(_timeZone.value, { keepLocalTime: true }).toMillis()
-            } else {
-                let intValue = parseInt(value)
-                if (isNaN(intValue)) {
-                    value = value.toMillis({ zone: _timeZone.value })
-                }
-            }
-        }
-        return value
+        if (humanRelatedTimeRegex.exec(value))
+            return value
+        
+        if (value instanceof Date)
+            return DateTime.fromJSDate(value).setZone(_timeZone.value, { keepLocalTime: true }).toMillis()
+        
+        let intValue = parseInt(value)
+        if (!isNaN(intValue) && isFinite(intValue))
+            return intValue
+
+        return value.toMillis({ zone: _timeZone.value })
     }
 
     return {

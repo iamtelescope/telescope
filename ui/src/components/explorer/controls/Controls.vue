@@ -50,6 +50,7 @@
                     @rangeSelect="onRangeSelect"
                     :from="sourceControlsStore.from"
                     :to="sourceControlsStore.to"
+                    :timeZone="sourceControlsStore.timeZone"
                 />
                 <QuerySettings
                     :source="source"

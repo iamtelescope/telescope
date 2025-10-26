@@ -1,5 +1,4 @@
 import { format, parse, isValid } from 'date-fns'
-import { DateTime } from 'luxon'
 
 const dateTimeFormat = 'yyyy-MM-dd HH:mm:ss.SSS'
 
@@ -52,31 +51,6 @@ for (const key in datetimeRanges) {
     datetimeRangesReversed[`${from} - ${to}`] = key
 }
 
-class TelescopeDate {
-    constructor(data) {
-        this.value = data.value
-        this.timezone = data.timezone
-        this.isRelative = false
-        this.dateObj = null
-        this.strValue = null
-        this.error = ''
-        try {
-            if (humanRelatedTimeRegex.exec(this.value)) {
-                this.isRelative = true
-                this.strValue = this.value
-            } else {
-                this.dateObj = DateTime.fromMillis(parseInt(this.value), { zone: this.timezone })
-                this.strValue = this.dateObj.toFormat(dateTimeFormat)
-            }
-        } catch (e) {
-            this.error = `failed to initialize date: ${e.toTostring()}`
-        }
-    }
-    toRequestRepresentation() {
-        return this.isRelative ? this.value : this.dateObj.setZone('UTC').toMillis()
-    }
-}
-
 function getRelativeOption(from, to) {
     let key = `${from} - ${to}`
     let text = datetimeRangesReversed[key]
@@ -99,15 +73,32 @@ function fmt(date) {
     return format(date, dateTimeFormat)
 }
 
-function getDatetimeRangeText(from, to) {
-    // Accepts TelescopeDate obj
-    let key = `${from} - ${to}`
-    let text = datetimeRangesReversed[key]
-    if (text) {
-        return text
-    } else {
-        return `${from} - ${to}`
+function getNiceRangeText(from, to, timeZone) {
+    if (typeof(from) === 'string' && typeof(to) === 'string') {
+        const rangeString = `${from} - ${to}`
+        if (rangeString in datetimeRangesReversed)
+            return datetimeRangesReversed[rangeString]
+        else
+            return rangeString
     }
+
+    const dateTimeFormat = Intl.DateTimeFormat('en-GB', {
+        dateStyle: 'short',
+        hour12: false,
+        timeStyle: 'short',
+        timeZone
+    })
+
+    if (typeof(from) === 'number' && typeof(to) === 'number')
+        return dateTimeFormat.formatRange(new Date(from), new Date(to))
+
+    const formatSingle = (input) => {
+        if (typeof(input) === 'string')
+            return input
+        else
+            return dateTimeFormat.format(new Date(input))
+    }
+    return `${formatSingle(from)} - ${formatSingle(to)}`
 }
 
 function dateIsValid(dateString) {
@@ -124,11 +115,10 @@ function dateIsValid(dateString) {
 }
 
 export {
-    TelescopeDate,
     datetimeRanges,
     dateTimeFormat,
     humanRelatedTimeRegex,
-    getDatetimeRangeText,
+    getNiceRangeText,
     getRelativeOption,
     getRelativeOptions,
     fmt,
