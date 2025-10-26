@@ -30,8 +30,8 @@ from telescope.utils import convert_to_base_ch, get_telescope_field
 logger = logging.getLogger("telescope.fetchers.clickhouse")
 
 
-SSL_CERTS_PARAMS = ["ca_cert", "certfile", "keyfile"]
-OPTIONAL_SSL_PARAMS = ["ssl_version", "ciphers", "server_hostname", "alt_hosts"]
+SSL_CERTS_PARAMS = ["ca_cert", "client_cert", "client_cert_key"]
+OPTIONAL_SSL_PARAMS = ["server_host_name", "tls_mode"]
 
 ESCAPE_CHARS_MAP = {
     "\b": "\\b",
@@ -88,13 +88,13 @@ class ClickhouseConnect:
             "verify": self.data["verify"],
         }
         for name in OPTIONAL_SSL_PARAMS:
-            if self.data[name] != "":
+            if self.data.get(name) and self.data[name] != "":
                 client_kwargs[name] = self.data[name]
 
         self.temp_dir = tempfile.TemporaryDirectory()
 
         for name in SSL_CERTS_PARAMS:
-            if self.data[name]:
+            if self.data.get(name):
                 path = os.path.join(self.temp_dir.name, f"{name}.pem")
                 with open(path, "w") as fd:
                     fd.write(self.data[name])
@@ -120,6 +120,20 @@ def flyql_clickhouse_fields(source_fields: Dict[str, SourceField]):
         )
         for _, field in source_fields.items()
     }
+
+
+class ConnectionTestResponseNg:
+    def __init__(
+        self,
+    ):
+        self.result = False
+        self.error = ""
+
+    def as_dict(self) -> dict:
+        return {
+            "result": self.result,
+            "error": self.error,
+        }
 
 
 class ConnectionTestResponse:
@@ -163,6 +177,19 @@ class Fetcher(BaseFetcher):
         return True, None
 
     @classmethod
+    def test_connection_ng(cls, data: dict) -> ConnectionTestResponseNg:
+        response = ConnectionTestResponseNg()
+        with ClickhouseConnect(data) as c:
+            try:
+                c.client.query("SELECT now()")
+            except Exception as err:
+                response.error = str(err)
+                logger.exception("connection test failed: %s", err)
+            else:
+                response.result = True
+        return response
+
+    @classmethod
     def test_connection(cls, data: dict) -> ConnectionTestResponse:
         response = ConnectionTestResponse()
         target = f"`{data['database']}`.`{data['table']}`"
@@ -197,14 +224,30 @@ class Fetcher(BaseFetcher):
         return response
 
     @classmethod
+    def get_schema(cls, data: dict):
+        """Get schema without testing connection"""
+        result = None
+        target = f"`{data['database']}`.`{data['table']}`"
+        with ClickhouseConnect(data) as c:
+            # First validate the table exists - this will throw an error if it doesn't
+            c.client.query(f"SELECT 1 FROM {target} LIMIT 1")
+
+            # Now get the schema
+            result = c.client.query(
+                "select name, type from system.columns where database = '%s' and table = '%s'"
+                % (data["database"], data["table"])
+            )
+        return [get_telescope_field(x[0], x[1]) for x in result.result_rows]
+
+    @classmethod
     def autocomplete(cls, source, field, time_from, time_to, value):
         incomplete = False
-        from_db_table = f"{source.connection['database']}.{source.connection['table']}"
+        from_db_table = f"{source.data['database']}.{source.data['table']}"
         time_clause = build_time_clause(
             source.time_field, source.date_field, time_from, time_to
         )
         query = f"SELECT DISTINCT {field} FROM {from_db_table} WHERE {time_clause} and {field} LIKE %(value)s ORDER BY {field} LIMIT 500"
-        with ClickhouseConnect(source.connection) as c:
+        with ClickhouseConnect(source.conn.data) as c:
             result = c.client.query(query, {"value": f"%{value}%"})
             items = [str(x[0]) for x in result.result_rows]
         if len(items) >= 500:
@@ -255,7 +298,9 @@ class Fetcher(BaseFetcher):
             request.time_from,
             request.time_to,
         )
-        from_db_table = f"{request.source.connection['database']}.{request.source.connection['table']}"
+        from_db_table = (
+            f"{request.source.data['database']}.{request.source.data['table']}"
+        )
 
         time_field_type = convert_to_base_ch(
             request.source._fields[request.source.time_field].type.lower()
@@ -292,7 +337,7 @@ class Fetcher(BaseFetcher):
             elif time_field_type == "datetime64":
                 stats_time_selector = f"toUnixTimestamp64Milli({to_time_zone})"
 
-        with ClickhouseConnect(request.source.connection) as c:
+        with ClickhouseConnect(request.source.conn.data) as c:
             stat_sql = f"SELECT {stats_time_selector} as t, COUNT() as Count"
             if group_by_value:
                 stat_sql += f", {group_by_value} as `{group_by.name}`"
@@ -360,7 +405,9 @@ class Fetcher(BaseFetcher):
             request.time_from,
             request.time_to,
         )
-        from_db_table = f"{request.source.connection['database']}.{request.source.connection['table']}"
+        from_db_table = (
+            f"{request.source.data['database']}.{request.source.data['table']}"
+        )
 
         fields_names = sorted(request.source._fields.keys())
         fields_to_select = []
@@ -380,7 +427,7 @@ class Fetcher(BaseFetcher):
 
         rows = []
 
-        with ClickhouseConnect(request.source.connection) as c:
+        with ClickhouseConnect(request.source.conn.data) as c:
             selected_fields = [request.source._record_pseudo_id_field] + fields_names
             for item in c.client.query(select_query).result_rows:
                 rows.append(

@@ -17,6 +17,9 @@ class Source {
         this.defaultChosenFields = data.default_chosen_fields
         this.supportRawQuery = data.support_raw_query
         this.connection = getDefaultIfUndefined(data.connection, {})
+        this.connectionId = data.connection_id
+        this.conn = data.conn // Full connection object (when user has edit permissions)
+        this.data = data.data || {} // Source-specific data (e.g., database, table for ClickHouse)
         this.permissions = getDefaultIfUndefined(data.permissions, [])
     }
     isEditable() {

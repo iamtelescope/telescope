@@ -10,7 +10,7 @@ from rest_framework.response import Response
 
 from telescope.response import UIResponse
 from telescope.rbac.roles import ROLES
-from telescope.rbac.helpers import grant_global_role, revoke_global_role
+from telescope.rbac.manager import RBACManager
 from telescope.rbac import permissions
 from telescope.auth.decorators import global_permission_required
 from telescope.models import GlobalRoleBinding
@@ -22,6 +22,8 @@ from telescope.serializers.rbac import (
     NewGroupSerializer,
     UpdateGroupSerializer,
 )
+
+rbac_manager = RBACManager()
 
 
 class RoleView(APIView):
@@ -146,6 +148,8 @@ class GroupView(APIView):
                 Group.objects.get(pk=pk).delete()
         except Exception as err:
             response.mark_failed(f"failed to delete group: {err}")
+        else:
+            response.add_msg(f"group {pk} has been deleted")
         return Response(response.as_dict())
 
 
@@ -200,7 +204,9 @@ class GroupGrantRoleView(APIView):
             response.mark_failed(f"Unknown global role: {request.data['role']}")
         else:
             try:
-                grant_global_role(request.data["role"], group=Group.objects.get(pk=pk))
+                rbac_manager.grant_global_role(
+                    request.data["role"], group=Group.objects.get(pk=pk)
+                )
             except Exception as err:
                 response.mark_failed(f"failed to grant role: {err}")
             else:
@@ -219,7 +225,9 @@ class GroupRevokeRoleView(APIView):
             response.mark_failed(f"Unknown global role: {request.data['role']}")
         else:
             try:
-                revoke_global_role(request.data["role"], group=Group.objects.get(pk=pk))
+                rbac_manager.revoke_global_role(
+                    request.data["role"], group=Group.objects.get(pk=pk)
+                )
             except Exception as err:
                 response.mark_failed(f"failed to grant role: {err}")
             else:
@@ -248,9 +256,6 @@ class UserView(APIView):
 
 class SimpleUserListView(APIView):
     @method_decorator(login_required)
-    @method_decorator(
-        global_permission_required([permissions.Global.MANAGE_RBAC.value])
-    )
     def get(self, request):
         response = UIResponse()
         users = User.objects.all()
@@ -261,9 +266,6 @@ class SimpleUserListView(APIView):
 
 class SimpleGroupListView(APIView):
     @method_decorator(login_required)
-    @method_decorator(
-        global_permission_required([permissions.Global.MANAGE_RBAC.value])
-    )
     def get(self, request):
         response = UIResponse()
         groups = Group.objects.all()

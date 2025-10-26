@@ -1,64 +1,79 @@
 <template>
-    <div class="flex flex-row justify-center mt-10">
-        <DataView :loadings="[loading]" :errors="[error]">
-            <div class="flex flex-col min-w-1000">
-                <div class="mb-14">
-                    <span class="font-medium text-3xl">Edit group: {{ group.name }}</span
-                    ><br />
-                </div>
-                <div class="flex flex-row mb-5 items-start">
-                    <div class="flex justify-start items-start" style="width: 190px">
-                        <label class="text-lg font-medium mb-2">NAME</label>
-                    </div>
-                    <div class="flex justify-end w-full items-center">
-                        <div class="flex flex-col w-full">
-                            <InputText
-                                id="name"
-                                v-model="groupData.name"
-                                fluid
-                                :invalid="saveFieldErrors.name != ''"
-                                @keyup.enter="handleSave"
-                            />
-                            <span v-if="saveFieldErrors.name != ''" class="text-rose-500">{{
-                                saveFieldErrors.name
-                            }}</span>
+    <Content>
+        <template #header>
+            <Header>
+                <template #title>
+                    <i class="pi pi-user-plus mr-3 text-3xl"></i>
+                    Groups / Edit
+                </template>
+            </Header>
+        </template>
+        <template #content>
+            <DataView :loadings="[loading]" :errors="[error]">
+                <div class="max-w-7xl">
+                    <Header>
+                        <template #title>{{ group.name }} </template>
+                    </Header>
+                    <div class="border radius-lg p-6 dark:border-neutral-600 mt-4">
+                        <div class="flex flex-col gap-6">
+                            <div class="flex flex-col">
+                                <FloatLabel variant="on">
+                                    <InputText
+                                        id="name"
+                                        v-model="groupData.name"
+                                        fluid
+                                        :invalid="saveFieldErrors.name != ''"
+                                        @keyup.enter="handleSave"
+                                    />
+                                    <label for="name">Name</label>
+                                </FloatLabel>
+                                <ErrorText :text="saveFieldErrors.name" />
+                            </div>
+
+                            <div class="flex justify-end gap-2">
+                                <Button
+                                    severity="secondary"
+                                    label="Cancel"
+                                    icon="pi pi-times"
+                                    @click="router.push({ name: 'rbacGroup', params: { groupId: group.id } })"
+                                    size="small"
+                                />
+                                <Button
+                                    severity="primary"
+                                    label="Save"
+                                    icon="pi pi-check"
+                                    @click="handleSave"
+                                    :loading="saveButtonLoading"
+                                    size="small"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="flex flex-row justify-end w-full">
-                    <Button
-                        class="ml-2 pl-6 pr-6"
-                        severity="primary"
-                        label="Save"
-                        @click="handleSave"
-                        :loading="saveButtonLoading"
-                        size="small"
-                    />
-                </div>
-            </div>
-        </DataView>
-    </div>
+            </DataView>
+        </template>
+    </Content>
 </template>
 
 <script setup>
 import { watch, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import Content from '@/components/common/Content.vue'
+import Header from '@/components/common/Header.vue'
 import DataView from '@/components/common/DataView.vue'
-import { useNavStore } from '@/stores/nav'
+import ErrorText from '@/components/common/ErrorText.vue'
 import { useGetGroup } from '@/composables/rbac/useGroupService'
+import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import { GroupService } from '@/sdk/services/group'
 import { useToast } from 'primevue/usetoast'
 
-const navStore = useNavStore()
 const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 const saveButtonLoading = ref(false)
-
-const navStored = ref(false)
 
 const groupData = ref({
     name: '',
@@ -66,19 +81,13 @@ const groupData = ref({
 const saveFieldErrors = ref({
     name: '',
 })
-const saveNonFieldErrors = ref([])
 
 const { group, error, loading } = useGetGroup(route.params.groupId)
 const groupSrv = new GroupService()
 
-navStore.update([{ label: 'Role-Based Access Control' }, { label: 'Groups', url: '/rbac/groups' }])
-
-watch(group, () => {
-    if (!navStored.value) {
-        navStore.append({ label: group.value.name, url: `/rbac/groups/${group.value.id}` })
-        navStore.append({ label: 'edit' })
-        navStored.value = true
-        groupData.value.name = group.value.name
+watch(group, (newGroup) => {
+    if (newGroup) {
+        groupData.value.name = newGroup.name
     }
 })
 

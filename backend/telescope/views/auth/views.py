@@ -21,7 +21,9 @@ from telescope.serializers.auth import (
 from telescope.response import UIResponse
 from telescope.models import APIToken
 from telescope.auth.forms import LoginForm, SuperuserForm
-from telescope.rbac.helpers import get_user_global_permissions
+from telescope.rbac.manager import RBACManager
+
+rbac_manager = RBACManager()
 
 
 class LoginView(views.LoginView):
@@ -98,7 +100,7 @@ class WhoAmIView(APIView):
             "username": request.user.username,
             "first_name": request.user.first_name,
             "last_name": request.user.last_name,
-            "permissions": list(get_user_global_permissions(request.user)),
+            "permissions": list(rbac_manager.get_user_global_permissions(request.user)),
             "type": "local",
             "avatar_url": "",
         }

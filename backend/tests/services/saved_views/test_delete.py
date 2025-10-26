@@ -7,7 +7,9 @@ from django.core.exceptions import PermissionDenied
 from telescope.models import SavedView
 from telescope.services.source import SourceSavedViewService
 from telescope.rbac.roles import SourceRole
-from telescope.rbac.helpers import grant_source_role
+from telescope.rbac.manager import RBACManager
+
+rbac_manager = RBACManager()
 
 
 class DummyException(Exception):
@@ -16,7 +18,7 @@ class DummyException(Exception):
 
 @pytest.mark.django_db
 def test_delete_personal_saved_view_by_owner(personal_saved_view, test_user):
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=personal_saved_view.source,
         role=SourceRole.VIEWER.value,
         user=test_user,
@@ -30,7 +32,7 @@ def test_delete_personal_saved_view_by_owner(personal_saved_view, test_user):
 
 @pytest.mark.django_db
 def test_delete_source_saved_view_with_edit_permission(source_saved_view, test_user):
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=source_saved_view.source,
         role=SourceRole.EDITOR.value,
         user=test_user,
@@ -46,7 +48,7 @@ def test_delete_source_saved_view_with_edit_permission(source_saved_view, test_u
 def test_delete_personal_saved_view_not_owner_cant_find_view(
     hacker_user, shared_personal_saved_view
 ):
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=shared_personal_saved_view.source,
         role=SourceRole.VIEWER.value,
         user=hacker_user,
@@ -62,7 +64,7 @@ def test_delete_personal_saved_view_not_owner__mocked_get(
     personal_saved_view, test_user, hacker_user
 ):
     with patch(
-        "telescope.services.source.get_source_saved_view",
+        "telescope.rbac.manager.RBACManager.get_source_saved_view",
         return_value=personal_saved_view,
     ):
         service = SourceSavedViewService(slug=personal_saved_view.source.slug)
@@ -73,7 +75,7 @@ def test_delete_personal_saved_view_not_owner__mocked_get(
 
 @pytest.mark.django_db
 def test_delete_source_saved_view_without_edit_permission(source_saved_view, test_user):
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=source_saved_view.source,
         role=SourceRole.VIEWER.value,
         user=test_user,
@@ -87,7 +89,7 @@ def test_delete_source_saved_view_without_edit_permission(source_saved_view, tes
 @pytest.mark.django_db
 def test_delete_saved_view_propagates_exception(test_user):
     with patch(
-        "telescope.services.source.get_source_saved_view",
+        "telescope.rbac.manager.RBACManager.get_source_saved_view",
         side_effect=DummyException("boom"),
     ):
         service = SourceSavedViewService(slug="irrelevant")

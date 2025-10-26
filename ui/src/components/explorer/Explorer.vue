@@ -1,18 +1,18 @@
 <template>
-    <Controls
-        ref="controlsRef"
-        @searchRequest="onSearchRequest"
-        @searchCancel="onSearchCancel"
-        @shareURL="onShareURL"
-        @download="onDownload"
-        :savedView="savedView"
-        :source="source"
-        :loading="loading"
-        :paramsChanged="paramsChanged"
-        @graphVisibilityChanged="onGraphVisibilityChanged"
-        :groupByInvalid="!!(graphValidation && !graphValidation.result && graphValidation.fields.group_by)"
-    />
-    <div class="mt-3">
+    <div class="p-2">
+        <Controls
+            ref="controlsRef"
+            @searchRequest="onSearchRequest"
+            @searchCancel="onSearchCancel"
+            @shareURL="onShareURL"
+            @download="onDownload"
+            :savedView="savedView"
+            :source="source"
+            :loading="loading"
+            :paramsChanged="paramsChanged"
+            @graphVisibilityChanged="onGraphVisibilityChanged"
+            :groupByInvalid="!!(graphValidation && !graphValidation.result && graphValidation.fields.group_by)"
+        />
         <BorderCard class="mb-2" :loading="graphLoading" v-if="sourceControlsStore.showGraph">
             <Skeleton v-if="graphLoading && graphData === null" width="100%" height="235px"></Skeleton>
             <Error v-if="graphError" :error="graphError"></Error>
@@ -59,9 +59,6 @@ import { ref, onBeforeMount, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useToast } from 'primevue'
-
-import { useNavStore } from '@/stores/nav'
-
 import { Skeleton } from 'primevue'
 import { useSourceControlsStore } from '@/stores/sourceControls'
 import { useGetSourceData, useGetSourceGraphData } from '@/composables/sources/useSourceService'
@@ -76,7 +73,6 @@ import LimitMessage from '@/components/explorer/controls/LimitMessage.vue'
 
 const controlsRef = ref(null)
 
-const navStore = useNavStore()
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
@@ -163,16 +159,6 @@ const onHistogrammRangeSelected = (params) => {
     sourceControlsStore.setTo(params.to)
     controlsRef.value.handleSearch()
 }
-
-navStore.update([
-    {
-        icon: 'pi pi-database',
-        label: 'Sources',
-        url: '/',
-    },
-    { label: props.source.slug },
-    { label: 'explore' },
-])
 
 onBeforeMount(() => {
     sourceControlsStore.$reset()

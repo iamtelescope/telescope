@@ -6,7 +6,9 @@ from unittest.mock import patch
 from telescope.models import Source, SavedView
 from telescope.services.source import SourceSavedViewService
 from telescope.rbac.roles import SourceRole
-from telescope.rbac.helpers import grant_source_role
+from telescope.rbac.manager import RBACManager
+
+rbac_manager = RBACManager()
 
 
 class DummyException(Exception):
@@ -15,7 +17,7 @@ class DummyException(Exception):
 
 @pytest.mark.django_db
 def test_get_personal_saved_view(personal_saved_view, test_user):
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=personal_saved_view.source,
         role=SourceRole.USER.value,
         user=test_user,
@@ -40,7 +42,7 @@ def test_get_personal_saved_view_no_source_access(personal_saved_view, test_user
 
 @pytest.mark.django_db
 def test_get_personal_saved_view_no_access(test_user, docker_source):
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=docker_source,
         role=SourceRole.USER.value,
         user=test_user,
@@ -54,7 +56,7 @@ def test_get_personal_saved_view_no_access(test_user, docker_source):
 @pytest.mark.django_db
 def test_get_view_propagates_arbitrary_exception(test_user):
     with patch(
-        "telescope.services.source.get_source_saved_view",
+        "telescope.rbac.manager.RBACManager.get_source_saved_view",
         side_effect=DummyException("boom"),
     ):
         service = SourceSavedViewService(slug="whatever")

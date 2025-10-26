@@ -26,12 +26,16 @@ class HTTP {
             if (!r.ok) {
                 throw Error(`failed to fetch ${r.url}. ${r.status}: ${r.statusText}`)
             } else {
-                let data = await r.json()
-                response.messages = data.messages
-                response.errors = data.errors
-                response.data = data.data
-                response.validation = data.validation
-                response.result = data.result
+                try {
+                    let data = await r.json()
+                    response.messages = data.messages || []
+                    response.errors = data.errors || []
+                    response.data = data.data
+                    response.validation = data.validation
+                    response.result = data.result
+                } catch (jsonError) {
+                    throw Error(`Invalid JSON response from ${r.url}. Server may have returned HTML error page.`)
+                }
             }
         } catch (err) {
             if (err.name !== 'AbortError') {

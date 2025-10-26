@@ -5,7 +5,9 @@ from unittest.mock import patch
 from telescope.models import Source
 from telescope.services.source import SourceSavedViewService
 from telescope.rbac.roles import SourceRole
-from telescope.rbac.helpers import grant_source_role
+from telescope.rbac.manager import RBACManager
+
+rbac_manager = RBACManager()
 
 
 class DummyException(Exception):
@@ -22,7 +24,7 @@ def test_list_saved_views_returns_all_visible_views(
     personal_root_saved_view,
     personal_root_shared_saved_view,
 ):
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=personal_saved_view.source,
         role=SourceRole.VIEWER.value,
         user=test_user,
@@ -42,7 +44,7 @@ def test_list_saved_views_returns_all_visible_views(
 
 @pytest.mark.django_db
 def test_list_saved_views_emtpy(test_user, clickhouse_source):
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=clickhouse_source,
         role=SourceRole.VIEWER.value,
         user=test_user,
@@ -64,7 +66,7 @@ def test_list_saved_views_no_access_to_source(test_user, docker_source):
 @pytest.mark.django_db
 def test_list_saved_views_propagates_exception(test_user):
     with patch(
-        "telescope.services.source.get_source_saved_views",
+        "telescope.rbac.manager.RBACManager.get_source_saved_views",
         side_effect=DummyException("list failed"),
     ):
         service = SourceSavedViewService(slug="any")

@@ -1,41 +1,56 @@
 <template>
-    <div class="flex flex-row justify-center mt-10">
-        <div class="flex flex-col min-w-[1000px] w-[1000px] max-w-[1000px]">
-            <div class="mb-14">
-                <span class="font-medium text-3xl">
-                    <i class="pi pi-user text-3xl mr-1"></i>
-                    <span class="text-gray-400">User profile: </span>
-                    Create new API Token</span
-                >
-            </div>
-            <div class="flex flex-row mb-5 items-start">
-                <div class="flex justify-end w-full items-center">
-                    <div class="flex flex-col w-full">
-                        <FloatLabel variant="on">
-                            <InputText
-                                id="name"
-                                v-model="tokenData.name"
-                                fluid
-                                :invalid="createFieldErrors.name != ''"
-                                @keyup.enter="handleCreate"
+    <Content>
+        <template #header>
+            <Header>
+                <template #title>
+                    <i class="pi pi-key mr-3 text-3xl"></i>
+                    API Tokens
+                </template>
+            </Header>
+        </template>
+        <template #content>
+            <div class="max-w-7xl">
+                <Header>
+                    <template #title>New</template>
+                </Header>
+                <div class="border radius-lg p-6 dark:border-neutral-600 mt-4">
+                    <div class="flex flex-col gap-6">
+                        <div class="flex flex-col">
+                            <FloatLabel variant="on">
+                                <InputText
+                                    id="name"
+                                    v-model="tokenData.name"
+                                    fluid
+                                    :invalid="createFieldErrors.name != ''"
+                                    @keyup.enter="handleCreate"
+                                />
+                                <label for="name">Name</label>
+                            </FloatLabel>
+                            <ErrorText :text="createFieldErrors.name" />
+                        </div>
+
+                        <div class="flex justify-end gap-2">
+                            <Button
+                                severity="secondary"
+                                label="Cancel"
+                                icon="pi pi-times"
+                                @click="router.push({ name: 'userProfile' })"
+                                size="small"
                             />
-                            <label for="name">Name</label>
-                        </FloatLabel>
-                        <ErrorText :text="createFieldErrors.name" />
+                            <Button
+                                severity="primary"
+                                label="Create"
+                                icon="pi pi-check"
+                                @click="handleCreate"
+                                :loading="createButtonLoading"
+                                size="small"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="flex flex-row justify-end w-full">
-                <Button
-                    class="ml-2 pl-6 pr-6"
-                    severity="primary"
-                    label="Create"
-                    @click="handleCreate"
-                    :loading="createButtonLoading"
-                />
-            </div>
-        </div>
-    </div>
+        </template>
+    </Content>
 </template>
 
 <script setup>
@@ -47,13 +62,13 @@ import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 
-import { useNavStore } from '@/stores/nav'
+import Content from '@/components/common/Content.vue'
+import Header from '@/components/common/Header.vue'
 import ErrorText from '@/components/common/ErrorText.vue'
 import { AuthService } from '@/sdk/services/auth'
 
 const router = useRouter()
 const toast = useToast()
-const navStore = useNavStore()
 const tokenData = ref({
     name: '',
 })
@@ -63,8 +78,6 @@ const createFieldErrors = ref({
 const createButtonLoading = ref(false)
 
 const authSrv = new AuthService()
-
-navStore.updatev2(['rbac', 'groups', 'New'])
 
 const handleCreate = async () => {
     createButtonLoading.value = true

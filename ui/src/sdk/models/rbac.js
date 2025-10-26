@@ -65,6 +65,14 @@ class User {
             return false
         }
     }
+
+    canCreateConnection() {
+        if (this.permissions.includes('global_create_connection')) {
+            return true
+        } else {
+            return false
+        }
+    }
 }
 
 class Group {

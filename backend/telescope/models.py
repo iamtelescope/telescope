@@ -32,6 +32,29 @@ class SourceField:
         self.values = values
 
 
+class Connection(models.Model):
+    kind = models.CharField(max_length=32)
+    name = models.CharField(max_length=64)
+    description = models.TextField(blank=True)
+    data = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+
+    def __init__(self, *args, **kwargs):
+        super(Connection, self).__init__(*args, **kwargs)
+        self.permissions = set()
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return str(self)
+
+    def add_perms(self, perms):
+        for perm in perms:
+            self.permissions.add(perm)
+
+
 class Source(models.Model):
     kind = models.CharField(max_length=32)
     slug = models.CharField(max_length=64, unique=True)
@@ -43,11 +66,11 @@ class Source(models.Model):
     severity_field = models.CharField(max_length=128)
     fields = models.JSONField()
     modifiers = models.JSONField()
-    table = models.CharField(max_length=128)
     default_chosen_fields = models.JSONField()
     support_raw_query = models.BooleanField()
     context_fields = models.JSONField()
-    connection = models.JSONField()
+    conn = models.ForeignKey(Connection, on_delete=models.SET_NULL, null=True)
+    data = models.JSONField(default=dict, blank=True)
 
     def __init__(self, *args, **kwargs):
         super(Source, self).__init__(*args, **kwargs)
@@ -153,6 +176,13 @@ class SourceRoleBinding(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True)
     source = models.ForeignKey(Source, on_delete=models.CASCADE)
+    role = models.CharField(max_length=32)
+
+
+class ConnectionRoleBinding(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True)
+    connection = models.ForeignKey(Connection, on_delete=models.CASCADE)
     role = models.CharField(max_length=32)
 
 
