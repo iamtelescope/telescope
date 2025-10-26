@@ -4,15 +4,20 @@ from django.urls import path, re_path
 import telescope.views.index as index
 import telescope.views.rbac.views as rbac
 import telescope.views.source.views as source
+import telescope.views.connection.views as connection
 import telescope.views.auth.views as auth
 
 import telescope.api.source.views as source_api
+import telescope.api.connection.views as connection_api
 import telescope.api.stub as stub_api
+
 
 urlpatterns = [
     path("login", auth.LoginView.as_view(), name="login"),
     path("logout", auth.LogoutView.as_view(), name="logout"),
     path("setup", auth.SuperuserView.as_view(), name="setup"),
+    path("api/v1/connections", connection_api.ConnectionView.as_view()),
+    path("api/v1/connections/<int:pk>", connection_api.ConnectionView.as_view()),
     path("api/v1/sources", source_api.SourceView.as_view()),
     path("api/v1/sources/", source_api.SourceView.as_view()),
     path("api/v1/sources/<slug:slug>", source_api.SourceView.as_view()),
@@ -33,10 +38,34 @@ urlpatterns = [
     path("ui/v1/rbac/groups/<int:pk>/revokeRole", rbac.GroupRevokeRoleView.as_view()),
     path("ui/v1/rbac/roles", rbac.RoleView.as_view()),
     path("ui/v1/rbac/roles/<slug:kind>/<slug:name>", rbac.RoleView.as_view()),
+    path("ui/v1/connections", connection.ConnectionView.as_view()),
+    path("ui/v1/connections/usable", connection.UsableConnectionsView.as_view()),
+    path("ui/v1/connections/names", connection.ConnectionNamesView.as_view()),
+    path("ui/v1/connections/<int:pk>", connection.ConnectionView.as_view()),
+    path(
+        "ui/v1/connections/<int:pk>/roleBindings",
+        connection.ConnectionRoleBindingView.as_view(),
+    ),
+    path(
+        "ui/v1/connections/<int:pk>/grantRole",
+        connection.ConnectionGrantRoleView.as_view(),
+    ),
+    path(
+        "ui/v1/connections/<int:pk>/revokeRole",
+        connection.ConnectionRevokeRoleView.as_view(),
+    ),
     path("ui/v1/sources", source.SourceView.as_view()),
     path(
         "ui/v1/services/testSourceConnection/<slug:kind>",
         source.SourceTestConnectionView.as_view(),
+    ),
+    path(
+        "ui/v1/services/getSourceSchema/<slug:kind>",
+        source.GetSourceSchemaView.as_view(),
+    ),
+    path(
+        "ui/v1/services/testConnection/<slug:kind>",
+        connection.TestConnectionView.as_view(),
     ),
     path("ui/v1/sources/<slug:slug>", source.SourceView.as_view()),
     path("ui/v1/sources/<slug:slug>/savedViews", source.SourceSavedViewView.as_view()),

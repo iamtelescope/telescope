@@ -46,14 +46,9 @@
 </template>
 <script setup>
 import { useRouter } from 'vue-router'
-import { useNavStore } from '@/stores/nav'
-
 import Card from 'primevue/card'
 
-const navStore = useNavStore()
 const router = useRouter()
-
-navStore.update([{ label: 'Role-Based Access Control', url: '/rbac', class: 'text-gray-100' }])
 
 const handleRolesClick = () => {
     router.push({ name: 'rbacRoles' })

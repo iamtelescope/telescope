@@ -2,7 +2,9 @@ import pytest
 
 from telescope.models import Source
 from telescope.rbac.roles import SourceRole
-from telescope.rbac.helpers import grant_source_role
+from telescope.rbac.manager import RBACManager
+
+rbac_manager = RBACManager()
 
 
 @pytest.mark.django_db
@@ -11,7 +13,7 @@ def test_list_source(test_user, service, docker_source):
     assert isinstance(data, list)
     assert len(data) == 0
 
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=docker_source, role=SourceRole.VIEWER.value, user=test_user
     )
     data = service.list(user=test_user)

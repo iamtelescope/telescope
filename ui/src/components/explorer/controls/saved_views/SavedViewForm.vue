@@ -153,6 +153,8 @@ if (props.view) {
     shared.value = props.view.shared
     name.value = props.view.name
     description.value = props.view.description
+    // Initialize scope from the view being edited
+    selectedScope.value = props.view.scope === 'source' ? scopeSource : scopePersonal
 }
 
 const handleFormSubmit = async () => {

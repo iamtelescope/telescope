@@ -210,11 +210,11 @@ UNIT_TO_SECONDS = {
 
 def get_source_database_conn_kwargs(source):
     return {
-        "host": source.connection["host"],
-        "port": source.connection["port"],
-        "user": source.connection["user"],
-        "password": source.connection["password"],
-        "secure": source.connection["ssl"],
+        "host": source.conn.data["host"],
+        "port": source.conn.data["port"],
+        "user": source.conn.data["user"],
+        "password": source.conn.data["password"],
+        "secure": source.conn.data["ssl"],
     }
 
 

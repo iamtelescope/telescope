@@ -1,10 +1,7 @@
 <template>
     <DataView :loadings="[loading]" :errors="[error]">
-        <div class="w-full" v-if="source.isGrantable()">
-            <Fieldset>
-                <template #legend>
-                    <span class="font-medium text-xl">Grant role </span>
-                </template>
+        <ContentBlock header="Grant role" v-if="source.isGrantable()">
+            <div class="p-4">
                 <SelectButton
                     v-model="grantType"
                     :allowEmpty="false"
@@ -74,31 +71,31 @@
                         :loading="grantButtonLoading"
                         size="small"
                     />
-                    <br />
                 </div>
                 <div v-if="usersError" class="flex flex-row mt-2">
                     <Message severity="error">{{ usersError }}</Message>
                 </div>
-            </Fieldset>
-            <div class="flex flex-row w-full mt-9 align-middle">
-                <div class="flex items-center font-medium text-xl text-nowrap">Users bindings</div>
             </div>
-        </div>
-        <div class="flex flex-col mt-5">
+        </ContentBlock>
+
+        <ContentBlock header="User bindings" class="mt-3">
             <DataTable
                 v-if="userRoleBindings.length"
                 :value="userRoleBindings"
                 sortField="user"
                 :sortOrder="1"
                 removableSort
+                :paginator="userRoleBindings.length > 50"
+                :rows="50"
+                :rowsPerPageOptions="[10, 25, 50, 100, 1000]"
                 class="w-full"
             >
-                <Column field="user" sortable header="USERNAME" headerStyle="width: 250px;">
+                <Column field="user" sortable header="Username" headerStyle="width: 250px;">
                     <template #body="slotProps">
                         {{ slotProps.data.user.username }}
                     </template>
                 </Column>
-                <Column field="role" sortable header="ROLES">
+                <Column field="roles" header="Roles">
                     <template #body="slotProps">
                         <div class="flex flex-wrap gap-2">
                             <Chip
@@ -111,29 +108,38 @@
                         </div>
                     </template>
                 </Column>
+                <template #empty>
+                    <div class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
+                        <i class="pi pi-users text-4xl mb-4 opacity-50"></i>
+                        <p class="text-lg font-medium mb-2">No user bindings</p>
+                    </div>
+                </template>
             </DataTable>
-            <div v-else>There is no user bindings</div>
-        </div>
-        <div class="w-full">
-            <div class="flex flex-row w-full mt-9 align-middle">
-                <div class="flex items-center font-medium text-xl text-nowrap">Groups bindings</div>
+            <div v-else class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
+                <i class="pi pi-user text-4xl mb-4 opacity-50"></i>
+                <p class="text-lg font-medium mb-2">No user bindings</p>
+                <p class="text-sm">Grant roles to users using the form above</p>
             </div>
-        </div>
-        <div class="flex flex-row mt-5">
+        </ContentBlock>
+
+        <ContentBlock header="Group bindings" class="mt-3">
             <DataTable
                 v-if="groupRoleBindings.length"
                 :value="groupRoleBindings"
                 sortField="group"
                 :sortOrder="1"
                 removableSort
+                :paginator="groupRoleBindings.length > 50"
+                :rows="50"
+                :rowsPerPageOptions="[10, 25, 50, 100, 1000]"
                 class="w-full"
             >
-                <Column field="group" sortable header="GROUP" headerStyle="width: 250px;">
+                <Column field="group" sortable header="Group" headerStyle="width: 250px;">
                     <template #body="slotProps">
                         {{ slotProps.data.group.name }}
                     </template>
                 </Column>
-                <Column field="role" sortable header="ROLE">
+                <Column field="roles" header="Roles">
                     <template #body="slotProps">
                         <div class="flex flex-wrap gap-2">
                             <Chip
@@ -146,9 +152,19 @@
                         </div>
                     </template>
                 </Column>
+                <template #empty>
+                    <div class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
+                        <i class="pi pi-users text-4xl mb-4 opacity-50"></i>
+                        <p class="text-lg font-medium mb-2">No group bindings</p>
+                    </div>
+                </template>
             </DataTable>
-            <div v-else>There is no group bindings</div>
-        </div>
+            <div v-else class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
+                <i class="pi pi-users text-4xl mb-4 opacity-50"></i>
+                <p class="text-lg font-medium mb-2">No group bindings</p>
+                <p class="text-sm">Grant roles to groups using the form above</p>
+            </div>
+        </ContentBlock>
     </DataView>
 </template>
 <script setup>
@@ -166,6 +182,7 @@ import Button from 'primevue/button'
 import Message from 'primevue/message'
 
 import DataView from '@/components/common/DataView.vue'
+import ContentBlock from '@/components/common/ContentBlock.vue'
 import { useGetSimpleGroups } from '@/composables/rbac/useGroupService'
 import { useGetSimpleUsers } from '@/composables/rbac/useUserService'
 import { useGetSourceRoleBidings } from '@/composables/sources/useSourceService'
