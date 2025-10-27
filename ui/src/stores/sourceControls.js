@@ -147,6 +147,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             limit: limit.value,
             from: from.value,
             to: to.value,
+            tz: timeZone.value,
             graph_group_by: graphGroupBy.value || '',
             show_graph: showGraph.value
         }
