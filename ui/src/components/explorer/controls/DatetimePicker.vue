@@ -1,6 +1,6 @@
 <template>
     <Button icon="pi pi-calendar" class="mr-2" :label="rangeLabel" text size="small" @click="toggleDropdown" />
-    <Popover ref="dropdown" :pt="{ content: { class: 'pr-0' } }">
+    <Popover ref="dropdown" :pt="{ content: { class: 'pr-0' } }" @show="initFromProps">
         <div class="flex w-full">
             <div class="flex flex-col mr-3">
                 <div class="flex flex-col">
@@ -166,19 +166,15 @@ const handleSelectManual = () => {
         to: parsedTo,
         timeZone: selectedTimeZone.value
     })
+    dropdown.value.hide()
 }
 
 const handleSelectDate = () => {
     if (selectedDates.value[0] && selectedDates.value[1]) {
         const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
-
-        const endOfDay = new Date(selectedDates.value[1].valueOf())
-        endOfDay.setDate(endOfDay.getDate() + 1)
-        endOfDay.setMilliseconds(endOfDay.getMilliseconds() - 1)
-        
         emit('rangeSelect', {
             from: moveTimestampToTimeZone(selectedDates.value[0].valueOf(), localTz, props.timeZone),
-            to: moveTimestampToTimeZone(endOfDay.valueOf(), localTz, props.timeZone),
+            to: moveTimestampToTimeZone(selectedDates.value[1].valueOf(), localTz, props.timeZone),
             timeZone: props.timeZone
         })
     }
