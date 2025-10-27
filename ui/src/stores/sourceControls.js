@@ -4,14 +4,10 @@ import { defineStore } from 'pinia'
 
 import { useToast } from 'primevue'
 
-import { DateTime } from 'luxon'
-
 import { Parser as FieldsParser } from '@/utils/fields.js'
 import { BoolOperator as FlyQLBoolOperator } from 'flyql'
 
 import { getBooleanFromString } from '@/utils/utils'
-
-import { humanRelatedTimeRegex } from '@/utils/datetimeranges.js'
 
 export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const toast = useToast()
@@ -298,17 +294,11 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     }
 
     function tryToMillis(value) {
-        if (humanRelatedTimeRegex.exec(value))
-            return value
-        
-        if (value instanceof Date)
-            return DateTime.fromJSDate(value).setZone(_timeZone.value, { keepLocalTime: true }).toMillis()
-        
         let intValue = parseInt(value)
         if (!isNaN(intValue) && isFinite(intValue))
             return intValue
 
-        return value.toMillis({ zone: _timeZone.value })
+        return value
     }
 
     return {

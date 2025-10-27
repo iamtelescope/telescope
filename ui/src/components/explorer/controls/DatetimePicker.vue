@@ -10,7 +10,7 @@
                         label="From"
                         v-model="inputFrom.text"
                         @update:model-value="() => inputFrom.manualOverride = true"
-                        :invalid="inputFrom.error"
+                        :invalid="inputFrom.error !== null"
                     />
                     <ErrorText v-if="inputFrom.error" :text="inputFrom.error" />
                 </div>
@@ -18,10 +18,10 @@
                     <label for="To" class="font-medium block">To</label>
                     <InputText
                         size="small"
-                        label="From"
+                        label="To"
                         v-model="inputTo.text"
                         @update:model-value="() => inputTo.manualOverride = true"
-                        :invalid="inputTo.error"
+                        :invalid="inputTo.error !== null"
                     />
                     <ErrorText v-if="inputTo.error" :text="inputTo.error" />
                 </div>
@@ -52,7 +52,7 @@
             </div>
             <div class="flex flex-col">
                 <Listbox
-                    :options="relativeRanges"
+                    :options="relativeTimeRanges"
                     v-model="selectedRelative"
                     optionLabel="label"
                     @change="handleSelectRelative"
@@ -82,12 +82,12 @@ import Select from 'primevue/select'
 
 import ErrorText from '@/components/common/ErrorText.vue'
 import {
-    getRelativeOption,
-    getRelativeOptions,
-    dateIsValid,
-    dateTimeFormat,
-    humanRelatedTimeRegex,
+    getDateTimeString,
     getNiceRangeText,
+    moveTimestampToTimeZone,
+    relativeTimeRanges,
+    tryGetRelativeOption,
+    tryParseDateTimeString,
 } from '@/utils/datetimeranges.js'
 
 const props = defineProps(['from', 'to', 'timeZone'])
@@ -96,10 +96,9 @@ const emit = defineEmits(['rangeSelect'])
 const dropdown = ref()
 
 const timeZones = Intl.supportedValuesOf('timeZone')
-const relativeRanges = getRelativeOptions()
 
-const inputFrom = ref({ text: '' })
-const inputTo = ref({ text: '' })
+const inputFrom = ref({})
+const inputTo = ref({})
 const selectedTimeZone = ref('')
 
 const selectedDates = ref([])
@@ -110,7 +109,7 @@ const selectedRelative = ref(null)
 const initFromProps = () => {
     const initInputField = (targetDate) => {
         return {
-            text: typeof(targetDate) === 'string' ? targetDate : (new Date(targetDate)).toISOString(),
+            text: getDateTimeString(targetDate, props.timeZone),
             manualOverride: false,
             error: null
         }
@@ -122,11 +121,14 @@ const initFromProps = () => {
     selectedTimeZone.value = props.timeZone
     
     if (typeof(props.from) === 'number' && typeof(props.to) === 'number')
-        selectedDates.value = [new Date(props.from), new Date(props.to)]
+        selectedDates.value = [props.from, props.to].map(timestamp => {
+            const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
+            return new Date(moveTimestampToTimeZone(timestamp, props.timeZone, localTz))
+        })
     else
         selectedDates.value = null
 
-    selectedRelative.value = getRelativeOption(props.from, props.to)
+    selectedRelative.value = tryGetRelativeOption(props.from, props.to)
 }
 
 initFromProps()
@@ -140,12 +142,17 @@ const toggleDropdown = (event) => dropdown.value.toggle(event)
 
 const handleSelectManual = () => {
     const tryParseInput = (input, defaultVal) => {
-        if (!input.manualOverride) return defaultVal
-        const [parsedDate, isValid] = dateIsValid(input.text)
-        if (isValid) return parsedDate
+        if (!input.manualOverride)
+            return moveTimestampToTimeZone(defaultVal, props.timeZone, selectedTimeZone.value)
 
-        input.error = 'Invalid date: Expected ${dateTimeFormat} or relative time'
-        return null
+        const parsedTime = tryParseDateTimeString(input.text, selectedTimeZone.value)
+
+        if (parsedTime)
+            input.error = null
+        else
+            input.error = 'Invalid date: Expected absolute or relative time'
+
+        return parsedTime
     }
 
     const parsedFrom = tryParseInput(inputFrom.value, props.from)
@@ -163,9 +170,15 @@ const handleSelectManual = () => {
 
 const handleSelectDate = () => {
     if (selectedDates.value[0] && selectedDates.value[1]) {
+        const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
+
+        const endOfDay = new Date(selectedDates.value[1].valueOf())
+        endOfDay.setDate(endOfDay.getDate() + 1)
+        endOfDay.setMilliseconds(endOfDay.getMilliseconds() - 1)
+        
         emit('rangeSelect', {
-            from: selectedDates.value[0],
-            to: selectedDates.value[1],
+            from: moveTimestampToTimeZone(selectedDates.value[0].valueOf(), localTz, props.timeZone),
+            to: moveTimestampToTimeZone(endOfDay.valueOf(), localTz, props.timeZone),
             timeZone: props.timeZone
         })
     }
