@@ -4,7 +4,7 @@
             <Row :source="source" :row="selectedRow"></Row>
         </template>
     </Drawer>
-    <div class="overflow-x-auto" v-if="rows && rows.length > 0 && dateFormat">
+    <div class="overflow-x-auto" v-if="rows && rows.length > 0">
         <table class="w-full min-w-full text-sm">
             <thead>
                 <tr>
@@ -77,8 +77,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { format } from 'date-fns'
+import { ref, computed } from 'vue'
 
 import Drawer from 'primevue/drawer'
 
@@ -86,15 +85,36 @@ import Row from '@/components/explorer/results/Row.vue'
 
 import { getColor } from '@/utils/colors.js'
 import { MODIFIERS } from '@/utils/modifiers.js'
+import { DateTime } from 'luxon'
 
-const props = defineProps(['source', 'rows', 'fields', 'timezone'])
+const props = defineProps(['source', 'rows', 'fields', 'timeZone'])
 const selectedRow = ref(null)
 const visible = ref(false)
-const dateFormat = ref(null)
-const showMicroseconds = ref(false)
+
+const showMicroseconds = computed(() => props.rows.some(row => row.time.microseconds !== 0))
+
+const dateFormat = computed(() => {
+    const dateTimes = props.rows.map(r => DateTime.fromMillis(r.time.unixtime, { zone: props.timeZone }))
+    const today = DateTime.now().setZone(props.timeZone)
+
+    const checkOmittable = (values, todayValue) => {
+        const valueSet = new Set(values)
+        if (valueSet.size !== 1) return false
+        if (valueSet.values().next().value !== todayValue) return false
+        return true
+    }
+
+    if (!checkOmittable(dateTimes.map(d => d.year), today.year))
+        return 'yyyy MMM dd, HH:mm:ss'
+    
+    if (!checkOmittable(dateTimes.map(d => d.month), today.month) || !checkOmittable(dateTimes.map(d => d.day), today.day))
+        return 'MMM dd, HH:mm:ss'
+    
+    return 'HH:mm:ss'
+})
 
 const getTime = (data) => {
-    return format(new Date(data.datetime), dateFormat.value)
+    return DateTime.fromMillis(data.unixtime, { zone: props.timeZone }).toFormat(dateFormat.value)
 }
 
 const handleRowClick = (row) => {
@@ -166,37 +186,4 @@ const extractJsonPath = (field, data) => {
     }
     return value
 }
-
-onMounted(() => {
-    let now = new Date()
-    let month = now.getMonth()
-    let year = now.getFullYear()
-    let fmt = ''
-    let yearSet = new Set()
-    let daySet = new Set()
-    for (const row of props.rows) {
-        let dt = new Date(row.time.datetime)
-        yearSet.add(dt.getFullYear())
-        daySet.add(dt.getDay())
-        if (row.time.microseconds != 0) {
-            showMicroseconds.value = true
-        }
-    }
-    if (yearSet.size > 1) {
-        fmt += 'yyyy '
-    } else {
-        if (yearSet.size == 1 && yearSet.values().next().value != year) {
-            fmt += 'yyyy '
-        }
-    }
-    if (daySet.size > 1 || daySet.values().next().value != month) {
-        fmt += 'MMM dd, '
-    } else {
-        if (daySet.size == 1 && daySet.values().next().value != month) {
-            fmt += 'MMM dd, '
-        }
-    }
-    fmt += 'HH:mm:ss'
-    dateFormat.value = fmt
-})
 </script>

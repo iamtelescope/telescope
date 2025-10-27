@@ -48,7 +48,7 @@
                 :source="source"
                 :rows="rows"
                 :fields="fields"
-                :timezone="timezone"
+                :timeZone="lastSearchRouteQuery?.tz"
             />
         </BorderCard>
     </div>
@@ -81,7 +81,6 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const sourceControlsStore = useSourceControlsStore()
-const timezone = ref('UTC')
 
 const lastSearchRouteQuery = ref(null)
 const props = defineProps(['source', 'savedView'])
