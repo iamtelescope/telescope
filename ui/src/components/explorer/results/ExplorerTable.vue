@@ -1,7 +1,7 @@
 <template>
     <Drawer v-model:visible="visible" :modal="false" position="right" pt:root:style="width:70%;">
         <template #container>
-            <Row :source="source" :row="selectedRow"></Row>
+            <Row :source="source" :row="selectedRow" :timeZone="props.timeZone"></Row>
         </template>
     </Drawer>
     <div class="overflow-x-auto" v-if="rows && rows.length > 0">
