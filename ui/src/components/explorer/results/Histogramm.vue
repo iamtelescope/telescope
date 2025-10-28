@@ -33,7 +33,7 @@ import YagrChart from '@/components/common/YagrChart.vue'
 
 import { getColor } from '@/utils/colors.js'
 import { DateTime } from 'luxon'
-import { moveTimestampToTimeZone } from '@/utils/datetimeranges'
+import { localTimeZone, moveTimestampToTimeZone } from '@/utils/datetimeranges'
 
 const props = defineProps(['source', 'stats', 'rows', 'timeZone', 'groupByLabel'])
 const emit = defineEmits(['rangeSelected'])
@@ -211,7 +211,6 @@ const getChartSettings = (type) => {
         },
         series: series,
         editUplotOptions: (opts) => {
-            const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
             opts.tzDate = (dateOrTs) => {
                 const timestamp = typeof(dateOrTs) === 'number' ? dateOrTs : dateOrTs.valueOf()
                 return new Date(moveTimestampToTimeZone(timestamp, props.timeZone, localTimeZone))

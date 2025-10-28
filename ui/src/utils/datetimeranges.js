@@ -3,6 +3,8 @@ import { DateTime } from 'luxon'
 const absoluteTimeFormat = 'yyyy-MM-dd HH:mm:ss.SSS'
 const relativeTimeRegex = new RegExp('^now(?:-(?<value>[0-9]+)(?<unit>[dhms]))?$')
 
+export const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
+
 export const relativeTimeRanges = [
     { label: 'Last 1 minute', from: 'now-1m', to: 'now' },
     { label: 'Last 5 minutes', from: 'now-5m', to: 'now' },
@@ -42,13 +44,6 @@ export function getNiceRangeText(from, to, timeZone) {
     return `${formatSingle(from)} - ${formatSingle(to)}`
 }
 
-/**
- * Move a Unix timestamp, so that the resulting date and time match in both time zones
- * @param {number | string} timestamp
- * @param {string} oldTimeZone
- * @param {string} newTimeZone
- * @returns 
- */
 export function moveTimestampToTimeZone(timestamp, oldTimeZone, newTimeZone) {
     if (typeof(timestamp) !== 'number')
         return timestamp

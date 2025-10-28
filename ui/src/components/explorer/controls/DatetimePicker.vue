@@ -84,6 +84,7 @@ import ErrorText from '@/components/common/ErrorText.vue'
 import {
     getDateTimeString,
     getNiceRangeText,
+    localTimeZone,
     moveTimestampToTimeZone,
     relativeTimeRanges,
     tryGetRelativeOption,
@@ -122,8 +123,7 @@ const initFromProps = () => {
     
     if (typeof(props.from) === 'number' && typeof(props.to) === 'number')
         selectedDates.value = [props.from, props.to].map(timestamp => {
-            const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
-            return new Date(moveTimestampToTimeZone(timestamp, props.timeZone, localTz))
+            return new Date(moveTimestampToTimeZone(timestamp, props.timeZone, localTimeZone))
         })
     else
         selectedDates.value = null
@@ -171,10 +171,9 @@ const handleSelectManual = () => {
 
 const handleSelectDate = () => {
     if (selectedDates.value[0] && selectedDates.value[1]) {
-        const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
         emit('rangeSelect', {
-            from: moveTimestampToTimeZone(selectedDates.value[0].valueOf(), localTz, props.timeZone),
-            to: moveTimestampToTimeZone(selectedDates.value[1].valueOf(), localTz, props.timeZone),
+            from: moveTimestampToTimeZone(selectedDates.value[0].valueOf(), localTimeZone, props.timeZone),
+            to: moveTimestampToTimeZone(selectedDates.value[1].valueOf(), localTimeZone, props.timeZone),
             timeZone: props.timeZone
         })
     }

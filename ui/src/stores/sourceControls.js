@@ -8,6 +8,7 @@ import { Parser as FieldsParser } from '@/utils/fields.js'
 import { BoolOperator as FlyQLBoolOperator } from 'flyql'
 
 import { getBooleanFromString } from '@/utils/utils'
+import { localTimeZone } from '@/utils/datetimeranges'
 
 export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const toast = useToast()
@@ -53,12 +54,15 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _rawQuery.value = route.query.raw_query ?? ''
         _from.value = tryToMillis(route.query.from ?? viewParam?.data?.from ?? 'now-5m')
         _to.value = tryToMillis(route.query.to ?? viewParam?.data?.to ?? 'now')
-        _timeZone.value = route.query.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
+        _timeZone.value = route.query.tz ?? localTimeZone
         _graphGroupBy.value = route.query.graph_group_by ?? viewParam?.data?.graph_group_by ?? source.severityField
         _showGraph.value = true
         _limit.value = 50
         _contextFields.value = {}
         _view.value = viewParam
+
+        if (!Intl.supportedValuesOf('timeZone').includes(_timeZone.value))
+            _timeZone.value = localTimeZone
 
         if (viewParam?.data?.show_graph !== undefined) {
             _showGraph.value = viewParam?.data?.show_graph
