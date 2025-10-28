@@ -27,6 +27,7 @@
                 :source="source"
                 @rangeSelected="onHistogrammRangeSelected"
                 :rows="rows"
+                :timeZone="lastSearchRouteQuery?.tz"
                 :groupByLabel="sourceControlsStore.graphGroupBy"
             />
         </BorderCard>
