@@ -27,7 +27,7 @@
                 :source="source"
                 @rangeSelected="onHistogrammRangeSelected"
                 :rows="rows"
-                :timeZone="lastSearchRouteQuery?.tz"
+                :timeZone="displayTimeZone"
                 :groupByLabel="sourceControlsStore.graphGroupBy"
             />
         </BorderCard>
@@ -49,7 +49,7 @@
                 :source="source"
                 :rows="rows"
                 :fields="fields"
-                :timeZone="lastSearchRouteQuery?.tz"
+                :timeZone="displayTimeZone"
             />
         </BorderCard>
     </div>
@@ -74,6 +74,7 @@ import ValidationError from '@/components/common/ValidationError.vue'
 import ExplorerTable from '@/components/explorer/results/ExplorerTable.vue'
 import Histogramm from '@/components/explorer/results/Histogramm.vue'
 import LimitMessage from '@/components/explorer/controls/LimitMessage.vue'
+import { localTimeZone } from '@/utils/datetimeranges'
 
 const controlsRef = ref(null)
 
@@ -84,6 +85,7 @@ const toast = useToast()
 const sourceControlsStore = useSourceControlsStore()
 
 const lastSearchRouteQuery = ref(null)
+const displayTimeZone = ref(localTimeZone)
 const props = defineProps(['source', 'savedView'])
 const { rows, fields, error, loading, validation, load, controller } = useGetSourceData()
 const {
@@ -104,6 +106,7 @@ const paramsChanged = computed(() => {
 
 const onSearchRequest = () => {
     lastSearchRouteQuery.value = sourceControlsStore.routeQuery
+    displayTimeZone.value = sourceControlsStore.timeZone
     router.push({ path: route.path, query: sourceControlsStore.routeQuery })
     load(props.source.slug, sourceControlsStore.dataRequestParams)
     if (sourceControlsStore.showGraph) {
