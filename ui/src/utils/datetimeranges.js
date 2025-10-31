@@ -1,136 +1,76 @@
-import { format, parse, isValid } from 'date-fns'
 import { DateTime } from 'luxon'
 
-const dateTimeFormat = 'yyyy-MM-dd HH:mm:ss.SSS'
+const absoluteTimeFormat = 'yyyy-MM-dd HH:mm:ss.SSS'
+const relativeTimeRegex = new RegExp('^now(?:-(?<value>[0-9]+)(?<unit>[dhms]))?$')
 
-const humanRelatedTimeRegex = new RegExp('^now(?:-(?<value>[0-9]+)(?<unit>[dhms]))?$')
+export const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
+export const availableTimeZones = Intl.supportedValuesOf('timeZone')
 
-const datetimeRanges = {
-    'Last 1 minute': {
-        from: 'now-1m',
-        to: 'now',
-    },
-    'Last 5 minutes': {
-        from: 'now-5m',
-        to: 'now',
-    },
-    'Last 15 minutes': {
-        from: 'now-15m',
-        to: 'now',
-    },
-    'Last 30 minutes': {
-        from: 'now-30m',
-        to: 'now',
-    },
-    'Last 1 hour': {
-        from: 'now-1h',
-        to: 'now',
-    },
-    'Last 2 hours': {
-        from: 'now-2h',
-        to: 'now',
-    },
-    'Last 6 hours': {
-        from: 'now-6h',
-        to: 'now',
-    },
-    'Last 12 hours': {
-        from: 'now-12h',
-        to: 'now',
-    },
-    'Last 24 hours': {
-        from: 'now-24h',
-        to: 'now',
-    },
+// Workaround for some engines not including UTC in this list
+if (!availableTimeZones.some(tz => tz.toLowerCase().includes('utc')))
+    availableTimeZones.push('UTC')
+
+export const relativeTimeRanges = [
+    { label: 'Last 1 minute', from: 'now-1m', to: 'now' },
+    { label: 'Last 5 minutes', from: 'now-5m', to: 'now' },
+    { label: 'Last 15 minutes', from: 'now-15m', to: 'now' },
+    { label: 'Last 30 minutes', from: 'now-30m', to: 'now' },
+    { label: 'Last 1 hour', from: 'now-1h', to: 'now' },
+    { label: 'Last 2 hours', from: 'now-2h', to: 'now' },
+    { label: 'Last 6 hours', from: 'now-6h', to: 'now' },
+    { label: 'Last 12 hours', from: 'now-12h', to: 'now' },
+    { label: 'Last 24 hours', from: 'now-24h', to: 'now' }
+]
+
+export function tryGetRelativeOption(from, to) {
+    return relativeTimeRanges.filter(opt => opt.from === from && opt.to === to)[0] ?? null
 }
 
-const datetimeRangesReversed = {}
+export function getNiceRangeText(from, to, timeZone) {
+    if (typeof(from) === 'string' && typeof(to) === 'string')
+        return tryGetRelativeOption(from, to)?.label ?? `${from} - ${to}`
 
-for (const key in datetimeRanges) {
-    let from = datetimeRanges[key].from
-    let to = datetimeRanges[key].to
-    datetimeRangesReversed[`${from} - ${to}`] = key
-}
+    const dateTimeFormat = Intl.DateTimeFormat('en-GB', {
+        dateStyle: 'short',
+        hour12: false,
+        timeStyle: 'short',
+        timeZone
+    })
 
-class TelescopeDate {
-    constructor(data) {
-        this.value = data.value
-        this.timezone = data.timezone
-        this.isRelative = false
-        this.dateObj = null
-        this.strValue = null
-        this.error = ''
-        try {
-            if (humanRelatedTimeRegex.exec(this.value)) {
-                this.isRelative = true
-                this.strValue = this.value
-            } else {
-                this.dateObj = DateTime.fromMillis(parseInt(this.value), { zone: this.timezone })
-                this.strValue = this.dateObj.toFormat(dateTimeFormat)
-            }
-        } catch (e) {
-            this.error = `failed to initialize date: ${e.toTostring()}`
-        }
+    if (typeof(from) === 'number' && typeof(to) === 'number')
+        return dateTimeFormat.formatRange(new Date(from), new Date(to))
+
+    const formatSingle = (input) => {
+        if (typeof(input) === 'string')
+            return input
+        else
+            return dateTimeFormat.format(new Date(input))
     }
-    toRequestRepresentation() {
-        return this.isRelative ? this.value : this.dateObj.setZone('UTC').toMillis()
-    }
+    return `${formatSingle(from)} - ${formatSingle(to)}`
 }
 
-function getRelativeOption(from, to) {
-    let key = `${from} - ${to}`
-    let text = datetimeRangesReversed[key]
-    if (text) {
-        return { label: text, from: from, to: to }
-    } else {
-        return null
-    }
+export function moveTimestampToTimeZone(timestamp, oldTimeZone, newTimeZone) {
+    if (typeof(timestamp) !== 'number')
+        return timestamp
+
+    const oldTzTime = DateTime.fromMillis(timestamp, { zone: oldTimeZone })
+    const newTzTime = oldTzTime.setZone(newTimeZone, { keepLocalTime: true })
+    return newTzTime.toMillis()
 }
 
-function getRelativeOptions() {
-    let options = []
-    for (const key in datetimeRanges) {
-        options.push({ label: key, from: datetimeRanges[key].from, to: datetimeRanges[key].to })
-    }
-    return options
+export function getDateTimeString(input, timeZone) {
+    if (typeof(input) !== 'number')
+        return input
+
+    return DateTime.fromMillis(input, { zone: timeZone }).toFormat(absoluteTimeFormat)
 }
 
-function fmt(date) {
-    return format(date, dateTimeFormat)
-}
+export function tryParseDateTimeString(input, timeZone) {
+    if (relativeTimeRegex.test(input))
+        return input
 
-function getDatetimeRangeText(from, to) {
-    // Accepts TelescopeDate obj
-    let key = `${from} - ${to}`
-    let text = datetimeRangesReversed[key]
-    if (text) {
-        return text
-    } else {
-        return `${from} - ${to}`
-    }
-}
+    const parsedTime = DateTime.fromFormat(input, absoluteTimeFormat, { zone: timeZone })
+    if (!parsedTime.isValid) return null
 
-function dateIsValid(dateString) {
-    let parsedDate = parse(dateString, dateTimeFormat, new Date())
-    let valid = isValid(parsedDate)
-    if (!valid) {
-        if (humanRelatedTimeRegex.exec(dateString)) {
-            valid = true
-            parsedDate = dateString
-        }
-    }
-
-    return [parsedDate, valid]
-}
-
-export {
-    TelescopeDate,
-    datetimeRanges,
-    dateTimeFormat,
-    humanRelatedTimeRegex,
-    getDatetimeRangeText,
-    getRelativeOption,
-    getRelativeOptions,
-    fmt,
-    dateIsValid,
+    return parsedTime.toMillis()
 }
