@@ -54,7 +54,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _rawQuery.value = route.query.raw_query ?? ''
         _from.value = tryToMillis(route.query.from ?? viewParam?.data?.from ?? 'now-5m')
         _to.value = tryToMillis(route.query.to ?? viewParam?.data?.to ?? 'now')
-        _timeZone.value = route.query.tz ?? localTimeZone
+        _timeZone.value = route.query.timeZone ?? viewParam?.data?.timeZone ?? localTimeZone
         _graphGroupBy.value = route.query.graph_group_by ?? viewParam?.data?.graph_group_by ?? source.severityField
         _showGraph.value = true
         _limit.value = 50
@@ -151,7 +151,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             limit: limit.value,
             from: from.value,
             to: to.value,
-            tz: timeZone.value,
+            timeZone: timeZone.value,
             graph_group_by: graphGroupBy.value || '',
             show_graph: showGraph.value
         }
@@ -212,6 +212,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             query: query.value,
             from: from.value,
             to: to.value,
+            timeZone: timeZone.value,
             limit: limit.value,
             graph_group_by: graphGroupBy.value,
             show_graph: showGraph.value,
@@ -233,6 +234,10 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setGraphGroupBy(value.data.graph_group_by)
         setShowGraph(value.data.show_graph)
         setContextFields(value.data.context_fields)
+
+        // Some old views might not have this
+        if (value.data.timeZone)
+            setTimeZone(value.data.timeZone)
     }
 
     function resetView() {
