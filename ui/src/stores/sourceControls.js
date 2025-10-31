@@ -8,7 +8,7 @@ import { Parser as FieldsParser } from '@/utils/fields.js'
 import { BoolOperator as FlyQLBoolOperator } from 'flyql'
 
 import { getBooleanFromString } from '@/utils/utils'
-import { localTimeZone } from '@/utils/datetimeranges'
+import { availableTimeZones, localTimeZone } from '@/utils/datetimeranges'
 
 export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const toast = useToast()
@@ -61,7 +61,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _contextFields.value = {}
         _view.value = viewParam
 
-        if (!Intl.supportedValuesOf('timeZone').includes(_timeZone.value))
+        if (!availableTimeZones.includes(_timeZone.value))
             _timeZone.value = localTimeZone
 
         if (viewParam?.data?.show_graph !== undefined) {

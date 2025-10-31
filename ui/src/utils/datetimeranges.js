@@ -4,6 +4,11 @@ const absoluteTimeFormat = 'yyyy-MM-dd HH:mm:ss.SSS'
 const relativeTimeRegex = new RegExp('^now(?:-(?<value>[0-9]+)(?<unit>[dhms]))?$')
 
 export const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC'
+export const availableTimeZones = Intl.supportedValuesOf('timeZone')
+
+// Workaround for some engines not including UTC in this list
+if (!availableTimeZones.some(tz => tz.toLowerCase().includes('utc')))
+    availableTimeZones.push('UTC')
 
 export const relativeTimeRanges = [
     { label: 'Last 1 minute', from: 'now-1m', to: 'now' },

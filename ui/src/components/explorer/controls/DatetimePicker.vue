@@ -29,7 +29,7 @@
                     <label for="Timezone" class="font-medium block">Timezone</label>
                     <Select
                         v-model="selectedTimeZone"
-                        :options="timeZones"
+                        :options="availableTimeZones"
                         placeholder="Timezone"
                         class="w-full md:w-56"
                         size="small"
@@ -82,6 +82,7 @@ import Select from 'primevue/select'
 
 import ErrorText from '@/components/common/ErrorText.vue'
 import {
+    availableTimeZones,
     getDateTimeString,
     getNiceRangeText,
     localTimeZone,
@@ -95,8 +96,6 @@ const props = defineProps(['from', 'to', 'timeZone'])
 const emit = defineEmits(['rangeSelect'])
 
 const dropdown = ref()
-
-const timeZones = Intl.supportedValuesOf('timeZone')
 
 const inputFrom = ref({})
 const inputTo = ref({})
