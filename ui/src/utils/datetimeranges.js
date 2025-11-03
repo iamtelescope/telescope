@@ -7,7 +7,7 @@ export const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone ??
 export const availableTimeZones = Intl.supportedValuesOf('timeZone')
 
 // Workaround for some engines not including UTC in this list
-if (!availableTimeZones.some(tz => tz.toLowerCase().includes('utc')))
+if (!availableTimeZones.map(tz => tz.toLowerCase()).some(tz => tz === 'etc/utc' || tz === 'utc'))
     availableTimeZones.push('UTC')
 
 export const relativeTimeRanges = [
@@ -30,23 +30,7 @@ export function getNiceRangeText(from, to, timeZone) {
     if (typeof(from) === 'string' && typeof(to) === 'string')
         return tryGetRelativeOption(from, to)?.label ?? `${from} - ${to}`
 
-    const dateTimeFormat = Intl.DateTimeFormat('en-GB', {
-        dateStyle: 'short',
-        hour12: false,
-        timeStyle: 'short',
-        timeZone
-    })
-
-    if (typeof(from) === 'number' && typeof(to) === 'number')
-        return dateTimeFormat.formatRange(new Date(from), new Date(to))
-
-    const formatSingle = (input) => {
-        if (typeof(input) === 'string')
-            return input
-        else
-            return dateTimeFormat.format(new Date(input))
-    }
-    return `${formatSingle(from)} - ${formatSingle(to)}`
+    return `${getDateTimeString(from, timeZone)} - ${getDateTimeString(to, timeZone)}`
 }
 
 export function moveTimestampToTimeZone(timestamp, oldTimeZone, newTimeZone) {
@@ -67,10 +51,15 @@ export function getDateTimeString(input, timeZone) {
 
 export function tryParseDateTimeString(input, timeZone) {
     if (relativeTimeRegex.test(input))
-        return input
+        return { result: input, error: null }
 
     const parsedTime = DateTime.fromFormat(input, absoluteTimeFormat, { zone: timeZone })
-    if (!parsedTime.isValid) return null
+    if (parsedTime.isValid)
+        return { result: parsedTime.toMillis(), error: null }
 
-    return parsedTime.toMillis()
+    if (parsedTime.invalidReason === 'unparsable')
+        return { result: null, error: `Expected absolute (${absoluteTimeFormat}) or relative (${relativeTimeRegex}) time` }
+
+    const luxonErr = parsedTime.invalidExplanation
+    return { result: null, error: luxonErr.charAt(0).toUpperCase() + luxonErr.slice(1) }
 }

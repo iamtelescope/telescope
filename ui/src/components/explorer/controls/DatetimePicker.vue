@@ -34,6 +34,7 @@
                         class="w-full md:w-56"
                         size="small"
                         filter
+                        autoFilterFocus
                     />
                 </div>
                 <Button label="Apply" severity="primary" size="small" class="mt-4" @click="handleSelectManual" />
@@ -144,14 +145,10 @@ const handleSelectManual = () => {
         if (!input.manualOverride)
             return moveTimestampToTimeZone(defaultVal, props.timeZone, selectedTimeZone.value)
 
-        const parsedTime = tryParseDateTimeString(input.text, selectedTimeZone.value)
+        const { result, error } = tryParseDateTimeString(input.text, selectedTimeZone.value)
+        input.error = error
 
-        if (parsedTime)
-            input.error = null
-        else
-            input.error = 'Invalid date: Expected absolute or relative time'
-
-        return parsedTime
+        return result
     }
 
     const parsedFrom = tryParseInput(inputFrom.value, props.from)
