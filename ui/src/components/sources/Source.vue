@@ -1,118 +1,226 @@
 <template>
-    <div class="flex flex-row justify-center mt-10">
-        <div class="flex flex-col min-w-1280 max-w-1280">
+    <Content>
+        <template #header>
+            <Header>
+                <template #title> <Database class="mr-3 w-8 h-8" /> Source </template>
+            </Header>
+        </template>
+        <template #content>
             <DataView :loadings="[loading]" :errors="[error]">
-                <div class="flex flex-row mb-9">
-                    <div class="flex flex-col justify-start text-nowrap">
-                        <span class="font-medium text-3xl">
-                            <i class="pi pi-database text-3xl"></i>
-                            <span class="text-gray-400"> Sources: </span>
-                            {{ source.slug }}</span
-                        >
-                        <span class="text-gray-400"
-                            >Sources define how to connect to your data and the access policy for that data.
-                        </span>
-                    </div>
-                    <div class="flex flex-row w-full justify-end items-center">
-                        <div>
-                            <Button
-                                class="mr-1"
-                                severity="secondary"
-                                icon="pi pi-pencil"
-                                label="Edit"
-                                size="small"
-                                @click="handleSourceEdit"
-                                v-if="source.isEditable()"
-                            />
-                            <ConfirmPopup />
-                            <Button
-                                severity="danger"
-                                icon="pi pi-trash"
-                                label="Delete"
-                                @click="sourceDeleteConfirm($event)"
-                                :loading="sourceDeleteButtonLoading"
-                                size="small"
-                                v-if="source.isEditable()"
-                            />
-                        </div>
+                <div class="flex flex-col max-w-[1280px]">
+                    <Header>
+                        <template #title>
+                            <div class="flex items-center gap-3">
+                                <img
+                                    v-if="source.kind"
+                                    :src="require(`@/assets/${source.kind}.png`)"
+                                    height="32px"
+                                    width="32px"
+                                    :title="source.kind"
+                                />
+                                <span>{{ source.slug }}</span>
+                            </div>
+                        </template>
+                        <template #actions>
+                            <div class="flex flex-wrap gap-2" v-if="source.isEditable()">
+                                <Button
+                                    severity="primary"
+                                    label="Edit"
+                                    icon="pi pi-pencil"
+                                    @click="handleSourceEdit"
+                                    size="small"
+                                    :disabled="loading"
+                                />
+                                <ConfirmPopup></ConfirmPopup>
+                                <Button
+                                    severity="primary"
+                                    label="Delete"
+                                    icon="pi pi-trash"
+                                    @click="sourceDeleteConfirm($event)"
+                                    :loading="sourceDeleteButtonLoading"
+                                    size="small"
+                                    :disabled="loading"
+                                />
+                            </div>
+                        </template>
+                    </Header>
+                    <div class="mt-4">
+                        <Tabs v-model:value="activeTab">
+                            <TabList>
+                                <Tab value="overview">OVERVIEW</Tab>
+                                <Tab value="accessControl" v-if="source.isEditable()">ACCESS CONTROL</Tab>
+                            </TabList>
+                            <TabPanels class="pl-0 pr-0">
+                                <TabPanel value="overview">
+                                    <ContentBlock header="Common">
+                                        <DataRow name="Kind" :value="source.kind" :copy="false" />
+                                        <DataRow name="Slug" :value="source.slug" :copy="false" />
+                                        <DataRow name="Name" :value="source.name" :copy="false" />
+                                        <DataRow
+                                            name="Description"
+                                            :value="source.description || '&ndash;'"
+                                            :copy="false"
+                                        />
+                                        <DataRow name="Time field" :value="source.timeField" :copy="false" />
+                                        <DataRow
+                                            name="Date field"
+                                            :value="source.dateField || '&ndash;'"
+                                            :copy="false"
+                                        />
+                                        <DataRow
+                                            name="Severity field"
+                                            :value="source.severityField || '&ndash;'"
+                                            :copy="false"
+                                        />
+                                        <DataRow name="Default chosen fields" :showBorder="false" :copy="false">
+                                            {{ source.defaultChosenFields?.join(', ') || '&ndash;' }}
+                                        </DataRow>
+                                    </ContentBlock>
+
+                                    <ContentBlock header="Connection" class="mt-3">
+                                        <DataRow name="Connection" :copy="false">
+                                            <div class="flex items-center gap-2">
+                                                <img
+                                                    :src="require(`@/assets/${connectionDisplay.kind}.png`)"
+                                                    height="20px"
+                                                    width="20px"
+                                                    :title="connectionDisplay.kind"
+                                                />
+                                                <router-link
+                                                    v-if="connectionDisplay.hasAccess"
+                                                    :to="{
+                                                        name: 'connection',
+                                                        params: { connectionId: connectionDisplay.id },
+                                                    }"
+                                                    class="table-link"
+                                                >
+                                                    {{ connectionDisplay.name }}
+                                                </router-link>
+                                                <span v-else>Connection {{ connectionDisplay.id }}</span>
+                                            </div>
+                                        </DataRow>
+                                        <DataRow
+                                            v-if="source.kind === 'clickhouse'"
+                                            name="Database"
+                                            :value="source.data?.database || '&ndash;'"
+                                            :copy="false"
+                                        />
+                                        <DataRow
+                                            v-if="source.kind === 'clickhouse'"
+                                            name="Table"
+                                            :value="source.data?.table || '&ndash;'"
+                                            :copy="false"
+                                            :showBorder="source.kind !== 'clickhouse'"
+                                        />
+                                    </ContentBlock>
+
+                                    <ContentBlock header="Fields" class="mt-3">
+                                        <DataTable
+                                            :value="sourceFields"
+                                            v-if="sourceFields.length"
+                                            :paginator="sourceFields.length > 50"
+                                            :rows="50"
+                                            :rowsPerPageOptions="[10, 25, 50, 100, 1000]"
+                                            class="w-full"
+                                        >
+                                            <Column
+                                                :sortable="true"
+                                                field="name"
+                                                header="Name"
+                                                headerClass="text-nowrap"
+                                            />
+                                            <Column :sortable="true" header="Display Name" headerClass="text-nowrap">
+                                                <template #body="slotProps">
+                                                    <span v-if="slotProps.data.display_name">{{
+                                                        slotProps.data.display_name
+                                                    }}</span>
+                                                    <span v-else>&ndash;</span>
+                                                </template>
+                                            </Column>
+                                            <Column
+                                                field="type"
+                                                :sortable="true"
+                                                header="Type"
+                                                headerClass="text-nowrap"
+                                            />
+                                            <Column
+                                                :sortable="true"
+                                                header="Autocomplete"
+                                                headerClass="text-nowrap"
+                                                sortField="autocomplete"
+                                            >
+                                                <template #body="slotProps">
+                                                    <ToggleSwitch v-model="slotProps.data.autocomplete" readonly />
+                                                </template>
+                                            </Column>
+                                            <Column
+                                                :sortable="true"
+                                                header="Suggest"
+                                                headerClass="text-nowrap"
+                                                sortField="suggest"
+                                            >
+                                                <template #body="slotProps">
+                                                    <ToggleSwitch v-model="slotProps.data.suggest" readonly />
+                                                </template>
+                                            </Column>
+                                            <Column
+                                                :sortable="true"
+                                                header="JSON String"
+                                                headerClass="text-nowrap"
+                                                sortField="jsonstring"
+                                            >
+                                                <template #body="slotProps">
+                                                    <ToggleSwitch v-model="slotProps.data.jsonstring" readonly />
+                                                </template>
+                                            </Column>
+                                            <Column
+                                                :sortable="true"
+                                                header="Group By"
+                                                headerClass="text-nowrap"
+                                                sortField="group_by"
+                                            >
+                                                <template #body="slotProps">
+                                                    <ToggleSwitch v-model="slotProps.data.group_by" readonly />
+                                                </template>
+                                            </Column>
+                                            <Column
+                                                :sortable="true"
+                                                header="Values"
+                                                headerClass="text-nowrap"
+                                                sortField="values"
+                                            >
+                                                <template #body="slotProps">
+                                                    <span v-if="slotProps.data.values.length">{{
+                                                        slotProps.data.values.join(', ')
+                                                    }}</span>
+                                                    <span v-else>&ndash;</span>
+                                                </template>
+                                            </Column>
+                                            <template #empty>
+                                                <div
+                                                    class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400"
+                                                >
+                                                    <i class="pi pi-list text-4xl mb-4 opacity-50"></i>
+                                                    <p class="text-lg font-medium mb-2">No fields found</p>
+                                                </div>
+                                            </template>
+                                        </DataTable>
+                                    </ContentBlock>
+                                </TabPanel>
+                                <TabPanel value="accessControl" v-if="source.isEditable()">
+                                    <SourceAccessControl
+                                        :source="source"
+                                        @roleGranted="onRoleGranted"
+                                        @roleRevoked="onRoleRevoked"
+                                    />
+                                </TabPanel>
+                            </TabPanels>
+                        </Tabs>
                     </div>
                 </div>
-                <Tabs v-model:value="activeTab">
-                    <TabList>
-                        <Tab value="overview">OVERVIEW</Tab>
-                        <Tab value="accessControl" v-if="source.isEditable()">ACCESS CONTROL</Tab>
-                    </TabList>
-                    <TabPanels>
-                        <TabPanel value="overview">
-                            <DataRow name="KIND" :value="source.kind" />
-                            <DataRow name="SLUG" :value="source.slug" />
-                            <DataRow name="NAME" :value="source.name" />
-                            <DataRow name="DESCRIPTION" :value="source.description || '&ndash;'" />
-                            <DataRow name="TIME FIELD" :value="source.timeField" />
-                            <DataRow name="DATE FIELD" :value="source.dateField || '&ndash;'" />
-                            <!--<DataRow name="UNIQ FIELD" :value="source.uniqField" />-->
-                            <DataRow name="SEVERITY FIELD" :value="source.severityField || '&ndash;'" />
-                            <DataRow name="DEFAULT CHOSEN FEILDS" :showBorder="false">
-                                {{ source.defaultChosenFields.join(', ') }}
-                            </DataRow>
-                            <Fieldset class="text-wrap mt-5">
-                                <template #legend>
-                                    <span class="font-medium">Fields</span>
-                                </template>
-                                <DataTable :value="sourceFields">
-                                    <Column field="name" sortable header="NAME" />
-                                    <Column sortable header="DISPLAY NAME">
-                                        <template #body="slotProps">
-                                            <span v-if="slotProps.data.display_name">{{
-                                                slotProps.data.display_name
-                                            }}</span>
-                                            <span v-else>&ndash;</span>
-                                        </template>
-                                    </Column>
-                                    <Column field="type" sortable header="TYPE" />
-                                    <Column sortable header="AUTOCOMPLETE">
-                                        <template #body="slotProps">
-                                            <ToggleSwitch v-model="slotProps.data.autocomplete" readonly />
-                                        </template>
-                                    </Column>
-                                    <Column sortable header="SUGGEST">
-                                        <template #body="slotProps">
-                                            <ToggleSwitch v-model="slotProps.data.suggest" readonly />
-                                        </template>
-                                    </Column>
-                                    <Column sortable header="JSONSTRING">
-                                        <template #body="slotProps">
-                                            <ToggleSwitch v-model="slotProps.data.jsonstring" readonly />
-                                        </template>
-                                    </Column>
-                                    <Column sortable header="GROUP BY">
-                                        <template #body="slotProps">
-                                            <ToggleSwitch v-model="slotProps.data.group_by" readonly />
-                                        </template>
-                                    </Column>
-                                    <Column sortable header="VALUES">
-                                        <template #body="slotProps">
-                                            <span v-if="slotProps.data.values.length">{{
-                                                slotProps.data.values.join(', ')
-                                            }}</span>
-                                            <span v-else>&ndash;</span>
-                                        </template>
-                                    </Column>
-                                </DataTable>
-                            </Fieldset>
-                        </TabPanel>
-                        <TabPanel value="accessControl" v-if="source.isEditable()">
-                            <SourceAccessControl
-                                :source="source"
-                                @roleGranted="onRoleGranted"
-                                @roleRevoked="onRoleRevoked"
-                            />
-                        </TabPanel>
-                    </TabPanels>
-                </Tabs>
             </DataView>
-        </div>
-    </div>
+        </template>
+    </Content>
 </template>
 <script setup>
 import { ref, computed, watch } from 'vue'
@@ -130,29 +238,31 @@ import Tab from 'primevue/tab'
 import TabPanels from 'primevue/tabpanels'
 import TabPanel from 'primevue/tabpanel'
 import Button from 'primevue/button'
-import Fieldset from 'primevue/fieldset'
 
-import { useNavStore } from '@/stores/nav'
-import DataRow from '@/components/common/DataRow.vue'
+import { Database } from 'lucide-vue-next'
+
+import Content from '@/components/common/Content.vue'
 import DataView from '@/components/common/DataView.vue'
+import DataRow from '@/components/common/DataRow.vue'
+import ContentBlock from '@/components/common/ContentBlock.vue'
+import Header from '@/components/common/Header.vue'
 import SourceAccessControl from '@/components/sources/SourceAccessControl.vue'
 
 import { SourceService } from '@/sdk/services/source'
 import { useGetSource } from '@/composables/sources/useSourceService'
+import { useGetUsableConnections } from '@/composables/connections/useConnectionService'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const confirm = useConfirm()
 
-const navStore = useNavStore()
 const sourceSrv = new SourceService()
 const activeTab = ref('overview')
 const sourceDeleteButtonLoading = ref(false)
 
-navStore.updatev2([{ label: 'Sources', url: '/sources', icon: 'pi pi-database' }])
-
 const { source, error, loading, load } = useGetSource(route.params.sourceSlug)
+const { connections } = useGetUsableConnections()
 
 if (route.query.tab) {
     activeTab.value = route.query.tab
@@ -165,6 +275,35 @@ const sourceFields = computed(() => {
         result.push(item)
     }
     return result
+})
+
+// Find the connection in usable connections
+const sourceConnection = computed(() => {
+    if (!source.value.connectionId || !connections.value) {
+        return null
+    }
+    return connections.value.find((c) => c.id === source.value.connectionId)
+})
+
+// Check if user has access to the connection
+const hasConnectionAccess = computed(() => !!sourceConnection.value)
+
+const connectionDisplay = computed(() => {
+    if (sourceConnection.value) {
+        return {
+            name: sourceConnection.value.name,
+            kind: sourceConnection.value.kind,
+            id: sourceConnection.value.id,
+            hasAccess: true,
+        }
+    }
+    // No access - just show ID
+    return {
+        name: null,
+        kind: source.value.kind, // Use source kind as fallback
+        id: source.value.connectionId,
+        hasAccess: false,
+    }
 })
 
 const handleSourceEdit = () => {
@@ -191,7 +330,7 @@ const sourceDeleteConfirm = (event) => {
             sourceDeleteButtonLoading.value = false
             response.sendToastErrors(toast)
             if (response.result) {
-                router.push({ name: 'root' }).then(() => response.sendToastMessages(toast))
+                router.push({ name: 'sources' }).then(() => response.sendToastMessages(toast))
             }
         },
     })

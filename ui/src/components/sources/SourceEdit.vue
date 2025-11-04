@@ -1,26 +1,23 @@
 <template>
-    <div class="flex flex-row justify-center mt-10">
-        <div class="flex flex-col min-w-1280 max-w-1280">
-            <DataView :loadings="[loading]" :errors="[error]" v-if="source && source.isEditable()">
-                <SourceForm :source="source" :startConnectionTest="true" />
-            </DataView>
-        </div>
-    </div>
+    <DataView :loadings="[sourceLoading]" :errors="[sourceError]">
+        <template v-if="source && !source.isEditable()">
+            <AccessDenied message="You don't have permission to edit this source." />
+        </template>
+        <template v-else-if="source">
+            <SourceEditContent :source="source" />
+        </template>
+    </DataView>
 </template>
 
 <script setup>
 import { useRoute } from 'vue-router'
-
-import { useNavStore } from '@/stores/nav'
 import { useGetSource } from '@/composables/sources/useSourceService'
-
 import DataView from '@/components/common/DataView.vue'
-import SourceForm from '@/components/sources/SourceForm.vue'
+import AccessDenied from '@/components/common/AccessDenied.vue'
+import SourceEditContent from '@/components/sources/SourceEditContent.vue'
 
 const route = useRoute()
-const navStore = useNavStore()
 
-navStore.updatev2(['sources', { label: route.params.sourceSlug, url: `/sources/${route.params.sourceSlug}` }, 'edit'])
-
-const { source, error, loading } = useGetSource(route.params.sourceSlug)
+// Load the source first to check permissions
+const { source, error: sourceError, loading: sourceLoading } = useGetSource(route.params.sourceSlug)
 </script>

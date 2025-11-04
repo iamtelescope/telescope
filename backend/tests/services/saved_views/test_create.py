@@ -8,7 +8,9 @@ from telescope.constants import VIEW_SCOPE_PERSONAL, VIEW_SCOPE_SOURCE
 from telescope.models import SavedView
 from telescope.services.source import SourceSavedViewService
 from telescope.rbac.roles import SourceRole
-from telescope.rbac.helpers import grant_source_role
+from telescope.rbac.manager import RBACManager
+
+rbac_manager = RBACManager()
 from telescope.services.exceptions import SerializerValidationError
 
 
@@ -18,7 +20,9 @@ class DummyException(Exception):
 
 @pytest.mark.django_db
 def test_create_personal_view_success(test_user, docker_source):
-    grant_source_role(docker_source, SourceRole.VIEWER.value, user=test_user)
+    rbac_manager.grant_source_role(
+        docker_source, SourceRole.VIEWER.value, user=test_user
+    )
 
     data = {
         "scope": "personal",
@@ -39,12 +43,9 @@ def test_create_personal_view_success(test_user, docker_source):
 
 @pytest.mark.django_db
 def test_create_source_view_with_edit_permission(test_user, docker_source):
-    from telescope.rbac.roles import SourceRole
-    from telescope.rbac.helpers import grant_source_role
-    from telescope.services.source import SourceSavedViewService
-    from telescope.models import SavedView
-
-    grant_source_role(docker_source, SourceRole.EDITOR.value, user=test_user)
+    rbac_manager.grant_source_role(
+        docker_source, SourceRole.EDITOR.value, user=test_user
+    )
 
     data = {
         "scope": VIEW_SCOPE_SOURCE,
@@ -87,7 +88,9 @@ def test_create_view_invalid_payload_serializer_fails(test_user, docker_source):
         "shared": False,
         "data": {},
     }
-    grant_source_role(docker_source, SourceRole.VIEWER.value, user=test_user)
+    rbac_manager.grant_source_role(
+        docker_source, SourceRole.VIEWER.value, user=test_user
+    )
     service = SourceSavedViewService(slug=docker_source.slug)
 
     with patch(
@@ -113,7 +116,9 @@ def test_create_propagates_arbitrary_exception(test_user, docker_source):
         "shared": False,
         "data": {},
     }
-    grant_source_role(docker_source, SourceRole.VIEWER.value, user=test_user)
+    rbac_manager.grant_source_role(
+        docker_source, SourceRole.VIEWER.value, user=test_user
+    )
     with patch(
         "telescope.services.source.SourceSavedViewScopeSerializer.is_valid",
         side_effect=DummyException("fail"),

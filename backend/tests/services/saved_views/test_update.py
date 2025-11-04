@@ -8,7 +8,9 @@ from telescope.constants import VIEW_SCOPE_PERSONAL, VIEW_SCOPE_SOURCE
 from telescope.models import SavedView
 from telescope.services.source import SourceSavedViewService
 from telescope.rbac.roles import SourceRole
-from telescope.rbac.helpers import grant_source_role
+from telescope.rbac.manager import RBACManager
+
+rbac_manager = RBACManager()
 from telescope.services.exceptions import SerializerValidationError
 
 
@@ -18,7 +20,7 @@ class DummyException(Exception):
 
 @pytest.mark.django_db
 def test_update_personal_view_by_owner(personal_saved_view, test_user):
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=personal_saved_view.source,
         role=SourceRole.VIEWER.value,
         user=test_user,
@@ -51,7 +53,7 @@ def test_update_personal_view_by_owner(personal_saved_view, test_user):
 def test_update_personal_view_not_owner_permission_denied(
     hacker_user, personal_saved_view
 ):
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=personal_saved_view.source,
         role=SourceRole.VIEWER.value,
         user=hacker_user,
@@ -77,7 +79,7 @@ def test_update_personal_view_not_owner_permission_denied(
 def test_update_personal_view_not_owner_permission_denied(
     personal_saved_view, hacker_user
 ):
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=personal_saved_view.source,
         role=SourceRole.VIEWER.value,
         user=hacker_user,
@@ -101,7 +103,7 @@ def test_update_personal_view_not_owner_permission_denied(
 
 @pytest.mark.django_db
 def test_update_source_view_without_edit_permission(source_saved_view, test_user):
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=source_saved_view.source,
         role=SourceRole.VIEWER.value,
         user=test_user,
@@ -125,7 +127,7 @@ def test_update_source_view_without_edit_permission(source_saved_view, test_user
 def test_update_view_invalid_payload_raises_validation_error(
     personal_saved_view, test_user
 ):
-    grant_source_role(
+    rbac_manager.grant_source_role(
         source=personal_saved_view.source,
         role=SourceRole.VIEWER.value,
         user=test_user,

@@ -1,7 +1,7 @@
 <template>
-    <Sources />
+    <Logs />
 </template>
 
 <script setup>
-import Sources from '@/components/sources/Sources.vue'
+import Logs from '@/components/logs/Logs.vue'
 </script>
