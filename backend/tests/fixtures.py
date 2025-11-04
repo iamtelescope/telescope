@@ -2,13 +2,16 @@ import pytest
 
 from django.contrib.auth.models import User
 
-from telescope.models import Source, SavedView
+from telescope.models import Source, SavedView, Connection
 from telescope.services.source import SourceService
+from telescope.services.connection import ConnectionService
 
 from tests.data import (
     get_docker_source_data,
     get_clickhouse_source_data,
     get_saved_view_data,
+    get_docker_connection_data,
+    get_clickhouse_connection_data,
 )
 
 
@@ -38,9 +41,11 @@ def hacker_user():
 
 
 @pytest.fixture
-def docker_source():
+def docker_source(docker_connection):
     data = get_docker_source_data("docker")
     del data["kind"]
+    del data["connection"]  # Remove old connection field
+    data["conn"] = docker_connection  # Add new conn ForeignKey
     return Source.create(
         kind="docker",
         data=data,
@@ -48,9 +53,11 @@ def docker_source():
 
 
 @pytest.fixture
-def clickhouse_source():
+def clickhouse_source(clickhouse_connection):
     data = get_clickhouse_source_data("clickhouse")
     del data["kind"]
+    del data["connection"]  # Remove old connection field
+    data["conn"] = clickhouse_connection  # Add new conn ForeignKey
     return Source.create(
         kind="clickhouse",
         data=data,
@@ -125,3 +132,20 @@ def personal_root_shared_saved_view(root_user, docker_source):
         shared=True,
         data=get_saved_view_data(),
     )
+
+
+@pytest.fixture
+def connection_service():
+    return ConnectionService()
+
+
+@pytest.fixture
+def docker_connection():
+    data = get_docker_connection_data()
+    return Connection.objects.create(**data)
+
+
+@pytest.fixture
+def clickhouse_connection():
+    data = get_clickhouse_connection_data()
+    return Connection.objects.create(**data)

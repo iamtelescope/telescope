@@ -39,6 +39,20 @@ STATUS_TO_INT = {
 }
 
 
+class ConnectionTestResponseNg:
+    def __init__(
+        self,
+    ):
+        self.result = False
+        self.error = ""
+
+    def as_dict(self) -> dict:
+        return {
+            "result": self.result,
+            "error": self.error,
+        }
+
+
 class ConnectionTestResponse:
     def __init__(
         self,
@@ -82,7 +96,7 @@ class Fetcher(BaseFetcher):
     @classmethod
     def get_context_field_data(cls, source, field):
         if field == "container":
-            client = docker.DockerClient(base_url=source.connection["address"])
+            client = docker.DockerClient(base_url=source.conn.data["address"])
             containers = []
             for container in client.containers.list(all=True):
                 containers.append(
@@ -102,6 +116,32 @@ class Fetcher(BaseFetcher):
             raise ValueError
 
     @classmethod
+    def test_connection_ng(cls, data: dict) -> ConnectionTestResponseNg:
+        response = ConnectionTestResponseNg()
+        try:
+            client = docker.DockerClient(base_url=data["address"])
+            client.containers.list()
+        except Exception as err:
+            response.error = str(err)
+        else:
+            response.result = True
+        return response
+
+    @classmethod
+    def get_schema(cls, data: dict):
+        """Get schema without testing connection"""
+        return [
+            get_telescope_field("time", "datetime"),
+            get_telescope_field("container_id", "string"),
+            get_telescope_field("container_name", "string"),
+            get_telescope_field("container_short_id", "string"),
+            get_telescope_field("message", "string"),
+            get_telescope_field("status", "string"),
+            get_telescope_field("stream", "string"),
+            get_telescope_field("labels", "string"),
+        ]
+
+    @classmethod
     def test_connection(cls, data: dict) -> ConnectionTestResponse:
         response = ConnectionTestResponse()
         try:
@@ -115,20 +155,7 @@ class Fetcher(BaseFetcher):
 
         try:
             response.schema["result"] = True
-            response.schema["data"].append(get_telescope_field("time", "datetime"))
-            response.schema["data"].append(
-                get_telescope_field("container_id", "string")
-            )
-            response.schema["data"].append(
-                get_telescope_field("container_name", "string")
-            )
-            response.schema["data"].append(
-                get_telescope_field("container_short_id", "string")
-            )
-            response.schema["data"].append(get_telescope_field("message", "string"))
-            response.schema["data"].append(get_telescope_field("status", "string"))
-            response.schema["data"].append(get_telescope_field("stream", "string"))
-            response.schema["data"].append(get_telescope_field("labels", "string"))
+            response.schema["data"] = cls.get_schema(data)
         except Exception as err:
             response.schema["result"] = False
             response.schema["error"] = str(err)
@@ -144,7 +171,7 @@ class Fetcher(BaseFetcher):
         cls,
         request: GraphDataRequest,
     ):
-        client = docker.DockerClient(base_url=request.source.connection["address"])
+        client = docker.DockerClient(base_url=request.source.conn.data["address"])
         since = request.time_from / 1000
         until = request.time_to / 1000
 
@@ -275,7 +302,7 @@ class Fetcher(BaseFetcher):
         timezone,
     ):
         rows = []
-        client = docker.DockerClient(base_url=request.source.connection["address"])
+        client = docker.DockerClient(base_url=request.source.conn.data["address"])
         since = request.time_from / 1000
         until = request.time_to / 1000
         ts = None

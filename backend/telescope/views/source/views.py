@@ -9,11 +9,7 @@ from django.contrib.auth.models import User, Group
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from telescope.rbac.helpers import (
-    grant_source_role,
-    revoke_source_role,
-    require_source_permissions,
-)
+from telescope.rbac.manager import RBACManager
 
 from telescope.services.source import SourceService, SourceSavedViewService
 from telescope.services.exceptions import SerializerValidationError
@@ -21,16 +17,17 @@ from telescope.fetchers import get_fetchers
 from telescope.fetchers.request import DataRequest, GraphDataRequest
 from telescope.rbac import permissions
 from telescope.response import UIResponse
-from telescope.models import Source, SourceRoleBinding, SavedView
+from telescope.models import Source, SavedView, Connection
 from telescope.serializers.source import (
     SourceRoleSerializer,
-    SourceRoleBindingSerializer,
     ClickhouseConnectionSerializer,
     DockerConnectionSerializer,
     SourceDataRequestSerializer,
     SourceGraphDataRequestSerializer,
     SourceAutocompleteRequestSerializer,
     SourceContextFieldDataSerializer,
+    GetSourceSchemaClickhouseSerializer,
+    GetSourceSchemaDockerSerializer,
 )
 
 logger = logging.getLogger("telescope.views.source")
@@ -40,7 +37,13 @@ CONNECTION_KIND_TO_SERIALIZER = {
     "docker": DockerConnectionSerializer,
 }
 
+SCHEMA_KIND_TO_SERIALIZER = {
+    "clickhouse": GetSourceSchemaClickhouseSerializer,
+    "docker": GetSourceSchemaDockerSerializer,
+}
+
 source_srv = SourceService()
+rbac_manager = RBACManager()
 
 
 class SourceRoleBindingView(APIView):
@@ -48,19 +51,10 @@ class SourceRoleBindingView(APIView):
     def get(self, request, slug):
         response = UIResponse()
 
-        require_source_permissions(
-            user=request.user,
-            source_slug=slug,
-            required_permissions=[permissions.Source.GRANT.value],
-        )
-
         try:
-            bindings = SourceRoleBinding.objects.filter(source__slug=slug)
-            serializer = SourceRoleBindingSerializer(bindings, many=True)
+            response.data = source_srv.get_role_bindings(user=request.user, slug=slug)
         except Exception as err:
             response.mark_failed(f"failed to get source role bindings: {err}")
-        else:
-            response.data = serializer.data
         return Response(response.as_dict())
 
 
@@ -175,7 +169,7 @@ class SourceView(APIView):
             response.mark_invalid(err.serializer.errors)
         except Exception as err:
             logger.exception(err)
-            response.mark_failed(f"failed to create source: {err}")
+            response.mark_failed(f"failed to update source: {err}")
         return Response(response.as_dict())
 
     @method_decorator(login_required)
@@ -215,23 +209,18 @@ class SourceGrantRoleView(SourceRoleView):
         response = UIResponse()
         serializer = SourceRoleSerializer(data=request.data)
 
-        require_source_permissions(
-            user=request.user,
-            source_slug=slug,
-            required_permissions=[permissions.Source.GRANT.value],
-        )
-
         try:
             if not serializer.is_valid():
                 response.validation["result"] = False
                 response.validation["fields"] = serializer.errors
             else:
                 params = self.get_binding_params(slug, serializer)
-                _, created = grant_source_role(
-                    source=params["source"],
+                _, created = source_srv.grant_role(
+                    user=request.user,
+                    slug=slug,
                     role=params["role"],
-                    user=params["user"],
-                    group=params["group"],
+                    target_user=params["user"],
+                    target_group=params["group"],
                 )
                 if created:
                     response.add_msg("Role has been granted")
@@ -249,23 +238,18 @@ class SourceRevokeRoleView(SourceRoleView):
         response = UIResponse()
         serializer = SourceRoleSerializer(data=request.data)
 
-        require_source_permissions(
-            user=request.user,
-            source_slug=slug,
-            required_permissions=[permissions.Source.GRANT.value],
-        )
-
         try:
             if not serializer.is_valid():
                 response.validation["result"] = False
                 response.validation["fields"] = serializer.errors
             else:
                 params = self.get_binding_params(slug, serializer)
-                deleted = revoke_source_role(
-                    source=params["source"],
+                deleted = source_srv.revoke_role(
+                    user=request.user,
+                    slug=slug,
                     role=params["role"],
-                    user=params["user"],
-                    group=params["group"],
+                    target_user=params["user"],
+                    target_group=params["group"],
                 )
                 if deleted:
                     response.add_msg("Grant has been revoked")
@@ -281,12 +265,12 @@ class SourceDataAutocompleteView(APIView):
     def post(self, request, slug):
         response = UIResponse()
 
-        require_source_permissions(
+        source = rbac_manager.get_source(
             user=request.user,
             source_slug=slug,
             required_permissions=[permissions.Source.USE.value],
+            fetch_connection=True,
         )
-        source = Source.objects.get(slug=slug)
         serializer = SourceAutocompleteRequestSerializer(
             data=request.data,
         )
@@ -312,13 +296,12 @@ class SourceDataView(APIView):
     def post(self, request, slug):
         response = UIResponse()
 
-        require_source_permissions(
+        source = rbac_manager.get_source(
             user=request.user,
             source_slug=slug,
             required_permissions=[permissions.Source.USE.value],
+            fetch_connection=True,
         )
-
-        source = Source.objects.get(slug=slug)
         serializer = SourceDataRequestSerializer(
             data=request.data, context={"source": source, "user": request.user}
         )
@@ -359,14 +342,12 @@ class SourceContextFieldDataView(APIView):
     def post(self, request, slug):
         response = UIResponse()
 
-        require_source_permissions(
+        source = rbac_manager.get_source(
             user=request.user,
             source_slug=slug,
             required_permissions=[permissions.Source.USE.value],
+            fetch_connection=True,
         )
-
-        source = Source.objects.get(slug=slug)
-
         serializer = SourceContextFieldDataSerializer(data=request.data)
 
         if not serializer.is_valid():
@@ -389,13 +370,12 @@ class SourceGraphDataView(APIView):
     def post(self, request, slug):
         response = UIResponse()
 
-        require_source_permissions(
+        source = rbac_manager.get_source(
             user=request.user,
             source_slug=slug,
             required_permissions=[permissions.Source.USE.value],
+            fetch_connection=True,
         )
-        source = Source.objects.get(slug=slug)
-
         serializer = SourceGraphDataRequestSerializer(
             data=request.data, context={"source": source, "user": request.user}
         )
@@ -451,4 +431,54 @@ class SourceTestConnectionView(APIView):
         except Exception as err:
             logger.exception(err)
             response.mark_failed(f"failed to test connection: {err}")
+        return Response(response.as_dict())
+
+
+class GetSourceSchemaView(APIView):
+    @method_decorator(login_required)
+    def post(self, request, kind):
+        response = UIResponse()
+
+        serializer_cls = SCHEMA_KIND_TO_SERIALIZER.get(kind)
+        if not serializer_cls:
+            response.mark_failed(f"Unsupported source kind: {kind}")
+            return Response(response.as_dict())
+
+        try:
+            serializer = serializer_cls(data=request.data)
+            if not serializer.is_valid():
+                response.validation["result"] = False
+                response.validation["fields"] = serializer.errors
+                return Response(response.as_dict())
+
+            # Fetch the connection
+            connection = Connection.objects.get(
+                id=serializer.validated_data["connection_id"]
+            )
+
+            # Check USE permission
+            rbac_manager.require_connection_permissions(
+                user=request.user,
+                connection_id=connection.id,
+                required_permissions=[permissions.Connection.USE.value],
+            )
+
+            # Get the fetcher and call get_schema
+            fetcher = get_fetchers()[kind]
+
+            # Build data dict with connection data + additional params
+            data = dict(connection.data)
+            if kind == "clickhouse":
+                data["database"] = serializer.validated_data["database"]
+                data["table"] = serializer.validated_data["table"]
+
+            schema = fetcher.get_schema(data)
+            response.data = schema
+
+        except Connection.DoesNotExist:
+            response.mark_failed("Connection not found")
+        except Exception as err:
+            logger.exception(err)
+            response.mark_failed(f"Failed to get source schema: {err}")
+
         return Response(response.as_dict())

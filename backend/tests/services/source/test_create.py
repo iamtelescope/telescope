@@ -3,7 +3,9 @@ import pytest
 from django.core.exceptions import PermissionDenied
 
 from telescope.rbac.roles import GlobalRole, SourceRole
-from telescope.rbac.helpers import grant_global_role, grant_source_role
+from telescope.rbac.manager import RBACManager
+
+rbac_manager = RBACManager()
 from telescope.models import Source, SourceRoleBinding
 from telescope.services.exceptions import SerializerValidationError
 from telescope.serializers.source import SourceKindSerializer, NewDockerSourceSerializer
@@ -18,17 +20,32 @@ def test_create_source_without_permissions(test_user, service):
 
 
 @pytest.mark.django_db
-def test_create_source_with_permissions(test_user, service):
-    grant_global_role(role=GlobalRole.ADMIN.value, user=test_user)
+def test_create_source_with_permissions(test_user, service, docker_connection):
+    from telescope.rbac.roles import ConnectionRole
+
+    rbac_manager.grant_global_role(role=GlobalRole.ADMIN.value, user=test_user)
+    rbac_manager.grant_connection_role(
+        connection=docker_connection,
+        role=ConnectionRole.USER.value,
+        user=test_user,
+    )
+
     slug = "testdocker"
-    data = service.create(user=test_user, data=get_docker_source_data(slug))
+    source_data = get_docker_source_data(slug)
+    source_data["connection"] = {"connection_id": docker_connection.id}
+
+    data = service.create(user=test_user, data=source_data)
     assert data == {"slug": slug}
     assert SourceRoleBinding.objects.filter(
         user=test_user, source__slug=slug, role=SourceRole.OWNER.value
     ).exists()
     assert Source.objects.get(slug=slug).support_raw_query is False
+
+    # Test duplicate creation
+    source_data_dup = get_docker_source_data(slug)
+    source_data_dup["connection"] = {"connection_id": docker_connection.id}
     with pytest.raises(SerializerValidationError) as err:
-        service.create(user=test_user, data=get_docker_source_data(slug))
+        service.create(user=test_user, data=source_data_dup)
     assert isinstance(err.value.serializer, NewDockerSourceSerializer)
     assert (
         str(err.value.serializer.errors["slug"][0])

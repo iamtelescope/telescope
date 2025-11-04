@@ -1,119 +1,155 @@
 <template>
-    <div class="flex flex-row justify-center mt-10">
-        <div class="flex flex-col min-w-[1000px] w-[1000px] max-w-[1000px]">
-            <div class="flex flex-row mb-14">
-                <div class="flex flex-col justify-start text-nowrap">
-                    <span class="font-medium text-3xl">
-                        <i class="pi pi-user text-3xl mr-1"></i>
-                        <span class="text-gray-400">User profile: </span>
-                        {{ user.username }}
-                    </span>
-                </div>
-            </div>
-            <div class="w-full">
-                <DataRow name="Username" :value="user.username" />
-                <DataRow name="Login type" :value="user.type" />
-                <DataRow name="First name">{{ user.firstName || '–' }}</DataRow>
-                <DataRow name="Last name">{{ user.lastName || '–' }}</DataRow>
-                <DataRow name="Permissions">
-                    <div class="flex flex-wrap gap-2" v-if="user.permissions.length > 0">
-                        <Badge
-                            v-for="perm in user.permissions"
-                            :key="perm"
-                            :value="perm"
-                            severity="secondary"
-                            size="large"
-                        ></Badge>
-                    </div>
-                    <span v-else>–</span>
-                </DataRow>
-                <DataRow name="Groups">
-                    <div class="flex flex-wrap gap-2" v-if="user.groups.length > 0">
-                        <Badge
-                            v-for="group in user.groups"
-                            :key="group"
-                            :value="group"
-                            severity="secondary"
-                            size="large"
-                        ></Badge>
-                    </div>
-                    <span v-else>–</span>
-                </DataRow>
-            </div>
-            <div class="w-full">
-                <div class="flex flex-row w-full mt-9 align-middle">
-                    <div class="flex items-center font-medium text-xl text-nowrap">API Tokens</div>
-                    <div class="flex items-center w-full justify-end">
-                        <Button
-                            severity="primary"
-                            size="small"
-                            icon="pi pi-plus"
-                            label="New token"
-                            @click="handleApiTokenCreate"
-                        />
-                        <Button
-                            severity="danger"
-                            size="small"
-                            :label="deleteTokenBtnLabel"
-                            :disabled="selectedTokens.length == 0"
-                            :outlined="selectedTokens.length == 0"
-                            @click="handleDeleteTokens"
-                            :loading="deleteTokenBtnLoading"
-                            class="ml-2"
-                        />
-                    </div>
-                </div>
-                <DataView :loadings="[loading]" :errors="[error]">
-                    <div class="flex flex-row w-full mt-5">
-                        <DataTable
-                            v-if="tokens.length"
-                            :value="tokens"
-                            sortField="name"
-                            removableSort
-                            :sortOrder="1"
-                            class="w-full"
-                            v-model:selection="selectedTokens"
-                            dataKey="token"
-                        >
-                            <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
+    <Content>
+        <template #header>
+            <Header>
+                <template #title> <User class="mr-3 w-8 h-8" /> User </template>
+            </Header>
+        </template>
+        <template #content>
+            <DataView :loadings="[loading]" :errors="[error]">
+                <div class="flex flex-col max-w-[800px]">
+                    <Header>
+                        <template #title>{{ user.usernam1e }} </template>
+                    </Header>
+                    <div class="mt-4">
+                        <ContentBlock header="Profile">
+                            <DataRow name="Username" :value="user.username" />
+                            <DataRow name="Login type" :value="user.type" />
+                            <DataRow name="First name">{{ user.firstName || '–' }}</DataRow>
+                            <DataRow name="Last name">{{ user.lastName || '–' }}</DataRow>
+                            <DataRow name="Permissions" class="pr-2">
+                                <div class="flex flex-wrap gap-2" v-if="user.permissions.length > 0">
+                                    <Tag
+                                        v-for="perm in user.permissions"
+                                        :key="perm"
+                                        :value="perm"
+                                        severity="secondary"
+                                    />
+                                </div>
+                                <span v-else>&ndash;</span>
+                            </DataRow>
+                            <DataRow name="Groups" :showBorder="false">
+                                <div class="flex flex-wrap gap-2" v-if="user.groups.length > 0">
+                                    <Tag
+                                        v-for="group in user.groups"
+                                        :key="group"
+                                        :value="group"
+                                        severity="secondary"
+                                    />
+                                </div>
+                                <span v-else>&ndash;</span>
+                            </DataRow>
+                        </ContentBlock>
 
-                            <Column field="name" sortable header="Name" />
-                            <Column sortable header="Created">
-                                <template #body="slotProps">
-                                    <DateTimeFormatted :value="slotProps.data.created" />
+                        <ContentBlock header="API Tokens" class="mt-3">
+                            <template #actions>
+                                <div class="flex flex-wrap gap-2">
+                                    <Button
+                                        severity="primary"
+                                        size="small"
+                                        icon="pi pi-plus"
+                                        label="New token"
+                                        @click="handleApiTokenCreate"
+                                        class="max-h-[25px]"
+                                    />
+                                    <Button
+                                        severity="danger"
+                                        size="small"
+                                        :label="deleteTokenBtnLabel"
+                                        :disabled="selectedTokens.length == 0"
+                                        :outlined="selectedTokens.length == 0"
+                                        @click="handleDeleteTokens"
+                                        :loading="deleteTokenBtnLoading"
+                                        class="max-h-[25px]"
+                                    />
+                                </div>
+                            </template>
+                            <DataTable
+                                v-if="tokens.length"
+                                :value="tokens"
+                                sortField="name"
+                                removableSort
+                                size="small"
+                                :sortOrder="1"
+                                :paginator="tokens.length > 50"
+                                :rows="50"
+                                :rowsPerPageOptions="[10, 25, 50, 100, 1000]"
+                                :row-hover="true"
+                                class="w-full"
+                                v-model:selection="selectedTokens"
+                                dataKey="token"
+                            >
+                                <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
+                                <Column field="name" sortable header="Name" />
+                                <Column sortable header="Created">
+                                    <template #body="slotProps">
+                                        <DateTimeFormatted :value="slotProps.data.created" />
+                                    </template>
+                                </Column>
+                                <Column header="Token" bodyClass="font-mono">
+                                    <template #body="slotProps">
+                                        <div class="flex items-center gap-2">
+                                            <span v-if="visibleTokens[slotProps.data.token]">
+                                                {{ slotProps.data.token }}
+                                            </span>
+                                            <span v-else class="text-gray-400"> •••••••••••••••••••••••••••••••• </span>
+                                            <Button
+                                                :icon="
+                                                    visibleTokens[slotProps.data.token]
+                                                        ? 'pi pi-eye-slash'
+                                                        : 'pi pi-eye'
+                                                "
+                                                text
+                                                rounded
+                                                size="small"
+                                                @click="toggleTokenVisibility(slotProps.data.token)"
+                                                class="h-8 w-8"
+                                            />
+                                        </div>
+                                    </template>
+                                </Column>
+                                <template #empty>
+                                    <div
+                                        class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400"
+                                    >
+                                        <KeyRound class="w-10 h-10 mb-4 opacity-50" />
+                                        <p class="text-lg font-medium mb-2">No API tokens found</p>
+                                    </div>
                                 </template>
-                            </Column>
-                            <Column header="Token" bodyClass="font-mono">
-                                <template #body="slotProps">
-                                    {{ slotProps.data.token }}
-                                    <Copy :value="slotProps.data.token" />
-                                </template>
-                            </Column>
-                        </DataTable>
-                        <div v-else>There is no API tokens</div>
+                            </DataTable>
+                            <div
+                                v-else
+                                class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400"
+                            >
+                                <KeyRound class="w-10 h-10 mb-4 opacity-50" />
+                                <p class="text-lg font-medium mb-2">No API tokens found</p>
+                            </div>
+                        </ContentBlock>
                     </div>
-                </DataView>
-            </div>
-        </div>
-    </div>
+                </div>
+            </DataView>
+        </template>
+    </Content>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { KeyRound, User } from 'lucide-vue-next'
 
-import { Badge, Button, Column, DataTable, useToast } from 'primevue'
+import { Button, Column, DataTable, useToast } from 'primevue'
 import { AuthService } from '@/sdk/services/auth'
 import { useAuthStore } from '@/stores/auth'
-import { useNavStore } from '@/stores/nav'
-import Copy from '@/components/common/Copy.vue'
+import Content from '@/components/common/Content.vue'
+import ContentBlock from '@/components/common/ContentBlock.vue'
 import DataRow from '@/components/common/DataRow.vue'
-import { useGetCurrentUserAPITokens } from '@/composables/auth/useAuthService'
 import DataView from '@/components/common/DataView.vue'
 import DateTimeFormatted from '@/components/common/DateTimeFormatted.vue'
+import Header from '@/components/common/Header.vue'
+import Tag from '@/components/common/Tag.vue'
+import { useGetCurrentUserAPITokens } from '@/composables/auth/useAuthService'
 
 const router = useRouter()
-const navStore = useNavStore()
 const toast = useToast()
 
 const { user } = useAuthStore()
@@ -122,7 +158,7 @@ const { tokens, error, loading, load: userLoad } = useGetCurrentUserAPITokens()
 const authSrv = new AuthService()
 const selectedTokens = ref([])
 const deleteTokenBtnLoading = ref(false)
-navStore.updatev2(['profile'])
+const visibleTokens = ref({})
 
 const deleteTokenBtnLabel = computed(() => {
     let text = 'Delete'
@@ -137,6 +173,10 @@ const deleteTokenBtnLabel = computed(() => {
     }
     return text
 })
+
+const toggleTokenVisibility = (token) => {
+    visibleTokens.value[token] = !visibleTokens.value[token]
+}
 
 const handleApiTokenCreate = () => {
     router.push({ name: 'apiTokenNew' })

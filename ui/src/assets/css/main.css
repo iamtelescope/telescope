@@ -33,6 +33,7 @@
     --p-input-text-color: #d7d7d7;
     --p-surface-0: #d7d7d7;
     --p-datatable-body-cell-border-color: var(--p-surface-700);
+    --p-datatable-header-cell-border-color: var(--p-surface-700);
     --p-primary-color: var(--p-primary-400);
     --p-button-text-primary-color: var(--p-primary-200);
     --p-tabs-tab-active-color: var(--p-primary-200);
@@ -92,38 +93,6 @@ body:where(.dark, .dark *) {
     border-radius: 5px !important;
 }
 
-.min-w-1000 {
-    min-width: 1000px;
-}
-
-.max-w-1000 {
-    max-width: 1000px;
-}
-
-.min-w-1280 {
-    min-width: 1280px;
-}
-
-.max-w-1280 {
-    max-width: 1280px;
-}
-
-.max-w-400 {
-    max-width: 400px;
-}
-
-.min-w-400 {
-    min-width: 400px;
-}
-
-.max-w-190 {
-    max-width: 190px;
-}
-
-.min-w-190 {
-    min-width: 190px;
-}
-
 .yagr-tooltip {
     font-family: 'Open Sans' !important;
     border: 1px solid #dbdbdb !important;
@@ -137,4 +106,20 @@ body:where(.dark, .dark *) {
 
 .text-primary {
     color: var(--p-primary-color);
+}
+
+.table-link {
+    @apply text-primary-600 hover:text-primary-800 dark:text-primary-200 dark:hover:text-primary-100 hover:underline;
+}
+
+.p-datatable tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+.p-datatable tbody tr:last-child td:first-child {
+    @apply rounded-bl-lg;
+}
+
+.p-datatable tbody tr:last-child td:last-child {
+    @apply rounded-br-lg;
 }

@@ -1,10 +1,10 @@
 <template>
     <div>
-        <Toolbar class="toolbar-slim border-none p-0 pt-1">
+        <Toolbar class="toolbar-slim border-none p-0 mb-2">
             <template #start>
                 <Button
-                    class="mr-2"
                     :class="{
+                        'mr-2': true,
                         'bg-orange-600 border-orange-700 hover:bg-orange-700 dark:hover:text-white': paramsChanged,
                     }"
                     :label="loading ? 'Cancel' : 'Execute'"
@@ -74,12 +74,11 @@
                     onIcon="pi pi-eye"
                     offIcon="pi pi-eye-slash"
                     size="small"
-                    class="mr-2"
                 />
             </template>
         </Toolbar>
         <div :class="{ hidden: hideFilters }">
-            <div class="mb-2 mt-3">
+            <div class="mb-2">
                 <IftaLabel>
                     <FieldsEditor
                         id="fields_editor"
@@ -113,7 +112,7 @@
                     <label for="flyql_editor">FlyQL query</label>
                 </IftaLabel>
             </div>
-            <div v-if="source.isRawQueryAllowed() && showRawQueryEditor">
+            <div v-if="source.isRawQueryAllowed() && showRawQueryEditor" class="mb-2">
                 <IftaLabel>
                     <RawQueryEditor
                         id="raw_query_editor"
