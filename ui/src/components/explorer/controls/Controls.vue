@@ -50,6 +50,7 @@
                     @rangeSelect="onRangeSelect"
                     :from="sourceControlsStore.from"
                     :to="sourceControlsStore.to"
+                    :timeZone="sourceControlsStore.timeZone"
                 />
                 <QuerySettings
                     :source="source"
@@ -161,6 +162,7 @@ const limits = ref(getLimits(sourceControlsStore.limit))
 const onRangeSelect = (params) => {
     sourceControlsStore.setFrom(params.from)
     sourceControlsStore.setTo(params.to)
+    sourceControlsStore.setTimeZone(params.timeZone)
 }
 
 const onFieldsChange = (value) => {
