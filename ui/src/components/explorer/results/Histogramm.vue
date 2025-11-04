@@ -24,8 +24,6 @@
 </template>
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
-import { format } from 'date-fns'
-import uPlot from 'uplot'
 
 import { SelectButton } from 'primevue'
 
@@ -34,9 +32,12 @@ import { useDark } from '@vueuse/core'
 import YagrChart from '@/components/common/YagrChart.vue'
 
 import { getColor } from '@/utils/colors.js'
+import { DateTime } from 'luxon'
+import { localTimeZone, moveTimestampToTimeZone } from '@/utils/datetimeranges'
 
-const props = defineProps(['source', 'stats', 'rows', 'groupByLabel'])
+const props = defineProps(['source', 'stats', 'rows', 'timeZone', 'groupByLabel'])
 const emit = defineEmits(['rangeSelected'])
+
 const chartSettings = ref(null)
 const chartDefaultType = ref('column')
 const chartTypeOptions = ref(['column', 'area', 'line'])
@@ -119,7 +120,8 @@ const calcPlotLines = () => {
 }
 
 const tooltipRender = (data) => {
-    let html = `<div class="font-medium pb-2 dark:text-neutral-300">${format(uPlot.tzDate(new Date(data.x), 'UTC'), 'yyyy-MM-dd HH:mm:ss')}</div><table class='p-0 m-0 w-full'>`
+    const dateTimeString = DateTime.fromMillis(data.x, { zone: props.timeZone }).toFormat('yyyy-MM-dd HH:mm:ss')
+    let html = `<div class="font-medium pb-2 dark:text-neutral-300">${dateTimeString}</div><table class='p-0 m-0 w-full'>`
     let label = props.groupByLabel
     if (!label) {
         label = 'Name'
@@ -209,9 +211,12 @@ const getChartSettings = (type) => {
         },
         series: series,
         editUplotOptions: (opts) => {
-            opts.tzDate = (ts) => uPlot.tzDate(new Date(ts), 'Etc/UTC')
+            opts.tzDate = (dateOrTs) => {
+                const timestamp = typeof(dateOrTs) === 'number' ? dateOrTs : dateOrTs.valueOf()
+                return new Date(moveTimestampToTimeZone(timestamp, props.timeZone, localTimeZone))
+            }
             return opts
-        },
+        }
     }
 }
 
