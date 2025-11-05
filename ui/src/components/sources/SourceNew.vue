@@ -1,17 +1,18 @@
 <template>
-    <div class="flex flex-row justify-center mt-10">
-        <div class="flex flex-col min-w-1280 max-w-1280">
-            <SourceForm />
-        </div>
-    </div>
+    <AccessDenied v-if="!hasPermission" message="You don't have permission to create sources." />
+    <SourceNewContent v-else />
 </template>
 
 <script setup>
-import { useNavStore } from '@/stores/nav'
+import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
+import AccessDenied from '@/components/common/AccessDenied.vue'
+import SourceNewContent from '@/components/sources/SourceNewContent.vue'
 
-import SourceForm from '@/components/sources/SourceForm.vue'
+const { user } = storeToRefs(useAuthStore())
 
-const navStore = useNavStore()
-
-navStore.updatev2(['sources', 'New'])
+const hasPermission = computed(() => {
+    return user.value?.canCreateSource() || false
+})
 </script>

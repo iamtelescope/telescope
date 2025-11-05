@@ -10,9 +10,14 @@ const routes = [
         path: '/',
         name: 'root',
         meta: {
-            label: 'Sources',
+            label: 'Logs',
         },
         component: HomeView,
+    },
+    {
+        path: '/logs',
+        name: 'logs',
+        component: () => import('@/components/logs/Logs.vue'),
     },
     {
         path: '/profile',
@@ -28,6 +33,26 @@ const routes = [
         path: '/sources',
         name: 'sources',
         component: () => import('@/components/sources/Sources.vue'),
+    },
+    {
+        path: '/connections',
+        name: 'connections',
+        component: () => import('@/components/connections/Connections.vue'),
+    },
+    {
+        path: '/connections/new',
+        name: 'connectionNew',
+        component: () => import('@/components/connections/ConnectionNew.vue'),
+    },
+    {
+        path: '/connections/:connectionId',
+        name: 'connection',
+        component: () => import('@/components/connections/Connection.vue'),
+    },
+    {
+        path: '/connections/:connectionId/edit',
+        name: 'connectionEdit',
+        component: () => import('@/components/connections/ConnectionEdit.vue'),
     },
     {
         path: '/sources/:sourceSlug/explore',
@@ -78,11 +103,6 @@ const routes = [
         path: '/rbac/users',
         name: 'rbacUsers',
         component: () => import('@/components/rbac/Users.vue'),
-    },
-    {
-        path: '/rbac/roles/:roleType/:roleName',
-        name: 'rbacRole',
-        component: () => import('@/components/rbac/Role.vue'),
     },
     {
         path: '/rbac/roles',

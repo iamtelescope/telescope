@@ -1,18 +1,18 @@
 <template>
-    <Controls
-        ref="controlsRef"
-        @searchRequest="onSearchRequest"
-        @searchCancel="onSearchCancel"
-        @shareURL="onShareURL"
-        @download="onDownload"
-        :savedView="savedView"
-        :source="source"
-        :loading="loading"
-        :paramsChanged="paramsChanged"
-        @graphVisibilityChanged="onGraphVisibilityChanged"
-        :groupByInvalid="!!(graphValidation && !graphValidation.result && graphValidation.fields.group_by)"
-    />
-    <div class="mt-3">
+    <div class="p-2">
+        <Controls
+            ref="controlsRef"
+            @searchRequest="onSearchRequest"
+            @searchCancel="onSearchCancel"
+            @shareURL="onShareURL"
+            @download="onDownload"
+            :savedView="savedView"
+            :source="source"
+            :loading="loading"
+            :paramsChanged="paramsChanged"
+            @graphVisibilityChanged="onGraphVisibilityChanged"
+            :groupByInvalid="!!(graphValidation && !graphValidation.result && graphValidation.fields.group_by)"
+        />
         <BorderCard class="mb-2" :loading="graphLoading" v-if="sourceControlsStore.showGraph">
             <Skeleton v-if="graphLoading && graphData === null" width="100%" height="235px"></Skeleton>
             <Error v-if="graphError" :error="graphError"></Error>
@@ -27,6 +27,7 @@
                 :source="source"
                 @rangeSelected="onHistogrammRangeSelected"
                 :rows="rows"
+                :timeZone="displayTimeZone"
                 :groupByLabel="sourceControlsStore.graphGroupBy"
             />
         </BorderCard>
@@ -48,7 +49,7 @@
                 :source="source"
                 :rows="rows"
                 :fields="fields"
-                :timezone="timezone"
+                :timeZone="displayTimeZone"
             />
         </BorderCard>
     </div>
@@ -59,9 +60,6 @@ import { ref, onBeforeMount, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useToast } from 'primevue'
-
-import { useNavStore } from '@/stores/nav'
-
 import { Skeleton } from 'primevue'
 import { useSourceControlsStore } from '@/stores/sourceControls'
 import { useGetSourceData, useGetSourceGraphData } from '@/composables/sources/useSourceService'
@@ -73,17 +71,17 @@ import ValidationError from '@/components/common/ValidationError.vue'
 import ExplorerTable from '@/components/explorer/results/ExplorerTable.vue'
 import Histogramm from '@/components/explorer/results/Histogramm.vue'
 import LimitMessage from '@/components/explorer/controls/LimitMessage.vue'
+import { localTimeZone } from '@/utils/datetimeranges'
 
 const controlsRef = ref(null)
 
-const navStore = useNavStore()
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const sourceControlsStore = useSourceControlsStore()
-const timezone = ref('UTC')
 
 const lastSearchRouteQuery = ref(null)
+const displayTimeZone = ref(localTimeZone)
 const props = defineProps(['source', 'savedView'])
 const { rows, fields, error, loading, validation, load, controller } = useGetSourceData()
 const {
@@ -104,6 +102,7 @@ const paramsChanged = computed(() => {
 
 const onSearchRequest = () => {
     lastSearchRouteQuery.value = sourceControlsStore.routeQuery
+    displayTimeZone.value = sourceControlsStore.timeZone
     router.push({ path: route.path, query: sourceControlsStore.routeQuery })
     load(props.source.slug, sourceControlsStore.dataRequestParams)
     if (sourceControlsStore.showGraph) {
@@ -133,7 +132,7 @@ const showSourceDataTable = computed(() => {
 })
 
 const onShareURL = () => {
-    let url = window.location.origin + route.path + '?' + sourceControlsStore.queryString
+    let url = window.location.origin + route.fullPath
 
     navigator.clipboard
         .writeText(url)
@@ -163,16 +162,6 @@ const onHistogrammRangeSelected = (params) => {
     sourceControlsStore.setTo(params.to)
     controlsRef.value.handleSearch()
 }
-
-navStore.update([
-    {
-        icon: 'pi pi-database',
-        label: 'Sources',
-        url: '',
-    },
-    { label: props.source.slug },
-    { label: 'explore' },
-])
 
 onBeforeMount(() => {
     sourceControlsStore.$reset()

@@ -357,3 +357,33 @@ def get_saved_view_data():
         "show_graph": True,
         "context_fields": {},
     }
+
+
+def get_docker_connection_data():
+    return {
+        "kind": "docker",
+        "name": "Docker Connection",
+        "description": "test docker connection",
+        "data": {"address": "unix:///var/run/docker.sock"},
+    }
+
+
+def get_clickhouse_connection_data():
+    return {
+        "kind": "clickhouse",
+        "name": "ClickHouse Connection",
+        "description": "test clickhouse connection",
+        "data": {
+            "host": "localhost",
+            "port": 9440,
+            "user": "default",
+            "password": "testpwd",
+            "ssl": True,
+            "verify": True,
+            "ca_cert": "",
+            "client_cert": "",
+            "client_cert_key": "",
+            "server_host_name": "",
+            "tls_mode": "",
+        },
+    }

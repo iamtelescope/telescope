@@ -14,7 +14,7 @@
                     class="text-gray-900 mr-2 text-bold"
                     >{{ source.severityField }}: {{ row.data[source.severityField] }}
                 </Tag>
-                <span class="font-mono">{{ row.time.datetime }}.{{ row.time.microseconds }}</span>
+                <span class="font-mono">{{ dateTimeString }}</span>
             </div>
             <Tabs value="0">
                 <TabList>
@@ -101,10 +101,16 @@ import { useSourceControlsStore } from '@/stores/sourceControls'
 
 import { getColor, getContrastColor } from '@/utils/colors.js'
 import Tag from 'primevue/tag'
+import { DateTime } from 'luxon'
 
 const sourceControlsStore = useSourceControlsStore()
 
-const props = defineProps(['source', 'row'])
+const props = defineProps(['source', 'row', 'timeZone'])
+
+const dateTimeString = computed(() => {
+    const dateTime = DateTime.fromMillis(props.row.time.unixtime, { zone: props.timeZone }).toFormat('yyyy-MM-dd HH:mm:ss')
+    return `${dateTime}.${props.row.time.microseconds}`
+})
 
 const selectedFields = computed(() => {
     return sourceControlsStore.parsedFields(props.source)

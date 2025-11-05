@@ -11,7 +11,9 @@ from telescope.fields import (
     ParsedField,
 )
 from telescope.fetchers import get_fetchers
-from telescope.rbac.helpers import user_has_source_permissions
+from telescope.rbac.manager import RBACManager
+
+rbac_manager = RBACManager()
 from telescope.rbac import permissions
 from telescope.constants import VIEW_SCOPE_SOURCE, VIEW_SCOPE_PERSONAL
 
@@ -46,10 +48,11 @@ class SourceAdminSerializer(serializers.ModelSerializer):
 
 class SourceSerializer(serializers.ModelSerializer):
     permissions = serializers.ListField(child=serializers.CharField())
+    connection_id = serializers.IntegerField(source="conn_id", read_only=True)
 
     class Meta:
         model = Source
-        exclude = ["connection"]
+        exclude = ["conn"]
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -143,12 +146,16 @@ class DockerConnectionSerializer(serializers.Serializer):
     address = serializers.CharField()
 
 
-class SourceWithConnectionSerializer(serializers.ModelSerializer):
-    permissions = serializers.ListField(child=serializers.CharField())
+class GetSourceSchemaClickhouseSerializer(serializers.Serializer):
+    connection_id = serializers.IntegerField()
+    database = serializers.CharField()
+    table = serializers.CharField()
 
-    class Meta:
-        model = Source
-        fields = "__all__"
+
+class GetSourceSchemaDockerSerializer(serializers.Serializer):
+    connection_id = serializers.IntegerField()
+
+
 
 
 class SourceFieldSerializer(serializers.Serializer):
@@ -194,7 +201,7 @@ class NewBaseSourceSerializer(serializers.Serializer):
     severity_field = serializers.CharField(allow_blank=True, allow_null=True)
     default_chosen_fields = serializers.ListField(child=serializers.CharField())
     fields = serializers.DictField(child=SourceFieldSerializer())
-    connection = ClickhouseConnectionSerializer()
+    connection = serializers.JSONField()
 
     def validate_slug(self, value):
         if Source.objects.filter(slug=value).exists():
@@ -295,20 +302,33 @@ class NewBaseSourceSerializer(serializers.Serializer):
         return value
 
 
+class ClickhouseSourceDataSerializer(serializers.Serializer):
+    database = serializers.CharField(required=True)
+    table = serializers.CharField(required=True)
+
+
+class DockerSourceDataSerializer(serializers.Serializer):
+    pass
+
+
 class NewDockerSourceSerializer(NewBaseSourceSerializer):
-    connection = DockerConnectionSerializer()
+    data = DockerSourceDataSerializer(required=False, default=dict)
 
 
 class UpdateDockerSourceSerializer(NewDockerSourceSerializer):
+    connection = serializers.JSONField(required=False)
+
     def validate_slug(self, value):
         return value
 
 
 class NewClickhouseSourceSerializer(NewBaseSourceSerializer):
-    pass
+    data = ClickhouseSourceDataSerializer(required=True)
 
 
 class UpdateClickhouseSourceSerializer(NewClickhouseSourceSerializer):
+    connection = serializers.JSONField(required=False)
+
     def validate_slug(self, value):
         return value
 
@@ -405,7 +425,7 @@ class SourceDataRequestSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     SerializeErrorMsg.RAW_QUERIES_NOT_SUPPORTED
                 )
-            if not user_has_source_permissions(
+            if not rbac_manager.user_has_source_permissions(
                 self.context["user"],
                 source_slug=self.context["source"].slug,
                 required_permissions=[permissions.Source.RAW_QUERY.value],

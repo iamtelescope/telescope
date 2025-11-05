@@ -13,14 +13,14 @@ def test_update_source_without_permissions(test_user, service):
 
 
 @pytest.mark.django_db
-def test_update_source_invalid_kind(test_user, service):
+def test_update_source_invalid_kind(test_user, service, docker_connection):
     slug = "test_unknown_slug"
     Source.objects.create(
         slug=slug,
         fields={},
         modifiers={},
         default_chosen_fields={},
-        connection={},
+        conn=docker_connection,
         context_fields={},
         support_raw_query=False,
     )
@@ -31,7 +31,8 @@ def test_update_source_invalid_kind(test_user, service):
 @pytest.mark.django_db
 def test_update_source_with_permissions(root_user, service, docker_source):
     data = get_docker_source_data(docker_source.slug)
-    data["connection"]["address"] = "new_address"
+    # Remove connection data - source updates don't modify connections
+    del data["connection"]
     data["name"] = "new_name"
     data["fields"]["container_name"]["display_name"] = "new_container_name"
     service.update(user=root_user, slug=docker_source.slug, data=data)
@@ -39,4 +40,5 @@ def test_update_source_with_permissions(root_user, service, docker_source):
     source = Source.objects.get(slug=docker_source.slug)
     assert source.name == "new_name"
     assert source.fields["container_name"]["display_name"] == "new_container_name"
-    assert source.connection["address"] == "new_address"
+    # Connection remains unchanged
+    assert source.conn.data["address"] == "unix:///var/run/docker.sock"
