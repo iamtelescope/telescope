@@ -27,7 +27,7 @@ from telescope.rbac.helpers import get_user_global_permissions
 class LoginView(views.LoginView):
     template_name = "forms/login.html"
     form_class = LoginForm
-    next_page = settings.LOGIN_REDIRECT_URL  # Use the setting
+    next_page = settings.LOGIN_REDIRECT_URL
     extra_context = {
         "base_url": settings.BASE_URL or "",
         "github_enabled": settings.CONFIG["auth"]["providers"]["github"]["enabled"],
