@@ -7,6 +7,13 @@
         <meta name="viewport" content="width=device-width,initial-scale=1.0" />
         <link rel="icon" href="./static/favicon.ico" />
         <title>Telescope</title>
+        <script>
+            const base = document.querySelector('base');
+            if (base && base.outerHTML.includes('{%')) {
+                // Django didn't render, use /
+                base.setAttribute('href', '/');
+            }
+        </script>
     </head>
     <body>
         <noscript>
