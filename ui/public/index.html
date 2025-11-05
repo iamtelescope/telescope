@@ -10,7 +10,6 @@
         <script>
             const base = document.querySelector('base');
             if (base && base.outerHTML.includes('{%')) {
-                // Django didn't render, use /
                 base.setAttribute('href', '/');
             }
         </script>
