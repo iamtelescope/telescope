@@ -60,6 +60,7 @@ config:
     docs_url: "https://docs.iamtelescope.net"
     show_docs_url: true
     show_github_url: false
+    base_url: ""
   logging:
     format: "default"
     levels:
