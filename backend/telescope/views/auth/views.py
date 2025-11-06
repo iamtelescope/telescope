@@ -29,8 +29,9 @@ rbac_manager = RBACManager()
 class LoginView(views.LoginView):
     template_name = "forms/login.html"
     form_class = LoginForm
-    next_page = "/"
+    next_page = settings.LOGIN_REDIRECT_URL
     extra_context = {
+        "base_url": settings.BASE_URL or "",
         "github_enabled": settings.CONFIG["auth"]["providers"]["github"]["enabled"],
         "force_github_auth": settings.CONFIG["auth"]["force_github_auth"],
     }
@@ -49,7 +50,9 @@ class LogoutView(View):
     def get(self, request):
         if settings.CONFIG["auth"]["enable_testing_auth"]:
             return redirect("/")
-        return render(request, "forms/logout.html")
+        return render(request, "forms/logout.html", {
+            "base_url": settings.BASE_URL or ""
+        })
 
     def post(self, request):
         logout(request)
@@ -66,7 +69,10 @@ class SuperuserView(View):
 
     def get(self, request):
         form = SuperuserForm
-        return render(request, "forms/superuser.html", {"form": form})
+        return render(request, "forms/superuser.html", {
+            "form": form,
+            "base_url": settings.BASE_URL or ""
+        })
 
     def post(self, request):
         form = SuperuserForm(request.POST)
@@ -83,7 +89,10 @@ class SuperuserView(View):
                 form.add_error(f"Unhandled exception: {err}")
             else:
                 return redirect("/login")
-        return render(request, "forms/superuser.html", {"form": form})
+        return render(request, "forms/superuser.html", {
+            "form": form,
+            "base_url": settings.BASE_URL or ""
+        })
 
 
 class WhoAmIView(APIView):

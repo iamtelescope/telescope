@@ -80,6 +80,9 @@ SCHEMA = {
                 "show_docs_url": {
                     "type": "boolean",
                 },
+                "base_url": {
+                    "type": "string",
+                },
             },
         },
         "additionalProperties": True,
@@ -183,6 +186,7 @@ def get_default_config():
             "github_url": "https://github.com/iamtelescope/telescope",
             "docs_url": "https://iamtelescope.github.io/telescope/docs",
             "show_docs_url": True,
+            "base_url": "",
         },
         "logging": {
             "format": "default",

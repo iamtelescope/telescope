@@ -112,7 +112,7 @@ const routes = [
 ]
 
 const router = createRouter({
-    history: createWebHistory(process.env.BASE_URL),
+    history: createWebHistory(),
     routes,
 })
 
@@ -120,7 +120,7 @@ router.beforeEach(async (to, from) => {
     const { isLoggedIn } = storeToRefs(useAuthStore())
 
     if (!isLoggedIn.value && to.name !== 'login') {
-        window.location = '/login'
+        window.location = 'login'
     }
 })
 
