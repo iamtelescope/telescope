@@ -60,7 +60,6 @@ config:
         default_group: null
         scope: "openid profile email"
         pkce_enabled: true
-    force_github_auth: false
     force_auth_provider: null
     local_login_secret_path: null
     enable_testing_auth: false

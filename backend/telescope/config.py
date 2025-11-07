@@ -115,17 +115,6 @@ def validate(config, schema):
         errors.append((path, error.message))
 
     if not errors:
-        if (
-            config["auth"]["force_github_auth"]
-            and not config["auth"]["providers"]["github"]["enabled"]
-        ):
-            errors.append(
-                (
-                    "auth.force_github_auth",
-                    "cannot be true if github provider is not enabled",
-                )
-            )
-
         if config["auth"]["force_auth_provider"]:
             provider = config["auth"]["force_auth_provider"]
             if provider not in ["github", "okta"]:
@@ -204,7 +193,6 @@ def get_default_config():
                     "pkce_enabled": True,
                 },
             },
-            "force_github_auth": False,
             "force_auth_provider": None,
             "local_login_secret_path": None,
             "enable_testing_auth": False,

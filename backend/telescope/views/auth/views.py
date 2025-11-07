@@ -34,7 +34,6 @@ class LoginView(views.LoginView):
         "base_url": settings.BASE_URL or "",
         "github_enabled": settings.CONFIG["auth"]["providers"]["github"]["enabled"],
         "okta_enabled": settings.CONFIG["auth"]["providers"]["okta"]["enabled"],
-        "force_github_auth": settings.CONFIG["auth"]["force_github_auth"],
         "force_auth_provider": settings.CONFIG["auth"]["force_auth_provider"],
     }
 
@@ -60,7 +59,6 @@ class LocalLoginView(views.LoginView):
                     "enabled"
                 ],
                 "okta_enabled": settings.CONFIG["auth"]["providers"]["okta"]["enabled"],
-                "force_github_auth": False,
                 "force_auth_provider": None,
             }
         )
