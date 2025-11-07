@@ -126,6 +126,23 @@ def validate(config, schema):
                 )
             )
 
+        if config["auth"]["force_auth_provider"]:
+            provider = config["auth"]["force_auth_provider"]
+            if provider not in ["github", "okta"]:
+                errors.append(
+                    (
+                        "auth.force_auth_provider",
+                        "must be either 'github' or 'okta'",
+                    )
+                )
+            elif not config["auth"]["providers"].get(provider, {}).get("enabled"):
+                errors.append(
+                    (
+                        "auth.force_auth_provider",
+                        f"cannot be '{provider}' if {provider} provider is not enabled",
+                    )
+                )
+
     if errors:
         raise ConfigValidationError(message="Malformed configuration", errors=errors)
 
@@ -177,8 +194,19 @@ def get_default_config():
                     "organizations": [],
                     "default_group": None,
                 },
+                "okta": {
+                    "enabled": False,
+                    "client_id": "",
+                    "secret": "",
+                    "base_url": "",
+                    "default_group": None,
+                    "scope": "openid profile email",
+                    "pkce_enabled": True,
+                },
             },
             "force_github_auth": False,
+            "force_auth_provider": None,
+            "local_login_secret_path": None,
             "enable_testing_auth": False,
             "testing_auth_username": "telescope",
         },

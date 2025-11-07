@@ -5,6 +5,7 @@ class SerializerValidationError(Exception):
 
 class ConnectionInUseError(Exception):
     """Raised when attempting to delete a connection that is being used by sources"""
+
     def __init__(self, connection_id, source_count):
         self.connection_id = connection_id
         self.source_count = source_count

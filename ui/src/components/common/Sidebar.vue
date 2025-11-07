@@ -254,7 +254,9 @@
                         style="color: rgb(209 213 219); background-color: var(--p-primary-700)"
                     />
                     <div class="ml-3 flex-1">
-                        <div class="font-medium text-sm">{{ user.username }}</div>
+                        <div class="font-medium text-sm" v-tooltip.right="usernameTooltip">
+                            {{ displayUsername }}
+                        </div>
                         <div class="text-xs text-gray-400 flex items-center">
                             <i v-if="user.type == 'github'" class="pi pi-github mr-1"></i>
                             {{ user.type }}
@@ -270,7 +272,13 @@
                 >
                     <Avatar icon="pi pi-user" style="color: rgb(209 213 219); background-color: var(--p-primary-700)" />
                     <div class="ml-3 flex-1">
-                        <div class="font-medium text-sm">{{ user.username }}</div>
+                        <div class="font-medium text-sm" v-tooltip.right="usernameTooltip">
+                            {{ displayUsername }}
+                        </div>
+                        <div class="text-xs text-gray-400 flex items-center">
+                            <i v-if="user.type == 'github'" class="pi pi-github mr-1"></i>
+                            {{ user.type }}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -351,6 +359,19 @@ configStore.load()
 const { user } = storeToRefs(useAuthStore())
 
 const isDark = useDark()
+
+// Truncate username if longer than 20 characters
+const displayUsername = computed(() => {
+    if (!user.value?.username) return ''
+    return user.value.username.length > 20
+        ? user.value.username.substring(0, 20) + '...'
+        : user.value.username
+})
+
+// Show tooltip only if username is truncated
+const usernameTooltip = computed(() => {
+    return user.value?.username?.length > 20 ? user.value.username : null
+})
 const toggleDark = useToggle(isDark)
 
 const themeIcon = computed(() => {

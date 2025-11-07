@@ -9,12 +9,21 @@
             <DataView :loadings="[loading]" :errors="[error]">
                 <div class="flex flex-col max-w-[800px]">
                     <Header>
-                        <template #title>{{ user.usernam1e }} </template>
+                        <template #title>{{ user.username }} </template>
+                        <template #actions>
+                            <Button
+                                severity="primary"
+                                label="Logout"
+                                icon="pi pi-sign-out"
+                                @click="handleLogout"
+                                size="small"
+                            />
+                        </template>
                     </Header>
                     <div class="mt-4">
                         <ContentBlock header="Profile">
-                            <DataRow name="Username" :value="user.username" />
-                            <DataRow name="Login type" :value="user.type" />
+                            <DataRow name="Username" :value="user.username" :copy="false" />
+                            <DataRow name="Login type" :value="user.type" :copy="false" />
                             <DataRow name="First name">{{ user.firstName || '–' }}</DataRow>
                             <DataRow name="Last name">{{ user.lastName || '–' }}</DataRow>
                             <DataRow name="Permissions" class="pr-2">
@@ -193,5 +202,9 @@ const handleDeleteTokens = async () => {
     if (response.result) {
         userLoad()
     }
+}
+
+const handleLogout = () => {
+    window.location.href = '/logout'
 }
 </script>

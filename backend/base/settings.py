@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CONFIG = get_config()
 
 # Base URL configuration for deployment under subpaths
-BASE_URL = CONFIG["frontend"].get("base_url", "").rstrip('/')
+BASE_URL = CONFIG["frontend"].get("base_url", "").rstrip("/")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -41,6 +41,9 @@ INSTALLED_APPS = [
 
 if CONFIG["auth"]["providers"]["github"]["enabled"]:
     INSTALLED_APPS.append("allauth.socialaccount.providers.github")
+
+if CONFIG["auth"]["providers"]["okta"]["enabled"]:
+    INSTALLED_APPS.append("allauth.socialaccount.providers.okta")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -169,6 +172,27 @@ if CONFIG["auth"]["providers"]["github"]["enabled"]:
         github_config["SCOPE"] = ["read:org"]
 
     SOCIALACCOUNT_PROVIDERS["github"] = github_config
+
+if CONFIG["auth"]["providers"]["okta"]["enabled"]:
+    okta_config = {
+        "APP": {
+            "client_id": CONFIG["auth"]["providers"]["okta"]["client_id"],
+            "secret": CONFIG["auth"]["providers"]["okta"]["secret"],
+        },
+        "OKTA_BASE_URL": CONFIG["auth"]["providers"]["okta"]["base_url"],
+        "SCOPE": CONFIG["auth"]["providers"]["okta"]
+        .get("scope", "openid profile email")
+        .split(),
+    }
+    if CONFIG["auth"]["providers"]["okta"].get("pkce_enabled", True):
+        okta_config["OAUTH_PKCE_ENABLED"] = True
+
+    SOCIALACCOUNT_PROVIDERS["okta"] = okta_config
+
+if CONFIG["django"].get("SECURE_PROXY_SSL_HEADER"):
+    header_config = CONFIG["django"]["SECURE_PROXY_SSL_HEADER"]
+    if isinstance(header_config, list) and len(header_config) == 2:
+        SECURE_PROXY_SSL_HEADER = tuple(header_config)
 
 LOGIN_REDIRECT_URL = f"{BASE_URL}/"
 
