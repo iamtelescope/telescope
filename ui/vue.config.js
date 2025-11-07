@@ -11,6 +11,7 @@ module.exports = defineConfig({
         client: false,
         webSocketServer: false,
         proxy: 'http://127.0.0.1:8000',
+        historyApiFallback: true,
     },
     configureWebpack: {
         plugins: [
