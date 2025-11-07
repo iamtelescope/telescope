@@ -79,17 +79,30 @@
             <template v-if="connection?.kind === 'clickhouse'">
                 <div class="pt-2">
                     <label for="database" class="font-medium">Database *</label>
-                    <InputText v-model="database" id="database" class="w-full" fluid />
+                    <InputText v-model="database" id="database" class="w-full font-mono" fluid />
                     <Message v-if="errors.database" severity="error" size="small" variant="simple" class="mt-2">
                         {{ errors.database }}
                     </Message>
                 </div>
                 <div class="pt-2">
                     <label for="table" class="font-medium">Table *</label>
-                    <InputText v-model="table" id="table" class="w-full" fluid />
+                    <InputText v-model="table" id="table" class="w-full font-mono" fluid />
                     <Message v-if="errors.table" severity="error" size="small" variant="simple" class="mt-2">
                         {{ errors.table }}
                     </Message>
+                </div>
+                <div class="pt-2">
+                    <label for="settings" class="font-medium">Query Settings</label>
+                    <Textarea
+                        v-model="settings"
+                        id="settings"
+                        class="w-full font-mono"
+                        rows="3"
+                        placeholder="e.g., use_query_cache = true, max_parallel_replicas = 1"
+                    />
+                    <small class="text-gray-500 dark:text-gray-400 block mt-1">
+                        ClickHouse SETTINGS clause (comma-separated key=value pairs)
+                    </small>
                 </div>
             </template>
         </div>
@@ -98,7 +111,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { Button, InputText, Message, Select } from 'primevue'
+import { Button, InputText, Message, Select, Textarea } from 'primevue'
 
 const props = defineProps({
     modelValue: Object,
@@ -138,6 +151,7 @@ const filteredConnections = computed(() => {
 const connection = ref(preselectedConnection.value || null)
 const database = ref(props.modelValue?.database || '')
 const table = ref(props.modelValue?.table || '')
+const settings = ref(props.modelValue?.settings || '')
 const errors = ref({})
 
 // Cache for storing field values per connection ID
@@ -148,6 +162,7 @@ if (preselectedConnection.value) {
     connectionCache.value[preselectedConnection.value.id] = {
         database: props.modelValue?.database || '',
         table: props.modelValue?.table || '',
+        settings: props.modelValue?.settings || '',
     }
 }
 
@@ -170,22 +185,25 @@ const handleConnectionChange = () => {
         // Restore cached values
         database.value = cached.database || ''
         table.value = cached.table || ''
+        settings.value = cached.settings || ''
     } else {
         // Clear fields for new connection
         database.value = ''
         table.value = ''
+        settings.value = ''
     }
 
     // Clear errors
     errors.value = {}
 }
 
-// Watch database and table changes to update cache
-watch([database, table], () => {
+// Watch database, table, and settings changes to update cache
+watch([database, table, settings], () => {
     if (connection.value) {
         connectionCache.value[connection.value.id] = {
             database: database.value,
             table: table.value,
+            settings: settings.value,
         }
     }
 })
@@ -225,6 +243,7 @@ const handleNext = () => {
             connection: connection.value,
             database: database.value,
             table: table.value,
+            settings: settings.value,
         }
         emit('update:modelValue', values)
         emit('next')

@@ -303,6 +303,7 @@ class NewBaseSourceSerializer(serializers.Serializer):
 class ClickhouseSourceDataSerializer(serializers.Serializer):
     database = serializers.CharField(required=True)
     table = serializers.CharField(required=True)
+    settings = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
 
 class DockerSourceDataSerializer(serializers.Serializer):

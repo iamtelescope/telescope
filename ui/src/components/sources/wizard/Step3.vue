@@ -37,16 +37,27 @@
                 <DataRow
                     v-if="connectionData.database"
                     name="Database"
-                    :value="connectionData.database"
                     :copy="false"
-                />
+                >
+                    <span class="font-mono">{{ connectionData.database }}</span>
+                </DataRow>
                 <DataRow
                     v-if="connectionData.table"
                     name="Table"
-                    :value="connectionData.table"
                     :copy="false"
-                    :showBorder="!connectionData.table"
-                />
+                >
+                    <span class="font-mono">{{ connectionData.table }}</span>
+                </DataRow>
+                <DataRow
+                    v-if="connectionData.settings"
+                    name="Query Settings"
+                    :copy="false"
+                    :showBorder="false"
+                >
+                    <span class="font-mono text-sm">
+                        <EmptyValue :value="connectionData.settings || ''" />
+                    </span>
+                </DataRow>
             </ContentBlock>
 
             <ContentBlock header="Field Mapping">

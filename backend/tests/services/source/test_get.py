@@ -25,7 +25,7 @@ def test_get_source(test_user, service, docker_source):
     )
     data = service.get(user=test_user, slug=docker_source.slug)
     assert data["slug"] == docker_source.slug
-    assert "address" in data["conn"]["data"]
+    assert "conn" not in data
     assert data["connection_id"] == docker_source.conn_id
 
 
@@ -33,5 +33,5 @@ def test_get_source(test_user, service, docker_source):
 def test_get_source_with_full_permissions(root_user, service, docker_source):
     data = service.get(user=root_user, slug=docker_source.slug)
     assert data["slug"] == docker_source.slug
-    assert "address" in data["conn"]["data"]
+    assert "conn" not in data
     assert data["connection_id"] == docker_source.conn_id
