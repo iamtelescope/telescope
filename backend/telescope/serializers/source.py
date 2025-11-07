@@ -156,8 +156,6 @@ class GetSourceSchemaDockerSerializer(serializers.Serializer):
     connection_id = serializers.IntegerField()
 
 
-
-
 class SourceFieldSerializer(serializers.Serializer):
     display_name = serializers.CharField(allow_blank=True)
     type = serializers.CharField()

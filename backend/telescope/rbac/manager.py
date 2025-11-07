@@ -166,7 +166,9 @@ class RBACManager:
 
         if pk is not None:
             if not objects:
-                raise model_class.DoesNotExist(f"object with pk {pk} does not exist or you have no permissions to read it")
+                raise model_class.DoesNotExist(
+                    f"object with pk {pk} does not exist or you have no permissions to read it"
+                )
             elif len(objects) > 1:
                 raise model_class.MultipleObjectsReturned(
                     f"returned more than one {model_class.__name__} -- it returned {len(objects)}!"
@@ -509,7 +511,12 @@ class RBACManager:
             view = SavedView.objects.get(
                 Q(slug=view_slug, source=source, user=user, scope=VIEW_SCOPE_PERSONAL)
                 | Q(slug=view_slug, source=source, scope=VIEW_SCOPE_SOURCE)
-                | Q(slug=view_slug, source=source, scope=VIEW_SCOPE_PERSONAL, shared=True)
+                | Q(
+                    slug=view_slug,
+                    source=source,
+                    scope=VIEW_SCOPE_PERSONAL,
+                    shared=True,
+                )
             )
         except SavedView.DoesNotExist:
             raise SavedView.DoesNotExist(

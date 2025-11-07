@@ -2,7 +2,10 @@ from typing import Optional, Tuple
 from django.contrib.auth.models import User, Group
 from django.db import transaction
 
-from telescope.services.exceptions import SerializerValidationError, ConnectionInUseError
+from telescope.services.exceptions import (
+    SerializerValidationError,
+    ConnectionInUseError,
+)
 from telescope.models import Connection, Source
 from telescope.rbac import permissions
 from telescope.rbac.roles import ConnectionRole
@@ -123,10 +126,7 @@ class ConnectionService:
             # Check if connection is being used by any sources
             source_count = Source.objects.filter(conn_id=pk).count()
             if source_count > 0:
-                raise ConnectionInUseError(
-                    connection_id=pk,
-                    source_count=source_count
-                )
+                raise ConnectionInUseError(connection_id=pk, source_count=source_count)
 
             Connection.objects.get(pk=pk).delete()
 

@@ -3,7 +3,7 @@
 
 {% endblock %}
 {% block body %}
-<div style="height: 100vh; width: 100wh; background: linear-gradient(135deg, rgb(5, 7, 10), rgb(40, 60, 80));"{% if force_github_auth %} hidden{%endif%} >
+<div style="height: 100vh; width: 100wh; background: linear-gradient(135deg, rgb(5, 7, 10), rgb(40, 60, 80));"{% if force_github_auth or force_auth_provider %} hidden{%endif%} >
   <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
     <div style="max-width: 500px; width: 500px; min-width: 500px;display: flex; align-items: left;">
       <img src="static/namedlogo.png" style="margin-bottom: 10px; padding-left: 10px;" />
@@ -27,11 +27,19 @@
         </div>
         <input class="btn-submit"  type="submit" value="Submit">
       </form>
-      {% if github_enabled %}
+      {% if github_enabled or okta_enabled %}
       <div style="display: flex; justify-content: center; align-items:center; margin-top: 10px;">or sign in with</div>
+      {% endif %}
+      {% if github_enabled %}
       <form action="login/github/login/" method="post">
         {% csrf_token %}
         <input id="github_submit" class="btn-thirdparty" type="submit" value="GitHub">
+      </form>
+      {% endif %}
+      {% if okta_enabled %}
+      <form action="login/okta/login/" method="post">
+        {% csrf_token %}
+        <input id="okta_submit" class="btn-thirdparty" type="submit" value="Okta">
       </form>
       {% endif %}
     </div>
@@ -40,6 +48,15 @@
 {% if force_github_auth %}
 <script>
 document.getElementById("github_submit").click()
+</script>
+{% endif %}
+{% if force_auth_provider == 'github' %}
+<script>
+document.getElementById("github_submit").click()
+</script>
+{% elif force_auth_provider == 'okta' %}
+<script>
+document.getElementById("okta_submit").click()
 </script>
 {% endif %}
 {% endblock %}
