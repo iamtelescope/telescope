@@ -33,7 +33,8 @@ class LoginView(views.LoginView):
     extra_context = {
         "base_url": settings.BASE_URL or "",
         "github_enabled": settings.CONFIG["auth"]["providers"]["github"]["enabled"],
-        "force_github_auth": settings.CONFIG["auth"]["force_github_auth"],
+        "okta_enabled": settings.CONFIG["auth"]["providers"]["okta"]["enabled"],
+        "force_auth_provider": settings.CONFIG["auth"]["force_auth_provider"],
     }
 
     def dispatch(self, request, *args, **kwargs):
@@ -44,15 +45,49 @@ class LoginView(views.LoginView):
         return super().dispatch(request, *args, **kwargs)
 
 
+class LocalLoginView(views.LoginView):
+    template_name = "forms/login.html"
+    form_class = LoginForm
+    next_page = settings.LOGIN_REDIRECT_URL
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "base_url": settings.BASE_URL or "",
+                "github_enabled": settings.CONFIG["auth"]["providers"]["github"][
+                    "enabled"
+                ],
+                "okta_enabled": settings.CONFIG["auth"]["providers"]["okta"]["enabled"],
+                "force_auth_provider": None,
+            }
+        )
+        return context
+
+    def dispatch(self, request, *args, **kwargs):
+        if settings.CONFIG["auth"]["enable_testing_auth"]:
+            return redirect("/")
+        if User.objects.filter(is_superuser=True).count() == 0:
+            return redirect("/setup")
+
+        secret_path = kwargs.get("secret_path")
+        configured_secret = settings.CONFIG["auth"].get("local_login_secret_path")
+
+        if not configured_secret or secret_path != configured_secret:
+            return redirect("/login")
+
+        return super().dispatch(request, *args, **kwargs)
+
+
 class LogoutView(View):
     template_name = "forms/logout.html"
 
     def get(self, request):
         if settings.CONFIG["auth"]["enable_testing_auth"]:
             return redirect("/")
-        return render(request, "forms/logout.html", {
-            "base_url": settings.BASE_URL or ""
-        })
+        return render(
+            request, "forms/logout.html", {"base_url": settings.BASE_URL or ""}
+        )
 
     def post(self, request):
         logout(request)
@@ -69,10 +104,11 @@ class SuperuserView(View):
 
     def get(self, request):
         form = SuperuserForm
-        return render(request, "forms/superuser.html", {
-            "form": form,
-            "base_url": settings.BASE_URL or ""
-        })
+        return render(
+            request,
+            "forms/superuser.html",
+            {"form": form, "base_url": settings.BASE_URL or ""},
+        )
 
     def post(self, request):
         form = SuperuserForm(request.POST)
@@ -89,10 +125,11 @@ class SuperuserView(View):
                 form.add_error(f"Unhandled exception: {err}")
             else:
                 return redirect("/login")
-        return render(request, "forms/superuser.html", {
-            "form": form,
-            "base_url": settings.BASE_URL or ""
-        })
+        return render(
+            request,
+            "forms/superuser.html",
+            {"form": form, "base_url": settings.BASE_URL or ""},
+        )
 
 
 class WhoAmIView(APIView):
@@ -113,11 +150,18 @@ class WhoAmIView(APIView):
             "type": "local",
             "avatar_url": "",
         }
-        if social_account and social_account.provider == "github":
+        if social_account:
             user_data = social_account.get_provider_account().get_user_data()
             data["type"] = social_account.provider
-            data["username"] = user_data["login"]
-            data["avatar_url"] = user_data["avatar_url"]
+
+            if social_account.provider == "github":
+                data["username"] = user_data["login"]
+                data["avatar_url"] = user_data["avatar_url"]
+            elif social_account.provider == "okta":
+                data["username"] = user_data.get(
+                    "preferred_username", user_data.get("email", request.user.username)
+                )
+                data["avatar_url"] = user_data.get("picture", "")
         serializer = WhoAmISerializer(data=data)
         if not serializer.is_valid():
             response.mark_failed(str(serializer.errors))

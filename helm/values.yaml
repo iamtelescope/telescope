@@ -52,7 +52,16 @@ config:
         key: ""
         organizations: []
         default_group: null
-    force_github_auth: false
+      okta:
+        enabled: false
+        client_id: ""
+        secret: ""
+        base_url: ""
+        default_group: null
+        scope: "openid profile email"
+        pkce_enabled: true
+    force_auth_provider: null
+    local_login_secret_path: null
     enable_testing_auth: false
     testing_auth_username: "telescope"
   frontend:
@@ -117,7 +126,8 @@ djangoCollectstatic: 1
 
 # Required secrets in the secret:
 # - DJANGO_SECRET_KEY: Always required for Django security
-# - GITHUB_SECRET: Required only when config.auth.providers.github.enabled=true  
+# - GITHUB_SECRET: Required only when config.auth.providers.github.enabled=true
+# - OKTA_SECRET: Required only when config.auth.providers.okta.enabled=true
 # - DATABASE_PASSWORD: Required only when database.type="postgresql"
 #
 # To use a custom secret name:
@@ -127,6 +137,7 @@ djangoCollectstatic: 1
 #   kubectl create secret generic telescope-secrets \
 #     --from-literal=DJANGO_SECRET_KEY="your-django-secret" \
 #     --from-literal=GITHUB_SECRET="your-github-oauth-secret" \
+#     --from-literal=OKTA_SECRET="your-okta-oauth-secret" \
 #     --from-literal=DATABASE_PASSWORD="your-db-password"
 
 # PodDisruptionBudget for high availability
