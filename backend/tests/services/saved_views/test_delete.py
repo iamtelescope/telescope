@@ -55,7 +55,8 @@ def test_delete_personal_saved_view_not_owner_cant_find_view(
     )
 
     service = SourceSavedViewService(slug=shared_personal_saved_view.source.slug)
-    with pytest.raises(SavedView.DoesNotExist):
+    # Shared personal views can be seen but not deleted by non-owners
+    with pytest.raises(PermissionDenied):
         service.delete(user=hacker_user, view_slug=shared_personal_saved_view.slug)
 
 
