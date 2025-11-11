@@ -133,6 +133,7 @@ const getInitialConnectionData = () => {
             connection: connectionObj,
             database: props.source.data?.database || '',
             table: props.source.data?.table || '',
+            namespace: props.source.data?.namespace || '*',
         }
     }
     return {}
@@ -207,6 +208,10 @@ const handleCreateSource = async (onComplete) => {
     if (connectionData.value.connection.kind === 'clickhouse') {
         data.data.database = connectionData.value.database
         data.data.table = connectionData.value.table
+    }
+
+    if (connectionData.value.connection.kind === 'kubernetes') {
+        data.data.namespace = connectionData.value.namespace
     }
 
     // Convert fields array to object

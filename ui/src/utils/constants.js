@@ -138,10 +138,12 @@ const clickhouseTypes = [
 ]
 
 const dockerTypes = ['datetime', 'string']
+const kubernetesTypes = ['datetime', 'string']
 
 const FieldTypes = {
     clickhouse: clickhouseTypes,
     docker: dockerTypes,
+    kubernetes: kubernetesTypes,
 }
 
 export { FieldTypes }

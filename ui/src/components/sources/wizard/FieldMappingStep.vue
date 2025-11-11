@@ -34,7 +34,7 @@
                         editable
                         showClear
                         class="w-full"
-                        :disabled="isDockerConnection"
+                        :disabled="isDockerConnection || isKubernetesConnection"
                     />
                 </div>
                 <div>
@@ -47,7 +47,7 @@
                         optionValue="name"
                         showClear
                         class="w-full"
-                        :disabled="isDockerConnection"
+                        :disabled="isDockerConnection || isKubernetesConnection"
                     />
                 </div>
                 <div>
@@ -106,6 +106,10 @@ const defaultChosenFields = ref(getInitialDefaultChosenFields())
 
 const isDockerConnection = computed(() => {
     return props.connectionData?.connection?.kind === 'docker'
+})
+
+const isKubernetesConnection = computed(() => {
+    return props.connectionData?.connection?.kind === 'kubernetes'
 })
 
 const fieldChoices = computed(() => {
@@ -222,11 +226,11 @@ watch([timeField, dateField, severityField, defaultChosenFields], () => {
     })
 })
 
-// Clear date and severity fields for Docker connections and set defaults
+// Clear date and severity fields for Docker/Kubernetes connections and set defaults
 watch(
-    [isDockerConnection, () => props.fieldsSetupData?.fields],
-    ([isDocker, fields]) => {
-        if (isDocker) {
+    [isDockerConnection, isKubernetesConnection, () => props.fieldsSetupData?.fields],
+    ([isDocker, isKubernetes, fields]) => {
+        if (isDocker || isKubernetes) {
             dateField.value = ''
             severityField.value = ''
 
@@ -240,7 +244,12 @@ watch(
 
             // Set default chosen fields if not already set
             if (!defaultChosenFields.value && fields && fields.length > 0) {
-                const defaultFields = ['stream', 'container_name', 'message']
+                let defaultFields = []
+                if (isDocker) {
+                    defaultFields = ['stream', 'container_name', 'message']
+                } else if (isKubernetes) {
+                    defaultFields = ['pod_name', 'node_name', 'message']
+                }
                 const existingFields = fields.map((f) => f.name)
                 const validDefaults = defaultFields.filter((field) => existingFields.includes(field))
 

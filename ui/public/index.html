@@ -9,7 +9,8 @@
         <title>Telescope</title>
         <script>
             const base = document.querySelector('base');
-            if (base && base.outerHTML.includes('{%')) {
+            const href = base?.getAttribute('href') || '';
+            if (href.includes('{%') || href.includes('{{')) {
                 base.setAttribute('href', '/');
             }
         </script>

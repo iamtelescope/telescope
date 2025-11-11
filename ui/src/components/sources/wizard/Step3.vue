@@ -48,6 +48,10 @@
                     :showBorder="!connectionData.table"
                 />
             </ContentBlock>
+            
+            <ContentBlock v-if="connectionData.connection?.kind === 'kubernetes'" header="Kubernetes Configuration">
+                <DataRow name="Namespace" :value="connectionData.namespace" :copy="false" />
+            </ContentBlock>
 
             <ContentBlock header="Field Mapping">
                 <DataRow name="Time Field" :value="fieldMappingData.time_field" :copy="false" />
@@ -125,6 +129,7 @@ const isEditing = computed(() => !!props.source)
 const connectionKindOptions = [
     { label: 'ClickHouse', value: 'clickhouse' },
     { label: 'Docker', value: 'docker' },
+    { label: 'Kubernetes', value: 'kubernetes' },
 ]
 
 const getConnectionKindLabel = (value) => {

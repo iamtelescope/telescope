@@ -3,7 +3,7 @@ from rest_framework import serializers
 from telescope.models import Connection, ConnectionRoleBinding
 from telescope.serializers.rbac import UserSerializer, GroupSerializer
 
-SUPPORTED_KINDS = {"clickhouse", "docker"}
+SUPPORTED_KINDS = {"clickhouse", "docker", "kubernetes"}
 
 
 class SerializeErrorMsg:
@@ -52,6 +52,21 @@ class ClickhouseConnectionSerializer(serializers.Serializer):
 class DockerConnectionSerializer(serializers.Serializer):
     address = serializers.CharField()
 
+
+class KubernetesConnectionSerializer(serializers.Serializer):
+    kubeconfig = serializers.CharField(
+        allow_blank=True,
+        required=False,
+        help_text="Raw kubeconfig file content",
+    )
+
+    def validate(self, data):
+        errors = {}
+        if not data.get("kubeconfig"):
+            errors["kubeconfig"] = "Kubeconfig content is required."
+        if errors:
+            raise serializers.ValidationError(errors)
+        return data
 
 class ConnectionCreateResponseSerializer(serializers.Serializer):
     id = serializers.IntegerField(required=True)

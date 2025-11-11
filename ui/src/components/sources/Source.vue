@@ -112,6 +112,13 @@
                                             :copy="false"
                                             :showBorder="source.kind !== 'clickhouse'"
                                         />
+                                        <DataRow
+                                            v-if="source.kind === 'kubernetes'"
+                                            name="Namespace"
+                                            :value="source.data?.namespace || '&ndash;'"
+                                            :copy="false"
+                                            :showBorder="source.kind !== 'kubernetes'"
+                                        />
                                     </ContentBlock>
 
                                     <ContentBlock header="Fields" class="mt-3">

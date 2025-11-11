@@ -23,7 +23,7 @@ from telescope.utils import (
     convert_to_base_ch,
 )
 
-SUPPORTED_KINDS = {"clickhouse", "docker"}
+SUPPORTED_KINDS = {"clickhouse", "docker", "kubernetes"}
 
 
 class SerializeErrorMsg:
@@ -146,6 +146,21 @@ class DockerConnectionSerializer(serializers.Serializer):
     address = serializers.CharField()
 
 
+class KubernetesConnectionSerializer(serializers.Serializer):
+    kubeconfig = serializers.CharField(
+        allow_blank=True,
+        required=False,
+        help_text="Raw kubeconfig file content when mode=kubeconfig"
+    )
+
+    def validate(self, data):
+        if not data.get('kubeconfig'):
+            raise serializers.ValidationError({
+                'kubeconfig': 'Kubeconfig content is required in kubeconfig mode'
+            })
+        return data
+
+
 class GetSourceSchemaClickhouseSerializer(serializers.Serializer):
     connection_id = serializers.IntegerField()
     database = serializers.CharField()
@@ -154,6 +169,12 @@ class GetSourceSchemaClickhouseSerializer(serializers.Serializer):
 
 class GetSourceSchemaDockerSerializer(serializers.Serializer):
     connection_id = serializers.IntegerField()
+
+
+class GetSourceSchemaKubernetesSerializer(serializers.Serializer):
+    connection_id = serializers.IntegerField()
+    namespace = serializers.CharField()
+
 
 
 class SourceFieldSerializer(serializers.Serializer):
@@ -309,11 +330,27 @@ class DockerSourceDataSerializer(serializers.Serializer):
     pass
 
 
+class KubernetesSourceDataSerializer(serializers.Serializer):
+    namespace = serializers.CharField(required=True)
+    pass
+
+
 class NewDockerSourceSerializer(NewBaseSourceSerializer):
     data = DockerSourceDataSerializer(required=False, default=dict)
 
+class NewKubernetesSourceSerializer(NewBaseSourceSerializer):
+    data = KubernetesSourceDataSerializer(required=False, default=dict)
+
 
 class UpdateDockerSourceSerializer(NewDockerSourceSerializer):
+    connection = serializers.JSONField(required=False)
+
+
+class KubernetesSourceDataSerializer(serializers.Serializer):
+    pass
+
+
+class UpdateKubernetesSourceSerializer(NewKubernetesSourceSerializer):
     connection = serializers.JSONField(required=False)
 
     def validate_slug(self, value):

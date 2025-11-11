@@ -8,9 +8,9 @@ from telescope.rbac.manager import RBACManager
 rbac_manager = RBACManager()
 from telescope.models import Source, SourceRoleBinding
 from telescope.services.exceptions import SerializerValidationError
-from telescope.serializers.source import SourceKindSerializer, NewDockerSourceSerializer
+from telescope.serializers.source import SourceKindSerializer, NewDockerSourceSerializer, NewKubernetesSourceSerializer
 
-from tests.data import get_docker_source_data
+from tests.data import get_docker_source_data, get_kubernetes_source_data
 
 
 @pytest.mark.django_db
@@ -75,3 +75,37 @@ def test_create_source_with_invalid_data(root_user, service):
         service.create(user=root_user, data=data)
     assert isinstance(err.value.serializer, NewDockerSourceSerializer)
     assert str(err.value.serializer.errors["name"][0]) == "This field is required."
+
+
+@pytest.mark.django_db
+def test_create_kubernetes_source_with_permissions(test_user, service, kubernetes_connection):
+    from telescope.rbac.roles import ConnectionRole
+
+    rbac_manager.grant_global_role(role=GlobalRole.ADMIN.value, user=test_user)
+    rbac_manager.grant_connection_role(
+        connection=kubernetes_connection,
+        role=ConnectionRole.USER.value,
+        user=test_user,
+    )
+
+    slug = "testkubernetes"
+    source_data = get_kubernetes_source_data(slug)
+    source_data["connection"] = {"connection_id": kubernetes_connection.id}
+
+    data = service.create(user=test_user, data=source_data)
+    assert data == {"slug": slug}
+    assert SourceRoleBinding.objects.filter(
+        user=test_user, source__slug=slug, role=SourceRole.OWNER.value
+    ).exists()
+    assert Source.objects.get(slug=slug).support_raw_query is False
+
+    # Test duplicate creation
+    source_data_dup = get_kubernetes_source_data(slug)
+    source_data_dup["connection"] = {"connection_id": kubernetes_connection.id}
+    with pytest.raises(SerializerValidationError) as err:
+        service.create(user=test_user, data=source_data_dup)
+    assert isinstance(err.value.serializer, NewKubernetesSourceSerializer)
+    assert (
+        str(err.value.serializer.errors["slug"][0])
+        == "Source with that slug already exist"
+    )

@@ -333,6 +333,105 @@ def test_list_views_with_edit_permission(docker_source, test_user):
 
 
 @pytest.mark.django_db
+def test_create_kubernetes_personal_view_with_use_permission_only(test_user, kubernetes_source):
+    """User with only USE permission can create personal view on kubernetes source (needs READ)"""
+    rbac_manager.grant_source_role(kubernetes_source, SourceRole.USER.value, user=test_user)
+
+    data = {
+        "scope": VIEW_SCOPE_PERSONAL,
+        "name": "My Kubernetes View",
+        "description": "kubernetes desc",
+        "shared": False,
+        "data": {"fields": "pod_name,message"},
+    }
+
+    service = SourceSavedViewService(slug=kubernetes_source.slug)
+    # USER role has both USE and READ, so this should work
+    result = service.create(user=test_user, slug=kubernetes_source.slug, data=data)
+    assert result["name"] == "My Kubernetes View"
+
+
+@pytest.mark.django_db
+def test_create_kubernetes_source_view_with_owner_permission(test_user, kubernetes_source):
+    """User with OWNER permission can create source-scope view on kubernetes source"""
+    rbac_manager.grant_source_role(
+        kubernetes_source, SourceRole.OWNER.value, user=test_user
+    )
+
+    data = {
+        "scope": VIEW_SCOPE_SOURCE,
+        "name": "Kubernetes Owner View",
+        "description": "kubernetes source view",
+        "shared": True,
+        "data": {"fields": "pod_name,message"},
+    }
+
+    service = SourceSavedViewService(slug=kubernetes_source.slug)
+    result = service.create(user=test_user, slug=kubernetes_source.slug, data=data)
+    assert result["name"] == "Kubernetes Owner View"
+    assert result["scope"] == VIEW_SCOPE_SOURCE
+
+
+@pytest.mark.django_db
+def test_create_kubernetes_source_view_with_viewer_permission(test_user, kubernetes_source):
+    """User with VIEWER permission cannot create source-scope view on kubernetes source (needs EDIT)"""
+    rbac_manager.grant_source_role(
+        kubernetes_source, SourceRole.VIEWER.value, user=test_user
+    )
+
+    data = {
+        "scope": VIEW_SCOPE_SOURCE,
+        "name": "Kubernetes Viewer Attempt",
+        "description": "should fail",
+        "shared": True,
+        "data": {"fields": "pod_name,message"},
+    }
+
+    service = SourceSavedViewService(slug=kubernetes_source.slug)
+    with pytest.raises(PermissionDenied):
+        service.create(user=test_user, slug=kubernetes_source.slug, data=data)
+
+
+@pytest.mark.django_db
+def test_list_kubernetes_views_with_edit_permission(kubernetes_source, test_user):
+    """User with EDIT permission can list all views on kubernetes source"""
+    rbac_manager.grant_source_role(
+        kubernetes_source, SourceRole.EDITOR.value, user=test_user
+    )
+
+    # Create views
+    SavedView.objects.create(
+        slug="k8s-source-view",
+        name="Kubernetes Source View",
+        scope=VIEW_SCOPE_SOURCE,
+        source=kubernetes_source,
+        user=test_user,
+        updated_by=test_user,
+        shared=True,
+        data={"fields": "pod_name,message"},
+    )
+
+    SavedView.objects.create(
+        slug="k8s-personal-view",
+        name="Kubernetes Personal View",
+        scope=VIEW_SCOPE_PERSONAL,
+        source=kubernetes_source,
+        user=test_user,
+        updated_by=test_user,
+        shared=False,
+        data={"fields": "pod_name,message"},
+    )
+
+    service = SourceSavedViewService(slug=kubernetes_source.slug)
+    results = service.list(user=test_user)
+
+    assert len(results) >= 2
+    names = [r["name"] for r in results]
+    assert "Kubernetes Source View" in names
+    assert "Kubernetes Personal View" in names
+
+
+@pytest.mark.django_db
 def test_list_views_with_owner_permission(docker_source, test_user):
     """User with OWNER permission can list all views"""
     rbac_manager.grant_source_role(

@@ -91,6 +91,11 @@ class Source(models.Model):
             data["context_fields"] = {
                 "container": {},
             }
+        if kind == "kubernetes":
+            data["support_raw_query"] = False
+            data["context_fields"] = {
+                "deployment": {},
+            }        
         return Source.objects.create(kind=kind, **data, modifiers=[])
 
     @property

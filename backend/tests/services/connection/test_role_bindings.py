@@ -171,8 +171,8 @@ def test_grant_role_without_user_or_group(docker_connection):
 
 
 @pytest.mark.django_db
-def test_get_role_bindings_with_grant_permission(docker_connection):
-    # Create a user with OWNER role (has GRANT permission)
+def test_get_role_bindings_with_grant_permission(docker_connection, kubernetes_connection):
+    # Create a user with OWNER role on docker connection (has GRANT permission)
     owner = User.objects.create_user(username="owner", password="pass")
     rbac_manager.grant_connection_role(
         connection=docker_connection,
@@ -180,59 +180,104 @@ def test_get_role_bindings_with_grant_permission(docker_connection):
         user=owner,
     )
 
-    # Create another user with VIEWER role
+    # Create another user with VIEWER role on docker connection
     viewer = User.objects.create_user(username="viewer", password="pass")
     rbac_manager.grant_connection_role(
         connection=docker_connection,
         role=ConnectionRole.VIEWER.value,
         user=viewer,
     )
+    
+    # Create a user with OWNER role on kubernetes connection (has GRANT permission)
+    k8s_owner = User.objects.create_user(username="k8s_owner", password="pass")
+    rbac_manager.grant_connection_role(
+        connection=kubernetes_connection,
+        role=ConnectionRole.OWNER.value,
+        user=k8s_owner,
+    )
 
-    # Owner should be able to get role bindings
+    # Owner should be able to get role bindings for docker connection
     bindings = connection_srv.get_role_bindings(user=owner, pk=docker_connection.pk)
     assert len(bindings) == 2
 
-    # Check that both bindings are returned
+    # Check that both bindings are returned for docker connection
     usernames = {b["user"]["username"] for b in bindings if b["user"]}
     assert "owner" in usernames
     assert "viewer" in usernames
+    
+    # Kubernetes owner should be able to get role bindings for kubernetes connection
+    k8s_bindings = connection_srv.get_role_bindings(user=k8s_owner, pk=kubernetes_connection.pk)
+    assert len(k8s_bindings) == 1
+    k8s_usernames = {b["user"]["username"] for b in k8s_bindings if b["user"]}
+    assert "k8s_owner" in k8s_usernames
 
 
 @pytest.mark.django_db
-def test_get_role_bindings_without_grant_permission(docker_connection):
-    # Create a user with VIEWER role (does NOT have GRANT permission)
+def test_get_role_bindings_without_grant_permission(docker_connection, kubernetes_connection):
+    # Create a user with VIEWER role on docker connection (does NOT have GRANT permission)
     viewer = User.objects.create_user(username="viewer_no_grant", password="pass")
     rbac_manager.grant_connection_role(
         connection=docker_connection,
         role=ConnectionRole.VIEWER.value,
         user=viewer,
     )
+    
+    # Create a user with VIEWER role on kubernetes connection (does NOT have GRANT permission)
+    k8s_viewer = User.objects.create_user(username="k8s_viewer", password="pass")
+    rbac_manager.grant_connection_role(
+        connection=kubernetes_connection,
+        role=ConnectionRole.VIEWER.value,
+        user=k8s_viewer,
+    )
 
-    # Viewer should NOT be able to get role bindings
+    # Viewer should NOT be able to get role bindings for docker connection
     with pytest.raises(PermissionDenied):
         connection_srv.get_role_bindings(user=viewer, pk=docker_connection.pk)
+        
+    # Kubernetes viewer should NOT be able to get role bindings for kubernetes connection
+    with pytest.raises(PermissionDenied):
+        connection_srv.get_role_bindings(user=k8s_viewer, pk=kubernetes_connection.pk)
 
 
 @pytest.mark.django_db
-def test_get_role_bindings_with_editor_role(docker_connection):
-    # Create a user with EDITOR role (does NOT have GRANT permission)
+def test_get_role_bindings_with_editor_role(docker_connection, kubernetes_connection):
+    # Create a user with EDITOR role on docker connection (does NOT have GRANT permission)
     editor = User.objects.create_user(username="editor_no_grant", password="pass")
     rbac_manager.grant_connection_role(
         connection=docker_connection,
         role=ConnectionRole.EDITOR.value,
         user=editor,
     )
+    
+    # Create a user with EDITOR role on kubernetes connection (does NOT have GRANT permission)
+    k8s_editor = User.objects.create_user(username="k8s_editor", password="pass")
+    rbac_manager.grant_connection_role(
+        connection=kubernetes_connection,
+        role=ConnectionRole.EDITOR.value,
+        user=k8s_editor,
+    )
 
-    # Editor should NOT be able to get role bindings (only OWNER has GRANT)
+    # Editor should NOT be able to get role bindings for docker connection (only OWNER has GRANT)
     with pytest.raises(PermissionDenied):
         connection_srv.get_role_bindings(user=editor, pk=docker_connection.pk)
+        
+    # Kubernetes editor should NOT be able to get role bindings for kubernetes connection (only OWNER has GRANT)
+    with pytest.raises(PermissionDenied):
+        connection_srv.get_role_bindings(user=k8s_editor, pk=kubernetes_connection.pk)
 
 
 @pytest.mark.django_db
-def test_get_role_bindings_no_access_at_all(docker_connection):
-    # Create a user with no roles on this connection
+def test_get_role_bindings_no_access_at_all(docker_connection, kubernetes_connection):
+    # Create a user with no roles on docker connection
     no_access_user = User.objects.create_user(username="no_access", password="pass")
+    
+    # Create a user with no roles on kubernetes connection
+    k8s_no_access_user = User.objects.create_user(username="k8s_no_access", password="pass")
 
-    # User with no access should NOT be able to get role bindings
+    # User with no access should NOT be able to get role bindings for docker connection
     with pytest.raises(PermissionDenied):
         connection_srv.get_role_bindings(user=no_access_user, pk=docker_connection.pk)
+        
+    # User with no access should NOT be able to get role bindings for kubernetes connection
+    with pytest.raises(PermissionDenied):
+        connection_srv.get_role_bindings(user=k8s_no_access_user, pk=kubernetes_connection.pk)

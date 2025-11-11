@@ -107,6 +107,15 @@
                             @connectionDataValidated="onConnectionDataChanged"
                             @connectionDataChanged="onConnectionDataChanged"
                         />
+                        <KubernetesConnectionStep
+                            v-else-if="formData.kind === 'kubernetes'"
+                            class="mt-4"
+                            ref="connectionFormRef"
+                            :connection="connection"
+                            :validationErrors="connectionDataValidationErrors"
+                            @connectionDataValidated="onConnectionDataChanged"
+                            @connectionDataChanged="onConnectionDataChanged"
+                        />
 
                         <ConnectionTestResult :data="testResult" :loading="testConnectionLoading" v-if="testResult" />
 
@@ -150,6 +159,7 @@ import DataView from '@/components/common/DataView.vue'
 import Header from '@/components/common/Header.vue'
 import ClickHouseConnectionStep from '@/components/connections/new/clickhouse/ConnectionForm.vue'
 import DockerConnectionStep from '@/components/connections/new/docker/ConnectionForm.vue'
+import KubernetesConnectionStep from '@/components/connections/new/kubernetes/ConnectionForm.vue'
 import ConnectionTestResult from '@/components/connections/new/ConnectionTestResult.vue'
 import ErrorText from '@/components/common/ErrorText.vue'
 import ContentBlock from '@/components/common/ContentBlock.vue'
@@ -163,6 +173,7 @@ const router = useRouter()
 const connectionKindOptions = [
     { label: 'ClickHouse', value: 'clickhouse' },
     { label: 'Docker', value: 'docker' },
+    { label: 'Kubernetes', value: 'kubernetes' },
 ]
 
 const connectionSrv = new ConnectionService()

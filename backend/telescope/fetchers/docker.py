@@ -299,7 +299,7 @@ class Fetcher(BaseFetcher):
     def fetch_data(
         cls,
         request: DataRequest,
-        timezone,
+        tz,
     ):
         rows = []
         client = docker.DockerClient(base_url=request.source.conn.data["address"])
@@ -359,7 +359,7 @@ class Fetcher(BaseFetcher):
                                 container.name,
                                 message,
                             ],
-                            timezone="UTC",
+                            tz=tz,
                         )
                         if not root:
                             rows.append(row)

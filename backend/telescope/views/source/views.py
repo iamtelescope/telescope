@@ -22,12 +22,14 @@ from telescope.serializers.source import (
     SourceRoleSerializer,
     ClickhouseConnectionSerializer,
     DockerConnectionSerializer,
+    KubernetesConnectionSerializer,
     SourceDataRequestSerializer,
     SourceGraphDataRequestSerializer,
     SourceAutocompleteRequestSerializer,
     SourceContextFieldDataSerializer,
     GetSourceSchemaClickhouseSerializer,
     GetSourceSchemaDockerSerializer,
+    GetSourceSchemaKubernetesSerializer,
 )
 
 logger = logging.getLogger("telescope.views.source")
@@ -35,11 +37,13 @@ logger = logging.getLogger("telescope.views.source")
 CONNECTION_KIND_TO_SERIALIZER = {
     "clickhouse": ClickhouseConnectionSerializer,
     "docker": DockerConnectionSerializer,
+    "kubernetes": KubernetesConnectionSerializer,
 }
 
 SCHEMA_KIND_TO_SERIALIZER = {
     "clickhouse": GetSourceSchemaClickhouseSerializer,
     "docker": GetSourceSchemaDockerSerializer,
+    "kubernetes": GetSourceSchemaKubernetesSerializer,
 }
 
 source_srv = SourceService()
@@ -324,7 +328,7 @@ class SourceDataView(APIView):
             )
             data_response = fetcher.fetch_data(
                 data_request,
-                timezone=ZoneInfo("UTC"),
+                tz=ZoneInfo("UTC"),
             )
         except Exception as err:
             logger.exception(f"unhandled exception: {err}")

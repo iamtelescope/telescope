@@ -256,7 +256,7 @@ class Fetcher(BaseFetcher):
 
     @classmethod
     def fetch_graph_data(
-        cls,
+        cls, 
         request: GraphDataRequest,
     ):
         if request.query:
@@ -386,7 +386,7 @@ class Fetcher(BaseFetcher):
     def fetch_data(
         self,
         request: DataRequest,
-        timezone,
+        tz,
     ):
         if request.query:
             parser = parse(request.query)
@@ -435,7 +435,7 @@ class Fetcher(BaseFetcher):
                         source=request.source,
                         selected_fields=selected_fields,
                         values=item,
-                        timezone=timezone,
+                        tz=tz,
                     )
                 )
         return DataResponse(rows=rows)
