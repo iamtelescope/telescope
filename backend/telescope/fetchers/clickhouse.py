@@ -247,6 +247,10 @@ class Fetcher(BaseFetcher):
             source.time_field, source.date_field, time_from, time_to
         )
         query = f"SELECT DISTINCT {field} FROM {from_db_table} WHERE {time_clause} and {field} LIKE %(value)s ORDER BY {field} LIMIT 500"
+
+        if source.data.get("settings"):
+            query += f" SETTINGS {source.data['settings']}"
+
         with ClickhouseConnect(source.conn.data) as c:
             result = c.client.query(query, {"value": f"%{value}%"})
             items = [str(x[0]) for x in result.result_rows]
@@ -345,6 +349,10 @@ class Fetcher(BaseFetcher):
             if group_by_value:
                 stat_sql += f", `{group_by.name}`"
             stat_sql += " ORDER BY t"
+
+            if request.source.data.get("settings"):
+                stat_sql += f" SETTINGS {request.source.data['settings']}"
+
             for item in c.client.query(stat_sql).result_rows:
                 if group_by_value:
                     ts, count, groupper = item
@@ -423,7 +431,12 @@ class Fetcher(BaseFetcher):
             else:
                 fields_to_select.append(field)
         fields_to_select = ", ".join(fields_to_select)
-        select_query = f"SELECT generateUUIDv4(),{fields_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}"
+
+        settings_clause = ""
+        if request.source.data.get("settings"):
+            settings_clause = f" SETTINGS {request.source.data['settings']}"
+
+        select_query = f"SELECT generateUUIDv4(),{fields_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}{settings_clause}"
 
         rows = []
 

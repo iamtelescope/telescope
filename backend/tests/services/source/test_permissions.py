@@ -104,7 +104,7 @@ def test_get_source_with_viewer_permission(docker_source):
 
 @pytest.mark.django_db
 def test_get_source_with_editor_permission(docker_source):
-    """User with EDITOR permission gets source with connection data"""
+    """User with EDITOR permission gets source"""
     user = User.objects.create_user(username="editor", password="pass")
     rbac_manager.grant_source_role(
         source=docker_source, role=SourceRole.EDITOR.value, user=user
@@ -112,8 +112,8 @@ def test_get_source_with_editor_permission(docker_source):
 
     result = source_srv.get(user=user, slug=docker_source.slug)
     assert result["slug"] == docker_source.slug
-    # EDITOR should see connection data
-    assert "conn" in result
+    assert "conn" not in result
+    assert result["connection_id"] == docker_source.conn_id
 
 
 @pytest.mark.django_db

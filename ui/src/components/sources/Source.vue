@@ -53,6 +53,27 @@
                             <TabPanels class="pl-0 pr-0">
                                 <TabPanel value="overview">
                                     <ContentBlock header="Common">
+                                        <DataRow name="Connection" :copy="false">
+                                            <div class="flex items-center gap-2">
+                                                <img
+                                                    :src="require(`@/assets/${connectionDisplay.kind}.png`)"
+                                                    height="20px"
+                                                    width="20px"
+                                                    :title="connectionDisplay.kind"
+                                                />
+                                                <router-link
+                                                    v-if="connectionDisplay.hasAccess"
+                                                    :to="{
+                                                        name: 'connection',
+                                                        params: { connectionId: connectionDisplay.id },
+                                                    }"
+                                                    class="table-link"
+                                                >
+                                                    {{ connectionDisplay.name }}
+                                                </router-link>
+                                                <span v-else>Connection {{ connectionDisplay.id }}</span>
+                                            </div>
+                                        </DataRow>
                                         <DataRow name="Kind" :value="source.kind" :copy="false" />
                                         <DataRow name="Slug" :value="source.slug" :copy="false" />
                                         <DataRow name="Name" :value="source.name" :copy="false" />
@@ -77,50 +98,22 @@
                                         </DataRow>
                                     </ContentBlock>
 
-                                    <ContentBlock header="Connection" class="mt-3">
-                                        <DataRow name="Connection" :copy="false">
-                                            <div class="flex items-center gap-2">
-                                                <img
-                                                    :src="require(`@/assets/${connectionDisplay.kind}.png`)"
-                                                    height="20px"
-                                                    width="20px"
-                                                    :title="connectionDisplay.kind"
-                                                />
-                                                <router-link
-                                                    v-if="connectionDisplay.hasAccess"
-                                                    :to="{
-                                                        name: 'connection',
-                                                        params: { connectionId: connectionDisplay.id },
-                                                    }"
-                                                    class="table-link"
-                                                >
-                                                    {{ connectionDisplay.name }}
-                                                </router-link>
-                                                <span v-else>Connection {{ connectionDisplay.id }}</span>
-                                            </div>
+                                    <ContentBlock header="Data" class="mt-3" v-if="source.kind === 'clickhouse'">
+                                        <DataRow name="Database" :copy="false">
+                                            <span class="font-mono">{{ source.data?.database || '&ndash;' }}</span>
                                         </DataRow>
-                                        <DataRow
-                                            v-if="source.kind === 'clickhouse'"
-                                            name="Database"
-                                            :value="source.data?.database || '&ndash;'"
-                                            :copy="false"
-                                        />
-                                        <DataRow
-                                            v-if="source.kind === 'clickhouse'"
-                                            name="Table"
-                                            :value="source.data?.table || '&ndash;'"
-                                            :copy="false"
-                                            :showBorder="source.kind !== 'clickhouse'"
-                                        />
-                                        <DataRow
-                                            v-if="source.kind === 'kubernetes'"
-                                            name="Namespace"
-                                            :value="source.data?.namespace || '&ndash;'"
-                                            :copy="false"
-                                            :showBorder="source.kind !== 'kubernetes'"
-                                        />
+                                        <DataRow name="Table" :copy="false">
+                                            <span class="font-mono">{{ source.data?.table || '&ndash;' }}</span>
+                                        </DataRow>
+                                        <DataRow name="Query Settings" :copy="false" :showBorder="false">
+                                            <span class="font-mono text-sm">{{ source.data?.settings || '&ndash;' }}</span>
+                                        </DataRow>
                                     </ContentBlock>
-
+                                    <ContentBlock header="Data" class="mt-3" v-if="source.kind === 'kubernetes'">
+                                        <DataRow name="Namespace" :copy="false" :showBorder="false">
+                                            <span class="font-mono text-sm">{{ source.data?.namespace || '&ndash;' }}</span>
+                                        </DataRow>
+                                    </ContentBlock>
                                     <ContentBlock header="Fields" class="mt-3">
                                         <DataTable
                                             :value="sourceFields"
