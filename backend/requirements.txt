@@ -16,6 +16,7 @@ flyql @ git+https://github.com/iamtelescope/flyql.git@147a5a56a2ac8fa7d96eae692d
 gunicorn==23.0.0
 idna==3.7
 jsonschema==4.23.0
+kubernetes==31.0.0
 oauthlib==3.2.2
 pycparser==2.22
 python3-openid==3.2.0

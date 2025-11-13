@@ -34,6 +34,40 @@ def test_list_source_with_full_permissions(root_user, service, docker_source):
 
 @pytest.mark.django_db
 def test_list_source_with_full_permissions(root_user, service, docker_source):
-    service.delete(user=root_user, slug=docker_source.slug)
+    data = service.list(user=root_user)
+    assert isinstance(data, list)
+    assert len(data) == 1
+    assert data[0]["slug"] == docker_source.slug
+    assert "connection" not in data[0]
+
+
+@pytest.mark.django_db
+def test_list_kubernetes_source(test_user, service, kubernetes_source):
+    data = service.list(user=test_user)
+    assert isinstance(data, list)
+    assert len(data) == 0
+
+    rbac_manager.grant_source_role(
+        source=kubernetes_source, role=SourceRole.VIEWER.value, user=test_user
+    )
+    data = service.list(user=test_user)
+    assert isinstance(data, list)
+    assert len(data) == 1
+    assert data[0]["slug"] == kubernetes_source.slug
+    assert "connection" not in data
+
+
+@pytest.mark.django_db
+def test_list_kubernetes_source_with_full_permissions(root_user, service, kubernetes_source):
+    data = service.list(user=root_user)
+    assert isinstance(data, list)
+    assert len(data) == 1
+    assert data[0]["slug"] == kubernetes_source.slug
+    assert "connection" not in data[0]
+
+
+@pytest.mark.django_db
+def test_delete_kubernetes_source_with_full_permissions(root_user, service, kubernetes_source):
+    service.delete(user=root_user, slug=kubernetes_source.slug)
     with pytest.raises(Source.DoesNotExist):
-        Source.objects.get(slug=docker_source.slug)
+        Source.objects.get(slug=kubernetes_source.slug)

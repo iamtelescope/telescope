@@ -183,6 +183,18 @@
                                             />
                                         </template>
 
+                                        <template v-else-if="connection?.kind === 'kubernetes'">
+                                            <DataRow name="Kube Config" :copy="false">
+                                                <pre
+                                                    v-if="connection.data.kubeconfig"
+                                                    class="text-xs whitespace-pre-wrap break-all max-w-full overflow-auto block"
+                                                >
+                                                    {{ connection.data.kubeconfig }}
+                                                </pre>
+                                                <EmptyValue v-else :value="connection.data.kubeconfig" :isDark="isDark" />
+                                            </DataRow>
+                                        </template>
+
                                         <template v-else>
                                             <DataRow
                                                 v-for="(value, key) in connection.data"

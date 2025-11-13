@@ -1,7 +1,7 @@
 import { getDefaultIfUndefined } from '@/utils/utils'
 import { User, Group } from '@/sdk/models/rbac'
 
-const SourceKinds = ['clickhouse']
+const SourceKinds = ['clickhouse', 'kubernetes']
 
 class Source {
     constructor(data) {

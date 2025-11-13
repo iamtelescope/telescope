@@ -11,7 +11,7 @@ from telescope.models import Connection, ConnectionRoleBinding
 from telescope.services.connection import ConnectionService
 from telescope.rbac.roles import ConnectionRole, GlobalRole
 from telescope.rbac.manager import RBACManager
-from tests.data import get_docker_connection_data, get_clickhouse_connection_data
+from tests.data import get_docker_connection_data, get_clickhouse_connection_data, get_kubernetes_connection_data
 
 rbac_manager = RBACManager()
 connection_srv = ConnectionService()
@@ -73,6 +73,24 @@ def test_create_connection_with_admin_permission():
 
 
 @pytest.mark.django_db
+def test_create_kubernetes_connection_with_correct_permission():
+    """User with CONNECTION_MANAGER role can create kubernetes connections"""
+    user = User.objects.create_user(username="k8s_conn_manager", password="pass")
+    rbac_manager.grant_global_role(role=GlobalRole.CONNECTION_MANAGER.value, user=user)
+
+    data = get_kubernetes_connection_data()
+    result = connection_srv.create(user=user, data=data)
+
+    assert "id" in result
+    assert Connection.objects.filter(pk=result["id"]).exists()
+
+    # Verify creator gets OWNER role
+    assert ConnectionRoleBinding.objects.filter(
+        user=user, connection_id=result["id"], role=ConnectionRole.OWNER.value
+    ).exists()
+
+
+@pytest.mark.django_db
 def test_get_connection_without_permission(docker_connection):
     """User without READ permission cannot get connection details"""
     user = User.objects.create_user(username="no_read_user", password="pass")
@@ -127,7 +145,7 @@ def test_list_connections_without_permission(docker_connection, clickhouse_conne
 
 @pytest.mark.django_db
 def test_list_connections_with_partial_permission(
-    docker_connection, clickhouse_connection
+    docker_connection, clickhouse_connection, kubernetes_connection
 ):
     """User sees only connections they have READ permission for"""
     user = User.objects.create_user(username="partial_user", password="pass")
@@ -142,15 +160,18 @@ def test_list_connections_with_partial_permission(
 
 
 @pytest.mark.django_db
-def test_list_usable_connections(docker_connection, clickhouse_connection):
+def test_list_usable_connections(docker_connection, clickhouse_connection, kubernetes_connection):
     """list_usable returns only connections with USE permission"""
     user = User.objects.create_user(username="use_user", password="pass")
-    # Grant USER role on docker (has USE), VIEWER on clickhouse (no USE)
+    # Grant USER role on docker (has USE), VIEWER on clickhouse and kubernetes (no USE)
     rbac_manager.grant_connection_role(
         connection=docker_connection, role=ConnectionRole.USER.value, user=user
     )
     rbac_manager.grant_connection_role(
         connection=clickhouse_connection, role=ConnectionRole.VIEWER.value, user=user
+    )
+    rbac_manager.grant_connection_role(
+        connection=kubernetes_connection, role=ConnectionRole.VIEWER.value, user=user
     )
 
     result = connection_srv.list_usable(user=user)
