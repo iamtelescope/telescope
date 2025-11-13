@@ -3,7 +3,6 @@ import logging
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from telescope.constants import UTC_ZONE
 
 from kubernetes import client, config
@@ -45,7 +44,7 @@ def parse_k8s_timestamp(timestamp_str, tz):
             micros   = int((frac_raw[:6]).ljust(6, '0'))
         else:
             micros = 0
-        return datetime(year, month, day, hour, minute, second, micros, tzinfo=tz)
+        return datetime(year, month, day, hour, minute, second, micros, UTC_ZONE)
     except (ValueError, AttributeError):
         return None
 
@@ -68,40 +67,72 @@ class ConnectionTestResponse:
 
 
 class KubernetesClient:
+    _config_cache = {}  # Class-level cache shared across all instances
+    
     def __init__(self, data: dict):
         self.data = data
-        self._api = None
-        self._apps_api = None
+        self._core = None
+        self._apps = None
         self._temp_dir = None
+        self._key = data["kubeconfig_hash"]
 
     @property
-    def api(self):
-        if self._api is None:
-            raise RuntimeError("Kubernetes client not initialized")
-        return self._api
+    def core(self):
+        if self._core is None:
+            logger.debug("Lazy-initializing CoreV1Api for KubernetesClient.")
+            cfg = self._load_config()
+            self._init_clients(cfg)
+        return self._core
 
     @property
-    def apps_api(self):
-        if self._apps_api is None:
-            raise RuntimeError("Kubernetes apps client not initialized")
-        return self._apps_api
+    def apps(self):
+        if self._apps is None:
+            logger.debug("Lazy-initializing AppsV1Api for KubernetesClient.")
+            cfg = self._load_config()
+            self._init_clients(cfg)
+        return self._apps
+
+    def _load_config(self, force_reload=False):
+        """Load or reuse cached Kubernetes config."""
+        if not force_reload and self._key in self._config_cache:
+            return self._config_cache[self._key]
+
+        # Determine source
+        if self.data.get("kubeconfig_is_local"):
+            path = self.data["kubeconfig"]
+        else:
+            self._temp_dir = tempfile.TemporaryDirectory()
+            path = f"{self._temp_dir.name}/kubeconfig.yaml"
+            with open(path, "w") as fd:
+                fd.write(self.data["kubeconfig"])
+
+        # Load config from file
+        try:
+            config.load_kube_config(config_file=path)
+            cfg = client.Configuration.get_default_copy()
+            self._config_cache[self._key] = cfg
+        finally:
+            # Clean temp dir immediately if not local
+            if not self.data.get("kubeconfig_is_local") and self._temp_dir:
+                try:
+                    self._temp_dir.cleanup()
+                except Exception as err:
+                    logger.warning("Failed to cleanup temp dir: %s", err)
+                self._temp_dir = None
+
+        return cfg
+    def _init_clients(self, cfg):
+        api_client = client.ApiClient(cfg)
+        self._core = client.CoreV1Api(api_client)
+        self._apps = client.AppsV1Api(api_client)
 
     def __enter__(self):
-        self._temp_dir = tempfile.TemporaryDirectory()
-        path = f"{self._temp_dir.name}/kubeconfig.yaml"
-        with open(path, "w") as fd:
-            fd.write(self.data["kubeconfig"])
-        config.load_kube_config(config_file=path)
-        self._api = client.CoreV1Api()
-        self._apps_api = client.AppsV1Api()
+        cfg = self._load_config()
+        self._init_clients(cfg)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._temp_dir:
-            try:
-                self._temp_dir.cleanup()
-            except Exception as err:
-                logger.exception("Temp dir cleanup error: %s", err)
+        pass
 
 
 class Fetcher(BaseFetcher):
@@ -129,7 +160,7 @@ class Fetcher(BaseFetcher):
             with KubernetesClient(source.conn.data) as client:
                 deployments = []
                 try:
-                    deployment_list = client.apps_api.list_namespaced_deployment(namespace=namespace)
+                    deployment_list = client.apps.list_namespaced_deployment(namespace=namespace)
                     for deployment in deployment_list.items:
                         status = "Unknown"
                         if deployment.status.conditions:
@@ -161,8 +192,8 @@ class Fetcher(BaseFetcher):
     def test_connection_ng(cls, data: dict) -> ConnectionTestResponseNg:
         response = ConnectionTestResponseNg()
         try:
-            with KubernetesClient(data) as api:
-                api.api.list_namespace()
+            with KubernetesClient(data) as client:
+                client.core.list_namespace()
         except Exception as err:
             response.error = str(err)
         else:
@@ -187,8 +218,8 @@ class Fetcher(BaseFetcher):
     def test_connection(cls, data: dict) -> ConnectionTestResponse:
         response = ConnectionTestResponse()
         try:
-            with KubernetesClient(data) as api:
-                api.api.list_namespace()
+            with KubernetesClient(data) as client:
+                client.core.list_namespace()
         except Exception as err:
             response.reachability["error"] = str(err)
         else:
@@ -213,14 +244,14 @@ class Fetcher(BaseFetcher):
         return ansi_escape.sub("", text)
 
     @classmethod
-    def get_pods_for_deployments(cls, api, namespace, selected_deployments):
+    def get_pods_for_deployments(cls, client, namespace, selected_deployments):
         if not selected_deployments:
             return []
             
         pods = []
         
         try:
-            deployment_list = api.apps_api.list_namespaced_deployment(namespace=namespace)
+            deployment_list = client.apps.list_namespaced_deployment(namespace=namespace)
         except Exception as err:
             logger.error(f"Error listing deployments: {err}")
             return []
@@ -234,7 +265,7 @@ class Fetcher(BaseFetcher):
                 label_selector_str = ",".join(f"{k}={v}" for k, v in selector.items())
                 
                 try:
-                    dep_pods = api.api.list_namespaced_pod(
+                    dep_pods = client.core.list_namespaced_pod(
                         namespace=namespace,
                         label_selector=label_selector_str
                     ).items
@@ -266,13 +297,13 @@ class Fetcher(BaseFetcher):
         return False
 
     @classmethod
-    def fetch_container_logs_with_previous(cls, api, namespace, pod_name, container_name, log_params):
+    def fetch_container_logs_with_previous(cls, client, namespace, pod_name, container_name, log_params):
         logs = []
         
         try:
             current_params = log_params.copy()
             current_params["previous"] = False
-            current_logs = api.api.read_namespaced_pod_log(**current_params)
+            current_logs = client.core.read_namespaced_pod_log(**current_params)
             if current_logs:
                 logs.append(("current", current_logs))
         except client.exceptions.ApiException as e:
@@ -280,11 +311,11 @@ class Fetcher(BaseFetcher):
                 logger.error(f"Error fetching current logs for {namespace}/{pod_name}/{container_name}: {e}")
         
         try:
-            pod = api.api.read_namespaced_pod(name=pod_name, namespace=namespace)
+            pod = client.core.read_namespaced_pod(name=pod_name, namespace=namespace)
             if cls.has_previous_container(pod, container_name):
                 previous_params = log_params.copy()
                 previous_params["previous"] = True
-                previous_logs = api.api.read_namespaced_pod_log(**previous_params)
+                previous_logs = client.core.read_namespaced_pod_log(**previous_params)
                 if previous_logs:
                     logs.append(("previous", previous_logs))
         except client.exceptions.ApiException as e:
@@ -297,11 +328,10 @@ class Fetcher(BaseFetcher):
 
     @classmethod
     def fetch_data(cls, request: DataRequest, tz):
-        tzinfo = ZoneInfo(tz) 
         rows = []
-        with KubernetesClient(request.source.conn.data) as api:
-            time_from_dt = datetime.fromtimestamp(request.time_from / 1000, tz=tzinfo)
-            time_to_dt = datetime.fromtimestamp(request.time_to / 1000, tz=tzinfo)
+        with KubernetesClient(request.source.conn.data) as client:
+            time_from_dt = datetime.fromtimestamp(request.time_from / 1000, tz)
+            time_to_dt = datetime.fromtimestamp(request.time_to / 1000, tz)
 
             namespace = request.source.data.get("namespace")
             if not namespace:
@@ -316,9 +346,9 @@ class Fetcher(BaseFetcher):
             selected_deployments = request.context_fields.get("deployment", [])
             
             if selected_deployments:
-                filtered_pods = cls.get_pods_for_deployments(api, namespace, selected_deployments)
+                filtered_pods = cls.get_pods_for_deployments(client, namespace, selected_deployments)
             else:
-                filtered_pods = api.api.list_namespaced_pod(namespace=namespace).items
+                filtered_pods = client.core.list_namespaced_pod(namespace=namespace).items
 
             fetch_tasks = []
             total_pods = len(filtered_pods)
@@ -335,7 +365,7 @@ class Fetcher(BaseFetcher):
                 container_rows = []
                 
                 try:
-                    since_seconds = int((datetime.now(tzinfo) - time_from_dt).total_seconds())
+                    since_seconds = int((datetime.now(tz) - time_from_dt).total_seconds())
                     if since_seconds < 0:
                         since_seconds = 0
                     base_tail = request.limit
@@ -353,7 +383,7 @@ class Fetcher(BaseFetcher):
                     if since_seconds > 0:
                         log_params["since_seconds"] = since_seconds
                     
-                    log_sources = cls.fetch_container_logs_with_previous(api, namespace, pod_name, container_name, log_params)
+                    log_sources = cls.fetch_container_logs_with_previous(client, namespace, pod_name, container_name, log_params)
                     
                 except client.exceptions.ApiException as e:
                     if e.status == 403:
@@ -379,7 +409,7 @@ class Fetcher(BaseFetcher):
                             continue
                         parts = line.split(" ", 1)
                         
-                        ts = parse_k8s_timestamp(parts[0], tzinfo)
+                        ts = parse_k8s_timestamp(parts[0], tz)
                         if not ts:
                             continue
                         
@@ -417,7 +447,7 @@ class Fetcher(BaseFetcher):
                                     "stdout",
                                     pod_status,
                                 ],
-                                tz=tzinfo,
+                                tz=tz,
                             )
                             if not root:
                                 container_rows.append(row)
@@ -448,10 +478,10 @@ class Fetcher(BaseFetcher):
 
     @classmethod
     def fetch_graph_data(cls, request: GraphDataRequest):
-        tzinfo = UTC_ZONE
-        with KubernetesClient(request.source.conn.data) as api:
-            time_from_dt = datetime.fromtimestamp(request.time_from / 1000, tzinfo)
-            time_to_dt = datetime.fromtimestamp(request.time_to / 1000, tzinfo)
+        with KubernetesClient(request.source.conn.data) as client:
+            time_from_dt = datetime.fromtimestamp(request.time_from / 1000, UTC_ZONE)
+            time_to_dt = datetime.fromtimestamp(request.time_to / 1000, UTC_ZONE)
+            graph_tail_limit = 2000
             
             namespace = request.source.data.get("namespace")
             if not namespace:
@@ -471,9 +501,9 @@ class Fetcher(BaseFetcher):
             selected_deployments = request.context_fields.get("deployment", [])
             
             if selected_deployments:
-                filtered_pods = cls.get_pods_for_deployments(api, namespace, selected_deployments)
+                filtered_pods = cls.get_pods_for_deployments(client, namespace, selected_deployments)
             else:
-                filtered_pods = api.api.list_namespaced_pod(namespace=namespace).items
+                filtered_pods = client.core.list_namespaced_pod(namespace=namespace).items
 
             fetch_tasks = []
             total_pods = len(filtered_pods)
@@ -490,12 +520,12 @@ class Fetcher(BaseFetcher):
                 container_total = 0
                 
                 try:
-                    since_seconds = int((datetime.now(tzinfo) - time_from_dt).total_seconds())
+                    since_seconds = int((datetime.now(UTC_ZONE) - time_from_dt).total_seconds())
                     if since_seconds < 0:
                         since_seconds = 0
-                    base_tail = request.limit
-                    if request.limit > 100 and total_pods > 1:
-                        base_tail = int(max(1, (request.limit / total_pods) * 1.3))
+                    base_tail = graph_tail_limit
+                    if graph_tail_limit > 100 and total_pods > 1:
+                        base_tail = int(max(1, (graph_tail_limit / total_pods) * 1.3))
                     
                     log_params = {
                         "name": pod_name,
@@ -507,7 +537,7 @@ class Fetcher(BaseFetcher):
                     if since_seconds > 0:
                         log_params["since_seconds"] = since_seconds
                     
-                    log_sources = cls.fetch_container_logs_with_previous(api, namespace, pod_name, container_name, log_params)
+                    log_sources = cls.fetch_container_logs_with_previous(client, namespace, pod_name, container_name, log_params)
                     
                 except client.exceptions.ApiException as e:
                     if e.status == 403:
@@ -535,7 +565,7 @@ class Fetcher(BaseFetcher):
                             continue
                         parts = line.split(" ", 1)
                         
-                        ts = parse_k8s_timestamp(parts[0], tzinfo)
+                        ts = parse_k8s_timestamp(parts[0], UTC_ZONE)
                         if not ts:
                             continue
                         

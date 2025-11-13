@@ -1,6 +1,6 @@
 import logging
 
-from zoneinfo import ZoneInfo
+from telescope.constants import UTC_ZONE
 
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
@@ -328,7 +328,7 @@ class SourceDataView(APIView):
             )
             data_response = fetcher.fetch_data(
                 data_request,
-                tz=ZoneInfo("UTC"),
+                tz=UTC_ZONE,
             )
         except Exception as err:
             logger.exception(f"unhandled exception: {err}")

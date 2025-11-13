@@ -1,20 +1,61 @@
 <template>
     <ContentBlock header="Target" :collapsible="false">
         <div class="p-4 flex flex-col gap-4">
-            <label for="connection_kubeconfig" class="font-medium block mb-1">Kubeconfig Content *</label>
-            <Textarea
-                id="connection_kubeconfig"
-                v-model="connectionData.kubeconfig"
-                rows="10"
-                placeholder="Paste your complete kubeconfig file content here"
-                fluid
-                :invalid="hasError('kubeconfig')"
-                class="font-mono text-sm"
+            <div class="flex items-center">
+                <Checkbox
+                    id="kubeconfig_is_local"
+                    v-model="connectionData.kubeconfig_is_local"
+                    :binary="true"
+                    @change="handleLocalPathChange"
+                />
+                <label for="kubeconfig_is_local" class="ml-2 font-medium">
+                    Use local file path instead of content
+                </label>
+            </div>
+
+            <div v-if="connectionData.kubeconfig_is_local">
+                <label for="connection_kubeconfig_path" class="font-medium block mb-1">
+                    Kubeconfig File Path *
+                </label>
+                <InputText
+                    id="connection_kubeconfig_path"
+                    v-model="connectionData.kubeconfig"
+                    placeholder="/path/to/kubeconfig.yaml"
+                    fluid
+                    :invalid="hasError('kubeconfig')"
+                    class="font-mono text-sm"
+                    @input="updateHash"
+                />
+                <ErrorText :text="connectionFieldErrors.kubeconfig" />
+                <small class="text-gray-600 mt-1 block">
+                    Enter the absolute path to your kubeconfig file
+                </small>
+            </div>
+
+            <div v-else>
+                <label for="connection_kubeconfig" class="font-medium block mb-1">
+                    Kubeconfig Yaml Content *
+                </label>
+                <Textarea
+                    id="connection_kubeconfig"
+                    v-model="connectionData.kubeconfig"
+                    rows="10"
+                    placeholder="Paste your complete kubeconfig file content here"
+                    fluid
+                    :invalid="hasError('kubeconfig')"
+                    class="font-mono text-sm"
+                    @input="updateHash"
+                />
+                <ErrorText :text="connectionFieldErrors.kubeconfig" />
+                <small class="text-gray-600 mt-1 block">
+                    Paste the complete kubeconfig file content including certificates and keys and a single context
+                </small>
+            </div>
+
+            <InputText
+                type="hidden"
+                v-model="connectionData.kubeconfig_hash"
             />
-            <ErrorText :text="connectionFieldErrors.kubeconfig" />
-            <small class="text-gray-600 mt-1 block">
-                Paste the complete kubeconfig file content including certificates and keys
-            </small>
         </div>
     </ContentBlock>
 </template>
@@ -22,6 +63,8 @@
 <script setup>
 import { reactive, watch, onMounted } from 'vue'
 import Textarea from 'primevue/textarea'
+import InputText from 'primevue/inputtext'
+import Checkbox from 'primevue/checkbox'
 import ErrorText from '@/components/common/ErrorText.vue'
 import ContentBlock from '@/components/common/ContentBlock.vue'
 
@@ -31,6 +74,8 @@ const props = defineProps(['connection', 'validationErrors'])
 const getInitialConnectionData = () => {
     let data = {
         kubeconfig: '',
+        kubeconfig_hash: '',
+        kubeconfig_is_local: false,
     }
     if (props.connection) {
         data = { ...data, ...props.connection.data }
@@ -54,13 +99,57 @@ const resetErrors = () => {
     }
 }
 
+const generateHash = async (text) => {
+    const encoder = new TextEncoder()
+    const data = encoder.encode(text)
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+const updateHash = async () => {
+    if (connectionData.kubeconfig) {
+        connectionData.kubeconfig_hash = await generateHash(connectionData.kubeconfig)
+    } else {
+        connectionData.kubeconfig_hash = ''
+    }
+}
+
+const handleLocalPathChange = () => {
+    connectionData.kubeconfig = ''
+    connectionData.kubeconfig_hash = ''
+}
+
 const validate = () => {
     resetErrors()
     let isValid = true
+    
     if (!connectionData.kubeconfig || connectionData.kubeconfig.trim() === '') {
-        connectionFieldErrors.kubeconfig = 'Kubeconfig content is required'
+        connectionFieldErrors.kubeconfig = 'Kubeconfig content or file path is required'
         isValid = false
     }
+    
+    if (connectionData.kubeconfig_is_local) {
+        // Validate file path format for local paths
+        const path = connectionData.kubeconfig.trim()
+        if (path && !path.startsWith('/')) {
+            connectionFieldErrors.kubeconfig = 'Local file path must be an absolute path starting with /'
+            isValid = false
+        }
+    } else {
+        // Validate kubeconfig content format
+        const content = connectionData.kubeconfig.trim()
+        if (content && !content.includes('apiVersion:')) {
+            connectionFieldErrors.kubeconfig = 'Kubeconfig content must contain valid YAML with apiVersion'
+            isValid = false
+        }
+    }
+    
+    if (!connectionData.kubeconfig_hash) {
+        connectionFieldErrors.kubeconfig = 'Kubeconfig hash is required - please ensure content is provided'
+        isValid = false
+    }
+    
     return isValid
 }
 
@@ -88,7 +177,11 @@ watch(
 
 watch(
     connectionData,
-    () => {
+    async (newData, oldData) => {
+        // Update hash when kubeconfig changes
+        if (newData.kubeconfig !== oldData.kubeconfig) {
+            await updateHash()
+        }
         emit('connectionDataChanged')
         emit('connectionDataValidated', { ...connectionData })
     },

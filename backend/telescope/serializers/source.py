@@ -148,16 +148,28 @@ class DockerConnectionSerializer(serializers.Serializer):
 
 class KubernetesConnectionSerializer(serializers.Serializer):
     kubeconfig = serializers.CharField(
-        allow_blank=True,
-        required=False,
-        help_text="Raw kubeconfig file content when mode=kubeconfig"
+        required=True,
+        help_text="Raw kubeconfig file content or local file path",
+    )
+    kubeconfig_hash = serializers.CharField(
+        required=True,
+        help_text="SHA256 hash of kubeconfig content or file path"
+    )
+    kubeconfig_is_local = serializers.BooleanField(
+        required=True,
+        help_text="Whether kubeconfig is a local file path"
     )
 
     def validate(self, data):
-        if not data.get('kubeconfig'):
-            raise serializers.ValidationError({
-                'kubeconfig': 'Kubeconfig content is required in kubeconfig mode'
-            })
+        errors = {}
+        if not data.get("kubeconfig"):
+            errors["kubeconfig"] = "Kubeconfig content or file path is required."
+        if not data.get("kubeconfig_hash"):
+            errors["kubeconfig_hash"] = "Kubeconfig hash is required."
+        if data.get("kubeconfig_is_local") is None:
+            errors["kubeconfig_is_local"] = "Local file path indicator is required."
+        if errors:
+            raise serializers.ValidationError(errors)
         return data
 
 
