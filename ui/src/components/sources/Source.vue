@@ -93,8 +93,11 @@
                                             :value="source.severityField || '&ndash;'"
                                             :copy="false"
                                         />
-                                        <DataRow name="Default chosen fields" :showBorder="false" :copy="false">
+                                        <DataRow name="Default chosen fields" :copy="false">
                                             {{ source.defaultChosenFields?.join(', ') || '&ndash;' }}
+                                        </DataRow>
+                                        <DataRow name="Execute query on open" :showBorder="false" :copy="false">
+                                            {{ source.executeQueryOnOpen ? 'Yes' : 'No' }}
                                         </DataRow>
                                     </ContentBlock>
 
@@ -106,7 +109,9 @@
                                             <span class="font-mono">{{ source.data?.table || '&ndash;' }}</span>
                                         </DataRow>
                                         <DataRow name="Query Settings" :copy="false" :showBorder="false">
-                                            <span class="font-mono text-sm">{{ source.data?.settings || '&ndash;' }}</span>
+                                            <span class="font-mono text-sm">{{
+                                                source.data?.settings || '&ndash;'
+                                            }}</span>
                                         </DataRow>
                                     </ContentBlock>
 

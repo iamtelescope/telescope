@@ -77,13 +77,17 @@
                     </Message>
                 </div>
             </div>
+            <div class="pt-3 flex items-center gap-2">
+                <ToggleSwitch v-model="executeQueryOnOpen" inputId="executeQueryOnOpen" />
+                <label for="executeQueryOnOpen" class="font-medium">Execute query on open</label>
+            </div>
         </div>
     </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { Button, InputText, Select, Message } from 'primevue'
+import { Button, InputText, Select, Message, ToggleSwitch } from 'primevue'
 
 const props = defineProps(['modelValue', 'fieldsSetupData', 'connectionData'])
 const emit = defineEmits(['prev', 'next', 'update:modelValue'])
@@ -92,6 +96,7 @@ const showValidation = ref(false)
 const timeField = ref(props.modelValue?.time_field || '')
 const dateField = ref(props.modelValue?.date_field || '')
 const severityField = ref(props.modelValue?.severity_field || '')
+const executeQueryOnOpen = ref(props.modelValue?.execute_query_on_open ?? true)
 
 // Convert array to comma-separated string if needed
 const getInitialDefaultChosenFields = () => {
@@ -209,16 +214,18 @@ const handleNext = () => {
         date_field: dateField.value,
         severity_field: severityField.value,
         default_chosen_fields: defaultChosenFields.value,
+        execute_query_on_open: executeQueryOnOpen.value,
     })
     emit('next')
 }
 
-watch([timeField, dateField, severityField, defaultChosenFields], () => {
+watch([timeField, dateField, severityField, defaultChosenFields, executeQueryOnOpen], () => {
     emit('update:modelValue', {
         time_field: timeField.value,
         date_field: dateField.value,
         severity_field: severityField.value,
         default_chosen_fields: defaultChosenFields.value,
+        execute_query_on_open: executeQueryOnOpen.value,
     })
 })
 

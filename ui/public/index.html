@@ -1,16 +1,16 @@
 <!doctype html>
 <html lang="">
     <head>
-        <base href="{% if base_url %}{{ base_url }}/{% else %}/{% endif %}">
+        <base href="{% if base_url %}{{ base_url }}/{% else %}/{% endif %}" />
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width,initial-scale=1.0" />
         <link rel="icon" href="./static/favicon.ico" />
         <title>Telescope</title>
         <script>
-            const base = document.querySelector('base');
+            const base = document.querySelector('base')
             if (base && base.outerHTML.includes('{%')) {
-                base.setAttribute('href', '/');
+                base.setAttribute('href', '/')
             }
         </script>
     </head>
