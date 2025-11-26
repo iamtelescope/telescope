@@ -18,7 +18,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const _fields = ref(null)
     const _query = ref(null)
     const _rawQuery = ref(null)
-    
+
     const _from = ref(null)
     const _to = ref(null)
     const _timeZone = ref(null)
@@ -61,8 +61,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _contextFields.value = {}
         _view.value = viewParam
 
-        if (!availableTimeZones.includes(_timeZone.value))
-            _timeZone.value = localTimeZone
+        if (!availableTimeZones.includes(_timeZone.value)) _timeZone.value = localTimeZone
 
         if (viewParam?.data?.show_graph !== undefined) {
             _showGraph.value = viewParam?.data?.show_graph
@@ -153,7 +152,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             to: to.value,
             timeZone: timeZone.value,
             graph_group_by: graphGroupBy.value || '',
-            show_graph: showGraph.value
+            show_graph: showGraph.value,
         }
 
         if (query.value) params.query = query.value
@@ -199,7 +198,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             group_by: graphGroupBy.value || '',
             context_fields: structuredClone(contextFields.value),
         }
-        
+
         if (query.value) params.query = query.value
         if (rawQuery.value) params.raw_query = rawQuery.value
 
@@ -236,8 +235,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setContextFields(value.data.context_fields)
 
         // Some old views might not have this
-        if (value.data.timeZone)
-            setTimeZone(value.data.timeZone)
+        if (value.data.timeZone) setTimeZone(value.data.timeZone)
     }
 
     function resetView() {
@@ -305,8 +303,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
     function tryToMillis(value) {
         let intValue = parseInt(value)
-        if (!isNaN(intValue) && isFinite(intValue))
-            return intValue
+        if (!isNaN(intValue) && isFinite(intValue)) return intValue
 
         return value
     }

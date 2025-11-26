@@ -109,7 +109,9 @@
                                             <span class="font-mono">{{ source.data?.table || '&ndash;' }}</span>
                                         </DataRow>
                                         <DataRow name="Query Settings" :copy="false" :showBorder="false">
-                                            <span class="font-mono text-sm">{{ source.data?.settings || '&ndash;' }}</span>
+                                            <span class="font-mono text-sm">{{
+                                                source.data?.settings || '&ndash;'
+                                            }}</span>
                                         </DataRow>
                                     </ContentBlock>
 

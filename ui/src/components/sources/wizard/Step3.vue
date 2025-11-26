@@ -34,26 +34,13 @@
                         }})
                     </div>
                 </DataRow>
-                <DataRow
-                    v-if="connectionData.database"
-                    name="Database"
-                    :copy="false"
-                >
+                <DataRow v-if="connectionData.database" name="Database" :copy="false">
                     <span class="font-mono">{{ connectionData.database }}</span>
                 </DataRow>
-                <DataRow
-                    v-if="connectionData.table"
-                    name="Table"
-                    :copy="false"
-                >
+                <DataRow v-if="connectionData.table" name="Table" :copy="false">
                     <span class="font-mono">{{ connectionData.table }}</span>
                 </DataRow>
-                <DataRow
-                    v-if="connectionData.settings"
-                    name="Query Settings"
-                    :copy="false"
-                    :showBorder="false"
-                >
+                <DataRow v-if="connectionData.settings" name="Query Settings" :copy="false" :showBorder="false">
                     <span class="font-mono text-sm">
                         <EmptyValue :value="connectionData.settings || ''" />
                     </span>
@@ -72,7 +59,7 @@
                     <span class="text-sm">{{ formatChosenFields(fieldMappingData.default_chosen_fields) }}</span>
                 </DataRow>
                 <DataRow name="Execute Query On Open" :copy="false" :showBorder="false">
-                    {{ fieldMappingData.execute_query_on_open ?? true ? 'Yes' : 'No' }}
+                    {{ (fieldMappingData.execute_query_on_open ?? true) ? 'Yes' : 'No' }}
                 </DataRow>
             </ContentBlock>
 

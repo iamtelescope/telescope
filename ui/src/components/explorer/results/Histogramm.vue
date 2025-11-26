@@ -212,11 +212,11 @@ const getChartSettings = (type) => {
         series: series,
         editUplotOptions: (opts) => {
             opts.tzDate = (dateOrTs) => {
-                const timestamp = typeof(dateOrTs) === 'number' ? dateOrTs : dateOrTs.valueOf()
+                const timestamp = typeof dateOrTs === 'number' ? dateOrTs : dateOrTs.valueOf()
                 return new Date(moveTimestampToTimeZone(timestamp, props.timeZone, localTimeZone))
             }
             return opts
-        }
+        },
     }
 }
 

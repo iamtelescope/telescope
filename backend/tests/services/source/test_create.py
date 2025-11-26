@@ -78,7 +78,9 @@ def test_create_source_with_invalid_data(root_user, service):
 
 
 @pytest.mark.django_db
-def test_create_source_with_execute_query_on_open_field(test_user, service, docker_connection):
+def test_create_source_with_execute_query_on_open_field(
+    test_user, service, docker_connection
+):
     from telescope.rbac.roles import ConnectionRole
 
     rbac_manager.grant_global_role(role=GlobalRole.ADMIN.value, user=test_user)

@@ -363,9 +363,7 @@ const isDark = useDark()
 // Truncate username if longer than 20 characters
 const displayUsername = computed(() => {
     if (!user.value?.username) return ''
-    return user.value.username.length > 20
-        ? user.value.username.substring(0, 20) + '...'
-        : user.value.username
+    return user.value.username.length > 20 ? user.value.username.substring(0, 20) + '...' : user.value.username
 })
 
 // Show tooltip only if username is truncated
