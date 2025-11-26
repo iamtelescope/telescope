@@ -42,3 +42,24 @@ def test_update_source_with_permissions(root_user, service, docker_source):
     assert source.fields["container_name"]["display_name"] == "new_container_name"
     # Connection remains unchanged
     assert source.conn.data["address"] == "unix:///var/run/docker.sock"
+
+
+@pytest.mark.django_db
+def test_update_source_execute_query_on_open_field(root_user, service, docker_source):
+    # Test that execute_query_on_open field can be updated
+
+    # Update to False
+    data = get_docker_source_data(docker_source.slug)
+    del data["connection"]
+    data["execute_query_on_open"] = False
+    service.update(user=root_user, slug=docker_source.slug, data=data)
+    source = Source.objects.get(slug=docker_source.slug)
+    assert source.execute_query_on_open is False
+
+    # Update to True
+    data2 = get_docker_source_data(docker_source.slug)
+    del data2["connection"]
+    data2["execute_query_on_open"] = True
+    service.update(user=root_user, slug=docker_source.slug, data=data2)
+    source = Source.objects.get(slug=docker_source.slug)
+    assert source.execute_query_on_open is True

@@ -68,6 +68,7 @@ class Source(models.Model):
     modifiers = models.JSONField()
     default_chosen_fields = models.JSONField()
     support_raw_query = models.BooleanField()
+    execute_query_on_open = models.BooleanField(default=True)
     context_fields = models.JSONField()
     conn = models.ForeignKey(Connection, on_delete=models.SET_NULL, null=True)
     data = models.JSONField(default=dict, blank=True)

@@ -68,8 +68,11 @@
                 <DataRow name="Severity Field" :copy="false">
                     <EmptyValue :value="fieldMappingData.severity_field || ''" />
                 </DataRow>
-                <DataRow name="Default Chosen Fields" :copy="false" :showBorder="false">
+                <DataRow name="Default Chosen Fields" :copy="false">
                     <span class="text-sm">{{ formatChosenFields(fieldMappingData.default_chosen_fields) }}</span>
+                </DataRow>
+                <DataRow name="Execute Query On Open" :copy="false" :showBorder="false">
+                    {{ fieldMappingData.execute_query_on_open ?? true ? 'Yes' : 'No' }}
                 </DataRow>
             </ContentBlock>
 

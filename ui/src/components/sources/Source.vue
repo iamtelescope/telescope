@@ -93,8 +93,11 @@
                                             :value="source.severityField || '&ndash;'"
                                             :copy="false"
                                         />
-                                        <DataRow name="Default chosen fields" :showBorder="false" :copy="false">
+                                        <DataRow name="Default chosen fields" :copy="false">
                                             {{ source.defaultChosenFields?.join(', ') || '&ndash;' }}
+                                        </DataRow>
+                                        <DataRow name="Execute query on open" :showBorder="false" :copy="false">
+                                            {{ source.executeQueryOnOpen ? 'Yes' : 'No' }}
                                         </DataRow>
                                     </ContentBlock>
 
