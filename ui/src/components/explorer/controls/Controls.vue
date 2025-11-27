@@ -105,8 +105,8 @@
                         @change="onQueryChange"
                         :source="source"
                         :value="sourceControlsStore.query"
-                        :from="sourceControlsStore.from.value"
-                        :to="sourceControlsStore.to.value"
+                        :from="sourceControlsStore.from"
+                        :to="sourceControlsStore.to"
                         @submit="handleSearch"
                     />
                     <label for="flyql_editor">FlyQL query</label>
