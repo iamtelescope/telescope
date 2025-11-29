@@ -9,7 +9,7 @@
                         size="small"
                         label="From"
                         v-model="inputFrom.text"
-                        @update:model-value="() => inputFrom.manualOverride = true"
+                        @update:model-value="() => (inputFrom.manualOverride = true)"
                         :invalid="inputFrom.error !== null"
                     />
                     <ErrorText v-if="inputFrom.error" :text="inputFrom.error" />
@@ -20,7 +20,7 @@
                         size="small"
                         label="To"
                         v-model="inputTo.text"
-                        @update:model-value="() => inputTo.manualOverride = true"
+                        @update:model-value="() => (inputTo.manualOverride = true)"
                         :invalid="inputTo.error !== null"
                     />
                     <ErrorText v-if="inputTo.error" :text="inputTo.error" />
@@ -106,13 +106,12 @@ const selectedDates = ref([])
 
 const selectedRelative = ref(null)
 
-
 const initFromProps = () => {
     const initInputField = (targetDate) => {
         return {
             text: getDateTimeString(targetDate, props.timeZone),
             manualOverride: false,
-            error: null
+            error: null,
         }
     }
 
@@ -120,13 +119,12 @@ const initFromProps = () => {
     inputTo.value = initInputField(props.to)
 
     selectedTimeZone.value = props.timeZone
-    
-    if (typeof(props.from) === 'number' && typeof(props.to) === 'number')
-        selectedDates.value = [props.from, props.to].map(timestamp => {
+
+    if (typeof props.from === 'number' && typeof props.to === 'number')
+        selectedDates.value = [props.from, props.to].map((timestamp) => {
             return new Date(moveTimestampToTimeZone(timestamp, props.timeZone, localTimeZone))
         })
-    else
-        selectedDates.value = null
+    else selectedDates.value = null
 
     selectedRelative.value = tryGetRelativeOption(props.from, props.to)
 }
@@ -138,12 +136,9 @@ const rangeLabel = computed(() => getNiceRangeText(props.from, props.to, props.t
 
 const toggleDropdown = (event) => dropdown.value.toggle(event)
 
-
-
 const handleSelectManual = () => {
     const tryParseInput = (input, defaultVal) => {
-        if (!input.manualOverride)
-            return moveTimestampToTimeZone(defaultVal, props.timeZone, selectedTimeZone.value)
+        if (!input.manualOverride) return moveTimestampToTimeZone(defaultVal, props.timeZone, selectedTimeZone.value)
 
         const { result, error } = tryParseDateTimeString(input.text, selectedTimeZone.value)
         input.error = error
@@ -154,13 +149,12 @@ const handleSelectManual = () => {
     const parsedFrom = tryParseInput(inputFrom.value, props.from)
     const parsedTo = tryParseInput(inputTo.value, props.to)
 
-    if (!parsedFrom || !parsedTo)
-        return
+    if (!parsedFrom || !parsedTo) return
 
     emit('rangeSelect', {
         from: parsedFrom,
         to: parsedTo,
-        timeZone: selectedTimeZone.value
+        timeZone: selectedTimeZone.value,
     })
     dropdown.value.hide()
 }
@@ -170,7 +164,7 @@ const handleSelectDate = () => {
         emit('rangeSelect', {
             from: moveTimestampToTimeZone(selectedDates.value[0].valueOf(), localTimeZone, props.timeZone),
             to: moveTimestampToTimeZone(selectedDates.value[1].valueOf(), localTimeZone, props.timeZone),
-            timeZone: props.timeZone
+            timeZone: props.timeZone,
         })
     }
 }
@@ -180,7 +174,7 @@ const handleSelectRelative = (event) => {
         emit('rangeSelect', {
             from: event.value.from,
             to: event.value.to,
-            timeZone: props.timeZone
+            timeZone: props.timeZone,
         })
     }
 }

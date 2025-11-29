@@ -108,7 +108,9 @@ const sourceControlsStore = useSourceControlsStore()
 const props = defineProps(['source', 'row', 'timeZone'])
 
 const dateTimeString = computed(() => {
-    const dateTime = DateTime.fromMillis(props.row.time.unixtime, { zone: props.timeZone }).toFormat('yyyy-MM-dd HH:mm:ss')
+    const dateTime = DateTime.fromMillis(props.row.time.unixtime, { zone: props.timeZone }).toFormat(
+        'yyyy-MM-dd HH:mm:ss',
+    )
     return `${dateTime}.${props.row.time.microseconds}`
 })
 

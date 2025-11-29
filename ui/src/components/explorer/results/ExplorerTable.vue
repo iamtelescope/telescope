@@ -91,10 +91,10 @@ const props = defineProps(['source', 'rows', 'fields', 'timeZone'])
 const selectedRow = ref(null)
 const visible = ref(false)
 
-const showMicroseconds = computed(() => props.rows.some(row => row.time.microseconds !== 0))
+const showMicroseconds = computed(() => props.rows.some((row) => row.time.microseconds !== 0))
 
 const dateFormat = computed(() => {
-    const dateTimes = props.rows.map(r => DateTime.fromMillis(r.time.unixtime, { zone: props.timeZone }))
+    const dateTimes = props.rows.map((r) => DateTime.fromMillis(r.time.unixtime, { zone: props.timeZone }))
     const today = DateTime.now().setZone(props.timeZone)
 
     const checkOmittable = (values, todayValue) => {
@@ -104,12 +104,26 @@ const dateFormat = computed(() => {
         return true
     }
 
-    if (!checkOmittable(dateTimes.map(d => d.year), today.year))
+    if (
+        !checkOmittable(
+            dateTimes.map((d) => d.year),
+            today.year,
+        )
+    )
         return 'yyyy MMM dd, HH:mm:ss'
-    
-    if (!checkOmittable(dateTimes.map(d => d.month), today.month) || !checkOmittable(dateTimes.map(d => d.day), today.day))
+
+    if (
+        !checkOmittable(
+            dateTimes.map((d) => d.month),
+            today.month,
+        ) ||
+        !checkOmittable(
+            dateTimes.map((d) => d.day),
+            today.day,
+        )
+    )
         return 'MMM dd, HH:mm:ss'
-    
+
     return 'HH:mm:ss'
 })
 

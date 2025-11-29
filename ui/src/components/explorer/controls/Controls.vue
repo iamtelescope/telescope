@@ -217,7 +217,9 @@ const handleShareURL = () => {
 }
 
 onMounted(() => {
-    handleSearch()
+    if (props.source.executeQueryOnOpen) {
+        handleSearch()
+    }
 })
 
 defineExpose({ onRangeSelect, handleSearch })

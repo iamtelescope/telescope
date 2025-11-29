@@ -165,6 +165,7 @@ const getInitialFieldMappingData = () => {
             date_field: props.source.dateField || '',
             severity_field: props.source.severityField || '',
             default_chosen_fields: props.source.defaultChosenFields || [],
+            execute_query_on_open: props.source.executeQueryOnOpen ?? true,
         }
     }
     return {}
@@ -189,6 +190,7 @@ const handleCreateSource = async (onComplete) => {
         date_field: fieldMappingData.value.date_field || '',
         severity_field: fieldMappingData.value.severity_field || '',
         default_chosen_fields: fieldMappingData.value.default_chosen_fields,
+        execute_query_on_open: fieldMappingData.value.execute_query_on_open ?? true,
 
         // Dynamic fields - convert array to object with field names as keys
         fields: {},

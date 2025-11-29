@@ -16,6 +16,7 @@ class Source {
         this.contextFields = data.context_fields
         this.defaultChosenFields = data.default_chosen_fields
         this.supportRawQuery = data.support_raw_query
+        this.executeQueryOnOpen = data.execute_query_on_open
         this.connection = getDefaultIfUndefined(data.connection, {})
         this.connectionId = data.connection_id
         this.conn = data.conn // Full connection object (when user has edit permissions)

@@ -231,6 +231,7 @@ class NewBaseSourceSerializer(serializers.Serializer):
     date_field = serializers.CharField(allow_blank=True, allow_null=True, default="")
     severity_field = serializers.CharField(allow_blank=True, allow_null=True)
     default_chosen_fields = serializers.ListField(child=serializers.CharField())
+    execute_query_on_open = serializers.BooleanField(default=True)
     fields = serializers.DictField(child=SourceFieldSerializer())
     connection = serializers.JSONField()
 

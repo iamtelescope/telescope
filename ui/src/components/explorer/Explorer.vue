@@ -13,7 +13,7 @@
             @graphVisibilityChanged="onGraphVisibilityChanged"
             :groupByInvalid="!!(graphValidation && !graphValidation.result && graphValidation.fields.group_by)"
         />
-        <BorderCard class="mb-2" :loading="graphLoading" v-if="sourceControlsStore.showGraph">
+        <BorderCard class="mb-2" :loading="graphLoading" v-if="sourceControlsStore.showGraph && !showInitialMessage">
             <Skeleton v-if="graphLoading && graphData === null" width="100%" height="235px"></Skeleton>
             <Error v-if="graphError" :error="graphError"></Error>
             <ValidationError
@@ -39,6 +39,15 @@
                 :validation="validation"
                 message="Failed to load logs data: invalid parameters given"
             />
+            <div
+                v-if="showInitialMessage"
+                class="flex flex-col items-center justify-center py-16 text-gray-600 dark:text-gray-400"
+            >
+                <i class="pi pi-database text-6xl mb-4 opacity-30"></i>
+                <h3 class="text-xl font-semibold mb-2">Ready to explore</h3>
+                <p class="text-sm mb-4">This source is configured not to load data automatically.</p>
+                <p class="text-sm">Click the <strong>Execute</strong> button to load data.</p>
+            </div>
             <LimitMessage
                 v-if="rows && graphData && !error && !graphError"
                 :rowsCount="rows.length"
@@ -129,6 +138,16 @@ const showHistogramm = computed(() => {
 
 const showSourceDataTable = computed(() => {
     return rows.value !== null && !error.value && validation.value && validation.value.result
+})
+
+const showInitialMessage = computed(() => {
+    return (
+        !props.source.executeQueryOnOpen &&
+        rows.value === null &&
+        !error.value &&
+        !loading.value &&
+        (!validation.value || validation.value.result)
+    )
 })
 
 const onShareURL = () => {
