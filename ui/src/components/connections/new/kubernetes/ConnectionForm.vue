@@ -28,7 +28,7 @@
                 />
                 <ErrorText :text="connectionFieldErrors.kubeconfig" />
                 <small class="text-gray-600 mt-1 block">
-                    Enter the absolute path to your kubeconfig file
+                    Enter the file path (e.g., /etc/kubeconfig) or home-relative path (e.g., ~/.kube/config) to your kubeconfig file
                 </small>
             </div>
 
@@ -132,8 +132,8 @@ const validate = () => {
     if (connectionData.kubeconfig_is_local) {
         // Validate file path format for local paths
         const path = connectionData.kubeconfig.trim()
-        if (path && !path.startsWith('/')) {
-            connectionFieldErrors.kubeconfig = 'Local file path must be an absolute path starting with /'
+        if (path && !path.startsWith('/') && !path.startsWith('~')) {
+            connectionFieldErrors.kubeconfig = 'Local file path must start with / or ~'
             isValid = false
         }
     } else {
@@ -178,7 +178,6 @@ watch(
 watch(
     connectionData,
     async (newData, oldData) => {
-        // Update hash when kubeconfig changes
         if (newData.kubeconfig !== oldData.kubeconfig) {
             await updateHash()
         }

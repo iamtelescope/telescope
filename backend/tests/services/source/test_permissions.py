@@ -562,8 +562,7 @@ def test_get_kubernetes_source_with_editor_permission(kubernetes_source):
 
     result = source_srv.get(user=user, slug=kubernetes_source.slug)
     assert result["slug"] == kubernetes_source.slug
-    # EDITOR should see connection data
-    assert "conn" in result
+    assert "conn" not in result
 
 
 @pytest.mark.django_db

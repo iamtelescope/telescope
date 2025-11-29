@@ -2,7 +2,7 @@ import pytest
 
 from django.contrib.auth.models import User
 
-from telescope.models import Source, SourceField, SavedView
+from telescope.models import Source, SourceField, SavedView, Connection
 from telescope.constants import VIEW_SCOPE_SOURCE, VIEW_SCOPE_PERSONAL
 
 
@@ -159,6 +159,9 @@ def test_kubernetes_connection_fixture(kubernetes_connection):
     assert kubernetes_connection.kind == "kubernetes"
     assert kubernetes_connection.name == "Kubernetes Connection"
     assert "kubeconfig" in kubernetes_connection.data
+    assert "kubeconfig_hash" in kubernetes_connection.data
+    assert "kubeconfig_is_local" in kubernetes_connection.data
+    assert kubernetes_connection.data["kubeconfig_is_local"] is False
 
 
 @pytest.mark.django_db

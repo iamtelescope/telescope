@@ -55,7 +55,7 @@ def test_get_kubernetes_source(test_user, service, kubernetes_source):
     )
     data = service.get(user=test_user, slug=kubernetes_source.slug)
     assert data["slug"] == kubernetes_source.slug
-    assert "mode" in data["conn"]["data"]
+    assert "conn" not in data
     assert data["connection_id"] == kubernetes_source.conn_id
 
 
@@ -63,5 +63,5 @@ def test_get_kubernetes_source(test_user, service, kubernetes_source):
 def test_get_kubernetes_source_with_full_permissions(root_user, service, kubernetes_source):
     data = service.get(user=root_user, slug=kubernetes_source.slug)
     assert data["slug"] == kubernetes_source.slug
-    assert "mode" in data["conn"]["data"]
+    assert "conn" not in data
     assert data["connection_id"] == kubernetes_source.conn_id

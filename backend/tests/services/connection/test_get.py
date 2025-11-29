@@ -67,6 +67,9 @@ def test_get_kubernetes_connection(
     assert data["kind"] == kubernetes_connection.kind
     assert data["name"] == kubernetes_connection.name
     assert "kubeconfig" in data["data"]
+    assert "kubeconfig_hash" in data["data"]
+    assert "kubeconfig_is_local" in data["data"]
+    assert data["data"]["kubeconfig_is_local"] is False
 
 
 @pytest.mark.django_db
@@ -78,3 +81,5 @@ def test_get_kubernetes_connection_with_superuser(
     assert data["kind"] == kubernetes_connection.kind
     assert data["name"] == kubernetes_connection.name
     assert "kubeconfig" in data["data"]
+    assert "kubeconfig_hash" in data["data"]
+    assert "kubeconfig_is_local" in data["data"]

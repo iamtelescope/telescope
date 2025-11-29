@@ -1,11 +1,13 @@
 import json
 import logging
+import os
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from telescope.constants import UTC_ZONE
 
 from kubernetes import client, config
+from kubernetes.client.rest import ApiException
 
 from flyql.core.parser import parse, ParserError
 from flyql.core.exceptions import FlyqlError
@@ -67,7 +69,7 @@ class ConnectionTestResponse:
 
 
 class KubernetesClient:
-    _config_cache = {}  # Class-level cache shared across all instances
+    _config_cache = {}
     
     def __init__(self, data: dict):
         self.data = data
@@ -99,7 +101,10 @@ class KubernetesClient:
 
         # Determine source
         if self.data.get("kubeconfig_is_local"):
-            path = self.data["kubeconfig"]
+            path = os.path.expanduser(self.data["kubeconfig"])
+            # Verify the expanded path exists
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"Kubeconfig file not found: {path}")
         else:
             self._temp_dir = tempfile.TemporaryDirectory()
             path = f"{self._temp_dir.name}/kubeconfig.yaml"
@@ -306,7 +311,7 @@ class Fetcher(BaseFetcher):
             current_logs = client.core.read_namespaced_pod_log(**current_params)
             if current_logs:
                 logs.append(("current", current_logs))
-        except client.exceptions.ApiException as e:
+        except ApiException as e:
             if e.status not in [403, 404]:
                 logger.error(f"Error fetching current logs for {namespace}/{pod_name}/{container_name}: {e}")
         
@@ -318,7 +323,7 @@ class Fetcher(BaseFetcher):
                 previous_logs = client.core.read_namespaced_pod_log(**previous_params)
                 if previous_logs:
                     logs.append(("previous", previous_logs))
-        except client.exceptions.ApiException as e:
+        except ApiException as e:
             if e.status not in [403, 404]:
                 logger.error(f"Error fetching previous logs for {namespace}/{pod_name}/{container_name}: {e}")
         except Exception as err:
@@ -385,7 +390,7 @@ class Fetcher(BaseFetcher):
                     
                     log_sources = cls.fetch_container_logs_with_previous(client, namespace, pod_name, container_name, log_params)
                     
-                except client.exceptions.ApiException as e:
+                except ApiException as e:
                     if e.status == 403:
                         logger.error(f"RBAC error: Insufficient permissions for {namespace}/{pod_name}/{container_name}")
                     elif e.status == 404:
@@ -539,7 +544,7 @@ class Fetcher(BaseFetcher):
                     
                     log_sources = cls.fetch_container_logs_with_previous(client, namespace, pod_name, container_name, log_params)
                     
-                except client.exceptions.ApiException as e:
+                except ApiException as e:
                     if e.status == 403:
                         logger.error(f"RBAC error: Insufficient permissions for {namespace}/{pod_name}/{container_name}")
                     elif e.status == 404:

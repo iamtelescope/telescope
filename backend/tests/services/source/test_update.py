@@ -33,8 +33,11 @@ def test_update_source_with_permissions(root_user, service, docker_source):
     data = get_docker_source_data(docker_source.slug)
     # Remove connection data - source updates don't modify connections
     del data["connection"]
+    # Remove slug - it's used as identifier, not part of update payload
+    del data["slug"]
     data["name"] = "new_name"
     data["fields"]["container_name"]["display_name"] = "new_container_name"
+    
     service.update(user=root_user, slug=docker_source.slug, data=data)
 
     source = Source.objects.get(slug=docker_source.slug)

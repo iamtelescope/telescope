@@ -356,15 +356,20 @@ class NewKubernetesSourceSerializer(NewBaseSourceSerializer):
 
 
 class UpdateDockerSourceSerializer(NewDockerSourceSerializer):
-    connection = serializers.JSONField(required=False)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.required = False
 
-
-class KubernetesSourceDataSerializer(serializers.Serializer):
-    pass
+    def validate_slug(self, value):
+        return value
 
 
 class UpdateKubernetesSourceSerializer(NewKubernetesSourceSerializer):
-    connection = serializers.JSONField(required=False)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.required = False
 
     def validate_slug(self, value):
         return value
@@ -375,7 +380,10 @@ class NewClickhouseSourceSerializer(NewBaseSourceSerializer):
 
 
 class UpdateClickhouseSourceSerializer(NewClickhouseSourceSerializer):
-    connection = serializers.JSONField(required=False)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.required = False
 
     def validate_slug(self, value):
         return value

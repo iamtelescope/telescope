@@ -102,6 +102,9 @@ def test_create_kubernetes_connection(test_user, connection_service):
     assert conn.kind == "kubernetes"
     assert conn.name == "Kubernetes Connection"
     assert "kubeconfig" in conn.data
+    assert "kubeconfig_hash" in conn.data
+    assert "kubeconfig_is_local" in conn.data
+    assert conn.data["kubeconfig_is_local"] is False
 
 
 @pytest.mark.django_db

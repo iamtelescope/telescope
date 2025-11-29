@@ -1,6 +1,9 @@
 import pytest
 
+from telescope.rbac.manager import RBACManager
 from django.core.exceptions import PermissionDenied
+
+rbac_manager = RBACManager()
 
 
 @pytest.mark.django_db
