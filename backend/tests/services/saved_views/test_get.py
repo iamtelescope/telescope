@@ -54,6 +54,34 @@ def test_get_personal_saved_view_no_access(test_user, docker_source):
 
 
 @pytest.mark.django_db
+def test_get_kubernetes_personal_saved_view(kubernetes_personal_saved_view, test_user, kubernetes_source):
+    rbac_manager.grant_source_role(
+        source=kubernetes_personal_saved_view.source,
+        role=SourceRole.USER.value,
+        user=test_user,
+    )
+
+    service = SourceSavedViewService(slug=kubernetes_source.slug)
+    result = service.get(user=test_user, view_slug=kubernetes_personal_saved_view.slug)
+
+    assert result["slug"] == kubernetes_personal_saved_view.slug
+    assert result["name"] == kubernetes_personal_saved_view.name
+    assert result["scope"] == "personal"
+    assert result["user"]["username"] == test_user.username
+
+
+@pytest.mark.django_db
+def test_get_kubernetes_source_saved_view(kubernetes_source_saved_view, root_user, kubernetes_source):
+    service = SourceSavedViewService(slug=kubernetes_source.slug)
+    result = service.get(user=root_user, view_slug=kubernetes_source_saved_view.slug)
+
+    assert result["slug"] == kubernetes_source_saved_view.slug
+    assert result["name"] == kubernetes_source_saved_view.name
+    assert result["scope"] == "source"
+    assert result["user"]["username"] == root_user.username
+
+
+@pytest.mark.django_db
 def test_get_view_propagates_arbitrary_exception(test_user):
     with patch(
         "telescope.rbac.manager.RBACManager.get_source_saved_view",

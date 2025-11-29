@@ -56,6 +56,28 @@ def test_list_saved_views_emtpy(test_user, clickhouse_source):
 
 
 @pytest.mark.django_db
+def test_list_saved_views_kubernetes_source(
+    test_user,
+    kubernetes_source,
+    kubernetes_personal_saved_view,
+    kubernetes_source_saved_view,
+):
+    rbac_manager.grant_source_role(
+        source=kubernetes_source,
+        role=SourceRole.VIEWER.value,
+        user=test_user,
+    )
+
+    service = SourceSavedViewService(slug=kubernetes_source.slug)
+    views = service.list(user=test_user)
+
+    view_slugs = {v["slug"] for v in views}
+
+    assert kubernetes_personal_saved_view.slug in view_slugs
+    assert kubernetes_source_saved_view.slug in view_slugs
+
+
+@pytest.mark.django_db
 def test_list_saved_views_no_access_to_source(test_user, docker_source):
     service = SourceSavedViewService(slug=docker_source.slug)
 

@@ -134,6 +134,7 @@ const getInitialConnectionData = () => {
             database: props.source.data?.database || '',
             table: props.source.data?.table || '',
             settings: props.source.data?.settings || '',
+            namespace: props.source.data?.namespace || '*',
         }
     }
     return {}
@@ -213,6 +214,10 @@ const handleCreateSource = async (onComplete) => {
         if (connectionData.value.settings) {
             data.data.settings = connectionData.value.settings
         }
+    }
+
+    if (connectionData.value.connection.kind === 'kubernetes') {
+        data.data.namespace = connectionData.value.namespace
     }
 
     // Convert fields array to object

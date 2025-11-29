@@ -2,10 +2,7 @@ from typing import Optional, Tuple
 from django.contrib.auth.models import User, Group
 from django.db import transaction
 
-from telescope.services.exceptions import (
-    SerializerValidationError,
-    ConnectionInUseError,
-)
+from telescope.services.exceptions import SerializerValidationError, ConnectionInUseError
 from telescope.models import Connection, Source
 from telescope.rbac import permissions
 from telescope.rbac.roles import ConnectionRole
@@ -17,6 +14,7 @@ from telescope.serializers.connection import (
     ConnectionUpdateResponseSerializer,
     ClickhouseConnectionSerializer,
     DockerConnectionSerializer,
+    KubernetesConnectionSerializer,
 )
 
 
@@ -72,6 +70,8 @@ class ConnectionService:
                 data_serializer_cls = ClickhouseConnectionSerializer
             elif kind == "docker":
                 data_serializer_cls = DockerConnectionSerializer
+            elif kind == "kubernetes":
+                data_serializer_cls = KubernetesConnectionSerializer
             data_serializer = data_serializer_cls(data=serializer.data["data"])
             if not data_serializer.is_valid(raise_exception=raise_is_valid):
                 raise SerializerValidationError(data_serializer)
@@ -103,6 +103,8 @@ class ConnectionService:
                 data_serializer_cls = ClickhouseConnectionSerializer
             elif conn.kind == "docker":
                 data_serializer_cls = DockerConnectionSerializer
+            elif conn.kind == "kubernetes":
+                data_serializer_cls = KubernetesConnectionSerializer
             data_serializer = data_serializer_cls(data=serializer.data["data"])
 
             if not data_serializer.is_valid(raise_exception=raise_is_valid):
@@ -126,7 +128,10 @@ class ConnectionService:
             # Check if connection is being used by any sources
             source_count = Source.objects.filter(conn_id=pk).count()
             if source_count > 0:
-                raise ConnectionInUseError(connection_id=pk, source_count=source_count)
+                raise ConnectionInUseError(
+                    connection_id=pk,
+                    source_count=source_count
+                )
 
             Connection.objects.get(pk=pk).delete()
 

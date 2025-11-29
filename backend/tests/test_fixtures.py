@@ -2,7 +2,7 @@ import pytest
 
 from django.contrib.auth.models import User
 
-from telescope.models import Source, SourceField, SavedView
+from telescope.models import Source, SourceField, SavedView, Connection
 from telescope.constants import VIEW_SCOPE_SOURCE, VIEW_SCOPE_PERSONAL
 
 
@@ -132,3 +132,57 @@ def test_personal_root_shared_saved_view_fixture(
     assert personal_root_shared_saved_view.source == docker_source
     assert personal_root_shared_saved_view.user == root_user
     assert personal_root_shared_saved_view.shared is True
+
+
+@pytest.mark.django_db
+def test_kubernetes_source_fixture(kubernetes_source):
+    assert isinstance(kubernetes_source, Source)
+    assert kubernetes_source.kind == "kubernetes"
+    assert kubernetes_source.support_raw_query is False
+    assert "deployment" in kubernetes_source.context_fields
+    assert kubernetes_source.fields["time"]["type"] == "datetime"
+    assert kubernetes_source.fields["time"]["autocomplete"] is False
+    assert kubernetes_source.fields["time"]["suggest"] is True
+    assert kubernetes_source.fields["message"]["type"] == "string"
+    assert kubernetes_source.fields["message"]["display_name"] == "IsMessage"
+    assert kubernetes_source.fields["message"]["autocomplete"] is True
+    assert kubernetes_source.fields["message"]["jsonstring"] is True
+    assert isinstance(kubernetes_source.permissions, set)
+    for key, value in kubernetes_source._fields.items():
+        assert isinstance(key, str)
+        assert isinstance(value, SourceField)
+
+
+@pytest.mark.django_db
+def test_kubernetes_connection_fixture(kubernetes_connection):
+    assert isinstance(kubernetes_connection, Connection)
+    assert kubernetes_connection.kind == "kubernetes"
+    assert kubernetes_connection.name == "Kubernetes Connection"
+    assert "kubeconfig" in kubernetes_connection.data
+    assert "kubeconfig_hash" in kubernetes_connection.data
+    assert "kubeconfig_is_local" in kubernetes_connection.data
+    assert kubernetes_connection.data["kubeconfig_is_local"] is False
+
+
+@pytest.mark.django_db
+def test_kubernetes_personal_saved_view_fixture(kubernetes_personal_saved_view, test_user, kubernetes_source):
+    assert isinstance(kubernetes_personal_saved_view, SavedView)
+    assert kubernetes_personal_saved_view.slug == "test-view-kubernetes-personal"
+    assert kubernetes_personal_saved_view.name == "Test View Kubernetes Personal"
+    assert kubernetes_personal_saved_view.description == "test view description"
+    assert kubernetes_personal_saved_view.scope == "personal"
+    assert kubernetes_personal_saved_view.source == kubernetes_source
+    assert kubernetes_personal_saved_view.user == test_user
+    assert kubernetes_personal_saved_view.shared is False
+
+
+@pytest.mark.django_db
+def test_kubernetes_source_saved_view_fixture(kubernetes_source_saved_view, root_user, kubernetes_source):
+    assert isinstance(kubernetes_source_saved_view, SavedView)
+    assert kubernetes_source_saved_view.slug == "test-view-kubernetes-source"
+    assert kubernetes_source_saved_view.name == "Test View Kubernetes Source"
+    assert kubernetes_source_saved_view.description == "test view description"
+    assert kubernetes_source_saved_view.scope == "source"
+    assert kubernetes_source_saved_view.source == kubernetes_source
+    assert kubernetes_source_saved_view.user == root_user
+    assert kubernetes_source_saved_view.shared is False

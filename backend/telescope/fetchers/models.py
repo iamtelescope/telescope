@@ -1,7 +1,5 @@
 import json
 from typing import List, Dict, Any
-from datetime import datetime
-
 from zoneinfo import ZoneInfo
 
 from telescope.models import Source
@@ -18,7 +16,7 @@ class Row:
         source: Source,
         selected_fields: List[str],
         values: List[Any],
-        timezone: ZoneInfo = UTC_ZONE,
+        tz: ZoneInfo = UTC_ZONE,
     ):
         self.source = source
         self.data = {}
@@ -28,12 +26,13 @@ class Row:
         self.record_id = self.data.get(source.uniq_field) or self.data.get(
             source._record_pseudo_id_field
         )
+        dt = self.data[source.time_field]
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=tz)
         self.time = {
-            "unixtime": int(self.data[source.time_field].timestamp() * 1000),
-            "datetime": datetime.strftime(
-                self.data[source.time_field], "%Y-%m-%d %H:%M:%S"
-            ),
-            "microseconds": datetime.strftime(self.data[source.time_field], "%f"),
+            "unixtime": int(dt.timestamp() * 1000),
+            "datetime": dt.strftime("%Y-%m-%d %H:%M:%S"),
+            "microseconds": dt.strftime("%f"),
         }
 
     @property

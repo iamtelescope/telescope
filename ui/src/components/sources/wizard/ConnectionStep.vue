@@ -105,6 +105,17 @@
                     </small>
                 </div>
             </template>
+
+            <!-- Kubernetes specific fields -->
+            <template v-if="connection?.kind === 'kubernetes'">
+                <div class="pt-2">
+                    <label for="namespace" class="font-medium">Namespace *</label>
+                    <InputText v-model="namespace" id="namespace" class="w-full" fluid />
+                    <Message v-if="errors.namespace" severity="error" size="small" variant="simple" class="mt-2">
+                        {{ errors.namespace }}
+                    </Message>
+                </div>
+            </template>
         </div>
     </div>
 </template>
@@ -152,6 +163,7 @@ const connection = ref(preselectedConnection.value || null)
 const database = ref(props.modelValue?.database || '')
 const table = ref(props.modelValue?.table || '')
 const settings = ref(props.modelValue?.settings || '')
+const namespace = ref(props.modelValue?.namespace || '')
 const errors = ref({})
 
 // Cache for storing field values per connection ID
@@ -163,6 +175,7 @@ if (preselectedConnection.value) {
         database: props.modelValue?.database || '',
         table: props.modelValue?.table || '',
         settings: props.modelValue?.settings || '',
+        namespace: props.modelValue?.namespace || '',
     }
 }
 
@@ -175,7 +188,7 @@ const handleConnectionChange = () => {
 
     // Save current values to cache for the previous connection
     const previousConnectionId = Object.keys(connectionCache.value).find(
-        (id) => connectionCache.value[id] && (database.value !== '' || table.value !== ''),
+        (id) => connectionCache.value[id] && (database.value !== '' || table.value !== '' || namespace.value !== ''),
     )
 
     // Check if we have cached values for the new connection
@@ -186,24 +199,27 @@ const handleConnectionChange = () => {
         database.value = cached.database || ''
         table.value = cached.table || ''
         settings.value = cached.settings || ''
+        namespace.value = cached.namespace || ''
     } else {
         // Clear fields for new connection
         database.value = ''
         table.value = ''
         settings.value = ''
+        namespace.value = ''
     }
 
     // Clear errors
     errors.value = {}
 }
 
-// Watch database, table, and settings changes to update cache
-watch([database, table, settings], () => {
+// Watch database, table, settings, and namespace changes to update cache
+watch([database, table, settings, namespace], () => {
     if (connection.value) {
         connectionCache.value[connection.value.id] = {
             database: database.value,
             table: table.value,
             settings: settings.value,
+            namespace: namespace.value,
         }
     }
 })
@@ -234,6 +250,13 @@ const validate = () => {
         }
     }
 
+    // Kubernetes specific validation
+    if (connection.value?.kind === 'kubernetes') {
+        if (!namespace.value) {
+            errors.value.namespace = 'Namespace is required for Kubernetes sources'
+        }
+    }
+
     return Object.keys(errors.value).length === 0
 }
 
@@ -244,6 +267,7 @@ const handleNext = () => {
             database: database.value,
             table: table.value,
             settings: settings.value,
+            namespace: namespace.value,
         }
         emit('update:modelValue', values)
         emit('next')

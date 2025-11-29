@@ -5,13 +5,14 @@ from telescope.services.exceptions import SerializerValidationError
 from telescope.serializers.connection import (
     ConnectionSerializer,
     ClickhouseConnectionSerializer,
+    KubernetesConnectionSerializer,
 )
 from telescope.rbac.manager import RBACManager
 
 rbac_manager = RBACManager()
 from telescope.rbac.roles import GlobalRole
 
-from tests.data import get_docker_connection_data, get_clickhouse_connection_data
+from tests.data import get_docker_connection_data, get_clickhouse_connection_data, get_kubernetes_connection_data
 
 
 @pytest.mark.django_db
@@ -85,3 +86,31 @@ def test_create_connection_with_invalid_clickhouse_data(root_user, connection_se
     with pytest.raises(SerializerValidationError) as err:
         connection_service.create(user=root_user, data=data)
     assert isinstance(err.value.serializer, ClickhouseConnectionSerializer)
+
+
+@pytest.mark.django_db
+def test_create_kubernetes_connection(test_user, connection_service):
+    rbac_manager.grant_global_role(
+        role=GlobalRole.CONNECTION_MANAGER.value, user=test_user
+    )
+    data = get_kubernetes_connection_data()
+    result = connection_service.create(user=test_user, data=data)
+    assert "id" in result
+    assert result["id"] > 0
+
+    conn = Connection.objects.get(pk=result["id"])
+    assert conn.kind == "kubernetes"
+    assert conn.name == "Kubernetes Connection"
+    assert "kubeconfig" in conn.data
+    assert "kubeconfig_hash" in conn.data
+    assert "kubeconfig_is_local" in conn.data
+    assert conn.data["kubeconfig_is_local"] is False
+
+
+@pytest.mark.django_db
+def test_create_connection_with_invalid_kubernetes_data(root_user, connection_service):
+    data = get_kubernetes_connection_data()
+    del data["data"]["kubeconfig"]
+    with pytest.raises(SerializerValidationError) as err:
+        connection_service.create(user=root_user, data=data)
+    assert isinstance(err.value.serializer, KubernetesConnectionSerializer)

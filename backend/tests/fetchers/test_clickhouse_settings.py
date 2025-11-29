@@ -4,6 +4,7 @@ from unittest.mock import Mock, MagicMock, patch
 from telescope.fetchers.clickhouse import Fetcher as ClickhouseFetcher
 from telescope.fetchers.request import DataRequest, GraphDataRequest
 from telescope.models import Source
+from telescope.constants import UTC_ZONE
 
 
 @pytest.fixture
@@ -87,7 +88,7 @@ def test_fetch_data_includes_settings(mock_clickhouse_connect, mock_clickhouse_s
     )
 
     # Execute
-    ClickhouseFetcher.fetch_data(request, timezone="UTC")
+    ClickhouseFetcher.fetch_data(request, tz=UTC_ZONE)
 
     # Verify query was called
     assert mock_client.query.called
@@ -129,7 +130,7 @@ def test_fetch_data_without_settings(
     )
 
     # Execute
-    ClickhouseFetcher.fetch_data(request, timezone="UTC")
+    ClickhouseFetcher.fetch_data(request, tz=UTC_ZONE)
 
     # Verify query was called
     assert mock_client.query.called
@@ -242,7 +243,7 @@ def test_settings_empty_string_not_added(
     )
 
     # Execute
-    ClickhouseFetcher.fetch_data(request, timezone="UTC")
+    ClickhouseFetcher.fetch_data(request, tz=UTC_ZONE)
 
     # Verify query was called
     assert mock_client.query.called
@@ -277,7 +278,7 @@ def test_settings_query_position(mock_clickhouse_connect, mock_clickhouse_source
     )
 
     # Execute
-    ClickhouseFetcher.fetch_data(request, timezone="UTC")
+    ClickhouseFetcher.fetch_data(request, tz=UTC_ZONE)
 
     # Verify query structure
     query = mock_client.query.call_args[0][0]

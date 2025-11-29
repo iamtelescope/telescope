@@ -25,7 +25,7 @@
                         :loading="loadingSchema"
                     />
                     <Button
-                        v-if="!isDocker"
+                        v-if="!isDocker && !isKubernetes"
                         label="Add Field"
                         icon="pi pi-plus"
                         size="small"
@@ -191,6 +191,10 @@ const isDocker = computed(() => {
     return props.connectionData?.connection?.kind === 'docker'
 })
 
+const isKubernetes = computed(() => {
+    return props.connectionData?.connection?.kind === 'kubernetes'
+})
+
 const isValid = computed(() => {
     // If no fields are added, it's valid (fields are optional)
     if (fields.value.length === 0) {
@@ -208,6 +212,8 @@ const fieldTypes = computed(() => {
         return FieldTypes.clickhouse || []
     } else if (connectionKind === 'docker') {
         return FieldTypes.docker || []
+    } else if (connectionKind === 'kubernetes') {
+        return FieldTypes.kubernetes || []
     }
     return []
 })
@@ -284,6 +290,9 @@ const handleAutoloadFields = async () => {
         if (kind === 'clickhouse') {
             data.database = props.connectionData.database
             data.table = props.connectionData.table
+        }
+        if (kind === 'kubernetes') {
+            data.namespace = props.connectionData.namespace
         }
 
         // Call the service

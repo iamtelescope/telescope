@@ -23,7 +23,7 @@ from telescope.utils import (
     convert_to_base_ch,
 )
 
-SUPPORTED_KINDS = {"clickhouse", "docker"}
+SUPPORTED_KINDS = {"clickhouse", "docker", "kubernetes"}
 
 
 class SerializeErrorMsg:
@@ -146,6 +146,33 @@ class DockerConnectionSerializer(serializers.Serializer):
     address = serializers.CharField()
 
 
+class KubernetesConnectionSerializer(serializers.Serializer):
+    kubeconfig = serializers.CharField(
+        required=True,
+        help_text="Raw kubeconfig file content or local file path",
+    )
+    kubeconfig_hash = serializers.CharField(
+        required=True,
+        help_text="SHA256 hash of kubeconfig content or file path"
+    )
+    kubeconfig_is_local = serializers.BooleanField(
+        required=True,
+        help_text="Whether kubeconfig is a local file path"
+    )
+
+    def validate(self, data):
+        errors = {}
+        if not data.get("kubeconfig"):
+            errors["kubeconfig"] = "Kubeconfig content or file path is required."
+        if not data.get("kubeconfig_hash"):
+            errors["kubeconfig_hash"] = "Kubeconfig hash is required."
+        if data.get("kubeconfig_is_local") is None:
+            errors["kubeconfig_is_local"] = "Local file path indicator is required."
+        if errors:
+            raise serializers.ValidationError(errors)
+        return data
+
+
 class GetSourceSchemaClickhouseSerializer(serializers.Serializer):
     connection_id = serializers.IntegerField()
     database = serializers.CharField()
@@ -154,6 +181,12 @@ class GetSourceSchemaClickhouseSerializer(serializers.Serializer):
 
 class GetSourceSchemaDockerSerializer(serializers.Serializer):
     connection_id = serializers.IntegerField()
+
+
+class GetSourceSchemaKubernetesSerializer(serializers.Serializer):
+    connection_id = serializers.IntegerField()
+    namespace = serializers.CharField()
+
 
 
 class SourceFieldSerializer(serializers.Serializer):
@@ -311,12 +344,33 @@ class DockerSourceDataSerializer(serializers.Serializer):
     pass
 
 
+class KubernetesSourceDataSerializer(serializers.Serializer):
+    namespace = serializers.CharField(required=True)
+    pass
+
+
 class NewDockerSourceSerializer(NewBaseSourceSerializer):
     data = DockerSourceDataSerializer(required=False, default=dict)
 
+class NewKubernetesSourceSerializer(NewBaseSourceSerializer):
+    data = KubernetesSourceDataSerializer(required=False, default=dict)
+
 
 class UpdateDockerSourceSerializer(NewDockerSourceSerializer):
-    connection = serializers.JSONField(required=False)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.required = False
+
+    def validate_slug(self, value):
+        return value
+
+
+class UpdateKubernetesSourceSerializer(NewKubernetesSourceSerializer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.required = False
 
     def validate_slug(self, value):
         return value
@@ -327,7 +381,10 @@ class NewClickhouseSourceSerializer(NewBaseSourceSerializer):
 
 
 class UpdateClickhouseSourceSerializer(NewClickhouseSourceSerializer):
-    connection = serializers.JSONField(required=False)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.required = False
 
     def validate_slug(self, value):
         return value

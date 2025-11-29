@@ -80,6 +80,17 @@
                 />
             </template>
 
+            <!-- Kubernetes specific fields -->
+            <template v-if="selectedKind === 'kubernetes'">
+                <KubernetesConnectionStep
+                    ref="kubernetesFormRef"
+                    :connection="connection"
+                    :validationErrors="{}"
+                    @connectionDataValidated="onConnectionDataChanged"
+                    @connectionDataChanged="onConnectionDataChanged"
+                />
+            </template>
+
             <!-- Test Connection -->
             <div v-if="selectedKind && connectionData && Object.keys(connectionData).length > 0">
                 <div class="flex justify-end">
@@ -109,6 +120,7 @@ import { Button, Select } from 'primevue'
 import { useToast } from 'primevue/usetoast'
 import ClickHouseConnectionStep from '@/components/connections/new/clickhouse/ConnectionForm.vue'
 import DockerConnectionStep from '@/components/connections/new/docker/ConnectionForm.vue'
+import KubernetesConnectionStep from '@/components/connections/new/kubernetes/ConnectionForm.vue'
 import ConnectionTestResult from '@/components/connections/new/ConnectionTestResult.vue'
 import { ConnectionService } from '@/sdk/services/connection'
 
@@ -128,6 +140,7 @@ const toast = useToast()
 const connectionKindOptions = [
     { label: 'ClickHouse', value: 'clickhouse' },
     { label: 'Docker', value: 'docker' },
+    { label: 'Kubernetes', value: 'kubernetes' },
 ]
 
 const selectedKind = ref(props.modelValue?.kind || props.connection?.kind || null)
@@ -137,6 +150,7 @@ const testResult = ref(null)
 
 const clickhouseFormRef = ref(null)
 const dockerFormRef = ref(null)
+const kubernetesFormRef = ref(null)
 
 const getConnectionTypeLabel = (value) => {
     const option = connectionKindOptions.find((opt) => opt.value === value)
@@ -165,6 +179,9 @@ const validateForm = () => {
 
     if (selectedKind.value === 'docker' && dockerFormRef.value) {
         return dockerFormRef.value.validate()
+    }
+    if (selectedKind.value === 'kubernetes' && kubernetesFormRef.value) {
+        return kubernetesFormRef.value.validate()
     }
 
     return true

@@ -206,3 +206,6 @@ STATIC_ROOT = BASE_DIR / "static"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGGING = LogConfig(config=CONFIG["logging"]).as_dict()
+
+# Kubernetes Performance constants
+MAX_CONCURRENT_REQUESTS = CONFIG["kubernetes"]["MAX_CONCURRENT_REQUESTS"] # Parallel log fetching

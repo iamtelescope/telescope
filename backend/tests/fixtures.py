@@ -9,9 +9,11 @@ from telescope.services.connection import ConnectionService
 from tests.data import (
     get_docker_source_data,
     get_clickhouse_source_data,
+    get_kubernetes_source_data,
     get_saved_view_data,
     get_docker_connection_data,
     get_clickhouse_connection_data,
+    get_kubernetes_connection_data,
 )
 
 
@@ -135,6 +137,34 @@ def personal_root_shared_saved_view(root_user, docker_source):
 
 
 @pytest.fixture
+def kubernetes_personal_saved_view(test_user, kubernetes_source):
+    return SavedView.objects.create(
+        slug="test-view-kubernetes-personal",
+        name="Test View Kubernetes Personal",
+        description="test view description",
+        scope="personal",
+        source=kubernetes_source,
+        user=test_user,
+        shared=False,
+        data=get_saved_view_data(),
+    )
+
+
+@pytest.fixture
+def kubernetes_source_saved_view(root_user, kubernetes_source):
+    return SavedView.objects.create(
+        slug="test-view-kubernetes-source",
+        name="Test View Kubernetes Source",
+        description="test view description",
+        scope="source",
+        source=kubernetes_source,
+        user=root_user,
+        shared=False,
+        data=get_saved_view_data(),
+    )
+
+
+@pytest.fixture
 def connection_service():
     return ConnectionService()
 
@@ -148,4 +178,22 @@ def docker_connection():
 @pytest.fixture
 def clickhouse_connection():
     data = get_clickhouse_connection_data()
+    return Connection.objects.create(**data)
+
+
+@pytest.fixture
+def kubernetes_source(kubernetes_connection):
+    data = get_kubernetes_source_data("kubernetes")
+    del data["kind"]
+    del data["connection"]
+    data["conn"] = kubernetes_connection 
+    return Source.create(
+        kind="kubernetes",
+        data=data,
+    )
+
+
+@pytest.fixture
+def kubernetes_connection():
+    data = get_kubernetes_connection_data()
     return Connection.objects.create(**data)
