@@ -221,6 +221,7 @@ def get_default_config():
                 "django.template": "INFO",
                 "django.utils.autoreload": "INFO",
                 "telescope": "DEBUG",
+                "kubernetes.client.rest": "INFO",
                 "all": "DEBUG",
             },
         },

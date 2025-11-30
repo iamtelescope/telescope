@@ -127,6 +127,11 @@ class LogConfig:
                 "level": self.config["levels"]["telescope"],
                 "propagate": False,
             },
+            "kubernetes.client.rest": {
+                "handlers": self.handlers.keys(),
+                "level": self.config["levels"]["kubernetes.client.rest"],
+                "propagate": False,
+            },
             "": {
                 "handlers": self.handlers.keys(),
                 "level": self.config["levels"]["all"],
