@@ -80,6 +80,52 @@ def test_create_source_view_without_edit_permission(test_user, docker_source):
 
 
 @pytest.mark.django_db
+def test_create_personal_view_kubernetes_source(test_user, kubernetes_source):
+    rbac_manager.grant_source_role(
+        kubernetes_source, SourceRole.VIEWER.value, user=test_user
+    )
+
+    data = {
+        "scope": "personal",
+        "name": "My Kubernetes View",
+        "description": "kubernetes desc",
+        "shared": False,
+        "data": {"fields": "pod_name,message"},
+    }
+
+    service = SourceSavedViewService(slug=kubernetes_source.slug)
+    result = service.create(user=test_user, slug=kubernetes_source.slug, data=data)
+
+    assert result["name"] == "My Kubernetes View"
+    assert result["scope"] == "personal"
+    assert result["user"]["username"] == test_user.username
+    assert SavedView.objects.filter(name="My Kubernetes View").exists()
+
+
+@pytest.mark.django_db
+def test_create_source_view_kubernetes_with_edit_permission(test_user, kubernetes_source):
+    rbac_manager.grant_source_role(
+        kubernetes_source, SourceRole.EDITOR.value, user=test_user
+    )
+
+    data = {
+        "scope": VIEW_SCOPE_SOURCE,
+        "name": "Kubernetes Source-wide View",
+        "description": "kubernetes source view",
+        "shared": True,
+        "data": {"graph_group_by": "pod_name"},
+    }
+
+    service = SourceSavedViewService(slug=kubernetes_source.slug)
+    result = service.create(user=test_user, slug=kubernetes_source.slug, data=data)
+
+    assert result["name"] == "Kubernetes Source-wide View"
+    assert result["scope"] == VIEW_SCOPE_SOURCE
+    assert result["shared"] is True
+    assert SavedView.objects.filter(name="Kubernetes Source-wide View").exists()
+
+
+@pytest.mark.django_db
 def test_create_view_invalid_payload_serializer_fails(test_user, docker_source):
     data = {
         "scope": VIEW_SCOPE_PERSONAL,

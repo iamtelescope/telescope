@@ -8,9 +8,10 @@
         <link rel="icon" href="./static/favicon.ico" />
         <title>Telescope</title>
         <script>
-            const base = document.querySelector('base')
-            if (base && base.outerHTML.includes('{%')) {
-                base.setAttribute('href', '/')
+            const base = document.querySelector('base');
+            const href = base?.getAttribute('href') || '';
+            if (href.includes('{%') || href.includes('{{')) {
+                base.setAttribute('href', '/');
             }
         </script>
     </head>

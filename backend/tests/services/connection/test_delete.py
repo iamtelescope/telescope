@@ -34,3 +34,26 @@ def test_delete_connection_with_superuser(
 def test_delete_nonexistent_connection(root_user, connection_service):
     with pytest.raises(Connection.DoesNotExist):
         connection_service.delete(user=root_user, pk=99999)
+
+
+@pytest.mark.django_db
+def test_delete_kubernetes_connection(test_user, connection_service, kubernetes_connection):
+    rbac_manager.grant_connection_role(
+        connection=kubernetes_connection, role=ConnectionRole.OWNER.value, user=test_user
+    )
+    connection_id = kubernetes_connection.id
+    connection_service.delete(user=test_user, pk=connection_id)
+
+    # Verify connection was deleted
+    assert not Connection.objects.filter(pk=connection_id).exists()
+
+
+@pytest.mark.django_db
+def test_delete_kubernetes_connection_with_superuser(
+    root_user, connection_service, kubernetes_connection
+):
+    connection_id = kubernetes_connection.id
+    connection_service.delete(user=root_user, pk=connection_id)
+
+    # Verify connection was deleted
+    assert not Connection.objects.filter(pk=connection_id).exists()

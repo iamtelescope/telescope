@@ -85,6 +85,15 @@ SCHEMA = {
                 },
             },
         },
+        "kubernetes": {
+            "type": "object",
+            "properties": {
+                "MAX_CONCURRENT_REQUESTS": {
+                    "type": "integer",
+                },
+            },
+            "additionalProperties": True,
+        },
         "additionalProperties": True,
     },
 }
@@ -212,8 +221,12 @@ def get_default_config():
                 "django.template": "INFO",
                 "django.utils.autoreload": "INFO",
                 "telescope": "DEBUG",
+                "kubernetes.client.rest": "INFO",
                 "all": "DEBUG",
             },
+        },
+        "kubernetes": {
+            "MAX_CONCURRENT_REQUESTS": 20,
         },
     }
 

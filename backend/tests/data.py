@@ -84,6 +84,7 @@ def get_docker_source_data(slug):
         "support_raw_query": False,
         "default_chosen_fields": "container_short_id, stream, message",
         "connection": {"address": "unix:///var/run/docker.sock"},
+        "data": {},
     }
 
 
@@ -385,5 +386,126 @@ def get_clickhouse_connection_data():
             "client_cert_key": "",
             "server_host_name": "",
             "tls_mode": "",
+        },
+    }
+
+
+def get_kubernetes_source_data(slug):
+    return {
+        "kind": "kubernetes",
+        "slug": slug,
+        "name": "Kubernetes",
+        "description": "kubernetes test source",
+        "time_field": "time",
+        "uniq_field": "",
+        "severity_field": "",
+        "fields": {
+            "time": {
+                "display_name": "",
+                "type": "datetime",
+                "autocomplete": False,
+                "suggest": True,
+                "jsonstring": False,
+                "group_by": False,
+                "values": [],
+            },
+            "namespace": {
+                "display_name": "",
+                "type": "string",
+                "autocomplete": True,
+                "suggest": True,
+                "jsonstring": False,
+                "group_by": True,
+                "values": [],
+            },
+            "pod_name": {
+                "display_name": "",
+                "type": "string",
+                "autocomplete": True,
+                "suggest": True,
+                "jsonstring": False,
+                "group_by": True,
+                "values": [],
+            },
+            "container_name": {
+                "display_name": "",
+                "type": "string",
+                "autocomplete": True,
+                "suggest": True,
+                "jsonstring": False,
+                "group_by": True,
+                "values": [],
+            },
+            "node_name": {
+                "display_name": "",
+                "type": "string",
+                "autocomplete": True,
+                "suggest": True,
+                "jsonstring": False,
+                "group_by": True,
+                "values": [],
+            },
+            "labels": {
+                "display_name": "",
+                "type": "string",
+                "autocomplete": True,
+                "suggest": True,
+                "jsonstring": False,
+                "group_by": True,
+                "values": [],
+            },
+            "message": {
+                "display_name": "IsMessage",
+                "type": "string",
+                "autocomplete": True,
+                "suggest": True,
+                "jsonstring": True,
+                "group_by": True,
+                "values": [],
+            },
+            "stream": {
+                "display_name": "",
+                "type": "string",
+                "autocomplete": True,
+                "suggest": True,
+                "jsonstring": False,
+                "group_by": True,
+                "values": [],
+            },
+            "status": {
+                "display_name": "",
+                "type": "string",
+                "autocomplete": True,
+                "suggest": True,
+                "jsonstring": False,
+                "group_by": True,
+                "values": [],
+            },
+        },
+        "support_raw_query": False,
+        "default_chosen_fields": "pod_name, node_name, message",
+        "connection": {
+            "kubeconfig": "apiVersion: v1\nclusters:\n- cluster:\n    server: https://kubernetes.default.svc\n  name: default\ncontexts:\n- context:\n    cluster: default\n    user: default\n  name: default\ncurrent-context: default\nkind: Config\npreferences: {}\nusers:\n- name: default\n  user:\n    token: test-token\n",
+            "kubeconfig_hash": "test-hash-123",
+            "kubeconfig_is_local": False,
+        },
+        "data": {"namespace": "ns1"},
+    }
+
+
+def get_kubernetes_connection_data():
+    import hashlib
+    
+    kubeconfig_content = "apiVersion: v1\nclusters:\n- cluster:\n    server: https://kubernetes.example.com\n  name: test-cluster\ncontexts:\n- context:\n    cluster: test-cluster\n    user: test-user\n  name: test-context\ncurrent-context: test-context\nkind: Config\nusers:\n- name: test-user\n  user:\n    token: test-token"
+    kubeconfig_hash = hashlib.sha256(kubeconfig_content.encode()).hexdigest()
+    
+    return {
+        "kind": "kubernetes",
+        "name": "Kubernetes Connection",
+        "description": "test kubernetes connection",
+        "data": {
+            "kubeconfig": kubeconfig_content,
+            "kubeconfig_hash": kubeconfig_hash,
+            "kubeconfig_is_local": False,
         },
     }

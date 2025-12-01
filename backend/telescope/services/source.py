@@ -22,8 +22,10 @@ from telescope.serializers.source import (
     UpdateSourceSavedViewSerializer,
     NewClickhouseSourceSerializer,
     NewDockerSourceSerializer,
+    NewKubernetesSourceSerializer,
     UpdateClickhouseSourceSerializer,
     UpdateDockerSourceSerializer,
+    UpdateKubernetesSourceSerializer,
     SourceCreateResponseSerializer,
     SourceUpdateResponseSerializer,
     SourceSavedViewScopeSerializer,
@@ -200,6 +202,11 @@ class SourceService:
                 serializer_cls = NewClickhouseSourceSerializer
             elif kind == "docker":
                 serializer_cls = NewDockerSourceSerializer
+            elif kind == "kubernetes":
+                serializer_cls = NewKubernetesSourceSerializer
+            else:
+                raise ValueError("Unknown kind")
+            
             serializer = serializer_cls(data=data)
             if not serializer.is_valid(raise_exception=raise_is_valid):
                 raise SerializerValidationError(serializer)
@@ -238,6 +245,8 @@ class SourceService:
                 serializer_cls = UpdateClickhouseSourceSerializer
             elif source.kind == "docker":
                 serializer_cls = UpdateDockerSourceSerializer
+            elif source.kind == "kubernetes":
+                serializer_cls = UpdateKubernetesSourceSerializer
             else:
                 raise ValueError("Unknown kind")
 

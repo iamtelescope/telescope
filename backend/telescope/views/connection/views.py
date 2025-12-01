@@ -8,10 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from telescope.services.connection import ConnectionService
-from telescope.services.exceptions import (
-    SerializerValidationError,
-    ConnectionInUseError,
-)
+from telescope.services.exceptions import SerializerValidationError, ConnectionInUseError
 from telescope.rbac.manager import RBACManager
 from telescope.rbac import permissions
 
@@ -22,12 +19,14 @@ from telescope.models import Connection
 from telescope.serializers.connection import (
     ClickhouseConnectionSerializer,
     DockerConnectionSerializer,
+    KubernetesConnectionSerializer,
     ConnectionRoleSerializer,
 )
 
 CONNECTION_KIND_TO_SERIALIZER = {
     "clickhouse": ClickhouseConnectionSerializer,
     "docker": DockerConnectionSerializer,
+    "kubernetes": KubernetesConnectionSerializer,
 }
 
 rbac_manager = RBACManager()

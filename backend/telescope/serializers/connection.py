@@ -3,7 +3,7 @@ from rest_framework import serializers
 from telescope.models import Connection, ConnectionRoleBinding
 from telescope.serializers.rbac import UserSerializer, GroupSerializer
 
-SUPPORTED_KINDS = {"clickhouse", "docker"}
+SUPPORTED_KINDS = {"clickhouse", "docker", "kubernetes"}
 
 
 class SerializeErrorMsg:
@@ -52,6 +52,32 @@ class ClickhouseConnectionSerializer(serializers.Serializer):
 class DockerConnectionSerializer(serializers.Serializer):
     address = serializers.CharField()
 
+
+class KubernetesConnectionSerializer(serializers.Serializer):
+    kubeconfig = serializers.CharField(
+        required=True,
+        help_text="Raw kubeconfig file content or local file path",
+    )
+    kubeconfig_hash = serializers.CharField(
+        required=True,
+        help_text="SHA256 hash of kubeconfig content or file path"
+    )
+    kubeconfig_is_local = serializers.BooleanField(
+        required=True,
+        help_text="Whether kubeconfig is a local file path"
+    )
+
+    def validate(self, data):
+        errors = {}
+        if not data.get("kubeconfig"):
+            errors["kubeconfig"] = "Kubeconfig content or file path is required."
+        if not data.get("kubeconfig_hash"):
+            errors["kubeconfig_hash"] = "Kubeconfig hash is required."
+        if data.get("kubeconfig_is_local") is None:
+            errors["kubeconfig_is_local"] = "Local file path indicator is required."
+        if errors:
+            raise serializers.ValidationError(errors)
+        return data
 
 class ConnectionCreateResponseSerializer(serializers.Serializer):
     id = serializers.IntegerField(required=True)

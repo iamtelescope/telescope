@@ -51,3 +51,35 @@ def test_get_clickhouse_connection(
 def test_get_nonexistent_connection(root_user, connection_service):
     with pytest.raises(Connection.DoesNotExist):
         connection_service.get(user=root_user, pk=99999)
+
+
+@pytest.mark.django_db
+def test_get_kubernetes_connection(
+    test_user, connection_service, kubernetes_connection
+):
+    rbac_manager.grant_connection_role(
+        connection=kubernetes_connection,
+        role=ConnectionRole.VIEWER.value,
+        user=test_user,
+    )
+    data = connection_service.get(user=test_user, pk=kubernetes_connection.id)
+    assert data["id"] == kubernetes_connection.id
+    assert data["kind"] == kubernetes_connection.kind
+    assert data["name"] == kubernetes_connection.name
+    assert "kubeconfig" in data["data"]
+    assert "kubeconfig_hash" in data["data"]
+    assert "kubeconfig_is_local" in data["data"]
+    assert data["data"]["kubeconfig_is_local"] is False
+
+
+@pytest.mark.django_db
+def test_get_kubernetes_connection_with_superuser(
+    root_user, connection_service, kubernetes_connection
+):
+    data = connection_service.get(user=root_user, pk=kubernetes_connection.id)
+    assert data["id"] == kubernetes_connection.id
+    assert data["kind"] == kubernetes_connection.kind
+    assert data["name"] == kubernetes_connection.name
+    assert "kubeconfig" in data["data"]
+    assert "kubeconfig_hash" in data["data"]
+    assert "kubeconfig_is_local" in data["data"]

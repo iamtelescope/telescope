@@ -114,7 +114,11 @@
                                             }}</span>
                                         </DataRow>
                                     </ContentBlock>
-
+                                    <ContentBlock header="Data" class="mt-3" v-if="source.kind === 'kubernetes'">
+                                        <DataRow name="Namespace" :copy="false" :showBorder="false">
+                                            <span class="font-mono text-sm">{{ source.data?.namespace || '&ndash;' }}</span>
+                                        </DataRow>
+                                    </ContentBlock>
                                     <ContentBlock header="Fields" class="mt-3">
                                         <DataTable
                                             :value="sourceFields"

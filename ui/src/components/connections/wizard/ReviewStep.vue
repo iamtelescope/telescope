@@ -85,6 +85,11 @@
                 <template v-else-if="targetData.kind === 'docker'">
                     <DataRow name="Address" :value="targetData.data.address" :copy="false" :showBorder="false" />
                 </template>
+                <template v-else-if="targetData.kind === 'kubernetes'">
+                    <DataRow name="Kube Config" :copy="false">
+                        <pre class="text-xs whitespace-pre-wrap break-all max-w-full overflow-auto block">{{ targetData.data.kubeconfig || 'Not provided' }}</pre>
+                    </DataRow>
+                </template>
             </ContentBlock>
         </div>
         <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -110,6 +115,7 @@ const isEditing = computed(() => !!props.connection)
 const connectionKindOptions = [
     { label: 'ClickHouse', value: 'clickhouse' },
     { label: 'Docker', value: 'docker' },
+    { label: 'Kubernetes', value: 'kubernetes' },
 ]
 
 const getConnectionTypeLabel = (value) => {
