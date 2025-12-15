@@ -106,6 +106,44 @@
                 </div>
             </template>
 
+            <!-- StarRocks specific columns -->
+            <template v-if="connection?.kind === 'starrocks'">
+                <div class="pt-2">
+                    <label for="catalog" class="font-medium">Catalog *</label>
+                    <InputText v-model="catalog" id="catalog" class="w-full font-mono" fluid />
+                    <Message v-if="errors.catalog" severity="error" size="small" variant="simple" class="mt-2">
+                        {{ errors.catalog }}
+                    </Message>
+                </div>
+                <div class="pt-2">
+                    <label for="database" class="font-medium">Database *</label>
+                    <InputText v-model="database" id="database" class="w-full font-mono" fluid />
+                    <Message v-if="errors.database" severity="error" size="small" variant="simple" class="mt-2">
+                        {{ errors.database }}
+                    </Message>
+                </div>
+                <div class="pt-2">
+                    <label for="table" class="font-medium">Table *</label>
+                    <InputText v-model="table" id="table" class="w-full font-mono" fluid />
+                    <Message v-if="errors.table" severity="error" size="small" variant="simple" class="mt-2">
+                        {{ errors.table }}
+                    </Message>
+                </div>
+                <div class="pt-2">
+                    <label for="settings" class="font-medium">Query Settings</label>
+                    <Textarea
+                        v-model="settings"
+                        id="settings"
+                        class="w-full font-mono"
+                        rows="3"
+                        placeholder="e.g., use_query_cache = true, max_parallel_replicas = 1"
+                    />
+                    <small class="text-gray-500 dark:text-gray-400 block mt-1">
+                        StarRocks SETTINGS clause (comma-separated key=value pairs)
+                    </small>
+                </div>
+            </template>
+
             <!-- Kubernetes specific columns -->
             <template v-if="connection?.kind === 'kubernetes'">
                 <div class="pt-2">
@@ -287,7 +325,25 @@ const validate = () => {
         }
     }
 
+    // StarRocks specific validation
+    if (connection.value?.kind === 'starrocks') {
+        if (!catalog.value) {
+            errors.value.catalog = 'Catalog is required for StarRocks connections'
+        }
+        if (!database.value) {
+            errors.value.database = 'Database is required for StarRocks connections'
+        }
+        if (!table.value) {
+            errors.value.table = 'Table is required for StarRocks connections'
+        }
+    }
+
     // Kubernetes specific validation - all columns are optional now
+    if (connection.value?.kind === 'kubernetes') {
+        if (!namespace.value) {
+            errors.value.namespace = 'Namespace is required for Kubernetes sources'
+        }
+    }
 
     return Object.keys(errors.value).length === 0
 }

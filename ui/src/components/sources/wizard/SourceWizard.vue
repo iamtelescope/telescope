@@ -143,6 +143,7 @@ const getInitialConnectionData = () => {
 
         return {
             connection: connectionObj,
+            catalog: props.source.data?.catalog || '',
             database: props.source.data?.database || '',
             table: props.source.data?.table || '',
             settings: props.source.data?.settings || '',
@@ -218,6 +219,16 @@ const handleCreateSource = async (onComplete) => {
     }
 
     if (connectionData.value.connection.kind === 'clickhouse') {
+        data.data.database = connectionData.value.database
+        data.data.table = connectionData.value.table
+        if (connectionData.value.settings) {
+            data.data.settings = connectionData.value.settings
+        }
+    }
+
+    // Add database, table, and settings to data field for StarRocks connections
+    if (connectionData.value.connection.kind === 'starrocks') {
+        data.data.catalog = connectionData.value.catalog
         data.data.database = connectionData.value.database
         data.data.table = connectionData.value.table
         if (connectionData.value.settings) {

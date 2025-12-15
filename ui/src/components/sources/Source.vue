@@ -177,6 +177,22 @@
                                             }}</span>
                                         </DataRow>
                                     </ContentBlock>
+                                    <ContentBlock header="Data" class="mt-3" v-if="source.kind === 'starrocks'">
+                                        <DataRow name="Catalog" :copy="false">
+                                            <span class="font-mono">{{ source.data?.catalog || '&ndash;' }}</span>
+                                        </DataRow>
+                                        <DataRow name="Database" :copy="false">
+                                            <span class="font-mono">{{ source.data?.database || '&ndash;' }}</span>
+                                        </DataRow>
+                                        <DataRow name="Table" :copy="false">
+                                            <span class="font-mono">{{ source.data?.table || '&ndash;' }}</span>
+                                        </DataRow>
+                                        <DataRow name="Query Settings" :copy="false" :showBorder="false">
+                                            <span class="font-mono text-sm">{{
+                                                source.data?.settings || '&ndash;'
+                                            }}</span>
+                                        </DataRow>
+                                    </ContentBlock>
                                     <ContentBlock header="Data" class="mt-3" v-if="source.kind === 'kubernetes'">
                                         <DataRow name="Namespace Label Selector" :copy="false">
                                             <code
