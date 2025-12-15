@@ -3,7 +3,7 @@ from rest_framework import serializers
 from telescope.models import Connection, ConnectionRoleBinding
 from telescope.serializers.rbac import UserSerializer, GroupSerializer
 
-SUPPORTED_KINDS = {"clickhouse", "docker", "kubernetes"}
+SUPPORTED_KINDS = {"clickhouse", "starrocks", "docker", "kubernetes"}
 
 
 class SerializeErrorMsg:
@@ -34,6 +34,20 @@ class ConnectionListSerializer(serializers.ModelSerializer):
 
 
 class ClickhouseConnectionSerializer(serializers.Serializer):
+    host = serializers.CharField()
+    port = serializers.IntegerField()
+    user = serializers.CharField()
+    password = serializers.CharField(allow_blank=True)
+    ssl = serializers.BooleanField()
+    verify = serializers.BooleanField()
+    ca_cert = serializers.CharField(allow_blank=True, allow_null=True)
+    client_cert = serializers.CharField(allow_blank=True, allow_null=True)
+    client_cert_key = serializers.CharField(allow_blank=True, allow_null=True)
+    server_host_name = serializers.CharField(allow_blank=True, allow_null=True)
+    tls_mode = serializers.CharField(allow_blank=True, allow_null=True)
+
+
+class StarrocksConnectionSerializer(serializers.Serializer):
     host = serializers.CharField()
     port = serializers.IntegerField()
     user = serializers.CharField()

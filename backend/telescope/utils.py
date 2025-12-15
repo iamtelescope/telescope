@@ -249,7 +249,20 @@ def convert_to_base_ch(full_type: str) -> str:
     return res
 
 
+<<<<<<< HEAD
 def get_telescope_column(name, _type, **kwargs):
+=======
+def convert_to_base_sr(full_type: str) -> str:
+    """Finds the longest matching StarRocks type in the given full type string."""
+    res: str = ""
+    for t in STARROCKS_TYPES:
+        if t in full_type and len(t) > len(res):
+            res = t
+    return res
+
+
+def get_telescope_field(name, _type, **kwargs):
+>>>>>>> 74e2bbd (backend: add basic types for supporting Starrocks)
     data = {
         "name": name,
         "display_name": "",
