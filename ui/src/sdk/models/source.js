@@ -1,7 +1,7 @@
 import { getDefaultIfUndefined } from '@/utils/utils'
 import { User, Group } from '@/sdk/models/rbac'
 
-const SourceKinds = ['clickhouse', 'kubernetes']
+const SourceKinds = ['clickhouse', 'kubernetes', 'starrocks']
 
 class Source {
     constructor(data) {
@@ -81,7 +81,7 @@ class Source {
     }
 
     generateRawQueryExample() {
-        if (this.kind !== 'clickhouse') {
+        if (this.kind !== 'clickhouse' && this.kind !== 'starrocks') {
             return ''
         }
         let text = ''
