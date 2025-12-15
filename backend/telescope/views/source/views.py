@@ -27,6 +27,7 @@ from telescope.serializers.source import (
     ClickhouseConnectionSerializer,
     DockerConnectionSerializer,
     KubernetesConnectionSerializer,
+    StarrocksConnectionSerializer,
     SourceDataRequestSerializer,
     SourceGraphDataRequestSerializer,
     SourceDataAndGraphDataRequestSerializer,
@@ -35,6 +36,7 @@ from telescope.serializers.source import (
     GetSourceSchemaClickhouseSerializer,
     GetSourceSchemaDockerSerializer,
     GetSourceSchemaKubernetesSerializer,
+    GetSourceSchemaStarrocksSerializer,
 )
 
 logger = logging.getLogger("telescope.views.source")
@@ -43,12 +45,14 @@ CONNECTION_KIND_TO_SERIALIZER = {
     "clickhouse": ClickhouseConnectionSerializer,
     "docker": DockerConnectionSerializer,
     "kubernetes": KubernetesConnectionSerializer,
+    "starrocks": StarrocksConnectionSerializer,
 }
 
 SCHEMA_KIND_TO_SERIALIZER = {
     "clickhouse": GetSourceSchemaClickhouseSerializer,
     "docker": GetSourceSchemaDockerSerializer,
     "kubernetes": GetSourceSchemaKubernetesSerializer,
+    "starrocks": GetSourceSchemaStarrocksSerializer,
 }
 
 source_srv = SourceService()
@@ -578,6 +582,10 @@ class GetSourceSchemaView(APIView):
             # Build data dict with connection data + additional params
             data = dict(connection.data)
             if kind == "clickhouse":
+                data["database"] = serializer.validated_data["database"]
+                data["table"] = serializer.validated_data["table"]
+            elif kind == "starrocks":
+                data["catalog"] = serializer.validated_data["catalog"]
                 data["database"] = serializer.validated_data["database"]
                 data["table"] = serializer.validated_data["table"]
 
