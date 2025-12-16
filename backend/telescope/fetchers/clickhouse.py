@@ -60,7 +60,7 @@ def build_time_clause(time_column, date_column, time_from, time_to):
     date_clause = ""
     if date_column:
         date_clause = f"{date_column} BETWEEN toDate(fromUnixTimestamp64Milli({time_from})) and toDate(fromUnixTimestamp64Milli({time_to})) AND "
-    return f"{date_clause}{time_column} BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
+    return f"{date_clause}`{time_column}` BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
 
 
 class ClickhouseConnect:
@@ -311,11 +311,9 @@ class Fetcher(BaseFetcher):
         )
         to_time_zone = ""
         if time_column_type in ["datetime", "datetime64"]:
-            to_time_zone = f"toTimeZone({request.source.time_column}, 'UTC')"
+            to_time_zone = f"toTimeZone(`{request.source.time_column}`, 'UTC')"
         elif time_column_type in ["timestamp", "uint64", "int64"]:
-            to_time_zone = (
-                f"toTimeZone(toDateTime({request.source.time_column}), 'UTC')"
-            )
+            to_time_zone = f"toTimeZone(toDateTime(`{request.source.time_column}`), 'UTC')"
 
         columns_names = sorted(request.source._columns.keys())
         columns_to_select = []
@@ -406,7 +404,7 @@ class Fetcher(BaseFetcher):
         else:
             filter_clause = "true"
 
-        order_by_clause = f"ORDER BY {request.source.time_column} DESC"
+        order_by_clause = f"ORDER BY `{request.source.time_column}` DESC"
         raw_where_clause = request.raw_query or "true"
 
         time_clause = build_time_clause(
@@ -427,11 +425,11 @@ class Fetcher(BaseFetcher):
                     request.source._columns[request.source.time_column].type.lower()
                 )
                 if time_column_type in ["datetime", "datetime64"]:
-                    columns_to_select.append(f"toTimeZone({column}, 'UTC')")
+                    columns_to_select.append(f"toTimeZone(`{column}`, 'UTC')")
                 elif time_column_type in ["timestamp", "uint64", "int64"]:
-                    columns_to_select.append(f"toTimeZone(toDateTime({column}), 'UTC')")
+                    columns_to_select.append(f"toTimeZone(toDateTime(`{column}`), 'UTC')")
             else:
-                columns_to_select.append(column)
+                columns_to_select.append(f'`{column}`')
         columns_to_select = ", ".join(columns_to_select)
 
         settings_clause = ""
