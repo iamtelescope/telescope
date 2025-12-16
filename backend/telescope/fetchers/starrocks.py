@@ -7,7 +7,7 @@ import mysql.connector
 
 from flyql.core.parser import parse, ParserError
 from flyql.core.exceptions import FlyqlError
-from flyql.generators.clickhouse.generator import to_sql, Field
+from flyql.generators.starrocks.generator import to_sql, Field
 
 from telescope.models import SourceField
 
