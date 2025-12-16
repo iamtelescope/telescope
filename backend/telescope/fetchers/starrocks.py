@@ -12,7 +12,6 @@ from flyql.generators.clickhouse.generator import to_sql, Field
 from telescope.models import SourceField
 
 from telescope.fetchers.request import (
-    AutocompleteRequest,
     DataRequest,
     GraphDataRequest,
 )
@@ -59,10 +58,8 @@ def escape_param(item: str) -> str:
 def build_time_clause(time_field, date_field, time_from, time_to):
     date_clause = ""
     if date_field:
-    #     date_clause = f"{date_field} BETWEEN to_datetime_ntz({time_from}, 3) and to_datetime_ntz({time_to}, 3)  AND "
-    # return f"{date_clause}{time_field} BETWEEN to_datetime_ntz({time_from}, 3) and to_datetime_ntz({time_to}, 3)"
-        date_clause = f"{date_field} BETWEEN from_unixtime({time_from} / 1000) and from_unixtime({time_to} / 1000)  AND "
-    return f"{date_clause}`{time_field}` BETWEEN from_unixtime({time_from} / 1000) and from_unixtime({time_to} / 1000)"
+        date_clause = f"`{date_field}` BETWEEN date(to_datetime_ntz({time_from}, 3)) and date(to_datetime_ntz({time_to}, 3))  AND "
+    return f"{date_clause}`{time_field}` BETWEEN to_datetime_ntz({time_from}, 3) and to_datetime_ntz({time_to}, 3)"
 
 
 class StarrocksConnect:
