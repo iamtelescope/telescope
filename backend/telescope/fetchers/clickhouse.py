@@ -1,13 +1,16 @@
 import os
 import logging
 import tempfile
-from typing import Dict
+from typing import Dict, Optional
+import zoneinfo
 
 import clickhouse_connect
 
 from flyql.core.parser import parse, ParserError
 from flyql.core.exceptions import FlyqlError
 from flyql.generators.clickhouse.generator import to_sql, Column
+
+from telescope.constants import UTC_ZONE
 
 from telescope.models import SourceColumn
 
@@ -341,12 +344,15 @@ class Fetcher(BaseFetcher):
             elif time_column_type == "datetime64":
                 stats_time_selector = f"toUnixTimestamp64Milli({to_time_zone})"
 
+        assert request.source.conn
         with ClickhouseConnect(request.source.conn.data) as c:
             stat_sql = f"SELECT {stats_time_selector} as t, COUNT() as Count"
             if group_by_value:
+                assert group_by
                 stat_sql += f", {group_by_value} as `{group_by.name}`"
             stat_sql += f" FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} GROUP BY t"
             if group_by_value:
+                assert group_by
                 stat_sql += f", `{group_by.name}`"
             stat_sql += " ORDER BY t"
 
@@ -392,9 +398,9 @@ class Fetcher(BaseFetcher):
 
     @classmethod
     def fetch_data(
-        self,
+        cls,
         request: DataRequest,
-        tz,
+        tz: Optional[zoneinfo.ZoneInfo] = None,
     ):
         if request.query:
             parser = parse(request.query)
@@ -440,6 +446,7 @@ class Fetcher(BaseFetcher):
 
         rows = []
 
+        assert request.source.conn
         with ClickhouseConnect(request.source.conn.data) as c:
             selected_columns = [request.source._record_pseudo_id_column] + columns_names
             for item in c.client.query(select_query).result_rows:
@@ -448,7 +455,7 @@ class Fetcher(BaseFetcher):
                         source=request.source,
                         selected_columns=selected_columns,
                         values=item,
-                        tz=tz,
+                        tz=tz or UTC_ZONE,
                     )
                 )
         return DataResponse(rows=rows)
