@@ -3,7 +3,7 @@ import logging
 import tempfile
 from typing import Dict
 
-import clickhouse_connect
+import mysql.connector
 
 from flyql.core.parser import parse, ParserError
 from flyql.core.exceptions import FlyqlError
@@ -27,11 +27,11 @@ from telescope.fetchers.models import Row
 from telescope.utils import convert_to_base_ch, get_telescope_field
 
 
-logger = logging.getLogger("telescope.fetchers.clickhouse")
+logger = logging.getLogger("telescope.fetchers.starrocks")
 
 
-SSL_CERTS_PARAMS = ["ca_cert", "client_cert", "client_cert_key"]
-OPTIONAL_SSL_PARAMS = ["server_host_name", "tls_mode"]
+SSL_CERTS_PARAMS = ["ssl_ca", "ssl_cert", "ssl_key"]
+OPTIONAL_SSL_PARAMS = ["tls_versions"]
 
 ESCAPE_CHARS_MAP = {
     "\b": "\\b",
@@ -59,11 +59,13 @@ def escape_param(item: str) -> str:
 def build_time_clause(time_field, date_field, time_from, time_to):
     date_clause = ""
     if date_field:
-        date_clause = f"{date_field} BETWEEN toDate(fromUnixTimestamp64Milli({time_from})) and toDate(fromUnixTimestamp64Milli({time_to})) AND "
-    return f"{date_clause}{time_field} BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
+    #     date_clause = f"{date_field} BETWEEN to_datetime_ntz({time_from}, 3) and to_datetime_ntz({time_to}, 3)  AND "
+    # return f"{date_clause}{time_field} BETWEEN to_datetime_ntz({time_from}, 3) and to_datetime_ntz({time_to}, 3)"
+        date_clause = f"{date_field} BETWEEN from_unixtime({time_from} / 1000) and from_unixtime({time_to} / 1000)  AND "
+    return f"{date_clause}`{time_field}` BETWEEN from_unixtime({time_from} / 1000) and from_unixtime({time_to} / 1000)"
 
 
-class ClickhouseConnect:
+class StarrocksConnect:
     def __init__(self, data: dict):
         self.data = data
         self.temp_dir = None
@@ -73,8 +75,8 @@ class ClickhouseConnect:
     @property
     def client(self):
         if self._client is None:
-            self._client = clickhouse_connect.get_client(
-                apply_server_timezone=False, **self.client_kwargs
+            self._client = mysql.connector.connect(
+               **self.client_kwargs
             )
         return self._client
 
@@ -84,8 +86,8 @@ class ClickhouseConnect:
             "port": self.data["port"],
             "user": self.data["user"],
             "password": self.data["password"],
-            "secure": self.data["ssl"],
-            "verify": self.data["verify"],
+            "ssl_disabled": not self.data["ssl"],
+            "ssl_verify_cert": self.data["verify"],
         }
         for name in OPTIONAL_SSL_PARAMS:
             if self.data.get(name) and self.data[name] != "":
@@ -179,9 +181,10 @@ class Fetcher(BaseFetcher):
     @classmethod
     def test_connection_ng(cls, data: dict) -> ConnectionTestResponseNg:
         response = ConnectionTestResponseNg()
-        with ClickhouseConnect(data) as c:
+        with StarrocksConnect(data) as c:
             try:
-                c.client.query("SELECT now()")
+                cur = c.client.cursor()
+                cur.execute("SELECT now()")
             except Exception as err:
                 response.error = str(err)
                 logger.exception("connection test failed: %s", err)
@@ -193,29 +196,36 @@ class Fetcher(BaseFetcher):
     def test_connection(cls, data: dict) -> ConnectionTestResponse:
         response = ConnectionTestResponse()
         target = f"`{data['database']}`.`{data['table']}`"
-        with ClickhouseConnect(data) as c:
+        with StarrocksConnect(data) as c:
             try:
-                c.client.query(f"SELECT 1 FROM {target} LIMIT 1")
+                cur = c.client.cursor()
+                cur.execute(f"SELECT 1 FROM {target} LIMIT 1")
             except Exception as err:
                 response.reachability["error"] = str(err)
                 response.schema["error"] = "Skipped due to reachability test failed"
             else:
                 response.reachability["result"] = True
                 try:
-                    result = c.client.query(
+                    cur = c.client.cursor()
+                    cur.execute(
                         "select name, type from system.columns where database = '%s' and table = '%s'"
                         % (data["database"], data["table"])
                     )
+                    row = cur.fetchone()
                 except Exception as err:
                     response.schema["error"] = str(err)
                 else:
+                    assert row
                     response.schema["result"] = True
                     response.schema["data"] = [
-                        get_telescope_field(x[0], x[1]) for x in result.result_rows
+                        get_telescope_field(row[0], row[1])
                     ]
                 try:
-                    result = c.client.query(f"SHOW CREATE TABLE {target}")
-                    response.schema["raw"] = result.result_rows[0][0]
+                    cur = c.client.cursor()
+                    cur.execute(f"SHOW CREATE TABLE {target}")
+                    row = cur.fetchone()
+                    assert row
+                    response.schema["raw"] = row[0]
                 except Exception as err:
                     logger.exception(
                         "failed to get raw table schema (ignoring): %s", err
@@ -228,16 +238,19 @@ class Fetcher(BaseFetcher):
         """Get schema without testing connection"""
         result = None
         target = f"`{data['database']}`.`{data['table']}`"
-        with ClickhouseConnect(data) as c:
+        with StarrocksConnect(data) as c:
             # First validate the table exists - this will throw an error if it doesn't
-            c.client.query(f"SELECT 1 FROM {target} LIMIT 1")
+            cur = c.client.cursor()
+            cur.execute(f"SELECT 1 FROM {target} LIMIT 1")
+            cur.fetchall()
 
             # Now get the schema
-            result = c.client.query(
-                "select name, type from system.columns where database = '%s' and table = '%s'"
+            cur.execute(
+                "select column_name, column_type from information_schema.columns where table_schema = '%s' and table_name = '%s'"
                 % (data["database"], data["table"])
             )
-        return [get_telescope_field(x[0], x[1]) for x in result.result_rows]
+            result = cur.fetchall()
+        return [get_telescope_field(x[0], x[1]) for x in result]
 
     @classmethod
     def autocomplete(cls, source, field, time_from, time_to, value):
@@ -251,9 +264,11 @@ class Fetcher(BaseFetcher):
         if source.data.get("settings"):
             query += f" SETTINGS {source.data['settings']}"
 
-        with ClickhouseConnect(source.conn.data) as c:
-            result = c.client.query(query, {"value": f"%{value}%"})
-            items = [str(x[0]) for x in result.result_rows]
+        with StarrocksConnect(source.conn.data) as c:
+            cur = c.client.cursor()
+            cur.execute(query, {"value": f"%{value}%"})
+            result = cur.fetchall()
+            items = [str(x[0]) for x in result]
         if len(items) >= 500:
             incomplete = True
         return AutocompleteResponse(items=items, incomplete=incomplete)
@@ -293,7 +308,7 @@ class Fetcher(BaseFetcher):
                 else:
                     raise ValueError
             else:
-                group_by_value = f"toString({group_by.root_name})"
+                group_by_value = f"`{group_by.root_name}`"
 
         total = 0
         time_clause = build_time_clause(
@@ -310,10 +325,15 @@ class Fetcher(BaseFetcher):
             request.source._fields[request.source.time_field].type.lower()
         )
         to_time_zone = ""
+        # TODO: Understand what timezone handling is required
+        # if time_field_type in ["datetime", "datetime64"]:
+        #     to_time_zone = f"toTimeZone({request.source.time_field}, 'UTC')"
+        # elif time_field_type in ["timestamp", "uint64", "int64"]:
+        #     to_time_zone = f"toTimeZone(to_datetime_ntz({request.source.time_field}, 3), 'UTC')"
         if time_field_type in ["datetime", "datetime64"]:
-            to_time_zone = f"toTimeZone({request.source.time_field}, 'UTC')"
+            to_time_zone = f"`{request.source.time_field}`"
         elif time_field_type in ["timestamp", "uint64", "int64"]:
-            to_time_zone = f"toTimeZone(toDateTime({request.source.time_field}), 'UTC')"
+            to_time_zone = f"toTimeZone(to_datetime_ntz({request.source.time_field}, 3), 'UTC')"
 
         fields_names = sorted(request.source._fields.keys())
         fields_to_select = []
@@ -334,14 +354,14 @@ class Fetcher(BaseFetcher):
             stats_interval_seconds = round(seconds / max_points)
             if stats_interval_seconds == 0:
                 stats_interval_seconds = 1
-            stats_time_selector = f"toUnixTimestamp(toStartOfInterval({to_time_zone}, toIntervalSecond({stats_interval_seconds}))) * 1000"
+            stats_time_selector = f"unix_timestamp(time_slice({to_time_zone}, INTERVAL {stats_interval_seconds} SECOND)) * 1000"
         else:
             if time_field_type in ["datetime", "timestamp", "uint64"]:
-                stats_time_selector = f"toUnixTimestamp({to_time_zone})*1000"
+                stats_time_selector = f"unix_timestamp({to_time_zone})*1000"
             elif time_field_type == "datetime64":
-                stats_time_selector = f"toUnixTimestamp64Milli({to_time_zone})"
+                stats_time_selector = f"unix_timestamp({to_time_zone})"
 
-        with ClickhouseConnect(request.source.conn.data) as c:
+        with StarrocksConnect(request.source.conn.data) as c:
             stat_sql = f"SELECT {stats_time_selector} as t, COUNT() as Count"
             if group_by_value:
                 stat_sql += f", {group_by_value} as `{group_by.name}`"
@@ -353,7 +373,10 @@ class Fetcher(BaseFetcher):
             if request.source.data.get("settings"):
                 stat_sql += f" SETTINGS {request.source.data['settings']}"
 
-            for item in c.client.query(stat_sql).result_rows:
+            cur = c.client.cursor()
+            print(stat_sql)
+            cur.execute(stat_sql)
+            for item in cur.fetchall():
                 if group_by_value:
                     ts, count, groupper = item
                     if not groupper:
@@ -404,7 +427,7 @@ class Fetcher(BaseFetcher):
         else:
             filter_clause = "true"
 
-        order_by_clause = f"ORDER BY {request.source.time_field} DESC"
+        order_by_clause = f"ORDER BY `{request.source.time_field}` DESC"
         raw_where_clause = request.raw_query or "true"
 
         time_clause = build_time_clause(
@@ -420,29 +443,32 @@ class Fetcher(BaseFetcher):
         fields_names = sorted(request.source._fields.keys())
         fields_to_select = []
         for field in fields_names:
-            if field == request.source.time_field:
-                time_field_type = convert_to_base_ch(
-                    request.source._fields[request.source.time_field].type.lower()
-                )
-                if time_field_type in ["datetime", "datetime64"]:
-                    fields_to_select.append(f"toTimeZone({field}, 'UTC')")
-                elif time_field_type in ["timestamp", "uint64", "int64"]:
-                    fields_to_select.append(f"toTimeZone(toDateTime({field}), 'UTC')")
-            else:
-                fields_to_select.append(field)
+            # TODO: Understand what timezone handling is required
+            # if field == request.source.time_field:
+            #     time_field_type = convert_to_base_ch(
+            #         request.source._fields[request.source.time_field].type.lower()
+            #     )
+            #     if time_field_type in ["datetime", "datetime64"]:
+            #         fields_to_select.append(f"toTimeZone({field}, 'UTC')")
+            #     elif time_field_type in ["timestamp", "uint64", "int64"]:
+            #         fields_to_select.append(f"toTimeZone(toDateTime({field}), 'UTC')")
+            # else:
+                fields_to_select.append(f'`{field}`')
         fields_to_select = ", ".join(fields_to_select)
 
         settings_clause = ""
         if request.source.data.get("settings"):
             settings_clause = f" SETTINGS {request.source.data['settings']}"
 
-        select_query = f"SELECT generateUUIDv4(),{fields_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}{settings_clause}"
+        select_query = f"SELECT uuid_numeric(),{fields_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}{settings_clause}"
 
         rows = []
 
-        with ClickhouseConnect(request.source.conn.data) as c:
+        with StarrocksConnect(request.source.conn.data) as c:
             selected_fields = [request.source._record_pseudo_id_field] + fields_names
-            for item in c.client.query(select_query).result_rows:
+            cur = c.client.cursor()
+            cur.execute(select_query)
+            for item in cur.fetchall():
                 rows.append(
                     Row(
                         source=request.source,
