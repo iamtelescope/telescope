@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 import zoneinfo
 from telescope.fetchers.request import (
     AutocompleteRequest,
@@ -16,11 +16,11 @@ from telescope.fetchers.response import (
 
 class BaseFetcher:
     @classmethod
-    def validate_query(cls, query) -> bool:
+    def validate_query(cls, source, query) -> tuple[bool, Any]:
         raise NotImplementedError
 
     @classmethod
-    def autocomplete(cls, request: AutocompleteRequest) -> AutocompleteResponse:
+    def autocomplete(cls, source, field, time_from, time_to, value) -> AutocompleteResponse:
         raise NotImplementedError
 
     @classmethod

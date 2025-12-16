@@ -1,13 +1,16 @@
 import os
 import logging
 import tempfile
-from typing import Dict
+from typing import Dict, Optional
+import zoneinfo
 
 import mysql.connector
 
 from flyql.core.parser import parse, ParserError
 from flyql.core.exceptions import FlyqlError
 from flyql.generators.starrocks.generator import to_sql, Field
+
+from telescope.constants import UTC_ZONE
 
 from telescope.models import SourceField
 
@@ -358,12 +361,15 @@ class Fetcher(BaseFetcher):
             elif time_field_type == "datetime64":
                 stats_time_selector = f"unix_timestamp({to_time_zone})"
 
+        assert request.source.conn
         with StarrocksConnect(request.source.conn.data) as c:
             stat_sql = f"SELECT {stats_time_selector} as t, COUNT() as Count"
             if group_by_value:
+                assert group_by
                 stat_sql += f", {group_by_value} as `{group_by.name}`"
             stat_sql += f" FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} GROUP BY t"
             if group_by_value:
+                assert group_by
                 stat_sql += f", `{group_by.name}`"
             stat_sql += " ORDER BY t"
 
@@ -412,9 +418,9 @@ class Fetcher(BaseFetcher):
 
     @classmethod
     def fetch_data(
-        self,
+        cls,
         request: DataRequest,
-        tz,
+        tz: Optional[zoneinfo.ZoneInfo] = None,
     ):
         if request.query:
             parser = parse(request.query)
@@ -461,6 +467,7 @@ class Fetcher(BaseFetcher):
 
         rows = []
 
+        assert request.source.conn
         with StarrocksConnect(request.source.conn.data) as c:
             selected_fields = [request.source._record_pseudo_id_field] + fields_names
             cur = c.client.cursor()
@@ -471,7 +478,7 @@ class Fetcher(BaseFetcher):
                         source=request.source,
                         selected_fields=selected_fields,
                         values=item,
-                        tz=tz,
+                        tz=tz or UTC_ZONE,
                     )
                 )
         return DataResponse(rows=rows)
