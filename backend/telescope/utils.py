@@ -148,6 +148,32 @@ CLICKHOUSE_TYPES: List[str] = [
     "boolean",
 ]
 
+STARROCKS_TYPES: List[str] = [
+    "string",
+    "varchar",
+    "char",
+    "binary",
+    "varbinary",
+    "bool",
+    "boolean",
+    "int",
+    "tinyint",
+    "smallint",
+    "bigint",
+    "largeint",
+    "float",
+    "double",
+    "decimal",
+    "date",
+    "datetime",
+    "bitmap",
+    "hll",
+    "json",
+    "array",
+    "map",
+    "struct",
+]
+
 ALLOWED_TIME_COLUMN_TYPES: List[str] = [
     "datetime",
     "datetime64",
@@ -249,9 +275,6 @@ def convert_to_base_ch(full_type: str) -> str:
     return res
 
 
-<<<<<<< HEAD
-def get_telescope_column(name, _type, **kwargs):
-=======
 def convert_to_base_sr(full_type: str) -> str:
     """Finds the longest matching StarRocks type in the given full type string."""
     res: str = ""
@@ -261,8 +284,7 @@ def convert_to_base_sr(full_type: str) -> str:
     return res
 
 
-def get_telescope_field(name, _type, **kwargs):
->>>>>>> 74e2bbd (backend: add basic types for supporting Starrocks)
+def get_telescope_column(name, _type, **kwargs):
     data = {
         "name": name,
         "display_name": "",
