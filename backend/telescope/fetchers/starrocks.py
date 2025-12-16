@@ -23,7 +23,7 @@ from telescope.fetchers.response import (
 from telescope.fetchers.fetcher import BaseFetcher
 from telescope.fetchers.models import Row
 
-from telescope.utils import convert_to_base_ch, get_telescope_field
+from telescope.utils import convert_to_base_sr, get_telescope_field
 
 
 logger = logging.getLogger("telescope.fetchers.starrocks")
@@ -318,7 +318,7 @@ class Fetcher(BaseFetcher):
             f"{request.source.data['database']}.{request.source.data['table']}"
         )
 
-        time_field_type = convert_to_base_ch(
+        time_field_type = convert_to_base_sr(
             request.source._fields[request.source.time_field].type.lower()
         )
         to_time_zone = ""
@@ -442,7 +442,7 @@ class Fetcher(BaseFetcher):
         for field in fields_names:
             # TODO: Understand what timezone handling is required
             # if field == request.source.time_field:
-            #     time_field_type = convert_to_base_ch(
+            #     time_field_type = convert_to_base_sr(
             #         request.source._fields[request.source.time_field].type.lower()
             #     )
             #     if time_field_type in ["datetime", "datetime64"]:
