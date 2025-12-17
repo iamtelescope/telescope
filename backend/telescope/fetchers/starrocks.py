@@ -318,7 +318,7 @@ class Fetcher(BaseFetcher):
             request.time_to,
         )
         from_db_table = (
-            f"{request.source.data['database']}.{request.source.data['table']}"
+            f"{request.source.data['catalog']}.{request.source.data['database']}.{request.source.data['table']}"
         )
 
         time_field_type = convert_to_base_sr(
@@ -440,7 +440,7 @@ class Fetcher(BaseFetcher):
             request.time_to,
         )
         from_db_table = (
-            f"{request.source.data['database']}.{request.source.data['table']}"
+            f"{request.source.data['catalog']}.{request.source.data['database']}.{request.source.data['table']}"
         )
 
         fields_names = sorted(request.source._fields.keys())
