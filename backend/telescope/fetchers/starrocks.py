@@ -259,10 +259,10 @@ class Fetcher(BaseFetcher):
         time_clause = build_time_clause(
             source.time_field, source.date_field, time_from, time_to
         )
-        query = f"SELECT DISTINCT {field} FROM {from_db_table} WHERE {time_clause} and {field} LIKE %(value)s ORDER BY {field} LIMIT 500"
-
+        query_hints = ""
         if source.data.get("settings"):
-            query += f" SETTINGS {source.data['settings']}"
+            query_hints = f"/*+ SET_VAR({source.data['settings']}) */"
+        query = f"SELECT {query_hints} DISTINCT {field} FROM {from_db_table} WHERE {time_clause} and {field} LIKE %(value)s ORDER BY {field} LIMIT 500"
 
         with StarrocksConnect(source.conn.data) as c:
             cur = c.client.cursor()
@@ -363,7 +363,11 @@ class Fetcher(BaseFetcher):
 
         assert request.source.conn
         with StarrocksConnect(request.source.conn.data) as c:
-            stat_sql = f"SELECT {stats_time_selector} as t, COUNT() as Count"
+            query_hints = ""
+            if request.source.data.get("settings"):
+                query_hints = f"/*+ SET_VAR({request.source.data['settings']}) */"
+
+            stat_sql = f"SELECT {query_hints} {stats_time_selector} as t, COUNT() as Count"
             if group_by_value:
                 assert group_by
                 stat_sql += f", {group_by_value} as `{group_by.name}`"
@@ -372,9 +376,6 @@ class Fetcher(BaseFetcher):
                 assert group_by
                 stat_sql += f", `{group_by.name}`"
             stat_sql += " ORDER BY t"
-
-            if request.source.data.get("settings"):
-                stat_sql += f" SETTINGS {request.source.data['settings']}"
 
             cur = c.client.cursor()
             print(stat_sql)
@@ -459,11 +460,11 @@ class Fetcher(BaseFetcher):
                 fields_to_select.append(f'`{field}`')
         fields_to_select = ", ".join(fields_to_select)
 
-        settings_clause = ""
+        query_hints = ""
         if request.source.data.get("settings"):
-            settings_clause = f" SETTINGS {request.source.data['settings']}"
+            query_hints = f"/*+ SET_VAR({request.source.data['settings']}) */"
 
-        select_query = f"SELECT uuid_numeric(),{fields_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}{settings_clause}"
+        select_query = f"SELECT {query_hints} uuid_numeric(),{fields_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}"
 
         rows = []
 

@@ -130,16 +130,16 @@
                     </Message>
                 </div>
                 <div class="pt-2">
-                    <label for="settings" class="font-medium">Query Settings</label>
+                    <label for="settings" class="font-medium">Query Hints</label>
                     <Textarea
                         v-model="settings"
                         id="settings"
                         class="w-full font-mono"
                         rows="3"
-                        placeholder="e.g., use_query_cache = true, max_parallel_replicas = 1"
+                        placeholder="e.g., query_timeout=60, time_zone='UTC'"
                     />
                     <small class="text-gray-500 dark:text-gray-400 block mt-1">
-                        StarRocks SETTINGS clause (comma-separated key=value pairs)
+                        StarRocks query hints (comma-separated key=value pairs)
                     </small>
                 </div>
             </template>
