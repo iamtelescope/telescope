@@ -32,7 +32,7 @@ from telescope.utils import convert_to_base_sr, get_telescope_field
 logger = logging.getLogger("telescope.fetchers.starrocks")
 
 
-SSL_CERTS_PARAMS = ["ssl_ca", "ssl_cert", "ssl_key"]
+SSL_CERTS_PARAMS = {"ca_cert": "ssl_ca", "client_cert": "ssl_cert", "client_cert_key": "ssl_key"}
 OPTIONAL_SSL_PARAMS = ["tls_versions"]
 
 ESCAPE_CHARS_MAP = {
@@ -89,18 +89,18 @@ class StarrocksConnect:
             "ssl_disabled": not self.data["ssl"],
             "ssl_verify_cert": self.data["verify"],
         }
-        for name in OPTIONAL_SSL_PARAMS:
-            if self.data.get(name) and self.data[name] != "":
-                client_kwargs[name] = self.data[name]
+        for config in OPTIONAL_SSL_PARAMS:
+            if self.data.get(config) and self.data[config] != "":
+                client_kwargs[config] = self.data[config]
 
         self.temp_dir = tempfile.TemporaryDirectory()
 
-        for name in SSL_CERTS_PARAMS:
-            if self.data.get(name):
-                path = os.path.join(self.temp_dir.name, f"{name}.pem")
+        for config, key in SSL_CERTS_PARAMS.items():
+            if self.data.get(config):
+                path = os.path.join(self.temp_dir.name, f"{config}.pem")
                 with open(path, "w") as fd:
-                    fd.write(self.data[name])
-                client_kwargs[name] = path
+                    fd.write(self.data[config])
+                client_kwargs[key] = path
         self.client_kwargs = client_kwargs
         return self
 
