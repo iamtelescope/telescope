@@ -56,6 +56,25 @@
                 type="hidden"
                 v-model="connectionData.kubeconfig_hash"
             />
+
+            <div>
+                <label for="max_concurrent_requests" class="font-medium block mb-1">
+                    Max Concurrent Requests
+                </label>
+                <InputNumber
+                    id="max_concurrent_requests"
+                    v-model="connectionData.max_concurrent_requests"
+                    :min="1"
+                    :step="1"
+                    showButtons
+                    fluid
+                    :invalid="hasError('max_concurrent_requests')"
+                />
+                <ErrorText :text="connectionFieldErrors.max_concurrent_requests" />
+                <small class="text-gray-600 mt-1 block">
+                    Maximum number of concurrent requests for parallel log fetching (default: 20). Lower values reduce load on the Kubernetes API server.
+                </small>
+            </div>
         </div>
     </ContentBlock>
 </template>
@@ -64,6 +83,7 @@
 import { reactive, watch, onMounted } from 'vue'
 import Textarea from 'primevue/textarea'
 import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
 import Checkbox from 'primevue/checkbox'
 import ErrorText from '@/components/common/ErrorText.vue'
 import ContentBlock from '@/components/common/ContentBlock.vue'
@@ -76,6 +96,7 @@ const getInitialConnectionData = () => {
         kubeconfig: '',
         kubeconfig_hash: '',
         kubeconfig_is_local: false,
+        max_concurrent_requests: 20,
     }
     if (props.connection) {
         data = { ...data, ...props.connection.data }
@@ -87,6 +108,7 @@ const connectionData = reactive(getInitialConnectionData())
 
 const connectionFieldErrors = reactive({
     kubeconfig: '',
+    max_concurrent_requests: '',
 })
 
 const hasError = (key) => {

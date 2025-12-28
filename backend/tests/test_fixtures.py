@@ -165,7 +165,9 @@ def test_kubernetes_connection_fixture(kubernetes_connection):
 
 
 @pytest.mark.django_db
-def test_kubernetes_personal_saved_view_fixture(kubernetes_personal_saved_view, test_user, kubernetes_source):
+def test_kubernetes_personal_saved_view_fixture(
+    kubernetes_personal_saved_view, test_user, kubernetes_source
+):
     assert isinstance(kubernetes_personal_saved_view, SavedView)
     assert kubernetes_personal_saved_view.slug == "test-view-kubernetes-personal"
     assert kubernetes_personal_saved_view.name == "Test View Kubernetes Personal"
@@ -177,7 +179,9 @@ def test_kubernetes_personal_saved_view_fixture(kubernetes_personal_saved_view, 
 
 
 @pytest.mark.django_db
-def test_kubernetes_source_saved_view_fixture(kubernetes_source_saved_view, root_user, kubernetes_source):
+def test_kubernetes_source_saved_view_fixture(
+    kubernetes_source_saved_view, root_user, kubernetes_source
+):
     assert isinstance(kubernetes_source_saved_view, SavedView)
     assert kubernetes_source_saved_view.slug == "test-view-kubernetes-source"
     assert kubernetes_source_saved_view.name == "Test View Kubernetes Source"

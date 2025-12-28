@@ -22,7 +22,9 @@ class BaseFetcher:
         raise NotImplementedError
 
     @classmethod
-    def fetch_data(cls, request: DataRequest, tz: Optional[zoneinfo.ZoneInfo] = None) -> DataResponse:
+    def fetch_data(
+        cls, request: DataRequest, tz: Optional[zoneinfo.ZoneInfo] = None
+    ) -> DataResponse:
         raise NotImplementedError
 
     @classmethod

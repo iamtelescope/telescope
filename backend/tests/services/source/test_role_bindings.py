@@ -377,7 +377,9 @@ def test_revoke_kubernetes_source_role_from_user(test_user, kubernetes_source):
 
 
 @pytest.mark.django_db
-def test_revoke_kubernetes_source_role_that_does_not_exist(test_user, kubernetes_source):
+def test_revoke_kubernetes_source_role_that_does_not_exist(
+    test_user, kubernetes_source
+):
     # Try to revoke a role that was never granted
     deleted = rbac_manager.revoke_source_role(
         source=kubernetes_source,
@@ -427,7 +429,9 @@ def test_multiple_kubernetes_roles_for_same_user(test_user, kubernetes_source):
     )
 
     # Verify both bindings exist
-    bindings = SourceRoleBinding.objects.filter(user=test_user, source=kubernetes_source)
+    bindings = SourceRoleBinding.objects.filter(
+        user=test_user, source=kubernetes_source
+    )
     assert bindings.count() == 2
     roles = set(b.role for b in bindings)
     assert SourceRole.VIEWER.value in roles
@@ -520,7 +524,9 @@ def test_get_kubernetes_role_bindings_with_editor_role(kubernetes_source):
 @pytest.mark.django_db
 def test_get_kubernetes_role_bindings_with_user_role(kubernetes_source):
     # Create a user with USER role (does NOT have GRANT permission)
-    user = User.objects.create_user(username="k8s_source_user_no_grant", password="pass")
+    user = User.objects.create_user(
+        username="k8s_source_user_no_grant", password="pass"
+    )
     rbac_manager.grant_source_role(
         source=kubernetes_source,
         role=SourceRole.USER.value,

@@ -96,7 +96,7 @@ class Source(models.Model):
             data["support_raw_query"] = False
             data["context_fields"] = {
                 "deployment": {},
-            }        
+            }
         return Source.objects.create(kind=kind, **data, modifiers=[])
 
     @property

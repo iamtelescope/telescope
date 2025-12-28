@@ -8,7 +8,11 @@ from telescope.rbac.manager import RBACManager
 rbac_manager = RBACManager()
 from telescope.models import Source, SourceRoleBinding
 from telescope.services.exceptions import SerializerValidationError
-from telescope.serializers.source import SourceKindSerializer, NewDockerSourceSerializer, NewKubernetesSourceSerializer
+from telescope.serializers.source import (
+    SourceKindSerializer,
+    NewDockerSourceSerializer,
+    NewKubernetesSourceSerializer,
+)
 
 from tests.data import get_docker_source_data, get_kubernetes_source_data
 
@@ -124,7 +128,9 @@ def test_create_source_with_execute_query_on_open_field(
 
 
 @pytest.mark.django_db
-def test_create_kubernetes_source_with_permissions(test_user, service, kubernetes_connection):
+def test_create_kubernetes_source_with_permissions(
+    test_user, service, kubernetes_connection
+):
     from telescope.rbac.roles import ConnectionRole
 
     rbac_manager.grant_global_role(role=GlobalRole.ADMIN.value, user=test_user)

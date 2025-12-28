@@ -103,7 +103,9 @@ def test_create_personal_view_kubernetes_source(test_user, kubernetes_source):
 
 
 @pytest.mark.django_db
-def test_create_source_view_kubernetes_with_edit_permission(test_user, kubernetes_source):
+def test_create_source_view_kubernetes_with_edit_permission(
+    test_user, kubernetes_source
+):
     rbac_manager.grant_source_role(
         kubernetes_source, SourceRole.EDITOR.value, user=test_user
     )
