@@ -333,9 +333,13 @@ def test_list_views_with_edit_permission(docker_source, test_user):
 
 
 @pytest.mark.django_db
-def test_create_kubernetes_personal_view_with_use_permission_only(test_user, kubernetes_source):
+def test_create_kubernetes_personal_view_with_use_permission_only(
+    test_user, kubernetes_source
+):
     """User with only USE permission can create personal view on kubernetes source (needs READ)"""
-    rbac_manager.grant_source_role(kubernetes_source, SourceRole.USER.value, user=test_user)
+    rbac_manager.grant_source_role(
+        kubernetes_source, SourceRole.USER.value, user=test_user
+    )
 
     data = {
         "scope": VIEW_SCOPE_PERSONAL,
@@ -352,7 +356,9 @@ def test_create_kubernetes_personal_view_with_use_permission_only(test_user, kub
 
 
 @pytest.mark.django_db
-def test_create_kubernetes_source_view_with_owner_permission(test_user, kubernetes_source):
+def test_create_kubernetes_source_view_with_owner_permission(
+    test_user, kubernetes_source
+):
     """User with OWNER permission can create source-scope view on kubernetes source"""
     rbac_manager.grant_source_role(
         kubernetes_source, SourceRole.OWNER.value, user=test_user
@@ -373,7 +379,9 @@ def test_create_kubernetes_source_view_with_owner_permission(test_user, kubernet
 
 
 @pytest.mark.django_db
-def test_create_kubernetes_source_view_with_viewer_permission(test_user, kubernetes_source):
+def test_create_kubernetes_source_view_with_viewer_permission(
+    test_user, kubernetes_source
+):
     """User with VIEWER permission cannot create source-scope view on kubernetes source (needs EDIT)"""
     rbac_manager.grant_source_role(
         kubernetes_source, SourceRole.VIEWER.value, user=test_user

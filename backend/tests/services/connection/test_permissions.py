@@ -11,7 +11,11 @@ from telescope.models import Connection, ConnectionRoleBinding
 from telescope.services.connection import ConnectionService
 from telescope.rbac.roles import ConnectionRole, GlobalRole
 from telescope.rbac.manager import RBACManager
-from tests.data import get_docker_connection_data, get_clickhouse_connection_data, get_kubernetes_connection_data
+from tests.data import (
+    get_docker_connection_data,
+    get_clickhouse_connection_data,
+    get_kubernetes_connection_data,
+)
 
 rbac_manager = RBACManager()
 connection_srv = ConnectionService()
@@ -160,7 +164,9 @@ def test_list_connections_with_partial_permission(
 
 
 @pytest.mark.django_db
-def test_list_usable_connections(docker_connection, clickhouse_connection, kubernetes_connection):
+def test_list_usable_connections(
+    docker_connection, clickhouse_connection, kubernetes_connection
+):
     """list_usable returns only connections with USE permission"""
     user = User.objects.create_user(username="use_user", password="pass")
     # Grant USER role on docker (has USE), VIEWER on clickhouse and kubernetes (no USE)

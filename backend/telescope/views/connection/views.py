@@ -8,7 +8,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from telescope.services.connection import ConnectionService
-from telescope.services.exceptions import SerializerValidationError, ConnectionInUseError
+from telescope.services.exceptions import (
+    SerializerValidationError,
+    ConnectionInUseError,
+)
 from telescope.rbac.manager import RBACManager
 from telescope.rbac import permissions
 

@@ -260,7 +260,7 @@ class Fetcher(BaseFetcher):
 
     @classmethod
     def fetch_graph_data(
-        cls, 
+        cls,
         request: GraphDataRequest,
     ):
         if request.query:

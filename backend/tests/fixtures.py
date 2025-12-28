@@ -186,7 +186,7 @@ def kubernetes_source(kubernetes_connection):
     data = get_kubernetes_source_data("kubernetes")
     del data["kind"]
     del data["connection"]
-    data["conn"] = kubernetes_connection 
+    data["conn"] = kubernetes_connection
     return Source.create(
         kind="kubernetes",
         data=data,

@@ -14,7 +14,11 @@ def test_list_connections_empty(test_user, connection_service):
 
 @pytest.mark.django_db
 def test_list_connections(
-    test_user, connection_service, docker_connection, clickhouse_connection, kubernetes_connection
+    test_user,
+    connection_service,
+    docker_connection,
+    clickhouse_connection,
+    kubernetes_connection,
 ):
     rbac_manager.grant_connection_role(
         connection=docker_connection, role=ConnectionRole.VIEWER.value, user=test_user
@@ -65,7 +69,11 @@ def test_list_connections_with_superuser(
 
 @pytest.mark.django_db
 def test_list_connections_does_not_return_data_field(
-    test_user, connection_service, docker_connection, clickhouse_connection, kubernetes_connection
+    test_user,
+    connection_service,
+    docker_connection,
+    clickhouse_connection,
+    kubernetes_connection,
 ):
     """Test that list does not return sensitive connection data"""
     rbac_manager.grant_connection_role(
@@ -106,7 +114,7 @@ def test_list_connections_excludes_sensitive_data(
 
     ch_conn = next((c for c in data if c["kind"] == "clickhouse"), None)
     assert ch_conn is not None
-    
+
     k8s_conn = next((c for c in data if c["kind"] == "kubernetes"), None)
     assert k8s_conn is not None
 
@@ -117,7 +125,7 @@ def test_list_connections_excludes_sensitive_data(
     assert "password" not in ch_conn
     assert "host" not in ch_conn
     assert "address" not in ch_conn
-    
+
     # Verify sensitive data is NOT exposed for kubernetes
     assert "data" not in k8s_conn
     # If data was present, it would contain: kubeconfig, namespace, etc.

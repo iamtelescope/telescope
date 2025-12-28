@@ -37,9 +37,13 @@ def test_delete_nonexistent_connection(root_user, connection_service):
 
 
 @pytest.mark.django_db
-def test_delete_kubernetes_connection(test_user, connection_service, kubernetes_connection):
+def test_delete_kubernetes_connection(
+    test_user, connection_service, kubernetes_connection
+):
     rbac_manager.grant_connection_role(
-        connection=kubernetes_connection, role=ConnectionRole.OWNER.value, user=test_user
+        connection=kubernetes_connection,
+        role=ConnectionRole.OWNER.value,
+        user=test_user,
     )
     connection_id = kubernetes_connection.id
     connection_service.delete(user=test_user, pk=connection_id)

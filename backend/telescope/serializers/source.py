@@ -152,12 +152,10 @@ class KubernetesConnectionSerializer(serializers.Serializer):
         help_text="Raw kubeconfig file content or local file path",
     )
     kubeconfig_hash = serializers.CharField(
-        required=True,
-        help_text="SHA256 hash of kubeconfig content or file path"
+        required=True, help_text="SHA256 hash of kubeconfig content or file path"
     )
     kubeconfig_is_local = serializers.BooleanField(
-        required=True,
-        help_text="Whether kubeconfig is a local file path"
+        required=True, help_text="Whether kubeconfig is a local file path"
     )
 
     def validate(self, data):
@@ -186,7 +184,6 @@ class GetSourceSchemaDockerSerializer(serializers.Serializer):
 class GetSourceSchemaKubernetesSerializer(serializers.Serializer):
     connection_id = serializers.IntegerField()
     namespace = serializers.CharField()
-
 
 
 class SourceFieldSerializer(serializers.Serializer):
@@ -351,6 +348,7 @@ class KubernetesSourceDataSerializer(serializers.Serializer):
 
 class NewDockerSourceSerializer(NewBaseSourceSerializer):
     data = DockerSourceDataSerializer(required=False, default=dict)
+
 
 class NewKubernetesSourceSerializer(NewBaseSourceSerializer):
     data = KubernetesSourceDataSerializer(required=False, default=dict)

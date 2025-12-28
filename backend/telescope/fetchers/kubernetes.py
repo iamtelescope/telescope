@@ -32,23 +32,25 @@ from django.conf import settings
 
 logger = logging.getLogger("telescope.fetchers.kubernetes")
 
+
 def parse_k8s_timestamp(timestamp_str, tz):
     try:
-        year   = int(timestamp_str[0:4])
-        month  = int(timestamp_str[5:7])
-        day    = int(timestamp_str[8:10])
-        hour   = int(timestamp_str[11:13])
+        year = int(timestamp_str[0:4])
+        month = int(timestamp_str[5:7])
+        day = int(timestamp_str[8:10])
+        hour = int(timestamp_str[11:13])
         minute = int(timestamp_str[14:16])
         second = int(timestamp_str[17:19])
 
-        if timestamp_str[19] == '.':
+        if timestamp_str[19] == ".":
             frac_raw = timestamp_str[20:-1]
-            micros   = int((frac_raw[:6]).ljust(6, '0'))
+            micros = int((frac_raw[:6]).ljust(6, "0"))
         else:
             micros = 0
         return datetime(year, month, day, hour, minute, second, micros, UTC_ZONE)
     except (ValueError, AttributeError):
         return None
+
 
 class ConnectionTestResponseNg:
     def __init__(self):
@@ -70,7 +72,7 @@ class ConnectionTestResponse:
 
 class KubernetesClient:
     _config_cache = {}
-    
+
     def __init__(self, data: dict):
         self.data = data
         self._core = None
@@ -126,6 +128,7 @@ class KubernetesClient:
                 self._temp_dir = None
 
         return cfg
+
     def _init_clients(self, cfg):
         api_client = client.ApiClient(cfg)
         self._core = client.CoreV1Api(api_client)
@@ -161,34 +164,47 @@ class Fetcher(BaseFetcher):
             namespace = source.data.get("namespace")
             if not namespace:
                 raise ValueError("Namespace is required in source configuration")
-            
+
             with KubernetesClient(source.conn.data) as client:
                 deployments = []
                 try:
-                    deployment_list = client.apps.list_namespaced_deployment(namespace=namespace)
+                    deployment_list = client.apps.list_namespaced_deployment(
+                        namespace=namespace
+                    )
                     for deployment in deployment_list.items:
                         status = "Unknown"
                         if deployment.status.conditions:
                             for condition in deployment.status.conditions:
-                                if condition.type == "Available" and condition.status == "True":
+                                if (
+                                    condition.type == "Available"
+                                    and condition.status == "True"
+                                ):
                                     status = "Available"
                                     break
-                                elif condition.type == "Progressing" and condition.status == "True":
+                                elif (
+                                    condition.type == "Progressing"
+                                    and condition.status == "True"
+                                ):
                                     status = "Progressing"
-                                elif condition.type == "ReplicaFailure" and condition.status == "True":
+                                elif (
+                                    condition.type == "ReplicaFailure"
+                                    and condition.status == "True"
+                                ):
                                     status = "Failed"
-                        
-                        deployments.append({
-                            "name": deployment.metadata.name,
-                            "replicas_desired": deployment.spec.replicas or 0,
-                            "replicas_ready": deployment.status.ready_replicas or 0,
-                            "status": status,
-                            "labels": deployment.metadata.labels or {},
-                        })
+
+                        deployments.append(
+                            {
+                                "name": deployment.metadata.name,
+                                "replicas_desired": deployment.spec.replicas or 0,
+                                "replicas_ready": deployment.status.ready_replicas or 0,
+                                "status": status,
+                                "labels": deployment.metadata.labels or {},
+                            }
+                        )
                 except Exception as err:
                     logger.error(f"Error listing deployments: {err}")
                     raise ValueError(f"Failed to list deployments: {err}")
-                
+
                 return sorted(deployments, key=lambda d: d["name"])
         else:
             raise ValueError(f"Unsupported context field: {field}")
@@ -252,59 +268,64 @@ class Fetcher(BaseFetcher):
     def get_pods_for_deployments(cls, client, namespace, selected_deployments):
         if not selected_deployments:
             return []
-            
+
         pods = []
-        
+
         try:
-            deployment_list = client.apps.list_namespaced_deployment(namespace=namespace)
+            deployment_list = client.apps.list_namespaced_deployment(
+                namespace=namespace
+            )
         except Exception as err:
             logger.error(f"Error listing deployments: {err}")
             return []
-        
+
         for deployment in deployment_list.items:
             if deployment.metadata.name not in selected_deployments:
                 continue
-                
+
             selector = deployment.spec.selector.match_labels
             if selector:
                 label_selector_str = ",".join(f"{k}={v}" for k, v in selector.items())
-                
+
                 try:
                     dep_pods = client.core.list_namespaced_pod(
-                        namespace=namespace,
-                        label_selector=label_selector_str
+                        namespace=namespace, label_selector=label_selector_str
                     ).items
                     pods.extend(dep_pods)
                 except Exception as err:
-                    logger.error(f"Error fetching pods for deployment {deployment.metadata.name}: {err}")
-        
+                    logger.error(
+                        f"Error fetching pods for deployment {deployment.metadata.name}: {err}"
+                    )
+
         seen_names = set()
         unique_pods = []
         for pod in pods:
             if pod.metadata.name not in seen_names:
                 seen_names.add(pod.metadata.name)
                 unique_pods.append(pod)
-        
+
         return unique_pods
 
     @classmethod
     def has_previous_container(cls, pod, container_name):
         if not pod.status or not pod.status.container_statuses:
             return False
-        
+
         for container_status in pod.status.container_statuses:
             if container_status.name == container_name:
                 return (
-                    container_status.last_state and
-                    container_status.last_state.terminated and
-                    container_status.last_state.terminated.finished_at
+                    container_status.last_state
+                    and container_status.last_state.terminated
+                    and container_status.last_state.terminated.finished_at
                 )
         return False
 
     @classmethod
-    def fetch_container_logs_with_previous(cls, client, namespace, pod_name, container_name, log_params):
+    def fetch_container_logs_with_previous(
+        cls, client, namespace, pod_name, container_name, log_params
+    ):
         logs = []
-        
+
         try:
             current_params = log_params.copy()
             current_params["previous"] = False
@@ -313,8 +334,10 @@ class Fetcher(BaseFetcher):
                 logs.append(("current", current_logs))
         except ApiException as e:
             if e.status not in [403, 404]:
-                logger.error(f"Error fetching current logs for {namespace}/{pod_name}/{container_name}: {e}")
-        
+                logger.error(
+                    f"Error fetching current logs for {namespace}/{pod_name}/{container_name}: {e}"
+                )
+
         try:
             pod = client.core.read_namespaced_pod(name=pod_name, namespace=namespace)
             if cls.has_previous_container(pod, container_name):
@@ -325,15 +348,23 @@ class Fetcher(BaseFetcher):
                     logs.append(("previous", previous_logs))
         except ApiException as e:
             if e.status not in [403, 404]:
-                logger.error(f"Error fetching previous logs for {namespace}/{pod_name}/{container_name}: {e}")
+                logger.error(
+                    f"Error fetching previous logs for {namespace}/{pod_name}/{container_name}: {e}"
+                )
         except Exception as err:
-            logger.error(f"Error checking container status for {namespace}/{pod_name}/{container_name}: {err}")
-        
+            logger.error(
+                f"Error checking container status for {namespace}/{pod_name}/{container_name}: {err}"
+            )
+
         return logs
 
     @classmethod
     def fetch_data(cls, request: DataRequest, tz):
         rows = []
+        max_concurrent_requests = request.source.conn.data.get(
+            "max_concurrent_requests", 20
+        )
+
         with KubernetesClient(request.source.conn.data) as client:
             time_from_dt = datetime.fromtimestamp(request.time_from / 1000, tz)
             time_to_dt = datetime.fromtimestamp(request.time_to / 1000, tz)
@@ -349,11 +380,15 @@ class Fetcher(BaseFetcher):
                 root = parser.root
 
             selected_deployments = request.context_fields.get("deployment", [])
-            
+
             if selected_deployments:
-                filtered_pods = cls.get_pods_for_deployments(client, namespace, selected_deployments)
+                filtered_pods = cls.get_pods_for_deployments(
+                    client, namespace, selected_deployments
+                )
             else:
-                filtered_pods = client.core.list_namespaced_pod(namespace=namespace).items
+                filtered_pods = client.core.list_namespaced_pod(
+                    namespace=namespace
+                ).items
 
             fetch_tasks = []
             total_pods = len(filtered_pods)
@@ -368,15 +403,17 @@ class Fetcher(BaseFetcher):
                 labels = json.dumps(pod.metadata.labels or {})
                 container_name = container.name
                 container_rows = []
-                
+
                 try:
-                    since_seconds = int((datetime.now(tz) - time_from_dt).total_seconds())
+                    since_seconds = int(
+                        (datetime.now(tz) - time_from_dt).total_seconds()
+                    )
                     if since_seconds < 0:
                         since_seconds = 0
                     base_tail = request.limit
                     if request.limit > 100 and total_pods > 1:
                         base_tail = int(max(1, (request.limit / total_pods) * 1.3))
-                    
+
                     log_params = {
                         "name": pod_name,
                         "namespace": namespace,
@@ -384,19 +421,27 @@ class Fetcher(BaseFetcher):
                         "timestamps": True,
                         "tail_lines": base_tail,
                     }
-                    
+
                     if since_seconds > 0:
                         log_params["since_seconds"] = since_seconds
-                    
-                    log_sources = cls.fetch_container_logs_with_previous(client, namespace, pod_name, container_name, log_params)
-                    
+
+                    log_sources = cls.fetch_container_logs_with_previous(
+                        client, namespace, pod_name, container_name, log_params
+                    )
+
                 except ApiException as e:
                     if e.status == 403:
-                        logger.error(f"RBAC error: Insufficient permissions for {namespace}/{pod_name}/{container_name}")
+                        logger.error(
+                            f"RBAC error: Insufficient permissions for {namespace}/{pod_name}/{container_name}"
+                        )
                     elif e.status == 404:
-                        logger.warning(f"Resource not found: {namespace}/{pod_name}/{container_name}")
+                        logger.warning(
+                            f"Resource not found: {namespace}/{pod_name}/{container_name}"
+                        )
                     else:
-                        logger.error(f"Log fetch error {namespace}/{pod_name}/{container_name}: {e}")
+                        logger.error(
+                            f"Log fetch error {namespace}/{pod_name}/{container_name}: {e}"
+                        )
                     return container_rows
                 except Exception as err:
                     logger.error(
@@ -413,20 +458,20 @@ class Fetcher(BaseFetcher):
                         if not line:
                             continue
                         parts = line.split(" ", 1)
-                        
+
                         ts = parse_k8s_timestamp(parts[0], tz)
                         if not ts:
                             continue
-                        
+
                         if ts < time_from_dt or ts > time_to_dt:
                             continue
-                        
+
                         message = parts[1] if len(parts) > 1 else ""
                         message = cls.remove_ansi_escape_codes(message)
-                        
+
                         if log_type == "previous" and message:
                             message = f"[PREVIOUS CONTAINER] {message}"
-                        
+
                         if message:
                             row = Row(
                                 source=request.source,
@@ -459,22 +504,27 @@ class Fetcher(BaseFetcher):
                             else:
                                 if evaluator.evaluate(root, Record(data=row.data)):
                                     container_rows.append(row)
-                
+
                 return container_rows
-            
-            with ThreadPoolExecutor(max_workers=settings.MAX_CONCURRENT_REQUESTS) as executor:
+
+            with ThreadPoolExecutor(max_workers=max_concurrent_requests) as executor:
                 futures = {
-                    executor.submit(fetch_container_logs, pod, container): (pod, container)
+                    executor.submit(fetch_container_logs, pod, container): (
+                        pod,
+                        container,
+                    )
                     for pod, container in fetch_tasks
                 }
-                
+
                 for future in as_completed(futures):
                     try:
                         container_rows = future.result()
                         rows.extend(container_rows)
                     except Exception as err:
                         pod, container = futures[future]
-                        logger.error(f"Concurrent fetch error for {pod.metadata.name}/{container.name}: {err}")
+                        logger.error(
+                            f"Concurrent fetch error for {pod.metadata.name}/{container.name}: {err}"
+                        )
 
         rows = sorted(rows, key=lambda r: r.time["unixtime"], reverse=True)[
             : request.limit
@@ -483,11 +533,15 @@ class Fetcher(BaseFetcher):
 
     @classmethod
     def fetch_graph_data(cls, request: GraphDataRequest):
+        max_concurrent_requests = request.source.conn.data.get(
+            "max_concurrent_requests", 20
+        )
+
         with KubernetesClient(request.source.conn.data) as client:
             time_from_dt = datetime.fromtimestamp(request.time_from / 1000, UTC_ZONE)
             time_to_dt = datetime.fromtimestamp(request.time_to / 1000, UTC_ZONE)
             graph_tail_limit = 2000
-            
+
             namespace = request.source.data.get("namespace")
             if not namespace:
                 raise ValueError("Namespace is required in source configuration")
@@ -504,18 +558,22 @@ class Fetcher(BaseFetcher):
             total = 0
 
             selected_deployments = request.context_fields.get("deployment", [])
-            
+
             if selected_deployments:
-                filtered_pods = cls.get_pods_for_deployments(client, namespace, selected_deployments)
+                filtered_pods = cls.get_pods_for_deployments(
+                    client, namespace, selected_deployments
+                )
             else:
-                filtered_pods = client.core.list_namespaced_pod(namespace=namespace).items
+                filtered_pods = client.core.list_namespaced_pod(
+                    namespace=namespace
+                ).items
 
             fetch_tasks = []
             total_pods = len(filtered_pods)
             for pod in filtered_pods:
                 for container in pod.spec.containers:
                     fetch_tasks.append((pod, container))
-            
+
             def fetch_container_graph_logs(pod, container):
                 pod_name = pod.metadata.name
                 node_name = pod.spec.node_name or ""
@@ -523,15 +581,17 @@ class Fetcher(BaseFetcher):
                 container_name = container.name
                 container_stats = {}
                 container_total = 0
-                
+
                 try:
-                    since_seconds = int((datetime.now(UTC_ZONE) - time_from_dt).total_seconds())
+                    since_seconds = int(
+                        (datetime.now(UTC_ZONE) - time_from_dt).total_seconds()
+                    )
                     if since_seconds < 0:
                         since_seconds = 0
                     base_tail = graph_tail_limit
                     if graph_tail_limit > 100 and total_pods > 1:
                         base_tail = int(max(1, (graph_tail_limit / total_pods) * 1.3))
-                    
+
                     log_params = {
                         "name": pod_name,
                         "namespace": namespace,
@@ -541,16 +601,24 @@ class Fetcher(BaseFetcher):
                     }
                     if since_seconds > 0:
                         log_params["since_seconds"] = since_seconds
-                    
-                    log_sources = cls.fetch_container_logs_with_previous(client, namespace, pod_name, container_name, log_params)
-                    
+
+                    log_sources = cls.fetch_container_logs_with_previous(
+                        client, namespace, pod_name, container_name, log_params
+                    )
+
                 except ApiException as e:
                     if e.status == 403:
-                        logger.error(f"RBAC error: Insufficient permissions for {namespace}/{pod_name}/{container_name}")
+                        logger.error(
+                            f"RBAC error: Insufficient permissions for {namespace}/{pod_name}/{container_name}"
+                        )
                     elif e.status == 404:
-                        logger.warning(f"Resource not found: {namespace}/{pod_name}/{container_name}")
+                        logger.warning(
+                            f"Resource not found: {namespace}/{pod_name}/{container_name}"
+                        )
                     else:
-                        logger.error(f"Graph log fetch error {namespace}/{pod_name}/{container_name}: {e}")
+                        logger.error(
+                            f"Graph log fetch error {namespace}/{pod_name}/{container_name}: {e}"
+                        )
                     return container_stats, container_total, set()
                 except Exception as err:
                     logger.error(
@@ -563,20 +631,20 @@ class Fetcher(BaseFetcher):
                     return container_stats, container_total, set()
 
                 local_unique_ts = set()
-                
+
                 for log_type, logs in log_sources:
                     for line in logs.splitlines():
                         if not line:
                             continue
                         parts = line.split(" ", 1)
-                        
+
                         ts = parse_k8s_timestamp(parts[0], UTC_ZONE)
                         if not ts:
                             continue
-                        
+
                         if ts < time_from_dt or ts > time_to_dt:
                             continue
-                        
+
                         ts_key = int(ts.timestamp() * 1000)
                         local_unique_ts.add(ts_key)
                         container_total += 1
@@ -600,27 +668,34 @@ class Fetcher(BaseFetcher):
                                     "node_name": node_name,
                                     "labels": json.loads(labels) if labels else {},
                                 }
-                                groupper = str(pseudo_row.get(group_by.name, "__none__"))
+                                groupper = str(
+                                    pseudo_row.get(group_by.name, "__none__")
+                                )
 
                         container_stats.setdefault(groupper, {})
                         container_stats[groupper][ts_key] = (
                             container_stats[groupper].get(ts_key, 0) + 1
                         )
-                
+
                 return container_stats, container_total, local_unique_ts
-            
-            with ThreadPoolExecutor(max_workers=settings.MAX_CONCURRENT_REQUESTS) as executor:
+
+            with ThreadPoolExecutor(max_workers=max_concurrent_requests) as executor:
                 futures = {
-                    executor.submit(fetch_container_graph_logs, pod, container): (pod, container)
+                    executor.submit(fetch_container_graph_logs, pod, container): (
+                        pod,
+                        container,
+                    )
                     for pod, container in fetch_tasks
                 }
-                
+
                 for future in as_completed(futures):
                     try:
-                        container_stats, container_total, local_unique_ts = future.result()
+                        container_stats, container_total, local_unique_ts = (
+                            future.result()
+                        )
                         total += container_total
                         unique_ts.update(local_unique_ts)
-                        
+
                         for groupper, ts_counts in container_stats.items():
                             stats_by_ts.setdefault(groupper, {})
                             for ts_key, count in ts_counts.items():
@@ -629,7 +704,9 @@ class Fetcher(BaseFetcher):
                                 )
                     except Exception as err:
                         pod, container = futures[future]
-                        logger.error(f"Concurrent graph fetch error for {pod.metadata.name}/{container.name}: {err}")
+                        logger.error(
+                            f"Concurrent graph fetch error for {pod.metadata.name}/{container.name}: {err}"
+                        )
 
             timestamps = sorted(unique_ts)
             data = {name: [] for name in stats_by_ts.keys()}

@@ -77,5 +77,3 @@ data:
         django.utils.autoreload: {{ index .Values.config.logging.levels "django.utils.autoreload" | quote }}
         telescope: {{ .Values.config.logging.levels.telescope | quote }}
         all: {{ .Values.config.logging.levels.all | quote }}
-    kubernetes:
-      MAX_CONCURRENT_REQUESTS: {{ .Values.config.kubernetes.MAX_CONCURRENT_REQUESTS | 20 }}

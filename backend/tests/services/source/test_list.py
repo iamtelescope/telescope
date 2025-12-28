@@ -58,7 +58,9 @@ def test_list_kubernetes_source(test_user, service, kubernetes_source):
 
 
 @pytest.mark.django_db
-def test_list_kubernetes_source_with_full_permissions(root_user, service, kubernetes_source):
+def test_list_kubernetes_source_with_full_permissions(
+    root_user, service, kubernetes_source
+):
     data = service.list(user=root_user)
     assert isinstance(data, list)
     assert len(data) == 1
@@ -67,7 +69,9 @@ def test_list_kubernetes_source_with_full_permissions(root_user, service, kubern
 
 
 @pytest.mark.django_db
-def test_delete_kubernetes_source_with_full_permissions(root_user, service, kubernetes_source):
+def test_delete_kubernetes_source_with_full_permissions(
+    root_user, service, kubernetes_source
+):
     service.delete(user=root_user, slug=kubernetes_source.slug)
     with pytest.raises(Source.DoesNotExist):
         Source.objects.get(slug=kubernetes_source.slug)

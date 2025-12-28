@@ -12,7 +12,11 @@ from telescope.rbac.manager import RBACManager
 rbac_manager = RBACManager()
 from telescope.rbac.roles import GlobalRole
 
-from tests.data import get_docker_connection_data, get_clickhouse_connection_data, get_kubernetes_connection_data
+from tests.data import (
+    get_docker_connection_data,
+    get_clickhouse_connection_data,
+    get_kubernetes_connection_data,
+)
 
 
 @pytest.mark.django_db

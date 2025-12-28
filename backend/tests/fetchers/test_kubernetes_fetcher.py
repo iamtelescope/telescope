@@ -8,6 +8,7 @@ from telescope.models import Source
 from telescope.constants import UTC_ZONE
 from tests.data import get_kubernetes_source_data, get_kubernetes_connection_data
 
+
 # Helper objects to mimic Kubernetes API responses
 class _Meta:
     def __init__(self, name, namespace=None, labels=None):
@@ -15,43 +16,54 @@ class _Meta:
         self.namespace = namespace
         self.labels = labels or {}
 
+
 class _Status:
     def __init__(self, phase="Running", pod_ip="10.0.0.1"):
         self.phase = phase
         self.pod_ip = pod_ip
+
 
 class _Spec:
     def __init__(self, containers, node_name="node-1"):
         self.containers = containers
         self.node_name = node_name
 
+
 class _Container:
     def __init__(self, name, image="busybox"):
         self.name = name
         self.image = image
 
+
 class _Pod:
-    def __init__(self, name, namespace, containers, status=None, node_name="node-1", labels=None):
+    def __init__(
+        self, name, namespace, containers, status=None, node_name="node-1", labels=None
+    ):
         self.metadata = _Meta(name=name, namespace=namespace, labels=labels)
         self.status = status or _Status()
         self.spec = _Spec(containers=containers, node_name=node_name)
+
 
 class _NamespaceList:
     def __init__(self, items):
         self.items = items
 
+
 class _PodList:
     def __init__(self, items):
         self.items = items
+
 
 class _DeploymentSpec:
     def __init__(self, replicas=1):
         self.replicas = replicas
 
+
 class _DeploymentStatus:
     def __init__(self, ready_replicas=1, conditions=None):
         self.ready_replicas = ready_replicas
         self.conditions = conditions or []
+
 
 class _Deployment:
     def __init__(self, name, namespace, replicas=1, ready_replicas=1, labels=None):
@@ -59,9 +71,11 @@ class _Deployment:
         self.spec = _DeploymentSpec(replicas=replicas)
         self.status = _DeploymentStatus(ready_replicas=ready_replicas)
 
+
 class _DeploymentList:
     def __init__(self, items):
         self.items = items
+
 
 @pytest.fixture
 def kubernetes_source():
@@ -82,15 +96,16 @@ def kubernetes_source():
     mock_source.default_chosen_fields = source_data["default_chosen_fields"]
     mock_source.data = source_data["data"]
     mock_source.context_fields = source_data.get("context_fields", {})
-    
+
     # Mock the connection
     mock_source.conn = MagicMock()
     mock_source.conn.data = get_kubernetes_connection_data()["data"]
-    
+
     # Mock the fields access
     mock_source._fields = {name: MagicMock() for name in source_data["fields"]}
-    
+
     return mock_source
+
 
 @patch("telescope.fetchers.kubernetes.client.AppsV1Api")
 @patch("telescope.fetchers.kubernetes.client.CoreV1Api")
@@ -98,7 +113,7 @@ def test_connection_success(mock_core_api, mock_apps_api):
     mock_core_instance = MagicMock()
     mock_core_instance.list_namespace.return_value = _NamespaceList(items=[])
     mock_core_api.return_value = mock_core_instance
-    
+
     mock_apps_instance = MagicMock()
     mock_apps_api.return_value = mock_apps_instance
 
@@ -108,9 +123,12 @@ def test_connection_success(mock_core_api, mock_apps_api):
     assert resp.schema["result"] is True
     assert len(resp.schema["data"]) == 9  # 9 fields defined in schema
 
+
 @patch("telescope.fetchers.kubernetes.client.CoreV1Api")
-@patch("telescope.fetchers.kubernetes.client.AppsV1Api") 
-def test_get_context_field_data_deployment(mock_apps_api, mock_core_api, kubernetes_source):
+@patch("telescope.fetchers.kubernetes.client.AppsV1Api")
+def test_get_context_field_data_deployment(
+    mock_apps_api, mock_core_api, kubernetes_source
+):
     """Test getting deployment context field data."""
     mock_apps_instance = MagicMock()
     mock_deployment = MagicMock()
@@ -119,29 +137,33 @@ def test_get_context_field_data_deployment(mock_apps_api, mock_core_api, kuberne
     mock_deployment.spec.replicas = 3
     mock_deployment.status.ready_replicas = 2
     mock_deployment.status.conditions = []
-    
-    mock_apps_instance.list_namespaced_deployment.return_value = MagicMock(items=[mock_deployment])
+
+    mock_apps_instance.list_namespaced_deployment.return_value = MagicMock(
+        items=[mock_deployment]
+    )
     mock_apps_api.return_value = mock_apps_instance
 
     kubernetes_source.data = {"namespace": "test-namespace"}
-    
+
     deployments = Fetcher.get_context_field_data(kubernetes_source, "deployment")
     assert len(deployments) == 1
     assert deployments[0]["name"] == "test-deployment"
     assert deployments[0]["replicas_desired"] == 3
     assert deployments[0]["replicas_ready"] == 2
 
+
 def test_get_context_field_data_unsupported_fields(kubernetes_source):
     """Test that unsupported fields raise ValueError."""
     kubernetes_source.data = {"namespace": "test-namespace"}
-    
+
     with pytest.raises(ValueError) as excinfo:
         Fetcher.get_context_field_data(kubernetes_source, "namespace")
     assert "Unsupported context field: namespace" in str(excinfo.value)
-    
+
     with pytest.raises(ValueError) as excinfo:
         Fetcher.get_context_field_data(kubernetes_source, "pod")
     assert "Unsupported context field: pod" in str(excinfo.value)
+
 
 @patch("telescope.fetchers.kubernetes.config.load_kube_config")
 @patch("telescope.fetchers.kubernetes.client.CoreV1Api")
@@ -176,9 +198,12 @@ def test_fetch_data_simple(mock_api, mock_load_config, kubernetes_source):
     assert response.rows[0].data["message"] == "Log line 2"
     assert response.rows[1].data["message"] == "Log line 1"
 
+
 @patch("telescope.fetchers.kubernetes.config.load_kube_config")
 @patch("telescope.fetchers.kubernetes.client.CoreV1Api")
-def test_fetch_graph_data_group_by_namespace(mock_api, mock_load_config, kubernetes_source):
+def test_fetch_graph_data_group_by_namespace(
+    mock_api, mock_load_config, kubernetes_source
+):
     mock_instance = MagicMock()
     pod = _Pod(
         name="podx",

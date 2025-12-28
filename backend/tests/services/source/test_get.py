@@ -60,7 +60,9 @@ def test_get_kubernetes_source(test_user, service, kubernetes_source):
 
 
 @pytest.mark.django_db
-def test_get_kubernetes_source_with_full_permissions(root_user, service, kubernetes_source):
+def test_get_kubernetes_source_with_full_permissions(
+    root_user, service, kubernetes_source
+):
     data = service.get(user=root_user, slug=kubernetes_source.slug)
     assert data["slug"] == kubernetes_source.slug
     assert "conn" not in data

@@ -206,7 +206,7 @@ class SourceService:
                 serializer_cls = NewKubernetesSourceSerializer
             else:
                 raise ValueError("Unknown kind")
-            
+
             serializer = serializer_cls(data=data)
             if not serializer.is_valid(raise_exception=raise_is_valid):
                 raise SerializerValidationError(serializer)

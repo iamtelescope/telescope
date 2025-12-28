@@ -495,10 +495,10 @@ def get_kubernetes_source_data(slug):
 
 def get_kubernetes_connection_data():
     import hashlib
-    
+
     kubeconfig_content = "apiVersion: v1\nclusters:\n- cluster:\n    server: https://kubernetes.example.com\n  name: test-cluster\ncontexts:\n- context:\n    cluster: test-cluster\n    user: test-user\n  name: test-context\ncurrent-context: test-context\nkind: Config\nusers:\n- name: test-user\n  user:\n    token: test-token"
     kubeconfig_hash = hashlib.sha256(kubeconfig_content.encode()).hexdigest()
-    
+
     return {
         "kind": "kubernetes",
         "name": "Kubernetes Connection",

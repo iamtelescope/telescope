@@ -79,8 +79,6 @@ config:
       "django.utils.autoreload": "INFO"
       telescope: "INFO"
       all: "INFO"
-  kubernetes:
-    MAX_CONCURRENT_REQUESTS: 20
 
 # Database configuration
 database:

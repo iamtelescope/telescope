@@ -59,12 +59,16 @@ class KubernetesConnectionSerializer(serializers.Serializer):
         help_text="Raw kubeconfig file content or local file path",
     )
     kubeconfig_hash = serializers.CharField(
-        required=True,
-        help_text="SHA256 hash of kubeconfig content or file path"
+        required=True, help_text="SHA256 hash of kubeconfig content or file path"
     )
     kubeconfig_is_local = serializers.BooleanField(
-        required=True,
-        help_text="Whether kubeconfig is a local file path"
+        required=True, help_text="Whether kubeconfig is a local file path"
+    )
+    max_concurrent_requests = serializers.IntegerField(
+        required=False,
+        default=20,
+        min_value=1,
+        help_text="Maximum number of concurrent requests for parallel log fetching (default: 20)",
     )
 
     def validate(self, data):
@@ -78,6 +82,7 @@ class KubernetesConnectionSerializer(serializers.Serializer):
         if errors:
             raise serializers.ValidationError(errors)
         return data
+
 
 class ConnectionCreateResponseSerializer(serializers.Serializer):
     id = serializers.IntegerField(required=True)

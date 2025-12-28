@@ -485,7 +485,9 @@ def test_create_kubernetes_source_without_global_permission(kubernetes_connectio
 
 
 @pytest.mark.django_db
-def test_create_kubernetes_source_without_connection_use_permission(kubernetes_connection):
+def test_create_kubernetes_source_without_connection_use_permission(
+    kubernetes_connection,
+):
     """User without USE permission on kubernetes connection cannot create source"""
     user = User.objects.create_user(username="no_use_k8s_user", password="pass")
 

@@ -184,7 +184,13 @@
                                         </template>
 
                                         <template v-else-if="connection?.kind === 'kubernetes'">
-                                            <DataRow name="Kube Config" :copy="false">
+                                            <DataRow
+                                                v-if="connection.data.kubeconfig_is_local"
+                                                name="Kube Config File Path"
+                                                :value="connection.data.kubeconfig"
+                                                :copy="false"
+                                            />
+                                            <DataRow v-else name="Kube Config Content" :copy="false">
                                                 <pre
                                                     v-if="connection.data.kubeconfig"
                                                     class="text-xs whitespace-pre-wrap break-all max-w-full overflow-auto block"
@@ -193,6 +199,12 @@
                                                 </pre>
                                                 <EmptyValue v-else :value="connection.data.kubeconfig" :isDark="isDark" />
                                             </DataRow>
+                                            <DataRow
+                                                name="Max Concurrent Requests"
+                                                :value="connection.data.max_concurrent_requests || 20"
+                                                :copy="false"
+                                                :showBorder="false"
+                                            />
                                         </template>
 
                                         <template v-else>
