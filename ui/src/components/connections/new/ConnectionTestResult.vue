@@ -17,9 +17,41 @@
                 </div>
             </div>
             <div v-else>
-                <div v-if="data.data && data.data.result" class="text-green-600 dark:text-green-400">
-                    <i class="pi pi-check-circle mr-1"></i>
-                    <span class="font-medium">Connection test passed</span>
+                <div v-if="data.data && data.data.result">
+                    <div class="text-green-600 dark:text-green-400 mb-3">
+                        <i class="pi pi-check-circle mr-1"></i>
+                        <span class="font-medium">Connection test passed</span>
+                    </div>
+                    <div v-if="data.data.matched_contexts && data.data.matched_contexts.length > 0" class="mt-3">
+                        <div class="font-medium text-sm mb-2">
+                            Matched Contexts ({{ data.data.matched_contexts.length }}):
+                        </div>
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
+                            <div
+                                v-for="(context, index) in data.data.matched_contexts"
+                                :key="index"
+                                class="p-2 text-sm border-b border-gray-200 dark:border-gray-700 last:border-b-0 font-mono bg-gray-50 dark:bg-gray-800"
+                            >
+                                <div class="flex flex-col gap-1">
+                                    <div>
+                                        <span class="text-gray-600 dark:text-gray-400">Name:</span>
+                                        <span class="font-semibold">{{ context.name }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600 dark:text-gray-400">Cluster:</span>
+                                        {{ context.cluster }}
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600 dark:text-gray-400">User:</span> {{ context.user }}
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600 dark:text-gray-400">Namespace:</span>
+                                        {{ context.namespace }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div v-else>
                     <div class="text-red-600 dark:text-red-400">

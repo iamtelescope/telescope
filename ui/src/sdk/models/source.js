@@ -22,6 +22,7 @@ class Source {
         this.conn = data.conn // Full connection object (when user has edit permissions)
         this.data = data.data || {} // Source-specific data (e.g., database, table for ClickHouse)
         this.permissions = getDefaultIfUndefined(data.permissions, [])
+        this.queryMode = data.query_mode || 'separate'
     }
     isEditable() {
         if (this.permissions.includes('edit')) {

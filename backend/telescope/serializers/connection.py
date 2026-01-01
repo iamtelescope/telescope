@@ -26,8 +26,6 @@ class ConnectionSerializer(serializers.ModelSerializer):
 
 
 class ConnectionListSerializer(serializers.ModelSerializer):
-    """Serializer for connection list - excludes data field"""
-
     permissions = serializers.ListField(child=serializers.CharField(), required=False)
 
     class Meta:
@@ -63,6 +61,12 @@ class KubernetesConnectionSerializer(serializers.Serializer):
     )
     kubeconfig_is_local = serializers.BooleanField(
         required=True, help_text="Whether kubeconfig is a local file path"
+    )
+    context_filter = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="FlyQL query for filtering available contexts from kubeconfig",
     )
     max_concurrent_requests = serializers.IntegerField(
         required=False,

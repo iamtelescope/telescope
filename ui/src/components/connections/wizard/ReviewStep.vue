@@ -87,7 +87,26 @@
                 </template>
                 <template v-else-if="targetData.kind === 'kubernetes'">
                     <DataRow name="Kube Config" :copy="false">
-                        <pre class="text-xs whitespace-pre-wrap break-all max-w-full overflow-auto block">{{ targetData.data.kubeconfig || 'Not provided' }}</pre>
+                        <pre class="text-xs whitespace-pre-wrap break-all max-w-full overflow-auto block">{{
+                            targetData.data.kubeconfig || 'Not provided'
+                        }}</pre>
+                    </DataRow>
+                    <DataRow name="Context Filter" :copy="false">
+                        <div v-if="targetData.data.context_filter && targetData.data.context_filter.trim()">
+                            <code class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{{
+                                targetData.data.context_filter
+                            }}</code>
+                        </div>
+                        <EmptyValue v-else value="" />
+                    </DataRow>
+                    <DataRow name="Matched Contexts" :copy="false" :showBorder="false">
+                        <div v-if="testResult && testResult.matched_contexts">
+                            <span class="font-semibold">{{ testResult.matched_contexts.length }}</span>
+                            <span v-if="testResult.total_contexts" class="text-gray-600 dark:text-gray-400">
+                                of {{ testResult.total_contexts }}</span
+                            >
+                        </div>
+                        <EmptyValue v-else value="Test connection to see matched contexts" />
                     </DataRow>
                 </template>
             </ContentBlock>
@@ -105,7 +124,7 @@ import ContentBlock from '@/components/common/ContentBlock.vue'
 import DataRow from '@/components/common/DataRow.vue'
 import EmptyValue from '@/components/common/EmptyValue.vue'
 
-const props = defineProps(['targetData', 'namingData', 'connection'])
+const props = defineProps(['targetData', 'namingData', 'testResult', 'connection'])
 const emit = defineEmits(['prev', 'create'])
 
 const createLoading = ref(false)

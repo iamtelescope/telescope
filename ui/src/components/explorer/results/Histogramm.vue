@@ -215,6 +215,10 @@ const getChartSettings = (type) => {
                 const timestamp = typeof dateOrTs === 'number' ? dateOrTs : dateOrTs.valueOf()
                 return new Date(moveTimestampToTimeZone(timestamp, props.timeZone, localTimeZone))
             }
+            // Disable zoom on range selection since we reload data
+            opts.cursor = opts.cursor || {}
+            opts.cursor.drag = opts.cursor.drag || {}
+            opts.cursor.drag.setScale = false
             return opts
         },
     }

@@ -10,6 +10,7 @@
             :source="source"
             :loading="loading"
             :paramsChanged="paramsChanged"
+            :contextFieldsData="contextFieldsData"
             @graphVisibilityChanged="onGraphVisibilityChanged"
             :groupByInvalid="!!(graphValidation && !graphValidation.result && graphValidation.fields.group_by)"
         />
@@ -49,9 +50,10 @@
                 <p class="text-sm">Click the <strong>Execute</strong> button to load data.</p>
             </div>
             <LimitMessage
-                v-if="rows && graphData && !error && !graphError"
+                v-if="rows && !error && (graphData || message)"
                 :rowsCount="rows.length"
-                :totalCount="graphData.total"
+                :totalCount="graphData?.total"
+                :message="message"
             ></LimitMessage>
             <ExplorerTable
                 v-if="showSourceDataTable"
@@ -71,7 +73,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'primevue'
 import { Skeleton } from 'primevue'
 import { useSourceControlsStore } from '@/stores/sourceControls'
-import { useGetSourceData, useGetSourceGraphData } from '@/composables/sources/useSourceService'
+import {
+    useGetSourceData,
+    useGetSourceGraphData,
+    useGetSourceDataAndGraph,
+} from '@/composables/sources/useSourceService'
 
 import Controls from '@/components/explorer/controls/Controls.vue'
 import BorderCard from '@/components/common/BorderCard.vue'
@@ -91,16 +97,57 @@ const sourceControlsStore = useSourceControlsStore()
 
 const lastSearchRouteQuery = ref(null)
 const displayTimeZone = ref(localTimeZone)
-const props = defineProps(['source', 'savedView'])
-const { rows, fields, error, loading, validation, load, controller } = useGetSourceData()
+const props = defineProps(['source', 'savedView', 'contextFieldsData'])
+
+// Determine query mode
+const useCombinedMode = computed(() => props.source?.queryMode === 'combined')
+
+// Separate mode (ClickHouse)
 const {
-    data: graphData,
-    error: graphError,
-    loading: graphLoading,
-    validation: graphValidation,
-    load: graphLoad,
-    controller: graphController,
+    rows: separateRows,
+    fields: separateFields,
+    message: separateMessage,
+    error: separateError,
+    loading: separateLoading,
+    validation: separateValidation,
+    load: separateLoad,
+    controller: separateController,
+} = useGetSourceData()
+
+const {
+    data: separateGraphData,
+    error: separateGraphError,
+    loading: separateGraphLoading,
+    validation: separateGraphValidation,
+    load: separateGraphLoad,
+    controller: separateGraphController,
 } = useGetSourceGraphData()
+
+// Combined mode (Kubernetes, Docker)
+const {
+    rows: combinedRows,
+    fields: combinedFields,
+    message: combinedMessage,
+    graphData: combinedGraphData,
+    error: combinedError,
+    loading: combinedLoading,
+    validation: combinedValidation,
+    load: combinedLoad,
+    controller: combinedController,
+} = useGetSourceDataAndGraph()
+
+// Computed properties to abstract away the mode difference
+const rows = computed(() => (useCombinedMode.value ? combinedRows.value : separateRows.value))
+const fields = computed(() => (useCombinedMode.value ? combinedFields.value : separateFields.value))
+const message = computed(() => (useCombinedMode.value ? combinedMessage.value : separateMessage.value))
+const error = computed(() => (useCombinedMode.value ? combinedError.value : separateError.value))
+const loading = computed(() => (useCombinedMode.value ? combinedLoading.value : separateLoading.value))
+const validation = computed(() => (useCombinedMode.value ? combinedValidation.value : separateValidation.value))
+
+const graphData = computed(() => (useCombinedMode.value ? combinedGraphData.value : separateGraphData.value))
+const graphError = computed(() => (useCombinedMode.value ? null : separateGraphError.value))
+const graphLoading = computed(() => (useCombinedMode.value ? combinedLoading.value : separateGraphLoading.value))
+const graphValidation = computed(() => (useCombinedMode.value ? { result: true } : separateGraphValidation.value))
 
 const paramsChanged = computed(() => {
     return (
@@ -113,22 +160,52 @@ const onSearchRequest = () => {
     lastSearchRouteQuery.value = sourceControlsStore.routeQuery
     displayTimeZone.value = sourceControlsStore.timeZone
     router.push({ path: route.path, query: sourceControlsStore.routeQuery })
-    load(props.source.slug, sourceControlsStore.dataRequestParams)
-    if (sourceControlsStore.showGraph) {
-        graphLoad(props.source.slug, sourceControlsStore.graphRequestParams)
+
+    if (useCombinedMode.value) {
+        // Combined mode: single request with graph params merged
+        const combinedParams = {
+            ...sourceControlsStore.dataRequestParams,
+            group_by: sourceControlsStore.showGraph ? sourceControlsStore.graphRequestParams.group_by : '',
+        }
+        combinedLoad(props.source.slug, combinedParams)
+    } else {
+        // Separate mode: two requests
+        separateLoad(props.source.slug, sourceControlsStore.dataRequestParams)
+        if (sourceControlsStore.showGraph) {
+            separateGraphLoad(props.source.slug, sourceControlsStore.graphRequestParams)
+        }
     }
 }
 
 const onSearchCancel = () => {
-    controller.value.abort()
-    graphController.value.abort()
+    if (useCombinedMode.value) {
+        combinedController.value.abort()
+    } else {
+        separateController.value.abort()
+        separateGraphController.value.abort()
+    }
 }
 
 const onGraphVisibilityChanged = () => {
-    if (sourceControlsStore.showGraph) {
-        graphLoad(props.source.slug, sourceControlsStore.graphRequestParams)
+    if (useCombinedMode.value) {
+        // In combined mode, need to refetch with updated group_by
+        if (sourceControlsStore.showGraph) {
+            const combinedParams = {
+                ...sourceControlsStore.dataRequestParams,
+                group_by: sourceControlsStore.graphRequestParams.group_by,
+            }
+            combinedLoad(props.source.slug, combinedParams)
+        } else {
+            // Hide graph, but keep existing data
+            combinedGraphData.value = null
+        }
     } else {
-        graphData.value = null
+        // Separate mode
+        if (sourceControlsStore.showGraph) {
+            separateGraphLoad(props.source.slug, sourceControlsStore.graphRequestParams)
+        } else {
+            separateGraphData.value = null
+        }
     }
 }
 

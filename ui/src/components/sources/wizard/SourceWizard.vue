@@ -57,6 +57,7 @@
                             <StepPanel v-slot="{ activateCallback }" value="4">
                                 <BasicInfoStep
                                     v-model="basicInfo"
+                                    :isEditing="!!source"
                                     @prev="activateCallback('3')"
                                     @next="activateCallback('5')"
                                 />
@@ -134,7 +135,9 @@ const getInitialConnectionData = () => {
             database: props.source.data?.database || '',
             table: props.source.data?.table || '',
             settings: props.source.data?.settings || '',
-            namespace: props.source.data?.namespace || '*',
+            namespace_label_selector: props.source.data?.namespace_label_selector || '',
+            namespace_field_selector: props.source.data?.namespace_field_selector || '',
+            namespace: props.source.data?.namespace || '',
         }
     }
     return {}
@@ -217,7 +220,9 @@ const handleCreateSource = async (onComplete) => {
     }
 
     if (connectionData.value.connection.kind === 'kubernetes') {
-        data.data.namespace = connectionData.value.namespace
+        data.data.namespace_label_selector = connectionData.value.namespace_label_selector || ''
+        data.data.namespace_field_selector = connectionData.value.namespace_field_selector || ''
+        data.data.namespace = connectionData.value.namespace || ''
     }
 
     // Convert fields array to object

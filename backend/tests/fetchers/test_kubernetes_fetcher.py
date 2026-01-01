@@ -1,88 +1,19 @@
-import json
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
+from datetime import datetime
 
-from telescope.fetchers.kubernetes import Fetcher
+from telescope.fetchers.kubernetes.fetcher import Fetcher
+from telescope.fetchers.kubernetes.api import LogEntry
 from telescope.fetchers.request import DataRequest, GraphDataRequest
-from telescope.models import Source
 from telescope.constants import UTC_ZONE
 from tests.data import get_kubernetes_source_data, get_kubernetes_connection_data
 
 
-# Helper objects to mimic Kubernetes API responses
-class _Meta:
-    def __init__(self, name, namespace=None, labels=None):
-        self.name = name
-        self.namespace = namespace
-        self.labels = labels or {}
-
-
-class _Status:
-    def __init__(self, phase="Running", pod_ip="10.0.0.1"):
-        self.phase = phase
-        self.pod_ip = pod_ip
-
-
-class _Spec:
-    def __init__(self, containers, node_name="node-1"):
-        self.containers = containers
-        self.node_name = node_name
-
-
-class _Container:
-    def __init__(self, name, image="busybox"):
-        self.name = name
-        self.image = image
-
-
-class _Pod:
-    def __init__(
-        self, name, namespace, containers, status=None, node_name="node-1", labels=None
-    ):
-        self.metadata = _Meta(name=name, namespace=namespace, labels=labels)
-        self.status = status or _Status()
-        self.spec = _Spec(containers=containers, node_name=node_name)
-
-
-class _NamespaceList:
-    def __init__(self, items):
-        self.items = items
-
-
-class _PodList:
-    def __init__(self, items):
-        self.items = items
-
-
-class _DeploymentSpec:
-    def __init__(self, replicas=1):
-        self.replicas = replicas
-
-
-class _DeploymentStatus:
-    def __init__(self, ready_replicas=1, conditions=None):
-        self.ready_replicas = ready_replicas
-        self.conditions = conditions or []
-
-
-class _Deployment:
-    def __init__(self, name, namespace, replicas=1, ready_replicas=1, labels=None):
-        self.metadata = _Meta(name=name, namespace=namespace, labels=labels or {})
-        self.spec = _DeploymentSpec(replicas=replicas)
-        self.status = _DeploymentStatus(ready_replicas=ready_replicas)
-
-
-class _DeploymentList:
-    def __init__(self, items):
-        self.items = items
-
-
 @pytest.fixture
 def kubernetes_source():
-    """Create a test Kubernetes source using the data factory."""
     source_data = get_kubernetes_source_data("test-k8s")
-    # Create a mock source that behaves like a Django model instance
     mock_source = MagicMock()
+    mock_source.id = 1
     mock_source.slug = source_data["slug"]
     mock_source.name = source_data["name"]
     mock_source.kind = source_data["kind"]
@@ -97,91 +28,266 @@ def kubernetes_source():
     mock_source.data = source_data["data"]
     mock_source.context_fields = source_data.get("context_fields", {})
 
-    # Mock the connection
     mock_source.conn = MagicMock()
+    mock_source.conn.id = 1
     mock_source.conn.data = get_kubernetes_connection_data()["data"]
 
-    # Mock the fields access
     mock_source._fields = {name: MagicMock() for name in source_data["fields"]}
 
     return mock_source
 
 
-@patch("telescope.fetchers.kubernetes.client.AppsV1Api")
-@patch("telescope.fetchers.kubernetes.client.CoreV1Api")
-def test_connection_success(mock_core_api, mock_apps_api):
-    mock_core_instance = MagicMock()
-    mock_core_instance.list_namespace.return_value = _NamespaceList(items=[])
-    mock_core_api.return_value = mock_core_instance
+def test_validate_query_valid():
+    source = MagicMock()
+    valid, error = Fetcher.validate_query(source, 'message ~ "error"')
+    assert valid is True
+    assert error is None
 
-    mock_apps_instance = MagicMock()
-    mock_apps_api.return_value = mock_apps_instance
+
+def test_validate_query_invalid():
+    source = MagicMock()
+    valid, error = Fetcher.validate_query(source, "invalid (( syntax")
+    assert valid is False
+    assert error is not None
+
+
+def test_validate_query_empty():
+    source = MagicMock()
+    valid, error = Fetcher.validate_query(source, "")
+    assert valid is True
+    assert error is None
+
+
+@patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
+@patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
+def test_connection_ng_success(mock_config_helper, mock_kube_helper):
+    mock_config = MagicMock()
+    mock_config.list_contexts.return_value = [
+        {
+            "name": "context1",
+            "cluster": "cluster1",
+            "user": "user1",
+            "namespace": "default",
+        },
+        {
+            "name": "context2",
+            "cluster": "cluster2",
+            "user": "user2",
+            "namespace": "default",
+        },
+    ]
+    mock_config_helper.return_value = mock_config
+
+    mock_helper = MagicMock()
+    mock_helper.allowed_contexts = ["context1", "context2"]
+    mock_helper.test_connection.return_value = None
+    mock_kube_helper.return_value = mock_helper
+
+    conn_data = get_kubernetes_connection_data()["data"]
+    resp = Fetcher.test_connection_ng(conn_data)
+
+    assert resp.result is True
+    assert resp.total_contexts == 2
+    assert resp.matched_contexts == ["context1", "context2"]
+    assert resp.error == ""
+
+
+@patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
+@patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
+def test_connection_ng_no_matches(mock_config_helper, mock_kube_helper):
+    mock_config = MagicMock()
+    mock_config.list_contexts.return_value = [
+        {
+            "name": "context1",
+            "cluster": "cluster1",
+            "user": "user1",
+            "namespace": "default",
+        },
+    ]
+    mock_config_helper.return_value = mock_config
+
+    mock_helper = MagicMock()
+    mock_helper.allowed_contexts = []
+    mock_kube_helper.return_value = mock_helper
+
+    conn_data = get_kubernetes_connection_data()["data"]
+    resp = Fetcher.test_connection_ng(conn_data)
+
+    assert resp.result is False
+    assert resp.error == "No contexts matched the filter expression"
+
+
+@patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
+@patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
+def test_connection_success(mock_config_helper, mock_kube_helper):
+    mock_config = MagicMock()
+    mock_config_helper.return_value = mock_config
+
+    mock_helper = MagicMock()
+    mock_helper.test_connection.return_value = None
+    mock_kube_helper.return_value = mock_helper
 
     conn_data = get_kubernetes_connection_data()["data"]
     resp = Fetcher.test_connection(conn_data)
+
     assert resp.reachability["result"] is True
     assert resp.schema["result"] is True
-    assert len(resp.schema["data"]) == 9  # 9 fields defined in schema
+    assert len(resp.schema["data"]) == 10
 
 
-@patch("telescope.fetchers.kubernetes.client.CoreV1Api")
-@patch("telescope.fetchers.kubernetes.client.AppsV1Api")
-def test_get_context_field_data_deployment(
-    mock_apps_api, mock_core_api, kubernetes_source
+def test_get_schema():
+    schema = Fetcher.get_schema({})
+    assert len(schema) == 10
+    field_names = [field["name"] for field in schema]
+    assert "time" in field_names
+    assert "context" in field_names
+    assert "namespace" in field_names
+    assert "pod" in field_names
+    assert "container" in field_names
+    assert "node" in field_names
+    assert "labels" in field_names
+    assert "annotations" in field_names
+    assert "message" in field_names
+    assert "status" in field_names
+
+
+@patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
+@patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
+def test_get_all_context_fields_data(
+    mock_config_helper, mock_kube_helper, kubernetes_source
 ):
-    """Test getting deployment context field data."""
-    mock_apps_instance = MagicMock()
-    mock_deployment = MagicMock()
-    mock_deployment.metadata.name = "test-deployment"
-    mock_deployment.metadata.labels = {"app": "test"}
-    mock_deployment.spec.replicas = 3
-    mock_deployment.status.ready_replicas = 2
-    mock_deployment.status.conditions = []
+    mock_config = MagicMock()
+    mock_config_helper.return_value = mock_config
 
-    mock_apps_instance.list_namespaced_deployment.return_value = MagicMock(
-        items=[mock_deployment]
-    )
-    mock_apps_api.return_value = mock_apps_instance
+    mock_helper = MagicMock()
+    mock_helper.allowed_contexts_set = {"context1", "context2"}
+    mock_helper.namespaces = {
+        "context1": ["default", "kube-system"],
+        "context2": ["default", "app-namespace"],
+    }
+    mock_kube_helper.return_value = mock_helper
 
-    kubernetes_source.data = {"namespace": "test-namespace"}
+    result = Fetcher.get_all_context_fields_data(kubernetes_source)
 
-    deployments = Fetcher.get_context_field_data(kubernetes_source, "deployment")
-    assert len(deployments) == 1
-    assert deployments[0]["name"] == "test-deployment"
-    assert deployments[0]["replicas_desired"] == 3
-    assert deployments[0]["replicas_ready"] == 2
+    assert "contexts" in result
+    assert "namespaces" in result
+    assert set(result["contexts"]) == {"context1", "context2"}
+    assert set(result["namespaces"]) == {"default", "kube-system", "app-namespace"}
 
 
-def test_get_context_field_data_unsupported_fields(kubernetes_source):
-    """Test that unsupported fields raise ValueError."""
-    kubernetes_source.data = {"namespace": "test-namespace"}
+@patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
+@patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
+def test_get_context_field_data_contexts(
+    mock_config_helper, mock_kube_helper, kubernetes_source
+):
+    mock_config = MagicMock()
+    mock_config_helper.return_value = mock_config
 
-    with pytest.raises(ValueError) as excinfo:
-        Fetcher.get_context_field_data(kubernetes_source, "namespace")
-    assert "Unsupported context field: namespace" in str(excinfo.value)
+    mock_helper = MagicMock()
+    mock_helper.allowed_contexts_set = {"context1", "context2"}
+    mock_kube_helper.return_value = mock_helper
 
-    with pytest.raises(ValueError) as excinfo:
-        Fetcher.get_context_field_data(kubernetes_source, "pod")
-    assert "Unsupported context field: pod" in str(excinfo.value)
+    result = Fetcher.get_context_field_data(kubernetes_source, "context")
+    assert result == ["context1", "context2"] or set(result) == {"context1", "context2"}
 
 
-@patch("telescope.fetchers.kubernetes.config.load_kube_config")
-@patch("telescope.fetchers.kubernetes.client.CoreV1Api")
-def test_fetch_data_simple(mock_api, mock_load_config, kubernetes_source):
-    mock_instance = MagicMock()
-    # Mock pod list
-    pod = _Pod(
-        name="mypod",
-        namespace="default",
-        containers=[_Container(name="app", image="busybox")],
-    )
-    mock_instance.list_namespaced_pod.return_value = _PodList(items=[pod])
-    # Mock log output (timestamp + message)
-    mock_instance.read_namespaced_pod_log.return_value = (
-        "2025-01-01T00:00:01Z Log line 1\n2025-01-01T00:00:02Z Log line 2"
-    )
-    mock_instance.read_namespaced_pod.return_value = pod
-    mock_api.return_value = mock_instance
+@patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
+@patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
+def test_get_context_field_data_namespaces(
+    mock_config_helper, mock_kube_helper, kubernetes_source
+):
+    mock_config = MagicMock()
+    mock_config_helper.return_value = mock_config
+
+    mock_helper = MagicMock()
+    mock_helper.allowed_contexts_set = {"context1"}
+    mock_helper.namespaces = {
+        "context1": ["default", "kube-system"],
+    }
+    mock_kube_helper.return_value = mock_helper
+
+    result = Fetcher.get_context_field_data(kubernetes_source, "namespace")
+    assert set(result) == {"default", "kube-system"}
+
+
+@patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
+@patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
+def test_get_context_field_data_pods(
+    mock_config_helper, mock_kube_helper, kubernetes_source
+):
+    mock_config = MagicMock()
+    mock_config_helper.return_value = mock_config
+
+    mock_helper = MagicMock()
+    mock_helper.pods = {
+        "context1": {
+            "default": {
+                "pod1": {
+                    "containers": ["container1", "container2"],
+                    "status": "Running",
+                    "labels": {"app": "myapp"},
+                    "annotations": {},
+                }
+            }
+        }
+    }
+    mock_helper.validate.return_value = None
+    mock_kube_helper.return_value = mock_helper
+
+    params = {"contexts": ["context1"], "namespaces": ["default"]}
+    result = Fetcher.get_context_field_data(kubernetes_source, "pods", params)
+
+    assert len(result) == 1
+    assert result[0]["context"] == "context1"
+    assert result[0]["namespace"] == "default"
+    assert result[0]["pod_name"] == "pod1"
+    assert result[0]["containers"] == ["container1", "container2"]
+    assert result[0]["status"] == "Running"
+
+
+@patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
+@patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
+def test_fetch_data_simple(mock_config_helper, mock_kube_helper, kubernetes_source):
+    mock_config = MagicMock()
+    mock_config_helper.return_value = mock_config
+
+    log_entries = [
+        LogEntry(
+            context="context1",
+            namespace="default",
+            pod="pod1",
+            container="container1",
+            timestamp=datetime(2025, 1, 1, 0, 0, 1, tzinfo=UTC_ZONE),
+            message="Log line 1",
+            node="node1",
+            labels={"app": "myapp"},
+            annotations={},
+            status="Running",
+        ),
+        LogEntry(
+            context="context1",
+            namespace="default",
+            pod="pod1",
+            container="container1",
+            timestamp=datetime(2025, 1, 1, 0, 0, 2, tzinfo=UTC_ZONE),
+            message="Log line 2",
+            node="node1",
+            labels={"app": "myapp"},
+            annotations={},
+            status="Running",
+        ),
+    ]
+
+    mock_helper = MagicMock()
+    mock_helper.contexts = ["context1"]
+    mock_helper.namespaces = {"context1": ["default"]}
+    mock_helper.pods = {
+        "context1": {"default": {"pod1": {"containers": ["container1"]}}}
+    }
+    mock_helper.get_logs.return_value = (log_entries, [])
+    mock_helper.validate.return_value = None
+    mock_helper.errors = []
+    mock_kube_helper.return_value = mock_helper
 
     request = DataRequest(
         source=kubernetes_source,
@@ -190,51 +296,108 @@ def test_fetch_data_simple(mock_api, mock_load_config, kubernetes_source):
         time_from=1000000000000,
         time_to=2000000000000,
         limit=10,
-        context_fields={"deployment": []},  # Empty deployment list to fetch all pods
+        context_fields={},
     )
     response = Fetcher.fetch_data(request, tz=UTC_ZONE)
+
     assert len(response.rows) == 2
-    # Verify that the message field is correctly parsed
     assert response.rows[0].data["message"] == "Log line 2"
     assert response.rows[1].data["message"] == "Log line 1"
+    assert response.rows[0].data["context"] == "context1"
+    assert response.rows[0].data["namespace"] == "default"
+    assert response.rows[0].data["pod"] == "pod1"
 
 
-@patch("telescope.fetchers.kubernetes.config.load_kube_config")
-@patch("telescope.fetchers.kubernetes.client.CoreV1Api")
-def test_fetch_graph_data_group_by_namespace(
-    mock_api, mock_load_config, kubernetes_source
-):
-    mock_instance = MagicMock()
-    pod = _Pod(
-        name="podx",
-        namespace="ns1",
-        containers=[_Container(name="c", image="img")],
+@patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
+@patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
+def test_fetch_data_with_query(mock_config_helper, mock_kube_helper, kubernetes_source):
+    mock_config = MagicMock()
+    mock_config_helper.return_value = mock_config
+
+    log_entries = [
+        LogEntry(
+            context="context1",
+            namespace="default",
+            pod="pod1",
+            container="container1",
+            timestamp=datetime(2025, 1, 1, 0, 0, 1, tzinfo=UTC_ZONE),
+            message="Error: something went wrong",
+            node="node1",
+            labels={},
+            annotations={},
+            status="Running",
+        ),
+        LogEntry(
+            context="context1",
+            namespace="default",
+            pod="pod1",
+            container="container1",
+            timestamp=datetime(2025, 1, 1, 0, 0, 2, tzinfo=UTC_ZONE),
+            message="Info: everything is fine",
+            node="node1",
+            labels={},
+            annotations={},
+            status="Running",
+        ),
+    ]
+
+    mock_helper = MagicMock()
+    mock_helper.contexts = ["context1"]
+    mock_helper.namespaces = {"context1": ["default"]}
+    mock_helper.pods = {
+        "context1": {"default": {"pod1": {"containers": ["container1"]}}}
+    }
+    mock_helper.get_logs.return_value = (log_entries, [])
+    mock_helper.validate.return_value = None
+    mock_helper.errors = []
+    mock_kube_helper.return_value = mock_helper
+
+    request = DataRequest(
+        source=kubernetes_source,
+        query='message ~ "Error"',
+        raw_query="",
+        time_from=1000000000000,
+        time_to=2000000000000,
+        limit=10,
+        context_fields={},
     )
-    mock_instance.list_namespaced_pod.return_value = _PodList(items=[pod])
-    mock_instance.read_namespaced_pod_log.return_value = (
-        "2025-01-01T00:00:01Z entry\n2025-01-01T00:00:02Z entry"
-    )
-    mock_instance.read_namespaced_pod.return_value = pod
-    mock_api.return_value = mock_instance
+    response = Fetcher.fetch_data(request, tz=UTC_ZONE)
 
-    # Build a dummy ParsedField for grouping (simulating FlyQL field)
-    class DummyParsedField:
-        def __init__(self, name):
-            self.name = name
+    assert len(response.rows) == 1
+    assert "Error" in response.rows[0].data["message"]
 
-    request = GraphDataRequest(
+
+@patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
+@patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
+def test_fetch_data_no_pods(mock_config_helper, mock_kube_helper, kubernetes_source):
+    mock_config = MagicMock()
+    mock_config_helper.return_value = mock_config
+
+    mock_helper = MagicMock()
+    mock_helper.contexts = ["context1"]
+    mock_helper.namespaces = {"context1": ["default"]}
+    mock_helper.pods = {}
+    mock_helper.validate.return_value = None
+    mock_helper.errors = []
+    mock_kube_helper.return_value = mock_helper
+
+    request = DataRequest(
         source=kubernetes_source,
         query="",
         raw_query="",
         time_from=1000000000000,
         time_to=2000000000000,
-        group_by=[DummyParsedField(name="namespace")],
-        context_fields={"deployment": []},  # Empty deployment list to fetch all pods
+        limit=10,
+        context_fields={},
     )
-    graph_resp = Fetcher.fetch_graph_data(request)
-    # Two timestamps should be present (including the start/end markers)
-    assert len(graph_resp.timestamps) >= 2
-    # Data should contain a single group key "ns1"
-    assert "ns1" in graph_resp.data
-    # Each timestamp bucket should have a count of 2 (two log lines)
-    assert sum(graph_resp.data["ns1"]) == 2
+    response = Fetcher.fetch_data(request, tz=UTC_ZONE)
+
+    assert len(response.rows) == 0
+    assert response.error == "No pods found matching the filters"
+
+
+def test_autocomplete(kubernetes_source):
+    """Test autocomplete functionality."""
+    response = Fetcher.autocomplete(kubernetes_source, "message", 0, 1000, "test")
+    assert response.items == []
+    assert response.incomplete is False

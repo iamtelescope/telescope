@@ -24,6 +24,8 @@
                         :showClear="groupBy != ''"
                         @change="onGraphGroupByChange"
                         :invalid="groupByInvalid"
+                        :virtualScrollerOptions="{ itemSize: 38 }"
+                        :filterFields="['name']"
                     >
                     </Select>
                 </DataRow>

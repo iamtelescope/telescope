@@ -14,7 +14,11 @@ from telescope.rbac.manager import RBACManager
 from telescope.services.source import SourceService, SourceSavedViewService
 from telescope.services.exceptions import SerializerValidationError
 from telescope.fetchers import get_fetchers
-from telescope.fetchers.request import DataRequest, GraphDataRequest
+from telescope.fetchers.request import (
+    DataRequest,
+    GraphDataRequest,
+    DataAndGraphDataRequest,
+)
 from telescope.rbac import permissions
 from telescope.response import UIResponse
 from telescope.models import Source, SavedView, Connection
@@ -25,6 +29,7 @@ from telescope.serializers.source import (
     KubernetesConnectionSerializer,
     SourceDataRequestSerializer,
     SourceGraphDataRequestSerializer,
+    SourceDataAndGraphDataRequestSerializer,
     SourceAutocompleteRequestSerializer,
     SourceContextFieldDataSerializer,
     GetSourceSchemaClickhouseSerializer,
@@ -135,7 +140,6 @@ class SourceView(APIView):
     @method_decorator(login_required)
     def get(self, request, slug=None):
         response = UIResponse()
-
         try:
             if slug is None:
                 data = source_srv.list(user=request.user)
@@ -334,10 +338,16 @@ class SourceDataView(APIView):
             logger.exception(f"unhandled exception: {err}")
             response.mark_failed(str(err))
         else:
-            response.data = {
-                "fields": [f.as_dict() for f in serializer.validated_data["fields"]],
-                "rows": [row.as_dict() for row in data_response.rows],
-            }
+            if data_response.error:
+                response.mark_failed(data_response.error)
+            else:
+                response.data = {
+                    "fields": [
+                        f.as_dict() for f in serializer.validated_data["fields"]
+                    ],
+                    "rows": [row.as_dict() for row in data_response.rows],
+                    "message": data_response.message,
+                }
         return Response(response.as_dict())
 
 
@@ -361,8 +371,35 @@ class SourceContextFieldDataView(APIView):
         try:
             fetcher = get_fetchers()[source.kind]
             response.data["data"] = fetcher.get_context_field_data(
-                source, serializer.validated_data["field"]
+                source,
+                serializer.validated_data["field"],
+                serializer.validated_data.get("params", {}),
             )
+        except Exception as err:
+            logger.exception("unhandled exception", err)
+            response.mark_failed(str(err))
+        return Response(response.as_dict())
+
+
+class SourceContextFieldsDataView(APIView):
+    """Returns all context fields data in a single call."""
+
+    @method_decorator(login_required)
+    def get(self, request, slug):
+        response = UIResponse()
+
+        source = rbac_manager.get_source(
+            user=request.user,
+            source_slug=slug,
+            required_permissions=[permissions.Source.USE.value],
+            fetch_connection=True,
+        )
+        try:
+            fetcher = get_fetchers()[source.kind]
+            if hasattr(fetcher, "get_all_context_fields_data"):
+                response.data = fetcher.get_all_context_fields_data(source)
+            else:
+                response.data = {}
         except Exception as err:
             logger.exception("unhandled exception", err)
             response.mark_failed(str(err))
@@ -410,6 +447,74 @@ class SourceGraphDataView(APIView):
                 "data": graph_data_response.data,
                 "total": graph_data_response.total,
             }
+        return Response(response.as_dict())
+
+
+class SourceDataAndGraphDataView(APIView):
+    @method_decorator(login_required)
+    def post(self, request, slug):
+        response = UIResponse()
+
+        source = rbac_manager.get_source(
+            user=request.user,
+            source_slug=slug,
+            required_permissions=[permissions.Source.USE.value],
+            fetch_connection=True,
+        )
+
+        # Only allow combined mode for sources that support it
+        if source.query_mode != "combined":
+            response.mark_failed(
+                "This source does not support combined data/graph queries"
+            )
+            return Response(response.as_dict())
+
+        serializer = SourceDataAndGraphDataRequestSerializer(
+            data=request.data, context={"source": source, "user": request.user}
+        )
+
+        if not serializer.is_valid():
+            response.validation["result"] = False
+            response.validation["fields"] = serializer.errors
+            return Response(response.as_dict())
+
+        try:
+            fetcher = get_fetchers()[source.kind]
+            combined_request = DataAndGraphDataRequest(
+                source=source,
+                query=serializer.validated_data.get("query", ""),
+                raw_query=serializer.validated_data.get("raw_query", ""),
+                time_from=serializer.validated_data["from"],
+                time_to=serializer.validated_data["to"],
+                limit=serializer.validated_data["limit"],
+                group_by=serializer.validated_data["group_by"],
+                context_fields=serializer.validated_data["context_fields"],
+            )
+            combined_response = fetcher.fetch_data_and_graph(
+                combined_request,
+                tz=UTC_ZONE,
+            )
+        except NotImplementedError:
+            response.mark_failed("Combined fetch not supported for this source type")
+        except Exception as err:
+            logger.exception(f"unhandled exception: {err}")
+            response.mark_failed(str(err))
+        else:
+            if combined_response.error:
+                response.mark_failed(combined_response.error)
+            else:
+                response.data = {
+                    "fields": [
+                        f.as_dict() for f in serializer.validated_data["fields"]
+                    ],
+                    "rows": [row.as_dict() for row in combined_response.rows],
+                    "message": combined_response.message,
+                    "graph": {
+                        "timestamps": combined_response.graph_timestamps,
+                        "data": combined_response.graph_data,
+                        "total": combined_response.graph_total,
+                    },
+                }
         return Response(response.as_dict())
 
 

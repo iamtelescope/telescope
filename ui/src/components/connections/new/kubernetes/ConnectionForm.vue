@@ -14,9 +14,7 @@
             </div>
 
             <div v-if="connectionData.kubeconfig_is_local">
-                <label for="connection_kubeconfig_path" class="font-medium block mb-1">
-                    Kubeconfig File Path *
-                </label>
+                <label for="connection_kubeconfig_path" class="font-medium block mb-1"> Kubeconfig File Path * </label>
                 <InputText
                     id="connection_kubeconfig_path"
                     v-model="connectionData.kubeconfig"
@@ -28,14 +26,13 @@
                 />
                 <ErrorText :text="connectionFieldErrors.kubeconfig" />
                 <small class="text-gray-600 mt-1 block">
-                    Enter the file path (e.g., /etc/kubeconfig) or home-relative path (e.g., ~/.kube/config) to your kubeconfig file
+                    Enter the file path (e.g., /etc/kubeconfig) or home-relative path (e.g., ~/.kube/config) to your
+                    kubeconfig file
                 </small>
             </div>
 
             <div v-else>
-                <label for="connection_kubeconfig" class="font-medium block mb-1">
-                    Kubeconfig Yaml Content *
-                </label>
+                <label for="connection_kubeconfig" class="font-medium block mb-1"> Kubeconfig Yaml Content * </label>
                 <Textarea
                     id="connection_kubeconfig"
                     v-model="connectionData.kubeconfig"
@@ -52,15 +49,27 @@
                 </small>
             </div>
 
-            <InputText
-                type="hidden"
-                v-model="connectionData.kubeconfig_hash"
-            />
+            <InputText type="hidden" v-model="connectionData.kubeconfig_hash" />
 
             <div>
-                <label for="max_concurrent_requests" class="font-medium block mb-1">
-                    Max Concurrent Requests
-                </label>
+                <label for="context_filter" class="font-medium block mb-1"> Context FlyQL Filter </label>
+                <InputText
+                    id="context_filter"
+                    v-model="connectionData.context_filter"
+                    placeholder='(name ~ "staging" or name ~ "development") and not name ~ "production"'
+                    fluid
+                    :invalid="hasError('context_filter')"
+                    class="font-mono text-sm"
+                />
+                <ErrorText :text="connectionFieldErrors.context_filter" />
+                <small class="text-gray-600 mt-1 block">
+                    Optional FlyQL query to filter available contexts from kubeconfig. Leave empty to use all contexts.
+                    Available fields: name, cluster, user, namespace
+                </small>
+            </div>
+
+            <div>
+                <label for="max_concurrent_requests" class="font-medium block mb-1"> Max Concurrent Requests </label>
                 <InputNumber
                     id="max_concurrent_requests"
                     v-model="connectionData.max_concurrent_requests"
@@ -72,7 +81,8 @@
                 />
                 <ErrorText :text="connectionFieldErrors.max_concurrent_requests" />
                 <small class="text-gray-600 mt-1 block">
-                    Maximum number of concurrent requests for parallel log fetching (default: 20). Lower values reduce load on the Kubernetes API server.
+                    Maximum number of concurrent requests for parallel log fetching from single context. Lower values
+                    reduce load on the Kubernetes API server.
                 </small>
             </div>
         </div>
@@ -96,6 +106,7 @@ const getInitialConnectionData = () => {
         kubeconfig: '',
         kubeconfig_hash: '',
         kubeconfig_is_local: false,
+        context_filter: '',
         max_concurrent_requests: 20,
     }
     if (props.connection) {
@@ -108,6 +119,7 @@ const connectionData = reactive(getInitialConnectionData())
 
 const connectionFieldErrors = reactive({
     kubeconfig: '',
+    context_filter: '',
     max_concurrent_requests: '',
 })
 
@@ -126,7 +138,7 @@ const generateHash = async (text) => {
     const data = encoder.encode(text)
     const hashBuffer = await crypto.subtle.digest('SHA-256', data)
     const hashArray = Array.from(new Uint8Array(hashBuffer))
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 const updateHash = async () => {
@@ -145,12 +157,12 @@ const handleLocalPathChange = () => {
 const validate = () => {
     resetErrors()
     let isValid = true
-    
+
     if (!connectionData.kubeconfig || connectionData.kubeconfig.trim() === '') {
         connectionFieldErrors.kubeconfig = 'Kubeconfig content or file path is required'
         isValid = false
     }
-    
+
     if (connectionData.kubeconfig_is_local) {
         // Validate file path format for local paths
         const path = connectionData.kubeconfig.trim()
@@ -166,12 +178,12 @@ const validate = () => {
             isValid = false
         }
     }
-    
+
     if (!connectionData.kubeconfig_hash) {
         connectionFieldErrors.kubeconfig = 'Kubeconfig hash is required - please ensure content is provided'
         isValid = false
     }
-    
+
     return isValid
 }
 

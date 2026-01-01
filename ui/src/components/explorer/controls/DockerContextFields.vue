@@ -3,11 +3,9 @@
         <MultiSelect
             id="container"
             v-model="selectedContainers"
-            :initialValues="initialValues"
             optionLabel="name"
             display="chip"
-            :options="data"
-            :loading="loading"
+            :options="containerOptions"
             class="mr-2 min-w-80"
             :maxSelectedLabels="5"
             filter
@@ -37,18 +35,46 @@
     </FloatLabel>
 </template>
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { MultiSelect, FloatLabel } from 'primevue'
 
-import { useGetSourceContextFieldData } from '@/composables/sources/useSourceService'
-
-const props = defineProps(['source', 'containers'])
+const props = defineProps(['source', 'contextFields', 'contextFieldsData'])
 const emit = defineEmits(['fieldChanged'])
 
-const { data, error, loading, validation, load } = useGetSourceContextFieldData()
+// Helper to ensure array
+const ensureArray = (val) => {
+    if (!val) return []
+    if (Array.isArray(val)) return val
+    if (typeof val === 'string') return val.split(',').filter((v) => v)
+    return []
+}
 
-const initialValues = ref([])
+// Computed: container options from prop data
+const containerOptions = computed(() => {
+    return props.contextFieldsData?.containers || []
+})
+
+// Selected containers as full objects (for MultiSelect display)
 const selectedContainers = ref([])
+
+// Initialize selected containers from contextFields
+const initSelectedContainers = () => {
+    const containerNames = ensureArray(props.contextFields?.container)
+    if (containerNames.length > 0 && containerOptions.value.length > 0) {
+        selectedContainers.value = containerOptions.value.filter((c) => containerNames.includes(c.name))
+    } else {
+        selectedContainers.value = []
+    }
+}
+
+// Initialize on mount when data is available
+watch(
+    [() => props.contextFields, containerOptions],
+    () => {
+        initSelectedContainers()
+    },
+    { immediate: true, deep: true },
+)
 
 const onContainersChange = () => {
     const names = selectedContainers.value.map((container) => container.name)
@@ -57,33 +83,4 @@ const onContainersChange = () => {
         value: names,
     })
 }
-
-onMounted(() => {
-    load(props.source.slug, { field: 'container' })
-})
-
-watch(data, () => {
-    if (props.containers) {
-        for (const container of data.value) {
-            if (props.containers.includes(container.name)) {
-                selectedContainers.value.push(container)
-            }
-        }
-    }
-})
-
-watch(
-    () => props.containers,
-    (newContainers) => {
-        selectedContainers.value = []
-        if (newContainers && data.value) {
-            for (const container of data.value) {
-                if (newContainers.includes(container.name)) {
-                    selectedContainers.value.push(container)
-                }
-            }
-        }
-    },
-    { deep: true },
-)
 </script>

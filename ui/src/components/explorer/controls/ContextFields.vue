@@ -2,20 +2,23 @@
     <DockerContextFields
         v-if="source.kind == 'docker'"
         :source="source"
-        :containers="contextFields.container"
+        :contextFields="contextFields"
+        :contextFieldsData="contextFieldsData"
         @fieldChanged="onFieldChanged"
     />
     <KubernetesContextFields
         v-else-if="source.kind == 'kubernetes'"
         :source="source"
-        :deployment="contextFields.deployment"
+        :contextFields="contextFields"
+        :contextFieldsData="contextFieldsData"
         @fieldChanged="onFieldChanged"
     />
 </template>
 <script setup>
 import DockerContextFields from '@/components/explorer/controls/DockerContextFields.vue'
 import KubernetesContextFields from '@/components/explorer/controls/KubernetesContextFields.vue'
-const props = defineProps(['source', 'contextFields'])
+
+const props = defineProps(['source', 'contextFields', 'contextFieldsData'])
 const emit = defineEmits(['fieldChanged'])
 
 const onFieldChanged = (params) => {

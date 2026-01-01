@@ -72,6 +72,7 @@ class Source(models.Model):
     context_fields = models.JSONField()
     conn = models.ForeignKey(Connection, on_delete=models.SET_NULL, null=True)
     data = models.JSONField(default=dict, blank=True)
+    query_mode = models.CharField(max_length=16, default="separate")
 
     def __init__(self, *args, **kwargs):
         super(Source, self).__init__(*args, **kwargs)
@@ -87,17 +88,29 @@ class Source(models.Model):
     def create(cls, kind, data):
         data["context_fields"] = {}
         data["support_raw_query"] = True
+        query_mode = "separate"  # Default for ClickHouse
+
         if kind == "docker":
             data["support_raw_query"] = False
             data["context_fields"] = {
                 "container": {},
             }
+            query_mode = "combined"  # Docker uses combined mode
+
         if kind == "kubernetes":
             data["support_raw_query"] = False
             data["context_fields"] = {
-                "deployment": {},
+                "contexts": [],
+                "namespaces": [],
+                "pods_label_selector": "",
+                "pods_field_selector": "",
+                "pods_flyql_filter": "",
             }
-        return Source.objects.create(kind=kind, **data, modifiers=[])
+            query_mode = "combined"  # Kubernetes uses combined mode
+
+        return Source.objects.create(
+            kind=kind, query_mode=query_mode, **data, modifiers=[]
+        )
 
     @property
     def _record_pseudo_id_field(self):

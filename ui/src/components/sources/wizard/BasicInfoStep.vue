@@ -14,7 +14,10 @@
             </div>
             <div class="pt-2">
                 <label for="slug" class="font-medium">Slug *</label>
-                <InputText name="slug" id="slug" class="w-full" fluid />
+                <InputText name="slug" id="slug" class="w-full" fluid :disabled="props.isEditing" />
+                <small v-if="props.isEditing" class="text-gray-500 dark:text-gray-400 block mt-1">
+                    Slug cannot be changed after creation
+                </small>
                 <Message v-if="$form.slug?.invalid" severity="error" size="small" variant="simple">
                     {{ $form.slug.error?.message }}
                 </Message>
@@ -34,7 +37,7 @@
 import { Button, InputText, Message } from 'primevue'
 import { Form } from '@primevue/forms'
 
-const props = defineProps(['modelValue'])
+const props = defineProps(['modelValue', 'isEditing'])
 const emit = defineEmits(['prev', 'next', 'update:modelValue'])
 
 const initialValues = {

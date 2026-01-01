@@ -14,6 +14,7 @@ const BACKSLASH = '\\'
 const BRACKET_OPEN = '('
 const BRACKET_CLOSE = ')'
 const UNDERSCORE = '_'
+const HYPHEN = '-'
 const NEWLINE = '\n'
 const VALID_ALIAS_OPERATOR = 'as'
 
@@ -32,6 +33,7 @@ const CHARS = {
     BRACKET_OPEN,
     BRACKET_CLOSE,
     UNDERSCORE,
+    HYPHEN,
     NEWLINE,
     VALID_ALIAS_OPERATOR,
 }
@@ -131,6 +133,7 @@ class Char {
         return (
             /^[a-zA-Z0-9]$/.test(this.value) ||
             this.value === UNDERSCORE ||
+            this.value === HYPHEN ||
             this.value === DOT ||
             this.value === COLON ||
             this.value === SLASH

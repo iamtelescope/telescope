@@ -139,13 +139,14 @@ def test_kubernetes_source_fixture(kubernetes_source):
     assert isinstance(kubernetes_source, Source)
     assert kubernetes_source.kind == "kubernetes"
     assert kubernetes_source.support_raw_query is False
-    assert "deployment" in kubernetes_source.context_fields
+    assert "contexts" in kubernetes_source.context_fields
+    assert "namespaces" in kubernetes_source.context_fields
     assert kubernetes_source.fields["time"]["type"] == "datetime"
     assert kubernetes_source.fields["time"]["autocomplete"] is False
     assert kubernetes_source.fields["time"]["suggest"] is True
     assert kubernetes_source.fields["message"]["type"] == "string"
     assert kubernetes_source.fields["message"]["display_name"] == "IsMessage"
-    assert kubernetes_source.fields["message"]["autocomplete"] is True
+    assert kubernetes_source.fields["message"]["autocomplete"] is False
     assert kubernetes_source.fields["message"]["jsonstring"] is True
     assert isinstance(kubernetes_source.permissions, set)
     for key, value in kubernetes_source._fields.items():

@@ -171,6 +171,12 @@ def get_default_config():
                     "NAME": "telescope-default-db.sqlite3",
                 },
             },
+            "CACHES": {
+                "default": {
+                    "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+                    "LOCATION": "telescope_cache",
+                }
+            },
         },
         "limits": {
             "max_saved_views_per_user": 0,

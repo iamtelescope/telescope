@@ -115,8 +115,32 @@
                                         </DataRow>
                                     </ContentBlock>
                                     <ContentBlock header="Data" class="mt-3" v-if="source.kind === 'kubernetes'">
-                                        <DataRow name="Namespace" :copy="false" :showBorder="false">
-                                            <span class="font-mono text-sm">{{ source.data?.namespace || '&ndash;' }}</span>
+                                        <DataRow name="Namespace Label Selector" :copy="false" :showBorder="false">
+                                            <code
+                                                v-if="source.data?.namespace_label_selector"
+                                                class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded"
+                                            >
+                                                {{ source.data.namespace_label_selector }}
+                                            </code>
+                                            <span v-else>&ndash;</span>
+                                        </DataRow>
+                                        <DataRow name="Namespace Field Selector" :copy="false" :showBorder="false">
+                                            <code
+                                                v-if="source.data?.namespace_field_selector"
+                                                class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded"
+                                            >
+                                                {{ source.data.namespace_field_selector }}
+                                            </code>
+                                            <span v-else>&ndash;</span>
+                                        </DataRow>
+                                        <DataRow name="Namespace FlyQL Filter" :copy="false" :showBorder="false">
+                                            <code
+                                                v-if="source.data?.namespace"
+                                                class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded"
+                                            >
+                                                {{ source.data.namespace }}
+                                            </code>
+                                            <span v-else>&ndash;</span>
                                         </DataRow>
                                     </ContentBlock>
                                     <ContentBlock header="Fields" class="mt-3">
