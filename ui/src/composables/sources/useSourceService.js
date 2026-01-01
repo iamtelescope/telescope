@@ -62,6 +62,7 @@ const useGetSourceRoleBidings = (sourceSlug) => {
 const useGetSourceData = () => {
     const rows = ref(null)
     const fields = ref(null)
+    const message = ref(null)
     const error = ref(null)
     const loading = ref(null)
     const validation = ref(null)
@@ -75,13 +76,14 @@ const useGetSourceData = () => {
             if (response.result) {
                 rows.value = response.data.rows
                 fields.value = response.data.fields
+                message.value = response.data.message
             }
             error.value = response.errors.join(', ')
             validation.value = response.validation
         }
         loading.value = false
     }
-    return { rows, fields, error, loading, validation, load, controller }
+    return { rows, fields, message, error, loading, validation, load, controller }
 }
 
 const useGetSourceGraphData = () => {
@@ -126,6 +128,24 @@ const useGetSourceContextFieldData = () => {
     return { data, error, loading, validation, load }
 }
 
+const useGetSourceContextFieldsData = (sourceSlug) => {
+    const data = ref(null)
+    const error = ref(null)
+    const loading = ref(null)
+
+    const load = async () => {
+        loading.value = true
+        let response = await srv.getContextFieldsData(sourceSlug)
+        if (response.result) {
+            data.value = response.data
+        }
+        error.value = response.errors.join(', ')
+        loading.value = false
+    }
+    load()
+    return { data, error, loading, load }
+}
+
 const useGetSavedView = (slug, viewSlug) => {
     const savedView = ref(null)
     const loading = ref(null)
@@ -165,13 +185,44 @@ const useGetSavedViews = (slug) => {
     return { savedViews, error, loading, load }
 }
 
+const useGetSourceDataAndGraph = () => {
+    const rows = ref(null)
+    const fields = ref(null)
+    const message = ref(null)
+    const graphData = ref(null)
+    const error = ref(null)
+    const loading = ref(null)
+    const validation = ref(null)
+    const controller = ref(null)
+
+    const load = async (sourceSlug, params) => {
+        loading.value = true
+        controller.value = new AbortController()
+        let response = await srv.getDataAndGraph(sourceSlug, params, controller.value.signal)
+        if (!response.aborted) {
+            if (response.result) {
+                rows.value = response.data.rows
+                fields.value = response.data.fields
+                message.value = response.data.message
+                graphData.value = response.data.graph
+            }
+            error.value = response.errors.join(', ')
+            validation.value = response.validation
+        }
+        loading.value = false
+    }
+    return { rows, fields, message, graphData, error, loading, validation, load, controller }
+}
+
 export {
     useGetSource,
     useGetSources,
     useGetSourceRoleBidings,
     useGetSourceData,
     useGetSourceGraphData,
+    useGetSourceDataAndGraph,
     useGetSourceContextFieldData,
+    useGetSourceContextFieldsData,
     useGetSavedView,
     useGetSavedViews,
 }

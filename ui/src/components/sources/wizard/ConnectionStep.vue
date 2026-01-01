@@ -109,11 +109,43 @@
             <!-- Kubernetes specific fields -->
             <template v-if="connection?.kind === 'kubernetes'">
                 <div class="pt-2">
-                    <label for="namespace" class="font-medium">Namespace *</label>
-                    <InputText v-model="namespace" id="namespace" class="w-full" fluid />
-                    <Message v-if="errors.namespace" severity="error" size="small" variant="simple" class="mt-2">
-                        {{ errors.namespace }}
-                    </Message>
+                    <label for="namespace_label_selector" class="font-medium">Namespace Label Selector</label>
+                    <InputText
+                        v-model="namespaceLabelSelector"
+                        id="namespace_label_selector"
+                        class="w-full font-mono text-sm"
+                        placeholder="e.g., env=prod,team=backend"
+                        fluid
+                    />
+                    <small class="text-gray-600 dark:text-gray-400 mt-1 block">
+                        Kubernetes label selector (server-side filtering)
+                    </small>
+                </div>
+                <div class="pt-2">
+                    <label for="namespace_field_selector" class="font-medium">Namespace Field Selector</label>
+                    <InputText
+                        v-model="namespaceFieldSelector"
+                        id="namespace_field_selector"
+                        class="w-full font-mono text-sm"
+                        placeholder="e.g., metadata.name=default"
+                        fluid
+                    />
+                    <small class="text-gray-600 dark:text-gray-400 mt-1 block">
+                        Kubernetes field selector (server-side filtering)
+                    </small>
+                </div>
+                <div class="pt-2">
+                    <label for="namespace" class="font-medium">Namespace FlyQL Filter</label>
+                    <InputText
+                        v-model="namespace"
+                        id="namespace"
+                        class="w-full font-mono text-sm"
+                        placeholder='e.g., name contains "prod" or name == "default"'
+                        fluid
+                    />
+                    <small class="text-gray-600 dark:text-gray-400 mt-1 block">
+                        FlyQL query for client-side filtering. Available fields: name, status
+                    </small>
                 </div>
             </template>
         </div>
@@ -163,6 +195,8 @@ const connection = ref(preselectedConnection.value || null)
 const database = ref(props.modelValue?.database || '')
 const table = ref(props.modelValue?.table || '')
 const settings = ref(props.modelValue?.settings || '')
+const namespaceLabelSelector = ref(props.modelValue?.namespace_label_selector || '')
+const namespaceFieldSelector = ref(props.modelValue?.namespace_field_selector || '')
 const namespace = ref(props.modelValue?.namespace || '')
 const errors = ref({})
 
@@ -175,6 +209,8 @@ if (preselectedConnection.value) {
         database: props.modelValue?.database || '',
         table: props.modelValue?.table || '',
         settings: props.modelValue?.settings || '',
+        namespace_label_selector: props.modelValue?.namespace_label_selector || '',
+        namespace_field_selector: props.modelValue?.namespace_field_selector || '',
         namespace: props.modelValue?.namespace || '',
     }
 }
@@ -186,11 +222,6 @@ const hasNoConnections = computed(() => {
 const handleConnectionChange = () => {
     if (!connection.value) return
 
-    // Save current values to cache for the previous connection
-    const previousConnectionId = Object.keys(connectionCache.value).find(
-        (id) => connectionCache.value[id] && (database.value !== '' || table.value !== '' || namespace.value !== ''),
-    )
-
     // Check if we have cached values for the new connection
     const cached = connectionCache.value[connection.value.id]
 
@@ -199,12 +230,16 @@ const handleConnectionChange = () => {
         database.value = cached.database || ''
         table.value = cached.table || ''
         settings.value = cached.settings || ''
+        namespaceLabelSelector.value = cached.namespace_label_selector || ''
+        namespaceFieldSelector.value = cached.namespace_field_selector || ''
         namespace.value = cached.namespace || ''
     } else {
         // Clear fields for new connection
         database.value = ''
         table.value = ''
         settings.value = ''
+        namespaceLabelSelector.value = ''
+        namespaceFieldSelector.value = ''
         namespace.value = ''
     }
 
@@ -212,13 +247,15 @@ const handleConnectionChange = () => {
     errors.value = {}
 }
 
-// Watch database, table, settings, and namespace changes to update cache
-watch([database, table, settings, namespace], () => {
+// Watch field changes to update cache
+watch([database, table, settings, namespaceLabelSelector, namespaceFieldSelector, namespace], () => {
     if (connection.value) {
         connectionCache.value[connection.value.id] = {
             database: database.value,
             table: table.value,
             settings: settings.value,
+            namespace_label_selector: namespaceLabelSelector.value,
+            namespace_field_selector: namespaceFieldSelector.value,
             namespace: namespace.value,
         }
     }
@@ -250,12 +287,7 @@ const validate = () => {
         }
     }
 
-    // Kubernetes specific validation
-    if (connection.value?.kind === 'kubernetes') {
-        if (!namespace.value) {
-            errors.value.namespace = 'Namespace is required for Kubernetes sources'
-        }
-    }
+    // Kubernetes specific validation - all fields are optional now
 
     return Object.keys(errors.value).length === 0
 }
@@ -267,6 +299,8 @@ const handleNext = () => {
             database: database.value,
             table: table.value,
             settings: settings.value,
+            namespace_label_selector: namespaceLabelSelector.value,
+            namespace_field_selector: namespaceFieldSelector.value,
             namespace: namespace.value,
         }
         emit('update:modelValue', values)

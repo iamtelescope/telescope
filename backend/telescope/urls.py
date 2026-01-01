@@ -77,8 +77,16 @@ urlpatterns = [
     path("ui/v1/sources/<slug:slug>/data", source.SourceDataView.as_view()),
     path("ui/v1/sources/<slug:slug>/graphData", source.SourceGraphDataView.as_view()),
     path(
+        "ui/v1/sources/<slug:slug>/dataAndGraph",
+        source.SourceDataAndGraphDataView.as_view(),
+    ),
+    path(
         "ui/v1/sources/<slug:slug>/contextFieldData",
         source.SourceContextFieldDataView.as_view(),
+    ),
+    path(
+        "ui/v1/sources/<slug:slug>/contextFieldsData",
+        source.SourceContextFieldsDataView.as_view(),
     ),
     path(
         "ui/v1/sources/<slug:slug>/autocomplete",

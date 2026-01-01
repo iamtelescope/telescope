@@ -197,7 +197,29 @@
                                                 >
                                                     {{ connection.data.kubeconfig }}
                                                 </pre>
-                                                <EmptyValue v-else :value="connection.data.kubeconfig" :isDark="isDark" />
+                                                <EmptyValue
+                                                    v-else
+                                                    :value="connection.data.kubeconfig"
+                                                    :isDark="isDark"
+                                                />
+                                            </DataRow>
+                                            <DataRow name="Context Filter" :copy="false">
+                                                <div
+                                                    v-if="
+                                                        connection.data.context_filter &&
+                                                        connection.data.context_filter.trim()
+                                                    "
+                                                >
+                                                    <code
+                                                        class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded"
+                                                        >{{ connection.data.context_filter }}</code
+                                                    >
+                                                </div>
+                                                <EmptyValue
+                                                    v-else
+                                                    :value="connection.data.context_filter"
+                                                    :isDark="isDark"
+                                                />
                                             </DataRow>
                                             <DataRow
                                                 name="Max Concurrent Requests"

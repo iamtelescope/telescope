@@ -132,7 +132,7 @@ const props = defineProps({
         default: true,
     },
 })
-const emit = defineEmits(['prev', 'next', 'update:modelValue'])
+const emit = defineEmits(['prev', 'next', 'update:modelValue', 'testResult'])
 
 const connectionSrv = new ConnectionService()
 const toast = useToast()
@@ -200,6 +200,11 @@ watch(
 
 const onConnectionDataChanged = (data) => {
     connectionData.value = data
+    // Update parent's v-model
+    emit('update:modelValue', {
+        kind: selectedKind.value,
+        data: data,
+    })
 }
 
 const handleTestConnection = async () => {
@@ -229,10 +234,10 @@ const handleTestConnection = async () => {
                 }
             } else if (response.data && response.data.result === true) {
                 testResult.value = {
-                    data: {
-                        result: true,
-                    },
+                    data: response.data,
                 }
+                // Emit test result for use in review step
+                emit('testResult', response.data)
             } else {
                 let errorMessage = 'Connection failed'
                 if (response.data?.error) {

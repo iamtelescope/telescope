@@ -183,7 +183,7 @@ class GetSourceSchemaDockerSerializer(serializers.Serializer):
 
 class GetSourceSchemaKubernetesSerializer(serializers.Serializer):
     connection_id = serializers.IntegerField()
-    namespace = serializers.CharField()
+    namespace = serializers.CharField(required=False, allow_blank=True)
 
 
 class SourceFieldSerializer(serializers.Serializer):
@@ -212,6 +212,7 @@ class SourceKindSerializer(serializers.Serializer):
 
 class SourceContextFieldDataSerializer(serializers.Serializer):
     field = serializers.CharField()
+    params = serializers.DictField(required=False, default=dict)
 
 
 class NewBaseSourceSerializer(serializers.Serializer):
@@ -342,8 +343,24 @@ class DockerSourceDataSerializer(serializers.Serializer):
 
 
 class KubernetesSourceDataSerializer(serializers.Serializer):
-    namespace = serializers.CharField(required=True)
-    pass
+    namespace_label_selector = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="Kubernetes label selector for namespaces (e.g. 'env=prod,team=backend')",
+    )
+    namespace_field_selector = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="Kubernetes field selector for namespaces (e.g. 'metadata.name=default')",
+    )
+    namespace = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        help_text="FlyQL filter for namespaces (applied after K8s API filtering)",
+    )
 
 
 class NewDockerSourceSerializer(NewBaseSourceSerializer):
@@ -352,6 +369,7 @@ class NewDockerSourceSerializer(NewBaseSourceSerializer):
 
 class NewKubernetesSourceSerializer(NewBaseSourceSerializer):
     data = KubernetesSourceDataSerializer(required=False, default=dict)
+    execute_query_on_open = serializers.BooleanField(default=False)
 
 
 class UpdateDockerSourceSerializer(NewDockerSourceSerializer):
@@ -505,3 +523,96 @@ class SourceGraphDataRequestSerializer(SourceDataRequestSerializer):
         except FieldsParserError as err:
             raise serializers.ValidationError(err.message)
         return value
+
+
+class SourceDataAndGraphDataRequestSerializer(serializers.Serializer):
+    """Serializer for combined data and graph data requests"""
+
+    fields = serializers.CharField()
+    query = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    raw_query = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    _from = serializers.CharField()
+    to = serializers.CharField()
+    limit = serializers.IntegerField()
+    group_by = serializers.CharField(allow_blank=True, required=False)
+    context_fields = serializers.JSONField(allow_null=True, required=False)
+
+    def get_fields(self):
+        fields = super().get_fields()
+        _from = fields.pop("_from")
+        fields["from"] = _from
+        return fields
+
+    def validate_from(self, value):
+        from telescope.utils import parse_time
+
+        value, error = parse_time(value)
+        if error:
+            raise serializers.ValidationError(error)
+        return value
+
+    def validate_to(self, value):
+        from telescope.utils import parse_time
+
+        value, error = parse_time(value)
+        if error:
+            raise serializers.ValidationError(error)
+        return value
+
+    def validate_fields(self, value: str) -> List[ParsedField]:
+        try:
+            value = parse_fields(self.context["source"], value)
+        except FieldsParserError as err:
+            raise serializers.ValidationError(err.message)
+        return value
+
+    def validate_group_by(self, value: str) -> List[ParsedField]:
+        if not value:
+            return []
+        try:
+            value = parse_fields(self.context["source"], value)
+        except FieldsParserError as err:
+            raise serializers.ValidationError(err.message)
+        return value
+
+    def validate_query(self, value):
+        if not value:
+            return ""
+        from telescope.fetchers import get_fetchers
+
+        fetcher = get_fetchers()[self.context["source"].kind]
+        result, help_text = fetcher.validate_query(self.context["source"], value)
+        if not result:
+            raise serializers.ValidationError(help_text)
+        return value
+
+    def validate_context_fields(self, value):
+        source = self.context["source"]
+        if source.context_fields:
+            for field_name in value.keys():
+                if field_name not in source.context_fields:
+                    raise serializers.ValidationError(
+                        f"unknown context field: {field_name}"
+                    )
+        return value
+
+    def validate(self, data):
+        if data.get("raw_query"):
+            from telescope.rbac.manager import RBACManager
+            from telescope.rbac import permissions
+
+            rbac_manager = RBACManager()
+
+            if not self.context["source"].support_raw_query:
+                raise serializers.ValidationError(
+                    SerializeErrorMsg.RAW_QUERIES_NOT_SUPPORTED
+                )
+            if not rbac_manager.user_has_source_permissions(
+                self.context["user"],
+                source_slug=self.context["source"].slug,
+                required_permissions=[permissions.Source.RAW_QUERY.value],
+            ):
+                raise serializers.ValidationError(
+                    SerializeErrorMsg.RAW_QUERIES_PERMISSIONS
+                )
+        return data

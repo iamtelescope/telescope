@@ -108,8 +108,8 @@ const getOperatorsSuggestions = (field, position) => {
 
     if (props.source.fields[field].type != 'enum') {
         operators = operators.concat([
-            { label: Operator.EQUALS_REGEX, sortText: 'c' },
-            { label: Operator.NOT_EQUALS_REGEX, sortText: 'd' },
+            { label: Operator.REGEX, sortText: 'c' },
+            { label: Operator.NOT_REGEX, sortText: 'd' },
         ])
     }
     return getSuggestionsFromList({

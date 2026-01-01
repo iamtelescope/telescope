@@ -41,6 +41,7 @@
                                     :connection="connection"
                                     :showBack="false"
                                     @next="activateCallback('2')"
+                                    @testResult="testResult = $event"
                                 />
                             </StepPanel>
 
@@ -56,6 +57,7 @@
                                 <ReviewStep
                                     :targetData="targetData"
                                     :namingData="namingData"
+                                    :testResult="testResult"
                                     :connection="connection"
                                     @prev="activateCallback('2')"
                                     @create="handleCreateConnection"
@@ -117,6 +119,7 @@ const getInitialNamingData = () => {
 
 const targetData = ref(getInitialTargetData())
 const namingData = ref(getInitialNamingData())
+const testResult = ref(null)
 
 const handleCreateConnection = async (onComplete) => {
     // Build the request data structure

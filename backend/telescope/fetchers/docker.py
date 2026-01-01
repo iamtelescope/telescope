@@ -22,7 +22,7 @@ from telescope.fetchers.response import (
     GraphDataResponse,
 )
 from telescope.fetchers.fetcher import BaseFetcher
-from telescope.fetchers.models import Row
+from telescope.fetchers.models import Row, UTC_ZONE
 
 
 logger = logging.getLogger("telescope.fetchers.docker")
@@ -94,7 +94,28 @@ class Fetcher(BaseFetcher):
         return True, None
 
     @classmethod
-    def get_context_field_data(cls, source, field):
+    def get_all_context_fields_data(cls, source):
+        client = docker.DockerClient(base_url=source.conn.data["address"])
+        containers = []
+        for container in client.containers.list(all=True):
+            containers.append(
+                {
+                    "name": container.name,
+                    "short_id": container.short_id,
+                    "status": container.status,
+                    "labels": container.labels,
+                }
+            )
+        return {
+            "containers": sorted(
+                containers,
+                key=lambda c: STATUS_TO_INT.get(c["status"], 10),
+                reverse=True,
+            ),
+        }
+
+    @classmethod
+    def get_context_field_data(cls, source, field, params=None):
         if field == "container":
             client = docker.DockerClient(base_url=source.conn.data["address"])
             containers = []
@@ -138,7 +159,7 @@ class Fetcher(BaseFetcher):
             get_telescope_field("message", "string"),
             get_telescope_field("status", "string"),
             get_telescope_field("stream", "string"),
-            get_telescope_field("labels", "string"),
+            get_telescope_field("labels", "json"),
         ]
 
     @classmethod
@@ -240,7 +261,7 @@ class Fetcher(BaseFetcher):
                                 container.name,
                                 message,
                             ],
-                            timezone="UTC",
+                            tz=UTC_ZONE,
                         )
                         total += 1
                         if not root:
@@ -370,3 +391,97 @@ class Fetcher(BaseFetcher):
             : request.limit
         ]
         return DataResponse(rows=rows)
+
+    @classmethod
+    def fetch_data_and_graph(
+        cls,
+        request,
+        tz,
+    ):
+
+        from telescope.fetchers.graph_utils import generate_graph_from_rows
+        from telescope.fetchers.response import DataAndGraphDataResponse
+
+        rows = []
+        client = docker.DockerClient(base_url=request.source.conn.data["address"])
+        since = request.time_from / 1000
+        until = request.time_to / 1000
+        ts = None
+        root = None
+        evaluator = Evaluator()
+        if request.query:
+            parser = parse(request.query)
+            root = parser.root
+
+        for stream_name in ["stdout", "stderr"]:
+            stream_param = {
+                "stdout": False,
+                "stderr": False,
+            }
+            stream_param[stream_name] = True
+            for container in client.containers.list(
+                all=True,
+                filters={"name": request.context_fields.get("container", [])},
+            ):
+                logs = container.logs(
+                    timestamps=True, since=since, until=until, **stream_param
+                )
+                for line in logs.decode("utf-8").splitlines():
+                    if not line:
+                        continue
+                    spl = line.split(" ")
+                    try:
+                        ts = duparser.isoparse(spl[0])
+                    except Exception:
+                        message = line
+                    else:
+                        message = " ".join(spl[1:])
+                    message = cls.remove_ansi_escape_codes(message)
+                    if ts and message:
+                        row = Row(
+                            source=request.source,
+                            selected_fields=[
+                                "time",
+                                "stream",
+                                "status",
+                                "labels",
+                                "container_id",
+                                "container_short_id",
+                                "container_name",
+                                "message",
+                            ],
+                            values=[
+                                ts,
+                                stream_name,
+                                container.status,
+                                container.labels,
+                                container.id,
+                                container.short_id,
+                                container.name,
+                                message,
+                            ],
+                            tz=tz,
+                        )
+                        if not root:
+                            rows.append(row)
+                        else:
+                            if evaluator.evaluate(root, Record(data=row.data)):
+                                rows.append(row)
+
+        group_by_field = request.group_by[0] if request.group_by else None
+        graph_timestamps, graph_data, graph_total = generate_graph_from_rows(
+            rows,
+            request.time_from,
+            request.time_to,
+            group_by_field,
+        )
+
+        rows = sorted(rows, key=lambda r: r.time["unixtime"], reverse=True)
+        limited_rows = rows[: request.limit]
+
+        return DataAndGraphDataResponse(
+            rows=limited_rows,
+            graph_timestamps=graph_timestamps,
+            graph_data=graph_data,
+            graph_total=graph_total,
+        )

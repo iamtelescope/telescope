@@ -9,7 +9,6 @@
                     }"
                     :label="loading ? 'Cancel' : 'Execute'"
                     size="small"
-                    :disabled="false"
                     @click="handleSearch"
                 >
                     <template #icon>
@@ -79,6 +78,15 @@
         </Toolbar>
         <div :class="{ hidden: hideFilters }">
             <div class="mb-2">
+                <ContextFields
+                    v-if="source.contextFields"
+                    :source="source"
+                    :contextFields="sourceControlsStore.contextFields"
+                    :contextFieldsData="contextFieldsData"
+                    @fieldChanged="onContextFieldChanged"
+                />
+            </div>
+            <div class="mb-2">
                 <IftaLabel>
                     <FieldsEditor
                         id="fields_editor"
@@ -89,14 +97,6 @@
                     />
                     <label for="fields_editor">Fields selector</label>
                 </IftaLabel>
-            </div>
-            <div class="mb-2">
-                <ContextFields
-                    v-if="source.contextFields"
-                    :source="source"
-                    :contextFields="sourceControlsStore.contextFields"
-                    @fieldChanged="onContextFieldChanged"
-                />
             </div>
             <div class="mb-2">
                 <IftaLabel>
@@ -145,7 +145,7 @@ import { getLimits } from '@/utils/limits.js'
 
 import { useSourceControlsStore } from '@/stores/sourceControls'
 
-const props = defineProps(['source', 'loading', 'groupByInvalid', 'savedView', 'paramsChanged'])
+const props = defineProps(['source', 'loading', 'groupByInvalid', 'savedView', 'paramsChanged', 'contextFieldsData'])
 const emit = defineEmits(['searchRequest', 'searchCancel', 'shareURL', 'download', 'graphVisibilityChanged'])
 
 const sourceControlsStore = useSourceControlsStore()
@@ -216,6 +216,8 @@ const handleShareURL = () => {
     emit('shareURL')
 }
 
+// Auto-execute query when source is configured to do so
+// Context fields are already loaded before Explorer opens
 onMounted(() => {
     if (props.source.executeQueryOnOpen) {
         handleSearch()

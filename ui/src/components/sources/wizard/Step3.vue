@@ -46,9 +46,23 @@
                     </span>
                 </DataRow>
             </ContentBlock>
-            
+
             <ContentBlock v-if="connectionData.connection?.kind === 'kubernetes'" header="Kubernetes Configuration">
-                <DataRow name="Namespace" :value="connectionData.namespace" :copy="false" />
+                <DataRow name="Namespace Label Selector" :copy="false">
+                    <span class="font-mono text-sm">
+                        <EmptyValue :value="connectionData.namespace_label_selector || ''" />
+                    </span>
+                </DataRow>
+                <DataRow name="Namespace Field Selector" :copy="false">
+                    <span class="font-mono text-sm">
+                        <EmptyValue :value="connectionData.namespace_field_selector || ''" />
+                    </span>
+                </DataRow>
+                <DataRow name="Namespace FlyQL Filter" :copy="false" :showBorder="false">
+                    <span class="font-mono text-sm">
+                        <EmptyValue :value="connectionData.namespace || ''" />
+                    </span>
+                </DataRow>
             </ContentBlock>
 
             <ContentBlock header="Field Mapping">

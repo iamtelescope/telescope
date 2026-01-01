@@ -18,6 +18,7 @@ BACKSLASH = "\\"
 BRACKET_OPEN = "("
 BRACKET_CLOSE = ")"
 UNDERSCORE = "_"
+HYPHEN = "-"
 NEWLINE = "\n"
 VALID_ALIAS_OPERATOR = "as"
 
@@ -107,6 +108,7 @@ class Char:
         return (
             self.value.isalnum()
             or self.value == UNDERSCORE
+            or self.value == HYPHEN
             or self.value == DOT
             or self.value == COLON
             or self.value == SLASH
