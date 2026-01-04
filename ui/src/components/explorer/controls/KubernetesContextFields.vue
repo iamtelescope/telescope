@@ -238,7 +238,7 @@ const completionProvider = ref(null)
 
 const handleMount = (editor) => {
     editor.updateOptions({
-        placeholder: 'metadata:name ~ "api" and not metadata:name ~ "worker"',
+        placeholder: 'metadata.name ~ "api" and not metadata.name ~ "worker"',
     })
     editor.onDidFocusEditorText(() => {
         editorFocused.value = true

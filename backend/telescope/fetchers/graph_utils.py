@@ -36,8 +36,8 @@ def generate_graph_from_rows(
         unique_ts.add(ts_key)
 
         if group_by:
-            if ":" in group_by.name:
-                spl = group_by.name.split(":")
+            if "." in group_by.name:
+                spl = group_by.name.split(".")
                 json_path = spl[1:]
                 try:
                     data = json.loads(row.data[spl[0]])
