@@ -276,8 +276,8 @@ class Fetcher(BaseFetcher):
         group_by_value = ""
         group_by = request.group_by[0] if request.group_by else None
         if group_by:
-            if ":" in group_by.name:
-                spl = group_by.name.split(":")
+            if "." in group_by.name:
+                spl = group_by.name.split(".")
                 if group_by.jsonstring:
                     json_path = spl[1:]
                     json_path = ", ".join([escape_param(x) for x in json_path])
@@ -285,10 +285,10 @@ class Fetcher(BaseFetcher):
                         f"JSONExtractString({group_by.root_name}, {json_path})"
                     )
                 elif group_by.is_map():
-                    map_key = ":".join(spl[1:])
+                    map_key = ".".join(spl[1:])
                     group_by_value = f"{group_by.root_name}['{map_key}']"
                 elif group_by.is_array():
-                    array_index = int(":".join(spl[1]))
+                    array_index = int(".".join(spl[1]))
                     group_by_value = f"{group_by.root_name}[{array_index}]"
                 else:
                     raise ValueError

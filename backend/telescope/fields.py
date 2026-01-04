@@ -617,7 +617,7 @@ def parse(source: Source, text: str) -> List[ParsedField]:
     parser.parse(text)
     parsed_fields = []
     for field in parser.fields:
-        source_field_name = field["name"].split(":")[0]
+        source_field_name = field["name"].split(".")[0]
         if source_field_name not in source._fields:
             raise ParserError(
                 message=f"Source have no '{source_field_name}' field", errno=100

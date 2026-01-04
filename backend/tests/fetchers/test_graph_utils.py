@@ -109,11 +109,11 @@ def test_generate_graph_json_grouping(mock_source):
     ]
 
     group_by = ParsedField(
-        name="labels:app",
+        name="labels.app",
         root_name="labels",
         type="json",
         jsonstring=True,
-        display_name="labels:app",
+        display_name="labels.app",
         modifiers=[],
     )
 
@@ -144,11 +144,11 @@ def test_generate_graph_json_nested_grouping(mock_source):
     ]
 
     group_by = ParsedField(
-        name="metadata:labels:tier",
+        name="metadata.labels.tier",
         root_name="metadata",
         type="json",
         jsonstring=True,
-        display_name="metadata:labels:tier",
+        display_name="metadata.labels.tier",
         modifiers=[],
     )
 
@@ -248,11 +248,11 @@ def test_generate_graph_invalid_json_grouping(mock_source):
     ]
 
     group_by = ParsedField(
-        name="labels:app",
+        name="labels.app",
         root_name="labels",
         type="json",
         jsonstring=True,
-        display_name="labels:app",
+        display_name="labels.app",
         modifiers=[],
     )
 
