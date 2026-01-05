@@ -18,21 +18,21 @@ def kubernetes_source():
     mock_source.name = source_data["name"]
     mock_source.kind = source_data["kind"]
     mock_source.description = source_data["description"]
-    mock_source.time_field = source_data["time_field"]
-    mock_source.date_field = source_data.get("date_field", "")
-    mock_source.uniq_field = source_data["uniq_field"]
-    mock_source.severity_field = source_data["severity_field"]
-    mock_source.fields = source_data["fields"]
+    mock_source.time_column = source_data["time_column"]
+    mock_source.date_column = source_data.get("date_column", "")
+    mock_source.uniq_column = source_data["uniq_column"]
+    mock_source.severity_column = source_data["severity_column"]
+    mock_source.columns = source_data["columns"]
     mock_source.support_raw_query = source_data["support_raw_query"]
-    mock_source.default_chosen_fields = source_data["default_chosen_fields"]
+    mock_source.default_chosen_columns = source_data["default_chosen_columns"]
     mock_source.data = source_data["data"]
-    mock_source.context_fields = source_data.get("context_fields", {})
+    mock_source.context_columns = source_data.get("context_columns", {})
 
     mock_source.conn = MagicMock()
     mock_source.conn.id = 1
     mock_source.conn.data = get_kubernetes_connection_data()["data"]
 
-    mock_source._fields = {name: MagicMock() for name in source_data["fields"]}
+    mock_source._columns = {name: MagicMock() for name in source_data["columns"]}
 
     return mock_source
 
@@ -138,22 +138,22 @@ def test_connection_success(mock_config_helper, mock_kube_helper):
 def test_get_schema():
     schema = Fetcher.get_schema({})
     assert len(schema) == 10
-    field_names = [field["name"] for field in schema]
-    assert "time" in field_names
-    assert "context" in field_names
-    assert "namespace" in field_names
-    assert "pod" in field_names
-    assert "container" in field_names
-    assert "node" in field_names
-    assert "labels" in field_names
-    assert "annotations" in field_names
-    assert "message" in field_names
-    assert "status" in field_names
+    column_names = [column["name"] for column in schema]
+    assert "time" in column_names
+    assert "context" in column_names
+    assert "namespace" in column_names
+    assert "pod" in column_names
+    assert "container" in column_names
+    assert "node" in column_names
+    assert "labels" in column_names
+    assert "annotations" in column_names
+    assert "message" in column_names
+    assert "status" in column_names
 
 
 @patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
 @patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
-def test_get_all_context_fields_data(
+def test_get_all_context_columns_data(
     mock_config_helper, mock_kube_helper, kubernetes_source
 ):
     mock_config = MagicMock()
@@ -167,7 +167,7 @@ def test_get_all_context_fields_data(
     }
     mock_kube_helper.return_value = mock_helper
 
-    result = Fetcher.get_all_context_fields_data(kubernetes_source)
+    result = Fetcher.get_all_context_columns_data(kubernetes_source)
 
     assert "contexts" in result
     assert "namespaces" in result
@@ -177,7 +177,7 @@ def test_get_all_context_fields_data(
 
 @patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
 @patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
-def test_get_context_field_data_contexts(
+def test_get_context_column_data_contexts(
     mock_config_helper, mock_kube_helper, kubernetes_source
 ):
     mock_config = MagicMock()
@@ -187,13 +187,13 @@ def test_get_context_field_data_contexts(
     mock_helper.allowed_contexts_set = {"context1", "context2"}
     mock_kube_helper.return_value = mock_helper
 
-    result = Fetcher.get_context_field_data(kubernetes_source, "context")
+    result = Fetcher.get_context_column_data(kubernetes_source, "context")
     assert result == ["context1", "context2"] or set(result) == {"context1", "context2"}
 
 
 @patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
 @patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
-def test_get_context_field_data_namespaces(
+def test_get_context_column_data_namespaces(
     mock_config_helper, mock_kube_helper, kubernetes_source
 ):
     mock_config = MagicMock()
@@ -206,13 +206,13 @@ def test_get_context_field_data_namespaces(
     }
     mock_kube_helper.return_value = mock_helper
 
-    result = Fetcher.get_context_field_data(kubernetes_source, "namespace")
+    result = Fetcher.get_context_column_data(kubernetes_source, "namespace")
     assert set(result) == {"default", "kube-system"}
 
 
 @patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
 @patch("telescope.fetchers.kubernetes.fetcher.KubeConfigHelper")
-def test_get_context_field_data_pods(
+def test_get_context_column_data_pods(
     mock_config_helper, mock_kube_helper, kubernetes_source
 ):
     mock_config = MagicMock()
@@ -235,7 +235,7 @@ def test_get_context_field_data_pods(
     mock_kube_helper.return_value = mock_helper
 
     params = {"contexts": ["context1"], "namespaces": ["default"]}
-    result = Fetcher.get_context_field_data(kubernetes_source, "pods", params)
+    result = Fetcher.get_context_column_data(kubernetes_source, "pods", params)
 
     assert len(result) == 1
     assert result[0]["context"] == "context1"
@@ -296,7 +296,7 @@ def test_fetch_data_simple(mock_config_helper, mock_kube_helper, kubernetes_sour
         time_from=1000000000000,
         time_to=2000000000000,
         limit=10,
-        context_fields={},
+        context_columns={},
     )
     response = Fetcher.fetch_data(request, tz=UTC_ZONE)
 
@@ -359,7 +359,7 @@ def test_fetch_data_with_query(mock_config_helper, mock_kube_helper, kubernetes_
         time_from=1000000000000,
         time_to=2000000000000,
         limit=10,
-        context_fields={},
+        context_columns={},
     )
     response = Fetcher.fetch_data(request, tz=UTC_ZONE)
 
@@ -388,7 +388,7 @@ def test_fetch_data_no_pods(mock_config_helper, mock_kube_helper, kubernetes_sou
         time_from=1000000000000,
         time_to=2000000000000,
         limit=10,
-        context_fields={},
+        context_columns={},
     )
     response = Fetcher.fetch_data(request, tz=UTC_ZONE)
 

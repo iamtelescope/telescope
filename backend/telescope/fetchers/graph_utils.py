@@ -1,14 +1,14 @@
 import json
 from typing import List, Dict, Tuple, Optional
 from telescope.fetchers.models import Row
-from telescope.fields import ParsedField
+from flyql.columns import ParsedColumn
 
 
 def generate_graph_from_rows(
     rows: List[Row],
     time_from: int,
     time_to: int,
-    group_by: Optional[ParsedField] = None,
+    group_by: Optional[ParsedColumn] = None,
 ) -> Tuple[List[int], Dict[str, List[int]], int]:
 
     stats_by_ts = {}

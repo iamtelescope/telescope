@@ -7,7 +7,7 @@
         <vue-monaco-editor
             v-model:value="code"
             theme="telescope"
-            language="fields"
+            language="columns"
             :options="getDefaultMonacoOptions()"
             @mount="handleMount"
             @change="onChange"
@@ -20,7 +20,8 @@ import { ref, computed, shallowRef, watch, onBeforeUnmount } from 'vue'
 
 import * as monaco from 'monaco-editor'
 
-import { Parser, State } from '@/utils/fields.js'
+import { Parser } from 'flyql/columns'
+import { State } from 'flyql/columns/state'
 import { MODIFIERS } from '@/utils/modifiers'
 import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
 import { getDefaultMonacoOptions } from '@/utils/monaco.js'
@@ -40,17 +41,17 @@ const editorHeight = computed(() => {
 const code = ref(props.value)
 const editorRef = shallowRef()
 
-const getExistingFields = (text) => {
+const getExistingColumns = (text) => {
     const parser = new Parser()
-    parser.parse(text, false)
-    return parser.getFieldsNames(props.source, false)
+    parser.parse(text, false, true)
+    return parser.columns.map((c) => c.name)
 }
 
-const getFieldsNameSuggestions = (existingFields, range) => {
+const getColumnsNameSuggestions = (existingColumns, range) => {
     const suggestions = []
-    for (const name of Object.keys(props.source.fields)) {
-        if (props.source.fields[name].suggest) {
-            if (!existingFields.includes(name)) {
+    for (const name of Object.keys(props.source.columns)) {
+        if (props.source.columns[name].suggest) {
+            if (!existingColumns.includes(name)) {
                 suggestions.push({
                     label: name,
                     kind: monaco.languages.CompletionItemKind.Keyword,
@@ -85,21 +86,21 @@ const getModifiersSuggestions = (range) => {
 const getSuggestions = (word, range, textFull, textBeforeCursor) => {
     let suggestions = []
     const parser = new Parser()
-    parser.parse(textBeforeCursor)
+    parser.parse(textBeforeCursor, false, true)
     if (parser.state == State.EXPECT_MODIFIER) {
         suggestions = getModifiersSuggestions(range)
     } else if (parser.state == State.MODIFIER) {
         if (!Object.keys(MODIFIERS).includes(word)) {
             suggestions = getModifiersSuggestions(range)
         }
-    } else if (parser.state == State.EXPECT_NAME || parser.state == State.NAME) {
-        suggestions = getFieldsNameSuggestions(getExistingFields(textFull), range)
+    } else if (parser.state == State.EXPECT_COLUMN || parser.state == State.COLUMN) {
+        suggestions = getColumnsNameSuggestions(getExistingColumns(textFull), range)
     }
     return suggestions
 }
 
 const handleMount = (editor) => {
-    completionProvider.value = monaco.languages.registerCompletionItemProvider('fields', {
+    completionProvider.value = monaco.languages.registerCompletionItemProvider('columns', {
         provideCompletionItems: function (model, position) {
             let word = model.getWordUntilPosition(position)
             let range = {
@@ -123,7 +124,7 @@ const handleMount = (editor) => {
         },
         triggerCharacters: [',', '|'],
     })
-    editor.updateOptions({ placeholder: props.source.generateFieldsExample() })
+    editor.updateOptions({ placeholder: props.source.generateColumnsExample() })
     editorRef.value = editor
     editor.addAction({
         id: 'submit',

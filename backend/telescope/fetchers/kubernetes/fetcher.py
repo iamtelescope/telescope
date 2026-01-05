@@ -7,7 +7,7 @@ from flyql.matcher.evaluator import Evaluator
 from flyql.matcher.record import Record
 
 from telescope.constants import UTC_ZONE
-from telescope.utils import get_telescope_field
+from telescope.utils import get_telescope_column
 from telescope.fetchers.fetcher import BaseFetcher
 from telescope.fetchers.models import Row
 from telescope.fetchers.request import DataRequest, GraphDataRequest
@@ -119,20 +119,20 @@ class Fetcher(BaseFetcher):
     @classmethod
     def get_schema(cls, data: dict):
         return [
-            get_telescope_field("time", "datetime"),
-            get_telescope_field("context", "string", autocomplete=False),
-            get_telescope_field("namespace", "string", autocomplete=False),
-            get_telescope_field("pod", "string", autocomplete=False),
-            get_telescope_field("container", "string", autocomplete=False),
-            get_telescope_field("node", "string", autocomplete=False),
-            get_telescope_field("labels", "json", autocomplete=False),
-            get_telescope_field("annotations", "json", autocomplete=False),
-            get_telescope_field("message", "string", autocomplete=False),
-            get_telescope_field("status", "string", autocomplete=False),
+            get_telescope_column("time", "datetime"),
+            get_telescope_column("context", "string", autocomplete=False),
+            get_telescope_column("namespace", "string", autocomplete=False),
+            get_telescope_column("pod", "string", autocomplete=False),
+            get_telescope_column("container", "string", autocomplete=False),
+            get_telescope_column("node", "string", autocomplete=False),
+            get_telescope_column("labels", "json", autocomplete=False),
+            get_telescope_column("annotations", "json", autocomplete=False),
+            get_telescope_column("message", "string", autocomplete=False),
+            get_telescope_column("status", "string", autocomplete=False),
         ]
 
     @classmethod
-    def get_all_context_fields_data(cls, source):
+    def get_all_context_columns_data(cls, source):
         conn_data = source.conn.data
         source_data = source.data
 
@@ -209,12 +209,12 @@ class Fetcher(BaseFetcher):
         return result
 
     @classmethod
-    def get_context_field_data(cls, source, field, params=None):
+    def get_context_column_data(cls, source, column, params=None):
         params = params or {}
         conn_data = source.conn.data
         source_data = source.data
 
-        if field == "pods":
+        if column == "pods":
             return cls._get_pods_preview(source, params)
 
         helper = KubeHelper(
@@ -232,10 +232,10 @@ class Fetcher(BaseFetcher):
             namespace_flyql_filter=source_data.get("namespace", ""),
         )
 
-        if field == "context":
+        if column == "context":
             return list(helper.allowed_contexts_set)
 
-        elif field == "namespace":
+        elif column == "namespace":
             if not helper.allowed_contexts_set:
                 return []
 
@@ -245,7 +245,7 @@ class Fetcher(BaseFetcher):
 
             return sorted(all_namespaces)
 
-        elif field == "deployment":
+        elif column == "deployment":
             if not helper.allowed_contexts_set:
                 logger.warning("No contexts available")
                 return []
@@ -256,7 +256,7 @@ class Fetcher(BaseFetcher):
             raise ValueError(f"Unsupported context field: {field}")
 
     @classmethod
-    def autocomplete(cls, source, field, time_from, time_to, value):
+    def autocomplete(cls, source, column, time_from, time_to, value):
         return AutocompleteResponse(items=[], incomplete=False)
 
     @classmethod
@@ -284,16 +284,16 @@ class Fetcher(BaseFetcher):
             namespace_label_selector=source_data.get("namespace_label_selector", ""),
             namespace_field_selector=source_data.get("namespace_field_selector", ""),
             namespace_flyql_filter=source_data.get("namespace", ""),
-            pods_label_selector=request.context_fields.get(
+            pods_label_selector=request.context_columns.get(
                 "pods_label_selector", ""
             ).strip(),
-            pods_field_selector=request.context_fields.get(
+            pods_field_selector=request.context_columns.get(
                 "pods_field_selector", ""
             ).strip(),
-            pods_flyql_filter=request.context_fields.get("pods_flyql_filter", ""),
-            selected_contexts=ensure_list(request.context_fields.get("contexts", [])),
+            pods_flyql_filter=request.context_columns.get("pods_flyql_filter", ""),
+            selected_contexts=ensure_list(request.context_columns.get("contexts", [])),
             selected_namespaces=ensure_list(
-                request.context_fields.get("namespaces", [])
+                request.context_columns.get("namespaces", [])
             ),
         )
 
@@ -350,7 +350,7 @@ class Fetcher(BaseFetcher):
         for entry in log_entries:
             row = Row(
                 source=request.source,
-                selected_fields=[
+                selected_columns=[
                     "time",
                     "context",
                     "namespace",
@@ -430,16 +430,16 @@ class Fetcher(BaseFetcher):
             namespace_label_selector=source_data.get("namespace_label_selector", ""),
             namespace_field_selector=source_data.get("namespace_field_selector", ""),
             namespace_flyql_filter=source_data.get("namespace", ""),
-            pods_label_selector=request.context_fields.get(
+            pods_label_selector=request.context_columns.get(
                 "pods_label_selector", ""
             ).strip(),
-            pods_field_selector=request.context_fields.get(
+            pods_field_selector=request.context_columns.get(
                 "pods_field_selector", ""
             ).strip(),
-            pods_flyql_filter=request.context_fields.get("pods_flyql_filter", ""),
-            selected_contexts=ensure_list(request.context_fields.get("contexts", [])),
+            pods_flyql_filter=request.context_columns.get("pods_flyql_filter", ""),
+            selected_contexts=ensure_list(request.context_columns.get("contexts", [])),
             selected_namespaces=ensure_list(
-                request.context_fields.get("namespaces", [])
+                request.context_columns.get("namespaces", [])
             ),
         )
 
@@ -518,7 +518,7 @@ class Fetcher(BaseFetcher):
         for entry in log_entries:
             row = Row(
                 source=request.source,
-                selected_fields=[
+                selected_columns=[
                     "time",
                     "context",
                     "namespace",

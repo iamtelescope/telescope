@@ -29,7 +29,7 @@ def test_create_personal_view_success(test_user, docker_source):
         "name": "My View",
         "description": "desc",
         "shared": False,
-        "data": {"fields": ""},
+        "data": {"columns": ""},
     }
 
     service = SourceSavedViewService(slug=docker_source.slug)
@@ -90,7 +90,7 @@ def test_create_personal_view_kubernetes_source(test_user, kubernetes_source):
         "name": "My Kubernetes View",
         "description": "kubernetes desc",
         "shared": False,
-        "data": {"fields": "pod_name,message"},
+        "data": {"columns": "pod_name,message"},
     }
 
     service = SourceSavedViewService(slug=kubernetes_source.slug)

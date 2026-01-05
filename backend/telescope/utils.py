@@ -148,7 +148,7 @@ CLICKHOUSE_TYPES: List[str] = [
     "boolean",
 ]
 
-ALLOWED_TIME_FIELD_TYPES: List[str] = [
+ALLOWED_TIME_COLUMN_TYPES: List[str] = [
     "datetime",
     "datetime64",
     "uint64",
@@ -157,7 +157,7 @@ ALLOWED_TIME_FIELD_TYPES: List[str] = [
 ]
 
 
-ALLOWED_DATE_FIELD_TYPES: List[str] = [
+ALLOWED_DATE_COLUMN_TYPES: List[str] = [
     "date",
     "date32",
 ]
@@ -249,7 +249,7 @@ def convert_to_base_ch(full_type: str) -> str:
     return res
 
 
-def get_telescope_field(name, _type, **kwargs):
+def get_telescope_column(name, _type, **kwargs):
     data = {
         "name": name,
         "display_name": "",

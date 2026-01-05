@@ -90,12 +90,12 @@
                 :rowsPerPageOptions="[10, 25, 50, 100, 1000]"
                 class="w-full"
             >
-                <Column field="user" sortable header="Username" headerStyle="width: 250px;">
+                <Column column="user" sortable header="Username" headerStyle="width: 250px;">
                     <template #body="slotProps">
                         {{ slotProps.data.user.username }}
                     </template>
                 </Column>
-                <Column field="roles" header="Roles">
+                <Column column="roles" header="Roles">
                     <template #body="slotProps">
                         <div class="flex flex-wrap gap-2">
                             <Chip
@@ -134,12 +134,12 @@
                 :rowsPerPageOptions="[10, 25, 50, 100, 1000]"
                 class="w-full"
             >
-                <Column field="group" sortable header="Group" headerStyle="width: 250px;">
+                <Column column="group" sortable header="Group" headerStyle="width: 250px;">
                     <template #body="slotProps">
                         {{ slotProps.data.group.name }}
                     </template>
                 </Column>
-                <Column field="roles" header="Roles">
+                <Column column="roles" header="Roles">
                     <template #body="slotProps">
                         <div class="flex flex-wrap gap-2">
                             <Chip

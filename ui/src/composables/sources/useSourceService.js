@@ -61,7 +61,7 @@ const useGetSourceRoleBidings = (sourceSlug) => {
 
 const useGetSourceData = () => {
     const rows = ref(null)
-    const fields = ref(null)
+    const columns = ref(null)
     const message = ref(null)
     const error = ref(null)
     const loading = ref(null)
@@ -75,7 +75,7 @@ const useGetSourceData = () => {
         if (!response.aborted) {
             if (response.result) {
                 rows.value = response.data.rows
-                fields.value = response.data.fields
+                columns.value = response.data.columns
                 message.value = response.data.message
             }
             error.value = response.errors.join(', ')
@@ -83,7 +83,7 @@ const useGetSourceData = () => {
         }
         loading.value = false
     }
-    return { rows, fields, message, error, loading, validation, load, controller }
+    return { rows, columns, message, error, loading, validation, load, controller }
 }
 
 const useGetSourceGraphData = () => {
@@ -109,7 +109,7 @@ const useGetSourceGraphData = () => {
     return { data, error, loading, validation, load, controller }
 }
 
-const useGetSourceContextFieldData = () => {
+const useGetSourceContextColumnData = () => {
     const data = ref(null)
     const error = ref(null)
     const loading = ref(null)
@@ -117,7 +117,7 @@ const useGetSourceContextFieldData = () => {
 
     const load = async (sourceSlug, params) => {
         loading.value = true
-        let response = await srv.getContextFieldData(sourceSlug, params)
+        let response = await srv.getContextColumnData(sourceSlug, params)
         if (response.result) {
             data.value = response.data.data
         }
@@ -128,14 +128,14 @@ const useGetSourceContextFieldData = () => {
     return { data, error, loading, validation, load }
 }
 
-const useGetSourceContextFieldsData = (sourceSlug) => {
+const useGetSourceContextColumnsData = (sourceSlug) => {
     const data = ref(null)
     const error = ref(null)
     const loading = ref(null)
 
     const load = async () => {
         loading.value = true
-        let response = await srv.getContextFieldsData(sourceSlug)
+        let response = await srv.getContextColumnsData(sourceSlug)
         if (response.result) {
             data.value = response.data
         }
@@ -187,7 +187,7 @@ const useGetSavedViews = (slug) => {
 
 const useGetSourceDataAndGraph = () => {
     const rows = ref(null)
-    const fields = ref(null)
+    const columns = ref(null)
     const message = ref(null)
     const graphData = ref(null)
     const error = ref(null)
@@ -202,7 +202,7 @@ const useGetSourceDataAndGraph = () => {
         if (!response.aborted) {
             if (response.result) {
                 rows.value = response.data.rows
-                fields.value = response.data.fields
+                columns.value = response.data.columns
                 message.value = response.data.message
                 graphData.value = response.data.graph
             }
@@ -211,7 +211,7 @@ const useGetSourceDataAndGraph = () => {
         }
         loading.value = false
     }
-    return { rows, fields, message, graphData, error, loading, validation, load, controller }
+    return { rows, columns, message, graphData, error, loading, validation, load, controller }
 }
 
 export {
@@ -221,8 +221,8 @@ export {
     useGetSourceData,
     useGetSourceGraphData,
     useGetSourceDataAndGraph,
-    useGetSourceContextFieldData,
-    useGetSourceContextFieldsData,
+    useGetSourceContextColumnData,
+    useGetSourceContextColumnsData,
     useGetSavedView,
     useGetSavedViews,
 }

@@ -85,12 +85,12 @@ class SourceService {
         let response = await http.Post(`ui/v1/sources/${sourceSlug}/autocomplete`, params)
         return response
     }
-    getContextFieldData = async (sourceSlug, params) => {
-        let response = await http.Post(`ui/v1/sources/${sourceSlug}/contextFieldData`, params)
+    getContextColumnData = async (sourceSlug, params) => {
+        let response = await http.Post(`ui/v1/sources/${sourceSlug}/contextColumnData`, params)
         return response
     }
-    getContextFieldsData = async (sourceSlug) => {
-        let response = await http.Get(`ui/v1/sources/${sourceSlug}/contextFieldsData`)
+    getContextColumnsData = async (sourceSlug) => {
+        let response = await http.Get(`ui/v1/sources/${sourceSlug}/contextColumnsData`)
         return response
     }
     getSavedView = async (sourceSlug, viewSlug) => {

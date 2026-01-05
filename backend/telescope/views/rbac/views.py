@@ -109,7 +109,7 @@ class GroupView(APIView):
             serializer = NewGroupSerializer(data=request.data)
             if not serializer.is_valid():
                 response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
+                response.validation["columns"] = serializer.errors
             else:
                 group = serializer.save()
                 response.data = {"id": group.pk}
@@ -128,7 +128,7 @@ class GroupView(APIView):
             serializer = UpdateGroupSerializer(data=request.data)
             if not serializer.is_valid():
                 response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
+                response.validation["columns"] = serializer.errors
             else:
                 group.name = serializer.data["name"]
                 group.save()

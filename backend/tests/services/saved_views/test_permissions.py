@@ -26,7 +26,7 @@ def test_create_personal_view_no_source_access(docker_source):
         "name": "My View",
         "description": "desc",
         "shared": False,
-        "data": {"fields": ""},
+        "data": {"columns": ""},
     }
 
     service = SourceSavedViewService(slug=docker_source.slug)
@@ -44,7 +44,7 @@ def test_create_personal_view_with_use_permission_only(test_user, docker_source)
         "name": "My View",
         "description": "desc",
         "shared": False,
-        "data": {"fields": ""},
+        "data": {"columns": ""},
     }
 
     service = SourceSavedViewService(slug=docker_source.slug)
@@ -65,7 +65,7 @@ def test_create_source_view_with_owner_permission(test_user, docker_source):
         "name": "Owner View",
         "description": "desc",
         "shared": True,
-        "data": {"fields": ""},
+        "data": {"columns": ""},
     }
 
     service = SourceSavedViewService(slug=docker_source.slug)
@@ -86,7 +86,7 @@ def test_create_source_view_with_viewer_permission(test_user, docker_source):
         "name": "Viewer Attempt",
         "description": "should fail",
         "shared": True,
-        "data": {"fields": ""},
+        "data": {"columns": ""},
     }
 
     service = SourceSavedViewService(slug=docker_source.slug)
@@ -139,7 +139,7 @@ def test_update_personal_view_owner_no_source_access(personal_saved_view, test_u
         "name": "Updated Name",
         "description": "updated",
         "shared": False,
-        "data": {"fields": ""},
+        "data": {"columns": ""},
     }
 
     service = SourceSavedViewService(slug=personal_saved_view.source.slug)
@@ -161,7 +161,7 @@ def test_update_source_view_with_edit_permission(source_saved_view, test_user):
         "name": "Updated Source View",
         "description": "updated",
         "shared": True,
-        "data": {"fields": ""},
+        "data": {"columns": ""},
     }
 
     service = SourceSavedViewService(slug=source_saved_view.source.slug)
@@ -184,7 +184,7 @@ def test_update_source_view_with_owner_permission(source_saved_view, test_user):
         "name": "Owner Updated View",
         "description": "updated by owner",
         "shared": True,
-        "data": {"fields": ""},
+        "data": {"columns": ""},
     }
 
     service = SourceSavedViewService(slug=source_saved_view.source.slug)
@@ -208,7 +208,7 @@ def test_change_scope_personal_to_source_without_edit(personal_saved_view, test_
         "name": "Escalated View",
         "description": "trying to escalate",
         "shared": True,
-        "data": {"fields": ""},
+        "data": {"columns": ""},
     }
 
     service = SourceSavedViewService(slug=personal_saved_view.source.slug)
@@ -231,7 +231,7 @@ def test_change_scope_personal_to_source_with_edit(personal_saved_view, test_use
         "name": "Promoted View",
         "description": "promoted to source",
         "shared": True,
-        "data": {"fields": ""},
+        "data": {"columns": ""},
     }
 
     service = SourceSavedViewService(slug=personal_saved_view.source.slug)
@@ -346,7 +346,7 @@ def test_create_kubernetes_personal_view_with_use_permission_only(
         "name": "My Kubernetes View",
         "description": "kubernetes desc",
         "shared": False,
-        "data": {"fields": "pod_name,message"},
+        "data": {"columns": "pod_name,message"},
     }
 
     service = SourceSavedViewService(slug=kubernetes_source.slug)
@@ -369,7 +369,7 @@ def test_create_kubernetes_source_view_with_owner_permission(
         "name": "Kubernetes Owner View",
         "description": "kubernetes source view",
         "shared": True,
-        "data": {"fields": "pod_name,message"},
+        "data": {"columns": "pod_name,message"},
     }
 
     service = SourceSavedViewService(slug=kubernetes_source.slug)
@@ -392,7 +392,7 @@ def test_create_kubernetes_source_view_with_viewer_permission(
         "name": "Kubernetes Viewer Attempt",
         "description": "should fail",
         "shared": True,
-        "data": {"fields": "pod_name,message"},
+        "data": {"columns": "pod_name,message"},
     }
 
     service = SourceSavedViewService(slug=kubernetes_source.slug)
@@ -416,7 +416,7 @@ def test_list_kubernetes_views_with_edit_permission(kubernetes_source, test_user
         user=test_user,
         updated_by=test_user,
         shared=True,
-        data={"fields": "pod_name,message"},
+        data={"columns": "pod_name,message"},
     )
 
     SavedView.objects.create(
@@ -427,7 +427,7 @@ def test_list_kubernetes_views_with_edit_permission(kubernetes_source, test_user
         user=test_user,
         updated_by=test_user,
         shared=False,
-        data={"fields": "pod_name,message"},
+        data={"columns": "pod_name,message"},
     )
 
     service = SourceSavedViewService(slug=kubernetes_source.slug)

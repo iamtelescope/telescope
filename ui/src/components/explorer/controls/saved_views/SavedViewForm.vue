@@ -177,9 +177,9 @@ const handleFormSubmit = async () => {
     submitButtonLoading.value = false
     if (response.result) {
         if (!response.validation.result) {
-            nonFieldErrors.value = response.validation.non_field
-            for (const field in response.validation.fields) {
-                validationErrors.value[field] = response.validation.fields[field].join(', ')
+            nonFieldErrors.value = response.validation.non_column
+            for (const column in response.validation.columns) {
+                validationErrors.value[column] = response.validation.columns[column].join(', ')
             }
         } else {
             emit('change', new SavedView(response.data))

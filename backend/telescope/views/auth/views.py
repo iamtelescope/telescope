@@ -187,7 +187,7 @@ class UserAPITokenView(APIView):
             serializer = APITokenCreateRequestSerializer(data=request.data)
             if not serializer.is_valid():
                 response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
+                response.validation["columns"] = serializer.errors
                 response.mark_failed(str(serializer.errors))
             else:
                 with transaction.atomic():

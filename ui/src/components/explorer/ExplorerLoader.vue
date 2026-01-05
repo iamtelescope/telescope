@@ -20,7 +20,7 @@
             <Skeleton width="4.5rem" height="2rem" borderRadius="6px" />
         </div>
 
-        <!-- Context fields skeleton -->
+        <!-- Context columns skeleton -->
         <div class="flex flex-wrap items-end gap-2 mb-2 pt-2">
             <Skeleton width="180px" height="2.5rem" borderRadius="6px" />
             <Skeleton width="200px" height="2.5rem" borderRadius="6px" />
@@ -28,7 +28,7 @@
             <Skeleton class="flex-1 min-w-[150px]" height="2.5rem" borderRadius="6px" />
         </div>
 
-        <!-- Fields selector skeleton -->
+        <!-- Columns selector skeleton -->
         <div class="mb-2">
             <Skeleton width="100%" height="2.5rem" borderRadius="6px" />
         </div>

@@ -14,19 +14,19 @@ class Row:
     def __init__(
         self,
         source: Source,
-        selected_fields: List[str],
+        selected_columns: List[str],
         values: List[Any],
         tz: ZoneInfo = UTC_ZONE,
     ):
         self.source = source
         self.data = {}
-        for key, value in zip(selected_fields, values):
+        for key, value in zip(selected_columns, values):
             self.data[key] = value
 
-        self.record_id = self.data.get(source.uniq_field) or self.data.get(
-            source._record_pseudo_id_field
+        self.record_id = self.data.get(source.uniq_column) or self.data.get(
+            source._record_pseudo_id_column
         )
-        dt = self.data[source.time_field]
+        dt = self.data[source.time_column]
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=tz)
         self.time = {
@@ -52,8 +52,8 @@ class Row:
 
     def as_dict(self) -> Dict:
         data = {}
-        for name, source_field in self.source._fields.items():
-            if source_field.jsonstring and self.is_propbably_jsonstring(
+        for name, source_column in self.source._columns.items():
+            if source_column.jsonstring and self.is_propbably_jsonstring(
                 self.data[name]
             ):
                 try:
@@ -61,7 +61,7 @@ class Row:
                 except Exception:
                     value = self.data[name]
                     logger.error(
-                        "Failed to json.loads(value) for JSON-treated field '%s', %s",
+                        "Failed to json.loads(value) for JSON-treated column '%s', %s",
                         name,
                         type(self.data[name]),
                     )

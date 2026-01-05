@@ -38,7 +38,7 @@
 import { ref, computed, watch } from 'vue'
 import { MultiSelect, FloatLabel } from 'primevue'
 
-const props = defineProps(['source', 'contextFields', 'contextFieldsData'])
+const props = defineProps(['source', 'contextFields', 'contextColumnsData'])
 const emit = defineEmits(['fieldChanged'])
 
 // Helper to ensure array
@@ -51,7 +51,7 @@ const ensureArray = (val) => {
 
 // Computed: container options from prop data
 const containerOptions = computed(() => {
-    return props.contextFieldsData?.containers || []
+    return props.contextColumnsData?.containers || []
 })
 
 // Selected containers as full objects (for MultiSelect display)

@@ -29,7 +29,7 @@
                 :showHeaders="false"
                 v-if="savedViewsPrepared.length > 0"
             >
-                <Column field="name" class="hover:cursor-pointer">
+                <Column column="name" class="hover:cursor-pointer">
                     <template #body="{ data }">
                         <div class="flex flex-col">
                             <div class="flex flex-row justify-between w-full">
@@ -48,14 +48,14 @@
                             <div class="text-gray-500 dark:text-gray-400 text-sm" v-if="data.description">
                                 {{ data.description }}
                             </div>
-                            <div class="flex flex-col pt-2" v-if="data.data.fields || data.data.query">
+                            <div class="flex flex-col pt-2" v-if="data.data.columns || data.data.query">
                                 <div
                                     class="flex flex-row items-center text-sm text-gray-500 dark:text-gray-400"
-                                    v-if="data.data.fields"
+                                    v-if="data.data.columns"
                                 >
                                     <i class="pi pi-list pr-2" />
-                                    <span v-tooltip.left="data.data.fields.length > 64 ? data.data.fields : ''">{{
-                                        getShortedValue(data.data.fields)
+                                    <span v-tooltip.left="data.data.columns.length > 64 ? data.data.columns : ''">{{
+                                        getShortedValue(data.data.columns)
                                     }}</span>
                                 </div>
                                 <div
@@ -116,7 +116,7 @@ const savedViewsPrepared = computed(() => {
         let views = savedViews.value
         if (savedViewFilter.value) {
             let fuse = new Fuse(views, {
-                keys: ['name', 'description', 'data.fields', 'data.query', 'data.limit', 'data.from', 'data.to'],
+                keys: ['name', 'description', 'data.columns', 'data.query', 'data.limit', 'data.from', 'data.to'],
                 threshold: 0.4,
             })
             views = fuse.search(savedViewFilter.value).map((r) => r.item)

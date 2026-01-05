@@ -10,7 +10,7 @@ from telescope.constants import VIEW_SCOPE_SOURCE, VIEW_SCOPE_PERSONAL
 logger = logging.getLogger("telescope.models")
 
 
-class SourceField:
+class SourceColumn:
     def __init__(
         self,
         name: str,
@@ -60,16 +60,16 @@ class Source(models.Model):
     slug = models.CharField(max_length=64, unique=True)
     name = models.CharField(max_length=64)
     description = models.TextField()
-    time_field = models.CharField(max_length=128)
-    date_field = models.CharField(max_length=128)
-    uniq_field = models.CharField(max_length=128)
-    severity_field = models.CharField(max_length=128)
-    fields = models.JSONField()
+    time_column = models.CharField(max_length=128)
+    date_column = models.CharField(max_length=128)
+    uniq_column = models.CharField(max_length=128)
+    severity_column = models.CharField(max_length=128)
+    columns = models.JSONField()
     modifiers = models.JSONField()
-    default_chosen_fields = models.JSONField()
+    default_chosen_columns = models.JSONField()
     support_raw_query = models.BooleanField()
     execute_query_on_open = models.BooleanField(default=True)
-    context_fields = models.JSONField()
+    context_columns = models.JSONField()
     conn = models.ForeignKey(Connection, on_delete=models.SET_NULL, null=True)
     data = models.JSONField(default=dict, blank=True)
     query_mode = models.CharField(max_length=16, default="separate")
@@ -86,20 +86,20 @@ class Source(models.Model):
 
     @classmethod
     def create(cls, kind, data):
-        data["context_fields"] = {}
+        data["context_columns"] = {}
         data["support_raw_query"] = True
         query_mode = "separate"  # Default for ClickHouse
 
         if kind == "docker":
             data["support_raw_query"] = False
-            data["context_fields"] = {
+            data["context_columns"] = {
                 "container": {},
             }
             query_mode = "combined"  # Docker uses combined mode
 
         if kind == "kubernetes":
             data["support_raw_query"] = False
-            data["context_fields"] = {
+            data["context_columns"] = {
                 "contexts": [],
                 "namespaces": [],
                 "pods_label_selector": "",
@@ -113,14 +113,14 @@ class Source(models.Model):
         )
 
     @property
-    def _record_pseudo_id_field(self):
+    def _record_pseudo_id_column(self):
         return "_____record_pseudo_id"
 
     @property
-    def _fields(self) -> Dict[str, SourceField]:
-        fields = {}
-        for key, value in self.fields.items():
-            fields[key] = SourceField(
+    def _columns(self) -> Dict[str, SourceColumn]:
+        columns = {}
+        for key, value in self.columns.items():
+            columns[key] = SourceColumn(
                 name=key,
                 display_name=value["display_name"],
                 type=value["type"],
@@ -130,7 +130,7 @@ class Source(models.Model):
                 group_by=value["group_by"],
                 values=value["values"],
             )
-        return fields
+        return columns
 
     def add_perms(self, perms):
         for perm in perms:

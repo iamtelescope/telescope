@@ -185,7 +185,7 @@ import * as monaco from 'monaco-editor'
 
 const sourceService = new SourceService()
 
-const props = defineProps(['source', 'contextFields', 'contextFieldsData'])
+const props = defineProps(['source', 'contextFields', 'contextColumnsData'])
 const emit = defineEmits(['fieldChanged'])
 
 // Helper to ensure array
@@ -220,12 +220,12 @@ const popoverData = ref({})
 
 // Computed: context options from prop data
 const contextOptions = computed(() => {
-    return props.contextFieldsData?.contexts || []
+    return props.contextColumnsData?.contexts || []
 })
 
 // Computed: namespace options from prop data
 const namespaceOptions = computed(() => {
-    return props.contextFieldsData?.namespaces || []
+    return props.contextColumnsData?.namespaces || []
 })
 
 // Editor height calculation

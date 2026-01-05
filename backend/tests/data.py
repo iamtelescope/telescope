@@ -4,10 +4,10 @@ def get_docker_source_data(slug):
         "slug": slug,
         "name": "Docker",
         "description": "docker test source",
-        "time_field": "time",
-        "uniq_field": "",
-        "severity_field": "",
-        "fields": {
+        "time_column": "time",
+        "uniq_column": "",
+        "severity_column": "",
+        "columns": {
             "time": {
                 "display_name": "",
                 "type": "datetime",
@@ -82,7 +82,7 @@ def get_docker_source_data(slug):
             },
         },
         "support_raw_query": False,
-        "default_chosen_fields": "container_short_id, stream, message",
+        "default_chosen_columns": "container_short_id, stream, message",
         "connection": {"address": "unix:///var/run/docker.sock"},
         "data": {},
     }
@@ -94,11 +94,11 @@ def get_clickhouse_source_data(slug, kind="clickhouse"):
         "slug": slug,
         "name": "ClickHouse",
         "description": "clickhouse test source",
-        "time_field": "event_time",
-        "date_field": "event_date",
-        "uniq_field": "",
-        "severity_field": "query_kind",
-        "fields": {
+        "time_column": "event_time",
+        "date_column": "event_date",
+        "uniq_column": "",
+        "severity_column": "query_kind",
+        "columns": {
             "hostname": {
                 "display_name": "",
                 "type": "LowCardinality(String)",
@@ -326,7 +326,7 @@ def get_clickhouse_source_data(slug, kind="clickhouse"):
                 "values": [],
             },
         },
-        "default_chosen_fields": "hostname, query",
+        "default_chosen_columns": "hostname, query",
         "connection": {
             "host": "localhost",
             "port": 9440,
@@ -349,14 +349,14 @@ def get_clickhouse_source_data(slug, kind="clickhouse"):
 
 def get_saved_view_data():
     return {
-        "fields": "message",
+        "columns": "message",
         "query": "",
         "from": "now",
         "to": "now-5m",
         "limit": 50,
         "graph_group_by": "",
         "show_graph": True,
-        "context_fields": {},
+        "context_columns": {},
     }
 
 
@@ -396,10 +396,10 @@ def get_kubernetes_source_data(slug):
         "slug": slug,
         "name": "Kubernetes",
         "description": "kubernetes test source",
-        "time_field": "time",
-        "uniq_field": "",
-        "severity_field": "",
-        "fields": {
+        "time_column": "time",
+        "uniq_column": "",
+        "severity_column": "",
+        "columns": {
             "time": {
                 "display_name": "",
                 "type": "datetime",
@@ -492,7 +492,7 @@ def get_kubernetes_source_data(slug):
             },
         },
         "support_raw_query": False,
-        "default_chosen_fields": "pod, message",
+        "default_chosen_columns": "pod, message",
         "connection": {
             "kubeconfig": "apiVersion: v1\nclusters:\n- cluster:\n    server: https://kubernetes.default.svc\n  name: default\ncontexts:\n- context:\n    cluster: default\n    user: default\n  name: default\ncurrent-context: default\nkind: Config\npreferences: {}\nusers:\n- name: default\n  user:\n    token: test-token\n",
             "kubeconfig_hash": "test-hash-123",
