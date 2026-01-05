@@ -31,7 +31,7 @@ from telescope.serializers.source import (
     SourceGraphDataRequestSerializer,
     SourceDataAndGraphDataRequestSerializer,
     SourceAutocompleteRequestSerializer,
-    SourceContextFieldDataSerializer,
+    SourceContextColumnDataSerializer,
     GetSourceSchemaClickhouseSerializer,
     GetSourceSchemaDockerSerializer,
     GetSourceSchemaKubernetesSerializer,
@@ -220,7 +220,7 @@ class SourceGrantRoleView(SourceRoleView):
         try:
             if not serializer.is_valid():
                 response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
+                response.validation["columns"] = serializer.errors
             else:
                 params = self.get_binding_params(slug, serializer)
                 _, created = source_srv.grant_role(
@@ -249,7 +249,7 @@ class SourceRevokeRoleView(SourceRoleView):
         try:
             if not serializer.is_valid():
                 response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
+                response.validation["columns"] = serializer.errors
             else:
                 params = self.get_binding_params(slug, serializer)
                 deleted = source_srv.revoke_role(
@@ -284,12 +284,12 @@ class SourceDataAutocompleteView(APIView):
         )
         if not serializer.is_valid():
             response.validation["result"] = False
-            response.validation["fields"] = serializer.errors
+            response.validation["columns"] = serializer.errors
             return Response(response.as_dict())
         fetcher = get_fetchers()[source.kind]
         autocomplete_response = fetcher.autocomplete(
             source=source,
-            field=serializer.validated_data["field"],
+            column=serializer.validated_data["column"],
             time_from=serializer.validated_data["from"],
             time_to=serializer.validated_data["to"],
             value=serializer.validated_data["value"],
@@ -316,7 +316,7 @@ class SourceDataView(APIView):
 
         if not serializer.is_valid():
             response.validation["result"] = False
-            response.validation["fields"] = serializer.errors
+            response.validation["columns"] = serializer.errors
             return Response(response.as_dict())
 
         try:
@@ -328,7 +328,7 @@ class SourceDataView(APIView):
                 time_from=serializer.validated_data["from"],
                 time_to=serializer.validated_data["to"],
                 limit=serializer.validated_data["limit"],
-                context_fields=serializer.validated_data["context_fields"],
+                context_columns=serializer.validated_data["context_columns"],
             )
             data_response = fetcher.fetch_data(
                 data_request,
@@ -342,8 +342,8 @@ class SourceDataView(APIView):
                 response.mark_failed(data_response.error)
             else:
                 response.data = {
-                    "fields": [
-                        f.as_dict() for f in serializer.validated_data["fields"]
+                    "columns": [
+                        f.as_dict() for f in serializer.validated_data["columns"]
                     ],
                     "rows": [row.as_dict() for row in data_response.rows],
                     "message": data_response.message,
@@ -351,7 +351,7 @@ class SourceDataView(APIView):
         return Response(response.as_dict())
 
 
-class SourceContextFieldDataView(APIView):
+class SourceContextColumnDataView(APIView):
     @method_decorator(login_required)
     def post(self, request, slug):
         response = UIResponse()
@@ -362,17 +362,17 @@ class SourceContextFieldDataView(APIView):
             required_permissions=[permissions.Source.USE.value],
             fetch_connection=True,
         )
-        serializer = SourceContextFieldDataSerializer(data=request.data)
+        serializer = SourceContextColumnDataSerializer(data=request.data)
 
         if not serializer.is_valid():
             response.validation["result"] = False
-            response.validation["fields"] = serializer.errors
+            response.validation["columns"] = serializer.errors
             return Response(response.as_dict())
         try:
             fetcher = get_fetchers()[source.kind]
-            response.data["data"] = fetcher.get_context_field_data(
+            response.data["data"] = fetcher.get_context_column_data(
                 source,
-                serializer.validated_data["field"],
+                serializer.validated_data["column"],
                 serializer.validated_data.get("params", {}),
             )
         except Exception as err:
@@ -381,8 +381,8 @@ class SourceContextFieldDataView(APIView):
         return Response(response.as_dict())
 
 
-class SourceContextFieldsDataView(APIView):
-    """Returns all context fields data in a single call."""
+class SourceContextColumnsDataView(APIView):
+    """Returns all context columns data in a single call."""
 
     @method_decorator(login_required)
     def get(self, request, slug):
@@ -396,8 +396,8 @@ class SourceContextFieldsDataView(APIView):
         )
         try:
             fetcher = get_fetchers()[source.kind]
-            if hasattr(fetcher, "get_all_context_fields_data"):
-                response.data = fetcher.get_all_context_fields_data(source)
+            if hasattr(fetcher, "get_all_context_columns_data"):
+                response.data = fetcher.get_all_context_columns_data(source)
             else:
                 response.data = {}
         except Exception as err:
@@ -423,7 +423,7 @@ class SourceGraphDataView(APIView):
 
         if not serializer.is_valid():
             response.validation["result"] = False
-            response.validation["fields"] = serializer.errors
+            response.validation["columns"] = serializer.errors
             return Response(response.as_dict())
 
         try:
@@ -435,7 +435,7 @@ class SourceGraphDataView(APIView):
                 time_from=serializer.validated_data["from"],
                 time_to=serializer.validated_data["to"],
                 group_by=serializer.validated_data["group_by"],
-                context_fields=serializer.validated_data["context_fields"],
+                context_columns=serializer.validated_data["context_columns"],
             )
             graph_data_response = fetcher.fetch_graph_data(graph_data_request)
         except Exception as err:
@@ -475,7 +475,7 @@ class SourceDataAndGraphDataView(APIView):
 
         if not serializer.is_valid():
             response.validation["result"] = False
-            response.validation["fields"] = serializer.errors
+            response.validation["columns"] = serializer.errors
             return Response(response.as_dict())
 
         try:
@@ -488,7 +488,7 @@ class SourceDataAndGraphDataView(APIView):
                 time_to=serializer.validated_data["to"],
                 limit=serializer.validated_data["limit"],
                 group_by=serializer.validated_data["group_by"],
-                context_fields=serializer.validated_data["context_fields"],
+                context_columns=serializer.validated_data["context_columns"],
             )
             combined_response = fetcher.fetch_data_and_graph(
                 combined_request,
@@ -504,8 +504,8 @@ class SourceDataAndGraphDataView(APIView):
                 response.mark_failed(combined_response.error)
             else:
                 response.data = {
-                    "fields": [
-                        f.as_dict() for f in serializer.validated_data["fields"]
+                    "columns": [
+                        f.as_dict() for f in serializer.validated_data["columns"]
                     ],
                     "rows": [row.as_dict() for row in combined_response.rows],
                     "message": combined_response.message,
@@ -533,7 +533,7 @@ class SourceTestConnectionView(APIView):
             serializer = serializer_cls(data=request.data)
             if not serializer.is_valid():
                 response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
+                response.validation["columns"] = serializer.errors
             else:
                 connection_test_response = fetcher.test_connection(serializer.data)
                 response.data = connection_test_response.as_dict()
@@ -557,7 +557,7 @@ class GetSourceSchemaView(APIView):
             serializer = serializer_cls(data=request.data)
             if not serializer.is_valid():
                 response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
+                response.validation["columns"] = serializer.errors
                 return Response(response.as_dict())
 
             # Fetch the connection

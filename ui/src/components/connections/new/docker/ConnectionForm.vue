@@ -45,8 +45,8 @@ const hasError = (key) => {
 }
 
 const resetErrors = () => {
-    for (const field in connectionFieldErrors) {
-        connectionFieldErrors[field] = ''
+    for (const column in connectionFieldErrors) {
+        connectionFieldErrors[column] = ''
     }
 }
 
@@ -71,16 +71,16 @@ watch(
     () => props.validationErrors,
     (newErrors) => {
         if (newErrors && Object.keys(newErrors).length > 0) {
-            // Apply validation errors to form fields
-            for (const [field, errors] of Object.entries(newErrors)) {
-                if (connectionFieldErrors.hasOwnProperty(field)) {
-                    connectionFieldErrors[field] = errors.join(', ')
+            // Apply validation errors to form columns
+            for (const [column, errors] of Object.entries(newErrors)) {
+                if (connectionFieldErrors.hasOwnProperty(column)) {
+                    connectionFieldErrors[column] = errors.join(', ')
                 }
             }
         } else {
             // Clear all validation errors when parent sends empty errors
-            for (const field in connectionFieldErrors) {
-                connectionFieldErrors[field] = ''
+            for (const column in connectionFieldErrors) {
+                connectionFieldErrors[column] = ''
             }
         }
     },

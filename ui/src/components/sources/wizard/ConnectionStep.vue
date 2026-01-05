@@ -75,7 +75,7 @@
                 </Message>
             </div>
 
-            <!-- ClickHouse specific fields -->
+            <!-- ClickHouse specific columns -->
             <template v-if="connection?.kind === 'clickhouse'">
                 <div class="pt-2">
                     <label for="database" class="font-medium">Database *</label>
@@ -106,7 +106,7 @@
                 </div>
             </template>
 
-            <!-- Kubernetes specific fields -->
+            <!-- Kubernetes specific columns -->
             <template v-if="connection?.kind === 'kubernetes'">
                 <div class="pt-2">
                     <label for="namespace_label_selector" class="font-medium">Namespace Label Selector</label>
@@ -122,16 +122,16 @@
                     </small>
                 </div>
                 <div class="pt-2">
-                    <label for="namespace_field_selector" class="font-medium">Namespace Field Selector</label>
+                    <label for="namespace_column_selector" class="font-medium">Namespace Field Selector</label>
                     <InputText
                         v-model="namespaceFieldSelector"
-                        id="namespace_field_selector"
+                        id="namespace_column_selector"
                         class="w-full font-mono text-sm"
                         placeholder="e.g., metadata.name=default"
                         fluid
                     />
                     <small class="text-gray-600 dark:text-gray-400 mt-1 block">
-                        Kubernetes field selector (server-side filtering)
+                        Kubernetes column selector (server-side filtering)
                     </small>
                 </div>
                 <div class="pt-2">
@@ -144,7 +144,7 @@
                         fluid
                     />
                     <small class="text-gray-600 dark:text-gray-400 mt-1 block">
-                        FlyQL query for client-side filtering. Available fields: name, status
+                        FlyQL query for client-side filtering. Available columns: name, status
                     </small>
                 </div>
             </template>
@@ -190,17 +190,17 @@ const filteredConnections = computed(() => {
     return props.connections
 })
 
-// Initialize form fields from props
+// Initialize form columns from props
 const connection = ref(preselectedConnection.value || null)
 const database = ref(props.modelValue?.database || '')
 const table = ref(props.modelValue?.table || '')
 const settings = ref(props.modelValue?.settings || '')
 const namespaceLabelSelector = ref(props.modelValue?.namespace_label_selector || '')
-const namespaceFieldSelector = ref(props.modelValue?.namespace_field_selector || '')
+const namespaceFieldSelector = ref(props.modelValue?.namespace_column_selector || '')
 const namespace = ref(props.modelValue?.namespace || '')
 const errors = ref({})
 
-// Cache for storing field values per connection ID
+// Cache for storing column values per connection ID
 const connectionCache = ref({})
 
 // Initialize cache with current values if editing
@@ -210,7 +210,7 @@ if (preselectedConnection.value) {
         table: props.modelValue?.table || '',
         settings: props.modelValue?.settings || '',
         namespace_label_selector: props.modelValue?.namespace_label_selector || '',
-        namespace_field_selector: props.modelValue?.namespace_field_selector || '',
+        namespace_column_selector: props.modelValue?.namespace_column_selector || '',
         namespace: props.modelValue?.namespace || '',
     }
 }
@@ -231,10 +231,10 @@ const handleConnectionChange = () => {
         table.value = cached.table || ''
         settings.value = cached.settings || ''
         namespaceLabelSelector.value = cached.namespace_label_selector || ''
-        namespaceFieldSelector.value = cached.namespace_field_selector || ''
+        namespaceFieldSelector.value = cached.namespace_column_selector || ''
         namespace.value = cached.namespace || ''
     } else {
-        // Clear fields for new connection
+        // Clear columns for new connection
         database.value = ''
         table.value = ''
         settings.value = ''
@@ -247,7 +247,7 @@ const handleConnectionChange = () => {
     errors.value = {}
 }
 
-// Watch field changes to update cache
+// Watch column changes to update cache
 watch([database, table, settings, namespaceLabelSelector, namespaceFieldSelector, namespace], () => {
     if (connection.value) {
         connectionCache.value[connection.value.id] = {
@@ -255,7 +255,7 @@ watch([database, table, settings, namespaceLabelSelector, namespaceFieldSelector
             table: table.value,
             settings: settings.value,
             namespace_label_selector: namespaceLabelSelector.value,
-            namespace_field_selector: namespaceFieldSelector.value,
+            namespace_column_selector: namespaceFieldSelector.value,
             namespace: namespace.value,
         }
     }
@@ -287,7 +287,7 @@ const validate = () => {
         }
     }
 
-    // Kubernetes specific validation - all fields are optional now
+    // Kubernetes specific validation - all columns are optional now
 
     return Object.keys(errors.value).length === 0
 }
@@ -300,7 +300,7 @@ const handleNext = () => {
             table: table.value,
             settings: settings.value,
             namespace_label_selector: namespaceLabelSelector.value,
-            namespace_field_selector: namespaceFieldSelector.value,
+            namespace_column_selector: namespaceFieldSelector.value,
             namespace: namespace.value,
         }
         emit('update:modelValue', values)

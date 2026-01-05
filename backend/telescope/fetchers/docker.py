@@ -9,7 +9,7 @@ from flyql.core.exceptions import FlyqlError
 from flyql.matcher.evaluator import Evaluator
 from flyql.matcher.record import Record
 
-from telescope.utils import get_telescope_field
+from telescope.utils import get_telescope_column
 
 from telescope.fetchers.request import (
     AutocompleteRequest,
@@ -86,7 +86,7 @@ class Fetcher(BaseFetcher):
             return False, err.message
         else:
             try:
-                # row_match(parser.root, source._fields, None)
+                # row_match(parser.root, source._columns, None)
                 return True, None
             except FlyqlError as err:
                 return False, err.message
@@ -94,7 +94,7 @@ class Fetcher(BaseFetcher):
         return True, None
 
     @classmethod
-    def get_all_context_fields_data(cls, source):
+    def get_all_context_columns_data(cls, source):
         client = docker.DockerClient(base_url=source.conn.data["address"])
         containers = []
         for container in client.containers.list(all=True):
@@ -115,8 +115,8 @@ class Fetcher(BaseFetcher):
         }
 
     @classmethod
-    def get_context_field_data(cls, source, field, params=None):
-        if field == "container":
+    def get_context_column_data(cls, source, column, params=None):
+        if column == "container":
             client = docker.DockerClient(base_url=source.conn.data["address"])
             containers = []
             for container in client.containers.list(all=True):
@@ -152,14 +152,14 @@ class Fetcher(BaseFetcher):
     def get_schema(cls, data: dict):
         """Get schema without testing connection"""
         return [
-            get_telescope_field("time", "datetime"),
-            get_telescope_field("container_id", "string"),
-            get_telescope_field("container_name", "string"),
-            get_telescope_field("container_short_id", "string"),
-            get_telescope_field("message", "string"),
-            get_telescope_field("status", "string"),
-            get_telescope_field("stream", "string"),
-            get_telescope_field("labels", "json"),
+            get_telescope_column("time", "datetime"),
+            get_telescope_column("container_id", "string"),
+            get_telescope_column("container_name", "string"),
+            get_telescope_column("container_short_id", "string"),
+            get_telescope_column("message", "string"),
+            get_telescope_column("status", "string"),
+            get_telescope_column("stream", "string"),
+            get_telescope_column("labels", "json"),
         ]
 
     @classmethod
@@ -183,7 +183,7 @@ class Fetcher(BaseFetcher):
         return response
 
     @classmethod
-    def autocomplete(cls, source, field, time_from, time_to, value):
+    def autocomplete(cls, source, column, time_from, time_to, value):
         incomplete = False
         return AutocompleteResponse(items=[], incomplete=incomplete)
 
@@ -222,7 +222,7 @@ class Fetcher(BaseFetcher):
             stream_param[stream_name] = True
             for container in client.containers.list(
                 all=True,
-                filters={"name": request.context_fields.get("container", [])},
+                filters={"name": request.context_columns.get("container", [])},
             ):
                 logs = container.logs(
                     timestamps=True, since=since, until=until, **stream_param
@@ -241,7 +241,7 @@ class Fetcher(BaseFetcher):
                     if ts and message:
                         row = Row(
                             source=request.source,
-                            selected_fields=[
+                            selected_columns=[
                                 "time",
                                 "stream",
                                 "status",
@@ -341,7 +341,7 @@ class Fetcher(BaseFetcher):
             stream_param[stream_name] = True
             for container in client.containers.list(
                 all=True,
-                filters={"name": request.context_fields.get("container", [])},
+                filters={"name": request.context_columns.get("container", [])},
             ):
                 logs = container.logs(
                     timestamps=True, since=since, until=until, **stream_param
@@ -360,7 +360,7 @@ class Fetcher(BaseFetcher):
                     if ts and message:
                         row = Row(
                             source=request.source,
-                            selected_fields=[
+                            selected_columns=[
                                 "time",
                                 "stream",
                                 "status",
@@ -421,7 +421,7 @@ class Fetcher(BaseFetcher):
             stream_param[stream_name] = True
             for container in client.containers.list(
                 all=True,
-                filters={"name": request.context_fields.get("container", [])},
+                filters={"name": request.context_columns.get("container", [])},
             ):
                 logs = container.logs(
                     timestamps=True, since=since, until=until, **stream_param
@@ -440,7 +440,7 @@ class Fetcher(BaseFetcher):
                     if ts and message:
                         row = Row(
                             source=request.source,
-                            selected_fields=[
+                            selected_columns=[
                                 "time",
                                 "stream",
                                 "status",

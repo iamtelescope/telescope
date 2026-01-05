@@ -58,7 +58,7 @@
                 </Select>
             </div>
 
-            <!-- ClickHouse specific fields -->
+            <!-- ClickHouse specific columns -->
             <template v-if="selectedKind === 'clickhouse'">
                 <ClickHouseConnectionStep
                     ref="clickhouseFormRef"
@@ -69,7 +69,7 @@
                 />
             </template>
 
-            <!-- Docker specific fields -->
+            <!-- Docker specific columns -->
             <template v-if="selectedKind === 'docker'">
                 <DockerConnectionStep
                     ref="dockerFormRef"
@@ -80,7 +80,7 @@
                 />
             </template>
 
-            <!-- Kubernetes specific fields -->
+            <!-- Kubernetes specific columns -->
             <template v-if="selectedKind === 'kubernetes'">
                 <KubernetesConnectionStep
                     ref="kubernetesFormRef"
@@ -221,9 +221,9 @@ const handleTestConnection = async () => {
         if (response.result) {
             if (response.validation && !response.validation.result) {
                 let errorMessages = []
-                if (response.validation.fields) {
-                    for (const [field, errors] of Object.entries(response.validation.fields)) {
-                        errorMessages.push(`${field}: ${errors.join(', ')}`)
+                if (response.validation.columns) {
+                    for (const [column, errors] of Object.entries(response.validation.columns)) {
+                        errorMessages.push(`${column}: ${errors.join(', ')}`)
                     }
                 }
                 testResult.value = {

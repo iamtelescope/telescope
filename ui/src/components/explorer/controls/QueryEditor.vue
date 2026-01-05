@@ -33,7 +33,7 @@ const sourceSrv = new SourceService()
 const emit = defineEmits(['change', 'submit'])
 const props = defineProps(['source', 'value', 'from', 'to'])
 const isDark = useDark()
-const sourceFieldsNames = Object.keys(props.source.fields)
+const sourceColumnsNames = Object.keys(props.source.columns)
 const completionProvider = ref(null)
 
 const editorFocused = ref(false)
@@ -106,7 +106,7 @@ const getOperatorsSuggestions = (field, position) => {
         { label: Operator.LOWER_OR_EQUALS_THAN, sortText: 'h' },
     ]
 
-    if (props.source.fields[field].type != 'enum') {
+    if (props.source.columns[field].type != 'enum') {
         operators = operators.concat([
             { label: Operator.REGEX, sortText: 'c' },
             { label: Operator.NOT_REGEX, sortText: 'd' },
@@ -130,9 +130,9 @@ const getBooleanOperatorsSuggestions = (range) => {
 
 const getKeySuggestions = (range) => {
     const suggestions = []
-    for (const name of sourceFieldsNames) {
-        if (props.source.fields[name].suggest) {
-            let documentation = 'Field (' + props.source.fields[name].type + ')'
+    for (const name of sourceColumnsNames) {
+        if (props.source.columns[name].suggest) {
+            let documentation = 'Field (' + props.source.columns[name].type + ')'
             suggestions.push({
                 label: name,
                 kind: monaco.languages.CompletionItemKind.Keyword,
@@ -180,13 +180,13 @@ const getValueSuggestions = async (key, value, range, quoteChar) => {
         incomplete: false,
     }
     let items = []
-    if (sourceFieldsNames.includes(key)) {
-        if (props.source.fields[key].autocomplete) {
-            if (props.source.fields[key].values.length > 0) {
-                items = prepareSuggestionValues(props.source.fields[key].values, quoteChar)
+    if (sourceColumnsNames.includes(key)) {
+        if (props.source.columns[key].autocomplete) {
+            if (props.source.columns[key].values.length > 0) {
+                items = prepareSuggestionValues(props.source.columns[key].values, quoteChar)
             } else {
                 let resp = await sourceSrv.autocomplete(props.source.slug, {
-                    field: key,
+                    column: key,
                     value: value,
                     from: props.from,
                     to: props.to,
@@ -219,7 +219,7 @@ const getSuggestions = async (word, position, textBeforeCursor) => {
     parser.parse(textBeforeCursor, false, true)
 
     if (parser.state == State.KEY || parser.state == State.INITIAL || parser.state == State.BOOL_OP_DELIMITER) {
-        if (sourceFieldsNames.includes(word.word)) {
+        if (sourceColumnsNames.includes(word.word)) {
             suggestions = getOperatorsSuggestions(word.word, position)
         } else {
             suggestions = getKeySuggestions(range)

@@ -179,7 +179,7 @@ def test_update_source_without_permission(docker_source):
     data = {
         "name": "Updated Name",
         "description": "Updated",
-        "fields": docker_source.fields,
+        "columns": docker_source.columns,
     }
 
     with pytest.raises(PermissionDenied):
@@ -197,7 +197,7 @@ def test_update_source_with_viewer_permission(docker_source):
     data = {
         "name": "Updated Name",
         "description": "Updated",
-        "fields": docker_source.fields,
+        "columns": docker_source.columns,
     }
 
     with pytest.raises(PermissionDenied):
@@ -215,7 +215,7 @@ def test_update_source_with_user_permission(docker_source):
     data = {
         "name": "Updated Name",
         "description": "Updated",
-        "fields": docker_source.fields,
+        "columns": docker_source.columns,
     }
 
     with pytest.raises(PermissionDenied):
@@ -380,7 +380,7 @@ def test_raw_query_user_permissions(docker_source):
     update_data = {
         "name": "Raw Query Update",
         "description": "test",
-        "fields": docker_source.fields,
+        "columns": docker_source.columns,
     }
     with pytest.raises(PermissionDenied):
         source_srv.update(user=user, slug=docker_source.slug, data=update_data)
@@ -402,11 +402,11 @@ def test_permission_levels_hierarchy(docker_connection):
         name="Permission Test",
         kind="docker",
         description="",
-        time_field="time",
-        date_field="",
-        uniq_field="",
-        severity_field="",
-        fields={
+        time_column="time",
+        date_column="",
+        uniq_column="",
+        severity_column="",
+        columns={
             "time": {
                 "type": "datetime",
                 "display_name": "",
@@ -418,9 +418,9 @@ def test_permission_levels_hierarchy(docker_connection):
             }
         },
         modifiers=[],
-        default_chosen_fields="container_short_id, stream, message",
+        default_chosen_columns="container_short_id, stream, message",
         support_raw_query=False,
-        context_fields=[],
+        context_columns=[],
         conn=docker_connection,
         data={"address": "unix:///var/run/docker.sock"},
     )
@@ -575,7 +575,7 @@ def test_update_kubernetes_source_without_permission(kubernetes_source):
     data = {
         "name": "Updated Kubernetes Name",
         "description": "Updated",
-        "fields": kubernetes_source.fields,
+        "columns": kubernetes_source.columns,
     }
 
     with pytest.raises(PermissionDenied):
@@ -593,7 +593,7 @@ def test_update_kubernetes_source_with_viewer_permission(kubernetes_source):
     data = {
         "name": "Updated Kubernetes Name",
         "description": "Updated",
-        "fields": kubernetes_source.fields,
+        "columns": kubernetes_source.columns,
     }
 
     with pytest.raises(PermissionDenied):

@@ -9,12 +9,12 @@ class Source {
         this.slug = data.slug
         this.name = data.name
         this.description = data.description
-        this.timeField = data.time_field
-        this.dateField = data.date_field
-        this.severityField = data.severity_field
-        this.fields = data.fields
-        this.contextFields = data.context_fields
-        this.defaultChosenFields = data.default_chosen_fields
+        this.timeColumn = data.time_column
+        this.dateColumn = data.date_column
+        this.severityColumn = data.severity_column
+        this.columns = data.columns
+        this.contextColumns = data.context_columns
+        this.defaultChosenColumns = data.default_chosen_columns
         this.supportRawQuery = data.support_raw_query
         this.executeQueryOnOpen = data.execute_query_on_open
         this.connection = getDefaultIfUndefined(data.connection, {})
@@ -52,29 +52,29 @@ class Source {
             return false
         }
     }
-    generateFieldsExample() {
-        let fields = []
-        for (const field in this.fields) {
-            fields.push(field)
+    generateColumnsExample() {
+        let columns = []
+        for (const column in this.columns) {
+            columns.push(column)
         }
-        return fields.join(', ')
+        return columns.join(', ')
     }
 
     generateFlyQLExample() {
         let text = ''
-        let fields = []
-        for (const [field, data] of Object.entries(this.fields)) {
-            if (data.type.toLowerCase().includes('string') && fields.length < 4) {
-                fields.push(field)
+        let columns = []
+        for (const [column, data] of Object.entries(this.columns)) {
+            if (data.type.toLowerCase().includes('string') && columns.length < 4) {
+                columns.push(column)
             }
         }
-        if (fields.length == 1) {
-            text += `${fields[0]}=*value*`
-        } else if (fields.length == 2 || fields.length == 3) {
-            text += `${fields[0]}=*value* and ${fields[1] != 'value'}`
+        if (columns.length == 1) {
+            text += `${columns[0]}=*value*`
+        } else if (columns.length == 2 || columns.length == 3) {
+            text += `${columns[0]}=*value* and ${columns[1] != 'value'}`
         }
-        if (fields.length == 4) {
-            text += `${fields[0]}="*like value*" and ${fields[1]}!=value or (${fields[2]}=~".*rege[xX]$" and ${fields[3]}!~"reg ex$")`
+        if (columns.length == 4) {
+            text += `${columns[0]}="*like value*" and ${columns[1]}!=value or (${columns[2]}=~".*rege[xX]$" and ${columns[3]}!~"reg ex$")`
         }
         return text
     }
@@ -84,19 +84,19 @@ class Source {
             return ''
         }
         let text = ''
-        let fields = []
-        for (const [field, data] of Object.entries(this.fields)) {
-            if (data.type.toLowerCase().includes('string') && fields.length < 4) {
-                fields.push(field)
+        let columns = []
+        for (const [column, data] of Object.entries(this.columns)) {
+            if (data.type.toLowerCase().includes('string') && columns.length < 4) {
+                columns.push(column)
             }
         }
-        if (fields.length == 1) {
-            text += `${fields[0]} = 'value'`
-        } else if (fields.length == 2 || fields.length == 3) {
-            text += `${fields[0]} = 'value' and ${fields[1] != 'value'}`
+        if (columns.length == 1) {
+            text += `${columns[0]} = 'value'`
+        } else if (columns.length == 2 || columns.length == 3) {
+            text += `${columns[0]} = 'value' and ${columns[1] != 'value'}`
         }
-        if (fields.length == 4) {
-            text += `${fields[0]} LIKE "%value%" AND ${fields[1]} != 'value' OR match(${fields[2]}, '*rege[xX]$' AND NOT match(${fields[3]}, 'reg ex$')`
+        if (columns.length == 4) {
+            text += `${columns[0]} LIKE "%value%" AND ${columns[1]} != 'value' OR match(${columns[2]}, '*rege[xX]$' AND NOT match(${columns[3]}, 'reg ex$')`
         }
         return text
     }

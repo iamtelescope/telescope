@@ -145,7 +145,7 @@ class TestConnectionView(APIView):
             serializer = serializer_cls(data=request.data)
             if not serializer.is_valid():
                 response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
+                response.validation["columns"] = serializer.errors
             else:
                 connection_test_response = fetcher.test_connection_ng(serializer.data)
                 response.data = connection_test_response.as_dict()
@@ -193,7 +193,7 @@ class ConnectionGrantRoleView(ConnectionRoleView):
         try:
             if not serializer.is_valid():
                 response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
+                response.validation["columns"] = serializer.errors
             else:
                 params = self.get_binding_params(pk, serializer)
                 _, created = connection_srv.grant_role(
@@ -222,7 +222,7 @@ class ConnectionRevokeRoleView(ConnectionRoleView):
         try:
             if not serializer.is_valid():
                 response.validation["result"] = False
-                response.validation["fields"] = serializer.errors
+                response.validation["columns"] = serializer.errors
             else:
                 params = self.get_binding_params(pk, serializer)
                 deleted = connection_srv.revoke_role(

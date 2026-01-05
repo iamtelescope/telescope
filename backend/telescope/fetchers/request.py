@@ -1,19 +1,19 @@
 from typing import List, Dict
 from telescope.models import Source
-from telescope.fields import ParsedField
+from flyql.columns import ParsedColumn
 
 
 class AutocompleteRequest:
     def __init__(
         self,
         source: Source,
-        field: str,
+        column: str,
         time_from: int,
         time_to: int,
         value: str,
     ):
         self.source = source
-        self.field = field
+        self.column = column
         self.time_from = time_from
         self.time_to = time_to
         self.value = value
@@ -28,7 +28,7 @@ class DataRequest:
         time_from: int,
         time_to: int,
         limit: int,
-        context_fields: Dict,
+        context_columns: Dict,
     ):
         self.source = source
         self.query = query
@@ -36,7 +36,7 @@ class DataRequest:
         self.time_from = time_from
         self.time_to = time_to
         self.limit = limit
-        self.context_fields = context_fields
+        self.context_columns = context_columns
 
 
 class GraphDataRequest:
@@ -47,8 +47,8 @@ class GraphDataRequest:
         raw_query: str,
         time_from: int,
         time_to: int,
-        group_by: List[ParsedField],
-        context_fields: Dict,
+        group_by: List[ParsedColumn],
+        context_columns: Dict,
     ):
         self.source = source
         self.query = query
@@ -56,7 +56,7 @@ class GraphDataRequest:
         self.time_from = time_from
         self.time_to = time_to
         self.group_by = group_by
-        self.context_fields = context_fields
+        self.context_columns = context_columns
 
 
 class DataAndGraphDataRequest:
@@ -68,8 +68,8 @@ class DataAndGraphDataRequest:
         time_from: int,
         time_to: int,
         limit: int,
-        group_by: List[ParsedField],
-        context_fields: Dict,
+        group_by: List[ParsedColumn],
+        context_columns: Dict,
     ):
         self.source = source
         self.query = query
@@ -78,4 +78,4 @@ class DataAndGraphDataRequest:
         self.time_to = time_to
         self.limit = limit
         self.group_by = group_by
-        self.context_fields = context_fields
+        self.context_columns = context_columns

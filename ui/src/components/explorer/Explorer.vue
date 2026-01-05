@@ -10,9 +10,9 @@
             :source="source"
             :loading="loading"
             :paramsChanged="paramsChanged"
-            :contextFieldsData="contextFieldsData"
+            :contextColumnsData="contextColumnsData"
             @graphVisibilityChanged="onGraphVisibilityChanged"
-            :groupByInvalid="!!(graphValidation && !graphValidation.result && graphValidation.fields.group_by)"
+            :groupByInvalid="!!(graphValidation && !graphValidation.result && graphValidation.columns.group_by)"
         />
         <BorderCard class="mb-2" :loading="graphLoading" v-if="sourceControlsStore.showGraph && !showInitialMessage">
             <Skeleton v-if="graphLoading && graphData === null" width="100%" height="235px"></Skeleton>
@@ -59,7 +59,7 @@
                 v-if="showSourceDataTable"
                 :source="source"
                 :rows="rows"
-                :fields="fields"
+                :columns="columns"
                 :timeZone="displayTimeZone"
             />
         </BorderCard>
@@ -97,7 +97,7 @@ const sourceControlsStore = useSourceControlsStore()
 
 const lastSearchRouteQuery = ref(null)
 const displayTimeZone = ref(localTimeZone)
-const props = defineProps(['source', 'savedView', 'contextFieldsData'])
+const props = defineProps(['source', 'savedView', 'contextColumnsData'])
 
 // Determine query mode
 const useCombinedMode = computed(() => props.source?.queryMode === 'combined')
@@ -105,7 +105,7 @@ const useCombinedMode = computed(() => props.source?.queryMode === 'combined')
 // Separate mode (ClickHouse)
 const {
     rows: separateRows,
-    fields: separateFields,
+    columns: separateColumns,
     message: separateMessage,
     error: separateError,
     loading: separateLoading,
@@ -126,7 +126,7 @@ const {
 // Combined mode (Kubernetes, Docker)
 const {
     rows: combinedRows,
-    fields: combinedFields,
+    columns: combinedColumns,
     message: combinedMessage,
     graphData: combinedGraphData,
     error: combinedError,
@@ -138,7 +138,7 @@ const {
 
 // Computed properties to abstract away the mode difference
 const rows = computed(() => (useCombinedMode.value ? combinedRows.value : separateRows.value))
-const fields = computed(() => (useCombinedMode.value ? combinedFields.value : separateFields.value))
+const columns = computed(() => (useCombinedMode.value ? combinedColumns.value : separateColumns.value))
 const message = computed(() => (useCombinedMode.value ? combinedMessage.value : separateMessage.value))
 const error = computed(() => (useCombinedMode.value ? combinedError.value : separateError.value))
 const loading = computed(() => (useCombinedMode.value ? combinedLoading.value : separateLoading.value))

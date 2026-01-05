@@ -55,7 +55,7 @@
                 </DataRow>
                 <DataRow name="Namespace Field Selector" :copy="false">
                     <span class="font-mono text-sm">
-                        <EmptyValue :value="connectionData.namespace_field_selector || ''" />
+                        <EmptyValue :value="connectionData.namespace_column_selector || ''" />
                     </span>
                 </DataRow>
                 <DataRow name="Namespace FlyQL Filter" :copy="false" :showBorder="false">
@@ -65,48 +65,48 @@
                 </DataRow>
             </ContentBlock>
 
-            <ContentBlock header="Field Mapping">
-                <DataRow name="Time Field" :value="fieldMappingData.time_field" :copy="false" />
-                <DataRow name="Date Field" :copy="false">
-                    <EmptyValue :value="fieldMappingData.date_field || ''" />
+            <ContentBlock header="Column Mapping">
+                <DataRow name="Time Column" :value="columnMappingData.time_column" :copy="false" />
+                <DataRow name="Date Column" :copy="false">
+                    <EmptyValue :value="columnMappingData.date_column || ''" />
                 </DataRow>
-                <DataRow name="Severity Field" :copy="false">
-                    <EmptyValue :value="fieldMappingData.severity_field || ''" />
+                <DataRow name="Severity Column" :copy="false">
+                    <EmptyValue :value="columnMappingData.severity_column || ''" />
                 </DataRow>
-                <DataRow name="Default Chosen Fields" :copy="false">
-                    <span class="text-sm">{{ formatChosenFields(fieldMappingData.default_chosen_fields) }}</span>
+                <DataRow name="Default Chosen Columns" :copy="false">
+                    <span class="text-sm">{{ formatChosenColumns(columnMappingData.default_chosen_columns) }}</span>
                 </DataRow>
                 <DataRow name="Execute Query On Open" :copy="false" :showBorder="false">
-                    {{ (fieldMappingData.execute_query_on_open ?? true) ? 'Yes' : 'No' }}
+                    {{ (columnMappingData.execute_query_on_open ?? true) ? 'Yes' : 'No' }}
                 </DataRow>
             </ContentBlock>
 
-            <ContentBlock :header="`Fields (${fieldsCount})`">
+            <ContentBlock :header="`Columns (${columnsCount})`">
                 <div
-                    v-for="(field, index) in fieldsSetupData.fields"
+                    v-for="(column, index) in columnsSetupData.columns"
                     :key="index"
                     class="py-3 px-4 border-b dark:border-neutral-600 last:border-b-0"
                 >
                     <div class="flex items-center justify-between gap-4">
                         <div class="flex items-center gap-3 min-w-0 flex-shrink">
-                            <span class="font-mono font-medium text-sm">{{ field.name }}</span>
-                            <span class="text-xs text-cyan-600 dark:text-cyan-400">{{ field.type }}</span>
+                            <span class="font-mono font-medium text-sm">{{ column.name }}</span>
+                            <span class="text-xs text-cyan-600 dark:text-cyan-400">{{ column.type }}</span>
                         </div>
                         <div class="flex items-center gap-4 flex-shrink-0">
                             <div class="flex items-center gap-1.5">
-                                <ToggleSwitch :modelValue="field.autocomplete" readonly class="scale-75" />
+                                <ToggleSwitch :modelValue="column.autocomplete" readonly class="scale-75" />
                                 <span class="text-xs text-gray-600 dark:text-gray-400">Autocomplete</span>
                             </div>
                             <div class="flex items-center gap-1.5">
-                                <ToggleSwitch :modelValue="field.suggest" readonly class="scale-75" />
+                                <ToggleSwitch :modelValue="column.suggest" readonly class="scale-75" />
                                 <span class="text-xs text-gray-600 dark:text-gray-400">Suggest</span>
                             </div>
                             <div class="flex items-center gap-1.5">
-                                <ToggleSwitch :modelValue="field.jsonstring" readonly class="scale-75" />
+                                <ToggleSwitch :modelValue="column.jsonstring" readonly class="scale-75" />
                                 <span class="text-xs text-gray-600 dark:text-gray-400">JSON</span>
                             </div>
                             <div class="flex items-center gap-1.5">
-                                <ToggleSwitch :modelValue="field.group_by" readonly class="scale-75" />
+                                <ToggleSwitch :modelValue="column.group_by" readonly class="scale-75" />
                                 <span class="text-xs text-gray-600 dark:text-gray-400">GROUP BY</span>
                             </div>
                         </div>
@@ -131,8 +131,8 @@ const props = defineProps([
     'modelValue',
     'basicInfo',
     'connectionData',
-    'fieldsSetupData',
-    'fieldMappingData',
+    'columnsSetupData',
+    'columnMappingData',
     'source',
 ])
 const emit = defineEmits(['prev', 'create'])
@@ -152,14 +152,14 @@ const getConnectionKindLabel = (value) => {
     return option ? option.label : value
 }
 
-const fieldsCount = computed(() => {
-    return props.fieldsSetupData?.fields?.length || 0
+const columnsCount = computed(() => {
+    return props.columnsSetupData?.columns?.length || 0
 })
 
-const formatChosenFields = (fields) => {
-    if (!fields) return '-'
-    if (Array.isArray(fields)) return fields.join(', ')
-    return fields
+const formatChosenColumns = (columns) => {
+    if (!columns) return '-'
+    if (Array.isArray(columns)) return columns.join(', ')
+    return columns
 }
 
 const handleCreate = () => {

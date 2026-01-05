@@ -9,7 +9,7 @@
             <thead>
                 <tr>
                     <th
-                        v-if="source.severityField.length != 0"
+                        v-if="source.severityColumn.length != 0"
                         class="border-b border-neutral-200 dark:border-neutral-700"
                     ></th>
                     <th
@@ -19,10 +19,10 @@
                     </th>
                     <th
                         class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700 font-medium"
-                        v-for="field in fields"
-                        :key="field.name"
+                        v-for="column in columns"
+                        :key="column.name"
                     >
-                        {{ field.display_name }}
+                        {{ column.display_name }}
                     </th>
                 </tr>
             </thead>
@@ -34,13 +34,13 @@
                     @click="handleRowClick(row)"
                 >
                     <td
-                        v-if="source.severityField.length != 0"
+                        v-if="source.severityColumn.length != 0"
                         class="pl-1 pr-2 w-1 m-w-1 border-b border-neutral-200 dark:border-neutral-700"
                     >
                         <div
                             class="rounded w-2 h-6"
                             :style="{ 'background-color': getRowColor(row) }"
-                            :title="row.data[source.severityField]"
+                            :title="row.data[source.severityColumn]"
                         ></div>
                     </td>
                     <td
@@ -52,18 +52,18 @@
                     </td>
                     <td
                         class="text-nowrap pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300 hover:cursor-pointer hover:bg-slate-300 dark:hover:bg-neutral-900"
-                        v-for="field in fields"
-                        :key="field.name"
+                        v-for="column in columns"
+                        :key="column.name"
                     >
                         <div
-                            v-if="containsHtmlModifiers(field)"
-                            :class="{ 'whitespace-pre-wrap break-all': getRowValueLength(field, row.data) > 50 }"
-                            v-html="getRowValue(field, row.data)"
+                            v-if="containsHtmlModifiers(column)"
+                            :class="{ 'whitespace-pre-wrap break-all': getRowValueLength(column, row.data) > 50 }"
+                            v-html="getRowValue(column, row.data)"
                         />
                         <pre
                             v-else
-                            :class="{ 'whitespace-pre-wrap break-all': getRowValueLength(field, row.data) > 50 }"
-                            >{{ getRowValue(field, row.data) || '&dash;' }}</pre
+                            :class="{ 'whitespace-pre-wrap break-all': getRowValueLength(column, row.data) > 50 }"
+                            >{{ getRowValue(column, row.data) || '&dash;' }}</pre
                         >
                     </td>
                 </tr>
@@ -87,7 +87,7 @@ import { getColor } from '@/utils/colors.js'
 import { MODIFIERS } from '@/utils/modifiers.js'
 import { DateTime } from 'luxon'
 
-const props = defineProps(['source', 'rows', 'fields', 'timeZone'])
+const props = defineProps(['source', 'rows', 'columns', 'timeZone'])
 const selectedRow = ref(null)
 const visible = ref(false)
 
@@ -137,11 +137,11 @@ const handleRowClick = (row) => {
 }
 
 const getRowColor = (row) => {
-    return getColor(row.data[props.source.severityField])
+    return getColor(row.data[props.source.severityColumn])
 }
 
-const containsHtmlModifiers = (field) => {
-    for (const modifier of field.modifiers) {
+const containsHtmlModifiers = (column) => {
+    for (const modifier of column.modifiers) {
         if (MODIFIERS[modifier.name].type == 'html') {
             return true
         }
@@ -149,29 +149,29 @@ const containsHtmlModifiers = (field) => {
     return false
 }
 
-const getRowValue = (field, data) => {
+const getRowValue = (column, data) => {
     let value = ''
-    if (field.jsonstring) {
+    if (column.jsonstring) {
         // explorer contains object
-        value = extractJsonPath(field, data)
-    } else if (field.name.includes(':')) {
-        if (Array.isArray(data[field.root_name])) {
-            const index = Number(field.name.split(':')[1])
-            value = data[field.root_name][index]
+        value = extractJsonPath(column, data)
+    } else if (column.name.includes(':')) {
+        if (Array.isArray(data[column.root_name])) {
+            const index = Number(column.name.split(':')[1])
+            value = data[column.root_name][index]
         } else {
-            value = extractJsonPath(field, data)
+            value = extractJsonPath(column, data)
         }
     } else {
-        data = data[field.root_name]
+        data = data[column.root_name]
         value = data
     }
-    for (const modifier of field.modifiers) {
+    for (const modifier of column.modifiers) {
         if (MODIFIERS[modifier.name].type == 'value') {
             let func = MODIFIERS[modifier.name].func
             value = func(value, ...modifier.arguments)
         }
     }
-    for (const modifier of field.modifiers) {
+    for (const modifier of column.modifiers) {
         if (MODIFIERS[modifier.name].type == 'html') {
             let func = MODIFIERS[modifier.name].func
             value = func(value, ...modifier.arguments)
@@ -180,16 +180,16 @@ const getRowValue = (field, data) => {
     return value
 }
 
-const getRowValueLength = (field, data) => {
-    let value = getRowValue(field, data)
+const getRowValueLength = (column, data) => {
+    let value = getRowValue(column, data)
     if (typeof value === 'object') {
         return JSON.stringify(value).length
     }
     return String(value).length
 }
 
-const extractJsonPath = (field, data) => {
-    const path = field.name.split(':')
+const extractJsonPath = (column, data) => {
+    const path = column.name.split(':')
     let value = data
     for (const key of path) {
         if (typeof value === 'object' && key in value) {

@@ -4,7 +4,7 @@ from datetime import datetime
 
 from telescope.fetchers.graph_utils import generate_graph_from_rows
 from telescope.fetchers.models import Row
-from telescope.fields import ParsedField
+from telescope.columns import ParsedColumn
 from telescope.constants import UTC_ZONE
 
 
@@ -13,21 +13,21 @@ def mock_source():
     source = MagicMock()
     source.id = 1
     source.name = "test-source"
-    source.time_field = "time"
-    source.uniq_field = "id"
-    source._record_pseudo_id_field = "_id"
+    source.time_column = "time"
+    source.uniq_column = "id"
+    source._record_pseudo_id_column = "_id"
     return source
 
 
 def create_row(source, timestamp_ms, data_dict):
     timestamp = datetime.fromtimestamp(timestamp_ms / 1000, UTC_ZONE)
 
-    fields = ["time"] + [k for k in data_dict.keys() if k != "time"]
+    columns = ["time"] + [k for k in data_dict.keys() if k != "time"]
     values = [timestamp] + [data_dict[k] for k in data_dict.keys() if k != "time"]
 
     return Row(
         source=source,
-        selected_fields=fields,
+        selected_columns=columns,
         values=values,
         tz=UTC_ZONE,
     )
@@ -75,7 +75,7 @@ def test_generate_graph_with_grouping(mock_source):
         ),
     ]
 
-    group_by = ParsedField(
+    group_by = ParsedColumn(
         name="namespace",
         root_name="namespace",
         type="string",
@@ -108,7 +108,7 @@ def test_generate_graph_json_grouping(mock_source):
         create_row(mock_source, 1000000004000, {"labels": '{"app": "worker"}'}),
     ]
 
-    group_by = ParsedField(
+    group_by = ParsedColumn(
         name="labels.app",
         root_name="labels",
         type="json",
@@ -143,7 +143,7 @@ def test_generate_graph_json_nested_grouping(mock_source):
         ),
     ]
 
-    group_by = ParsedField(
+    group_by = ParsedColumn(
         name="metadata.labels.tier",
         root_name="metadata",
         type="json",
@@ -161,7 +161,7 @@ def test_generate_graph_json_nested_grouping(mock_source):
     assert "backend" in data
 
 
-def test_generate_graph_missing_group_field(mock_source):
+def test_generate_graph_missing_group_column(mock_source):
     time_from = 1000000000000
     time_to = 1000000010000
 
@@ -171,7 +171,7 @@ def test_generate_graph_missing_group_field(mock_source):
         create_row(mock_source, 1000000003000, {"namespace": "kube-system"}),
     ]
 
-    group_by = ParsedField(
+    group_by = ParsedColumn(
         name="namespace",
         root_name="namespace",
         type="string",
@@ -247,7 +247,7 @@ def test_generate_graph_invalid_json_grouping(mock_source):
         create_row(mock_source, 1000000002000, {"labels": '{"app": "valid"}'}),
     ]
 
-    group_by = ParsedField(
+    group_by = ParsedColumn(
         name="labels.app",
         root_name="labels",
         type="json",
@@ -298,7 +298,7 @@ def test_generate_graph_grouping_with_multiple_timestamps(mock_source):
         create_row(mock_source, 1000000006000, {"namespace": "kube-system"}),
     ]
 
-    group_by = ParsedField(
+    group_by = ParsedColumn(
         name="namespace",
         root_name="namespace",
         type="string",

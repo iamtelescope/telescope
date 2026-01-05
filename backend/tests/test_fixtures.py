@@ -2,7 +2,7 @@ import pytest
 
 from django.contrib.auth.models import User
 
-from telescope.models import Source, SourceField, SavedView, Connection
+from telescope.models import Source, SourceColumn, SavedView, Connection
 from telescope.constants import VIEW_SCOPE_SOURCE, VIEW_SCOPE_PERSONAL
 
 
@@ -35,18 +35,18 @@ def test_docker_source_fixture(docker_source):
     assert isinstance(docker_source, Source)
     assert docker_source.kind == "docker"
     assert docker_source.support_raw_query is False
-    assert "container" in docker_source.context_fields
-    assert docker_source.fields["time"]["type"] == "datetime"
-    assert docker_source.fields["time"]["autocomplete"] is False
-    assert docker_source.fields["time"]["suggest"] is True
-    assert docker_source.fields["message"]["type"] == "string"
-    assert docker_source.fields["message"]["display_name"] == "IsMessage"
-    assert docker_source.fields["message"]["autocomplete"] is True
-    assert docker_source.fields["message"]["jsonstring"] is True
+    assert "container" in docker_source.context_columns
+    assert docker_source.columns["time"]["type"] == "datetime"
+    assert docker_source.columns["time"]["autocomplete"] is False
+    assert docker_source.columns["time"]["suggest"] is True
+    assert docker_source.columns["message"]["type"] == "string"
+    assert docker_source.columns["message"]["display_name"] == "IsMessage"
+    assert docker_source.columns["message"]["autocomplete"] is True
+    assert docker_source.columns["message"]["jsonstring"] is True
     assert isinstance(docker_source.permissions, set)
-    for key, value in docker_source._fields.items():
+    for key, value in docker_source._columns.items():
         assert isinstance(key, str)
-        assert isinstance(value, SourceField)
+        assert isinstance(value, SourceColumn)
 
 
 @pytest.mark.django_db
@@ -54,18 +54,18 @@ def test_clickhouse_source_fixture(clickhouse_source):
     assert isinstance(clickhouse_source, Source)
     assert clickhouse_source.kind == "clickhouse"
     assert clickhouse_source.support_raw_query is True
-    assert clickhouse_source.context_fields == {}
-    assert clickhouse_source.fields["event_time"]["type"] == "DateTime64(3)"
-    assert clickhouse_source.fields["event_time"]["autocomplete"] is False
-    assert clickhouse_source.fields["event_time"]["suggest"] is True
-    assert clickhouse_source.fields["message"]["type"] == "String"
-    assert clickhouse_source.fields["message"]["display_name"] == "IsMessage"
-    assert clickhouse_source.fields["message"]["autocomplete"] is True
-    assert clickhouse_source.fields["message"]["jsonstring"] is True
+    assert clickhouse_source.context_columns == {}
+    assert clickhouse_source.columns["event_time"]["type"] == "DateTime64(3)"
+    assert clickhouse_source.columns["event_time"]["autocomplete"] is False
+    assert clickhouse_source.columns["event_time"]["suggest"] is True
+    assert clickhouse_source.columns["message"]["type"] == "String"
+    assert clickhouse_source.columns["message"]["display_name"] == "IsMessage"
+    assert clickhouse_source.columns["message"]["autocomplete"] is True
+    assert clickhouse_source.columns["message"]["jsonstring"] is True
     assert isinstance(clickhouse_source.permissions, set)
-    for key, value in clickhouse_source._fields.items():
+    for key, value in clickhouse_source._columns.items():
         assert isinstance(key, str)
-        assert isinstance(value, SourceField)
+        assert isinstance(value, SourceColumn)
 
 
 @pytest.mark.django_db
@@ -139,19 +139,19 @@ def test_kubernetes_source_fixture(kubernetes_source):
     assert isinstance(kubernetes_source, Source)
     assert kubernetes_source.kind == "kubernetes"
     assert kubernetes_source.support_raw_query is False
-    assert "contexts" in kubernetes_source.context_fields
-    assert "namespaces" in kubernetes_source.context_fields
-    assert kubernetes_source.fields["time"]["type"] == "datetime"
-    assert kubernetes_source.fields["time"]["autocomplete"] is False
-    assert kubernetes_source.fields["time"]["suggest"] is True
-    assert kubernetes_source.fields["message"]["type"] == "string"
-    assert kubernetes_source.fields["message"]["display_name"] == "IsMessage"
-    assert kubernetes_source.fields["message"]["autocomplete"] is False
-    assert kubernetes_source.fields["message"]["jsonstring"] is True
+    assert "contexts" in kubernetes_source.context_columns
+    assert "namespaces" in kubernetes_source.context_columns
+    assert kubernetes_source.columns["time"]["type"] == "datetime"
+    assert kubernetes_source.columns["time"]["autocomplete"] is False
+    assert kubernetes_source.columns["time"]["suggest"] is True
+    assert kubernetes_source.columns["message"]["type"] == "string"
+    assert kubernetes_source.columns["message"]["display_name"] == "IsMessage"
+    assert kubernetes_source.columns["message"]["autocomplete"] is False
+    assert kubernetes_source.columns["message"]["jsonstring"] is True
     assert isinstance(kubernetes_source.permissions, set)
-    for key, value in kubernetes_source._fields.items():
+    for key, value in kubernetes_source._columns.items():
         assert isinstance(key, str)
-        assert isinstance(value, SourceField)
+        assert isinstance(value, SourceColumn)
 
 
 @pytest.mark.django_db

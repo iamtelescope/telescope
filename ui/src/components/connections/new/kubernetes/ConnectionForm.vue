@@ -64,7 +64,7 @@
                 <ErrorText :text="connectionFieldErrors.context_filter" />
                 <small class="text-gray-600 mt-1 block">
                     Optional FlyQL query to filter available contexts from kubeconfig. Leave empty to use all contexts.
-                    Available fields: name, cluster, user, namespace
+                    Available columns: name, cluster, user, namespace
                 </small>
             </div>
 
@@ -128,8 +128,8 @@ const hasError = (key) => {
 }
 
 const resetErrors = () => {
-    for (const field in connectionFieldErrors) {
-        connectionFieldErrors[field] = ''
+    for (const column in connectionFieldErrors) {
+        connectionFieldErrors[column] = ''
     }
 }
 
@@ -195,14 +195,14 @@ watch(
     () => props.validationErrors,
     (newErrors) => {
         if (newErrors && Object.keys(newErrors).length > 0) {
-            for (const [field, errors] of Object.entries(newErrors)) {
-                if (connectionFieldErrors.hasOwnProperty(field)) {
-                    connectionFieldErrors[field] = errors.join(', ')
+            for (const [column, errors] of Object.entries(newErrors)) {
+                if (connectionFieldErrors.hasOwnProperty(column)) {
+                    connectionFieldErrors[column] = errors.join(', ')
                 }
             }
         } else {
-            for (const field in connectionFieldErrors) {
-                connectionFieldErrors[field] = ''
+            for (const column in connectionFieldErrors) {
+                connectionFieldErrors[column] = ''
             }
         }
     },

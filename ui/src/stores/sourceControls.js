@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 
 import { useToast } from 'primevue'
 
-import { Parser as FieldsParser } from '@/utils/fields.js'
+import { Parser as ColumnsParser } from 'flyql/columns'
 import { BoolOperator as FlyQLBoolOperator } from 'flyql'
 
 import { getBooleanFromString } from '@/utils/utils'
@@ -15,7 +15,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const route = useRoute()
 
     const _source = ref(null)
-    const _fields = ref(null)
+    const _columns = ref(null)
     const _query = ref(null)
     const _rawQuery = ref(null)
 
@@ -30,7 +30,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const _view = ref(null)
 
     function $reset() {
-        _fields.value = null
+        _columns.value = null
         _query.value = null
         _rawQuery.value = null
         _from.value = null
@@ -49,13 +49,13 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         } else {
             _source.value = source
         }
-        _fields.value = route.query.fields ?? viewParam?.data?.fields ?? source.defaultChosenFields.join(', ')
+        _columns.value = route.query.columns ?? viewParam?.data?.columns ?? source.defaultChosenColumns.join(', ')
         _query.value = route.query.query ?? viewParam?.data?.query ?? ''
         _rawQuery.value = route.query.raw_query ?? ''
         _from.value = tryToMillis(route.query.from ?? viewParam?.data?.from ?? 'now-5m')
         _to.value = tryToMillis(route.query.to ?? viewParam?.data?.to ?? 'now')
         _timeZone.value = route.query.timeZone ?? viewParam?.data?.timeZone ?? localTimeZone
-        _graphGroupBy.value = route.query.graph_group_by ?? viewParam?.data?.graph_group_by ?? source.severityField
+        _graphGroupBy.value = route.query.graph_group_by ?? viewParam?.data?.graph_group_by ?? source.severityColumn
         _showGraph.value = true
         _limit.value = 50
         _contextFields.value = {}
@@ -79,12 +79,12 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         }
         for (const [key, value] of Object.entries(route.query)) {
             if (key.startsWith('ctx')) {
-                let field = key.slice(4)
-                _contextFields.value[field] = value
+                let column = key.slice(4)
+                _contextFields.value[column] = value
             }
         }
-        if (viewParam?.data?.context_fields) {
-            for (const [key, value] of Object.entries(viewParam?.data?.context_fields)) {
+        if (viewParam?.data?.context_columns) {
+            for (const [key, value] of Object.entries(viewParam?.data?.context_columns)) {
                 if (!(key in _contextFields.value)) {
                     _contextFields.value[key] = value
                 }
@@ -92,11 +92,11 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         }
     }
 
-    const parsedFields = computed(() => {
+    const parsedColumns = computed(() => {
         return (source) => {
-            const parser = new FieldsParser()
-            parser.parse(fields.value, false)
-            return parser.getFieldsNames(source, false, 'name')
+            const parser = new ColumnsParser()
+            parser.parse(columns.value, false, true)
+            return parser.columns.map((c) => c.name)
         }
     })
 
@@ -112,8 +112,8 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         return _view.value
     })
 
-    const fields = computed(() => {
-        return _fields.value
+    const columns = computed(() => {
+        return _columns.value
     })
 
     const query = computed(() => {
@@ -146,7 +146,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
     const routeQuery = computed(() => {
         let params = {
-            fields: fields.value,
+            columns: columns.value,
             limit: limit.value,
             from: from.value,
             to: to.value,
@@ -169,7 +169,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         }
 
         for (const [key, value] of Object.entries(contextFields.value)) {
-            if (!view.value || JSON.stringify(value) !== JSON.stringify(view.value.data.context_fields?.[key]))
+            if (!view.value || JSON.stringify(value) !== JSON.stringify(view.value.data.context_columns?.[key]))
                 params[`ctx_${key}`] = value
         }
 
@@ -178,11 +178,11 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
     const dataRequestParams = computed(() => {
         let params = {
-            fields: fields.value,
+            columns: columns.value,
             limit: limit.value,
             from: from.value,
             to: to.value,
-            context_fields: structuredClone(contextFields.value),
+            context_columns: structuredClone(contextFields.value),
         }
 
         if (query.value) params.query = query.value
@@ -196,7 +196,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             from: from.value,
             to: to.value,
             group_by: graphGroupBy.value || '',
-            context_fields: structuredClone(contextFields.value),
+            context_columns: structuredClone(contextFields.value),
         }
 
         if (query.value) params.query = query.value
@@ -207,7 +207,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
     const viewParams = computed(() => {
         return {
-            fields: fields.value,
+            columns: columns.value,
             query: query.value,
             from: from.value,
             to: to.value,
@@ -215,7 +215,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             limit: limit.value,
             graph_group_by: graphGroupBy.value,
             show_graph: showGraph.value,
-            context_fields: contextFields.value,
+            context_columns: contextFields.value,
         }
     })
 
@@ -225,14 +225,14 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             return
         }
         _view.value = value
-        setFields(value.data.fields)
+        setFields(value.data.columns)
         setQuery(value.data.query)
         setFrom(value.data.from)
         setTo(value.data.to)
         setLimit(value.data.limit)
         setGraphGroupBy(value.data.graph_group_by)
         setShowGraph(value.data.show_graph)
-        setContextFields(value.data.context_fields)
+        setContextColumns(value.data.context_columns)
 
         // Some old views might not have this
         if (value.data.timeZone) setTimeZone(value.data.timeZone)
@@ -245,7 +245,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     }
 
     function setFields(value) {
-        _fields.value = value
+        _columns.value = value
     }
 
     function setQuery(value) {
@@ -280,15 +280,15 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _showGraph.value = value
     }
 
-    function setContextField(field, value) {
-        _contextFields.value[field] = value
+    function setContextColumn(column, value) {
+        _contextFields.value[column] = value
     }
 
-    function setContextFields(value) {
+    function setContextColumns(value) {
         _contextFields.value = value
     }
 
-    function addQueryExpression(field, operator, value) {
+    function addQueryExpression(column, operator, value) {
         let currentQuery = _query.value
         if (currentQuery !== '') {
             currentQuery += ` ${FlyQLBoolOperator.AND} `
@@ -296,7 +296,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         if (typeof value === 'string') {
             value = '"' + value.replace(/"/g, '\\"') + '"'
         }
-        currentQuery += `${field}${operator}${value}`
+        currentQuery += `${column}${operator}${value}`
         setQuery(currentQuery)
         toast.add({ severity: 'success', summary: 'Success', detail: 'Query was updated', life: 3000 })
     }
@@ -322,16 +322,16 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setTimeZone,
         setGraphGroupBy,
         setShowGraph,
-        setContextField,
+        setContextColumn,
         from,
         to,
         view,
         timeZone,
         limit,
-        fields,
+        columns,
         query,
         rawQuery,
-        parsedFields,
+        parsedColumns,
         graphGroupBy,
         routeQuery,
         viewParams,

@@ -17,11 +17,11 @@ def test_update_source_invalid_kind(test_user, service, docker_connection):
     slug = "test_unknown_slug"
     Source.objects.create(
         slug=slug,
-        fields={},
+        columns={},
         modifiers={},
-        default_chosen_fields={},
+        default_chosen_columns={},
         conn=docker_connection,
-        context_fields={},
+        context_columns={},
         support_raw_query=False,
     )
     with pytest.raises(PermissionDenied):
@@ -36,13 +36,13 @@ def test_update_source_with_permissions(root_user, service, docker_source):
     # Remove slug - it's used as identifier, not part of update payload
     del data["slug"]
     data["name"] = "new_name"
-    data["fields"]["container_name"]["display_name"] = "new_container_name"
+    data["columns"]["container_name"]["display_name"] = "new_container_name"
 
     service.update(user=root_user, slug=docker_source.slug, data=data)
 
     source = Source.objects.get(slug=docker_source.slug)
     assert source.name == "new_name"
-    assert source.fields["container_name"]["display_name"] == "new_container_name"
+    assert source.columns["container_name"]["display_name"] == "new_container_name"
     # Connection remains unchanged
     assert source.conn.data["address"] == "unix:///var/run/docker.sock"
 
@@ -83,11 +83,11 @@ def test_update_kubernetes_source_invalid_kind(
     slug = "test_unknown_k8s_slug"
     Source.objects.create(
         slug=slug,
-        fields={},
+        columns={},
         modifiers={},
-        default_chosen_fields={},
+        default_chosen_columns={},
         conn=kubernetes_connection,
-        context_fields={},
+        context_columns={},
         support_raw_query=False,
     )
     with pytest.raises(PermissionDenied):
@@ -102,9 +102,9 @@ def test_update_kubernetes_source_with_permissions(
     # Remove connection data - source updates don't modify connections
     del data["connection"]
     data["name"] = "new_k8s_name"
-    data["fields"]["namespace"]["display_name"] = "new_namespace_name"
+    data["columns"]["namespace"]["display_name"] = "new_namespace_name"
     service.update(user=root_user, slug=kubernetes_source.slug, data=data)
 
     source = Source.objects.get(slug=kubernetes_source.slug)
     assert source.name == "new_k8s_name"
-    assert source.fields["namespace"]["display_name"] == "new_namespace_name"
+    assert source.columns["namespace"]["display_name"] == "new_namespace_name"

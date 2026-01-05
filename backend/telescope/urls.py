@@ -81,12 +81,12 @@ urlpatterns = [
         source.SourceDataAndGraphDataView.as_view(),
     ),
     path(
-        "ui/v1/sources/<slug:slug>/contextFieldData",
-        source.SourceContextFieldDataView.as_view(),
+        "ui/v1/sources/<slug:slug>/contextColumnData",
+        source.SourceContextColumnDataView.as_view(),
     ),
     path(
-        "ui/v1/sources/<slug:slug>/contextFieldsData",
-        source.SourceContextFieldsDataView.as_view(),
+        "ui/v1/sources/<slug:slug>/contextColumnsData",
+        source.SourceContextColumnsDataView.as_view(),
     ),
     path(
         "ui/v1/sources/<slug:slug>/autocomplete",

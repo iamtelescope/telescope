@@ -6,14 +6,14 @@
         <template #loader>
             <ExplorerLoader />
         </template>
-        <Explorer :source="source" :savedView="savedView" :contextFieldsData="contextFieldsData" v-if="source" />
+        <Explorer :source="source" :savedView="savedView" :contextColumnsData="contextColumnsData" v-if="source" />
     </DataView>
 </template>
 
 <script setup>
 import { useRoute } from 'vue-router'
 
-import { useGetSource, useGetSavedView, useGetSourceContextFieldsData } from '@/composables/sources/useSourceService'
+import { useGetSource, useGetSavedView, useGetSourceContextColumnsData } from '@/composables/sources/useSourceService'
 
 import DataView from '@/components/common/DataView.vue'
 import Explorer from '@/components/explorer/Explorer.vue'
@@ -27,8 +27,8 @@ const {
     loading: savedViewLoading,
 } = useGetSavedView(route.params.sourceSlug, route.query.view)
 const {
-    data: contextFieldsData,
+    data: contextColumnsData,
     error: contextFieldsError,
     loading: contextFieldsLoading,
-} = useGetSourceContextFieldsData(route.params.sourceSlug)
+} = useGetSourceContextColumnsData(route.params.sourceSlug)
 </script>

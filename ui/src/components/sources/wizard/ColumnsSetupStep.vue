@@ -7,52 +7,52 @@
         <div class="flex flex-col gap-1">
             <div class="flex justify-between items-center mb-3 gap-2">
                 <Button
-                    v-if="fields.length > 0"
-                    :label="allFieldsCollapsed ? 'Expand all' : 'Collapse all'"
-                    :icon="allFieldsCollapsed ? 'pi pi-chevron-down' : 'pi pi-chevron-up'"
+                    v-if="columns.length > 0"
+                    :label="allColumnsCollapsed ? 'Expand all' : 'Collapse all'"
+                    :icon="allColumnsCollapsed ? 'pi pi-chevron-down' : 'pi pi-chevron-up'"
                     size="small"
                     text
-                    @click="toggleAllFields"
+                    @click="toggleAllColumns"
                 />
                 <div v-else></div>
                 <div class="flex gap-2">
                     <Button
-                        label="Autoload fields"
+                        label="Autoload columns"
                         icon="pi pi-download"
                         size="small"
                         severity="secondary"
-                        @click="handleAutoloadFields"
+                        @click="handleAutoloadColumns"
                         :loading="loadingSchema"
                     />
                     <Button
                         v-if="!isDocker && !isKubernetes"
-                        label="Add Field"
+                        label="Add Column"
                         icon="pi pi-plus"
                         size="small"
                         outlined
-                        @click="addField"
+                        @click="addColumn"
                     />
                 </div>
             </div>
 
             <InlineError v-model="autoloadError" :dismissable="true" class="mb-3" />
 
-            <div v-if="fields.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
-                <p>No fields configured yet. Click "Add Field" to start.</p>
+            <div v-if="columns.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <p>No columns configured yet. Click "Add Column" to start.</p>
             </div>
 
             <ContentBlock
-                v-for="(field, index) in fields"
+                v-for="(column, index) in columns"
                 :key="index"
                 :collapsible="true"
-                :collapsed="fieldCollapsedStates[index]"
+                :collapsed="columnCollapsedStates[index]"
                 headerClass="font-mono"
                 class="mb-3"
             >
                 <template #header_text>
-                    <span>{{ field.name || 'New field' }}</span>
-                    <span v-if="field.type" class="text-sm text-cyan-600 dark:text-cyan-400 ml-2">
-                        {{ field.type }}
+                    <span>{{ column.name || 'New column' }}</span>
+                    <span v-if="column.type" class="text-sm text-cyan-600 dark:text-cyan-400 ml-2">
+                        {{ column.type }}
                     </span>
                 </template>
                 <template #actions>
@@ -77,27 +77,27 @@
                                             if (el) nameInputs[index] = el
                                         }
                                     "
-                                    v-model="field.name"
+                                    v-model="column.name"
                                     class="w-full"
                                     fluid
-                                    :invalid="!field.name && showValidation"
+                                    :invalid="!column.name && showValidation"
                                 />
                                 <label :for="'name-' + index">Name *</label>
                             </FloatLabel>
                             <Message
-                                v-if="!field.name && showValidation"
+                                v-if="!column.name && showValidation"
                                 severity="error"
                                 size="small"
                                 variant="simple"
                             >
-                                Field name is required
+                                Column name is required
                             </Message>
                         </div>
                         <div>
                             <FloatLabel variant="on">
                                 <InputText
                                     :id="'displayName-' + index"
-                                    v-model="field.display_name"
+                                    v-model="column.display_name"
                                     class="w-full"
                                     fluid
                                 />
@@ -108,27 +108,27 @@
                             <FloatLabel variant="on">
                                 <Select
                                     :inputId="'type-' + index"
-                                    v-model="field.type"
-                                    :options="fieldTypes"
+                                    v-model="column.type"
+                                    :options="columnTypes"
                                     editable
                                     :filter="isClickHouse"
                                     class="w-full"
-                                    :invalid="!field.type && showValidation"
+                                    :invalid="!column.type && showValidation"
                                 />
                                 <label :for="'type-' + index">Type *</label>
                             </FloatLabel>
                             <Message
-                                v-if="!field.type && showValidation"
+                                v-if="!column.type && showValidation"
                                 severity="error"
                                 size="small"
                                 variant="simple"
                             >
-                                Field type is required
+                                Column type is required
                             </Message>
                         </div>
                         <div>
                             <FloatLabel variant="on">
-                                <InputText :id="'values-' + index" v-model="field.values" class="w-full" fluid />
+                                <InputText :id="'values-' + index" v-model="column.values" class="w-full" fluid />
                                 <label :for="'values-' + index">Values</label>
                             </FloatLabel>
                         </div>
@@ -136,21 +136,21 @@
 
                     <div class="grid grid-cols-2 gap-3 mt-3">
                         <div class="flex items-center gap-2">
-                            <ToggleSwitch :inputId="'autocomplete-' + index" v-model="field.autocomplete" />
+                            <ToggleSwitch :inputId="'autocomplete-' + index" v-model="column.autocomplete" />
                             <label :for="'autocomplete-' + index" class="text-sm cursor-pointer">Autocomplete</label>
                         </div>
                         <div class="flex items-center gap-2">
-                            <ToggleSwitch :inputId="'suggest-' + index" v-model="field.suggest" />
+                            <ToggleSwitch :inputId="'suggest-' + index" v-model="column.suggest" />
                             <label :for="'suggest-' + index" class="text-sm cursor-pointer">Suggest</label>
                         </div>
                         <div class="flex items-center gap-2">
-                            <ToggleSwitch :inputId="'jsonstring-' + index" v-model="field.jsonstring" />
+                            <ToggleSwitch :inputId="'jsonstring-' + index" v-model="column.jsonstring" />
                             <label :for="'jsonstring-' + index" class="text-sm cursor-pointer"
                                 >Treat as JSON String</label
                             >
                         </div>
                         <div class="flex items-center gap-2">
-                            <ToggleSwitch :inputId="'group_by-' + index" v-model="field.group_by" />
+                            <ToggleSwitch :inputId="'group_by-' + index" v-model="column.group_by" />
                             <label :for="'group_by-' + index" class="text-sm cursor-pointer">Allow in GROUP BY</label>
                         </div>
                     </div>
@@ -175,12 +175,12 @@ const emit = defineEmits(['prev', 'next', 'update:modelValue'])
 const toast = useToast()
 const sourceSrv = new SourceService()
 
-const fields = ref(props.modelValue?.fields || [])
+const columns = ref(props.modelValue?.columns || [])
 const showValidation = ref(false)
 const loadingSchema = ref(false)
 const autoloadError = ref('')
 const nameInputs = ref({})
-const fieldCollapsedStates = ref({})
+const columnCollapsedStates = ref({})
 const hasAutoLoaded = ref(false)
 
 const isClickHouse = computed(() => {
@@ -196,17 +196,17 @@ const isKubernetes = computed(() => {
 })
 
 const isValid = computed(() => {
-    // If no fields are added, it's valid (fields are optional)
-    if (fields.value.length === 0) {
+    // If no columns are added, it's valid (columns are optional)
+    if (columns.value.length === 0) {
         return true
     }
-    // If fields are added, all must have a name and type
-    return fields.value.every(
-        (field) => field.name && field.name.trim() !== '' && field.type && field.type.trim() !== '',
+    // If columns are added, all must have a name and type
+    return columns.value.every(
+        (column) => column.name && column.name.trim() !== '' && column.type && column.type.trim() !== '',
     )
 })
 
-const fieldTypes = computed(() => {
+const columnTypes = computed(() => {
     const connectionKind = props.connectionData?.connection?.kind
     if (connectionKind === 'clickhouse') {
         return FieldTypes.clickhouse || []
@@ -218,8 +218,8 @@ const fieldTypes = computed(() => {
     return []
 })
 
-const addField = async () => {
-    fields.value.push({
+const addColumn = async () => {
+    columns.value.push({
         name: '',
         display_name: '',
         type: '',
@@ -231,7 +231,7 @@ const addField = async () => {
     })
 
     await nextTick()
-    const newIndex = fields.value.length - 1
+    const newIndex = columns.value.length - 1
     const inputElement = nameInputs.value[newIndex]
     if (inputElement) {
         inputElement.$el?.focus()
@@ -240,20 +240,20 @@ const addField = async () => {
 }
 
 const removeField = (index) => {
-    fields.value.splice(index, 1)
+    columns.value.splice(index, 1)
     showValidation.value = false
 }
 
-const allFieldsCollapsed = computed(() => {
-    // Check if all fields are collapsed
-    return fields.value.every((_, index) => fieldCollapsedStates.value[index] === true)
+const allColumnsCollapsed = computed(() => {
+    // Check if all columns are collapsed
+    return columns.value.every((_, index) => columnCollapsedStates.value[index] === true)
 })
 
-const toggleAllFields = () => {
-    const newState = !allFieldsCollapsed.value
-    // Set all fields to the new state
-    fields.value.forEach((_, index) => {
-        fieldCollapsedStates.value[index] = newState
+const toggleAllColumns = () => {
+    const newState = !allColumnsCollapsed.value
+    // Set all columns to the new state
+    columns.value.forEach((_, index) => {
+        columnCollapsedStates.value[index] = newState
     })
 }
 
@@ -261,21 +261,21 @@ const handleNext = () => {
     if (!isValid.value) {
         showValidation.value = true
 
-        // Expand fields that have validation errors
-        fields.value.forEach((field, index) => {
-            const hasError = !field.name || field.name.trim() === '' || !field.type || field.type.trim() === ''
+        // Expand columns that have validation errors
+        columns.value.forEach((column, index) => {
+            const hasError = !column.name || column.name.trim() === '' || !column.type || column.type.trim() === ''
             if (hasError) {
-                fieldCollapsedStates.value[index] = false
+                columnCollapsedStates.value[index] = false
             }
         })
 
         return
     }
-    emit('update:modelValue', { fields: fields.value })
+    emit('update:modelValue', { columns: columns.value })
     emit('next')
 }
 
-const handleAutoloadFields = async () => {
+const handleAutoloadColumns = async () => {
     loadingSchema.value = true
     autoloadError.value = ''
 
@@ -305,59 +305,59 @@ const handleAutoloadFields = async () => {
             return
         }
 
-        // Success - process the schema fields
-        const schemaFields = response.data || []
-        let fieldsAdded = []
+        // Success - process the schema columns
+        const schemaColumns = response.data || []
+        let columnsAdded = []
 
-        for (const field of schemaFields) {
-            // Check if field already exists
-            const existingField = fields.value.find((f) => f.name === field.name)
-            if (!existingField) {
-                fields.value.push({
-                    name: field.name,
-                    display_name: field.display_name || '',
-                    type: field.type,
-                    values: field.values || '',
-                    autocomplete: field.autocomplete || false,
-                    suggest: field.suggest || false,
-                    jsonstring: field.jsonstring || false,
-                    group_by: field.group_by || false,
+        for (const column of schemaColumns) {
+            // Check if column already exists
+            const existingColumn = columns.value.find((c) => c.name === column.name)
+            if (!existingColumn) {
+                columns.value.push({
+                    name: column.name,
+                    display_name: column.display_name || '',
+                    type: column.type,
+                    values: column.values || '',
+                    autocomplete: column.autocomplete || false,
+                    suggest: column.suggest || false,
+                    jsonstring: column.jsonstring || false,
+                    group_by: column.group_by || false,
                 })
-                fieldsAdded.push(field.name)
+                columnsAdded.push(column.name)
             }
         }
 
-        if (fieldsAdded.length > 0) {
-            // Collapse all fields by default after autoload
-            fields.value.forEach((_, index) => {
-                fieldCollapsedStates.value[index] = true
+        if (columnsAdded.length > 0) {
+            // Collapse all columns by default after autoload
+            columns.value.forEach((_, index) => {
+                columnCollapsedStates.value[index] = true
             })
 
             toast.add({
                 severity: 'success',
                 summary: 'Success',
-                detail: `Added ${fieldsAdded.length} field(s): ${fieldsAdded.join(', ')}`,
+                detail: `Added ${columnsAdded.length} column(s): ${columnsAdded.join(', ')}`,
                 life: 3000,
             })
         } else {
             toast.add({
                 severity: 'warn',
                 summary: 'Warning',
-                detail: 'No new fields were added',
+                detail: 'No new columns were added',
                 life: 3000,
             })
         }
     } catch (error) {
-        autoloadError.value = 'Failed to load schema fields'
+        autoloadError.value = 'Failed to load schema columns'
     } finally {
         loadingSchema.value = false
     }
 }
 
 watch(
-    fields,
+    columns,
     () => {
-        emit('update:modelValue', { fields: fields.value })
+        emit('update:modelValue', { columns: columns.value })
     },
     { deep: true },
 )
@@ -367,17 +367,17 @@ watch(
     () => props.connectionData,
     (newVal, oldVal) => {
         // If we're getting connection data for the first time, auto-load
-        // But only if we don't have initial fields (i.e., not editing)
-        const hasInitialFields = props.modelValue?.fields && props.modelValue.fields.length > 0
+        // But only if we don't have initial columns (i.e., not editing)
+        const hasInitialColumns = props.modelValue?.columns && props.modelValue.columns.length > 0
         if (
             newVal?.connection &&
             !oldVal?.connection &&
             !hasAutoLoaded.value &&
-            fields.value.length === 0 &&
-            !hasInitialFields
+            columns.value.length === 0 &&
+            !hasInitialColumns
         ) {
             hasAutoLoaded.value = true
-            handleAutoloadFields()
+            handleAutoloadColumns()
         }
     },
     { deep: true, immediate: true },

@@ -1,18 +1,18 @@
 <template>
     <div
         class="flex flex-col h-full w-full overflow-y-auto border-t-4"
-        :style="{ borderColor: getColor(row.data[source.severityField]) }"
+        :style="{ borderColor: getColor(row.data[source.severityColumn]) }"
     >
         <div class="flex flex-col">
-            <div class="p-4" v-if="source.severityField.length != 0">
+            <div class="p-4" v-if="source.severityColumn.length != 0">
                 <Tag
                     value="Primary"
                     :style="{
-                        backgroundColor: getColor(row.data[source.severityField]),
-                        color: getContrastColor(getColor(row.data[source.severityField])),
+                        backgroundColor: getColor(row.data[source.severityColumn]),
+                        color: getContrastColor(getColor(row.data[source.severityColumn])),
                     }"
                     class="text-gray-900 mr-2 text-bold"
-                    >{{ source.severityField }}: {{ row.data[source.severityField] }}
+                    >{{ source.severityColumn }}: {{ row.data[source.severityColumn] }}
                 </Tag>
                 <span class="font-mono">{{ dateTimeString }}</span>
             </div>
@@ -55,7 +55,7 @@
                                     <span
                                         class="pr-2 cursor-pointer text-xl"
                                         :class="{
-                                            'text-blue-400': selectedFields.includes(slotProps.data.path.join(':')),
+                                            'text-blue-400': selectedColumns.includes(slotProps.data.path.join(':')),
                                         }"
                                     ></span>
                                     <span class="font-mono">{{ slotProps.data.path.join(':') }}</span>
@@ -114,8 +114,8 @@ const dateTimeString = computed(() => {
     return `${dateTime}.${props.row.time.microseconds}`
 })
 
-const selectedFields = computed(() => {
-    return sourceControlsStore.parsedFields(props.source)
+const selectedColumns = computed(() => {
+    return sourceControlsStore.parsedColumns(props.source)
 })
 
 const updateQuery = (operator, field, value) => {

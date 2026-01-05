@@ -16,9 +16,9 @@ def mock_clickhouse_source():
         "table": "test_table",
         "settings": "use_query_cache = true, max_parallel_replicas = 1",
     }
-    source.time_field = "timestamp"
-    source.date_field = None
-    source._fields = {
+    source.time_column = "timestamp"
+    source.date_column = None
+    source._columns = {
         "timestamp": Mock(type="DateTime"),
         "message": Mock(type="String"),
     }
@@ -42,9 +42,9 @@ def mock_clickhouse_source_no_settings():
     """Create a mock ClickHouse source without settings"""
     source = Mock(spec=Source)
     source.data = {"database": "test_db", "table": "test_table"}
-    source.time_field = "timestamp"
-    source.date_field = None
-    source._fields = {
+    source.time_column = "timestamp"
+    source.date_column = None
+    source._columns = {
         "timestamp": Mock(type="DateTime"),
         "message": Mock(type="String"),
     }
@@ -84,7 +84,7 @@ def test_fetch_data_includes_settings(mock_clickhouse_connect, mock_clickhouse_s
         limit=100,
         query=None,
         raw_query=None,
-        context_fields={},
+        context_columns={},
     )
 
     # Execute
@@ -126,7 +126,7 @@ def test_fetch_data_without_settings(
         limit=100,
         query=None,
         raw_query=None,
-        context_fields={},
+        context_columns={},
     )
 
     # Execute
@@ -163,7 +163,7 @@ def test_fetch_graph_data_includes_settings(
         query=None,
         raw_query=None,
         group_by=[],
-        context_fields={},
+        context_columns={},
     )
 
     # Execute
@@ -197,7 +197,7 @@ def test_autocomplete_includes_settings(
     # Execute
     ClickhouseFetcher.autocomplete(
         source=mock_clickhouse_source,
-        field="message",
+        column="message",
         time_from=1000000000000,
         time_to=2000000000000,
         value="test",
@@ -239,7 +239,7 @@ def test_settings_empty_string_not_added(
         limit=100,
         query=None,
         raw_query=None,
-        context_fields={},
+        context_columns={},
     )
 
     # Execute
@@ -274,7 +274,7 @@ def test_settings_query_position(mock_clickhouse_connect, mock_clickhouse_source
         limit=100,
         query=None,
         raw_query=None,
-        context_fields={},
+        context_columns={},
     )
 
     # Execute

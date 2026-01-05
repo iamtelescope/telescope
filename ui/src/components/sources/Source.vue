@@ -82,19 +82,19 @@
                                             :value="source.description || '&ndash;'"
                                             :copy="false"
                                         />
-                                        <DataRow name="Time field" :value="source.timeField" :copy="false" />
+                                        <DataRow name="Time column" :value="source.timeColumn" :copy="false" />
                                         <DataRow
-                                            name="Date field"
-                                            :value="source.dateField || '&ndash;'"
+                                            name="Date column"
+                                            :value="source.dateColumn || '&ndash;'"
                                             :copy="false"
                                         />
                                         <DataRow
-                                            name="Severity field"
-                                            :value="source.severityField || '&ndash;'"
+                                            name="Severity column"
+                                            :value="source.severityColumn || '&ndash;'"
                                             :copy="false"
                                         />
-                                        <DataRow name="Default chosen fields" :copy="false">
-                                            {{ source.defaultChosenFields?.join(', ') || '&ndash;' }}
+                                        <DataRow name="Default chosen columns" :copy="false">
+                                            {{ source.defaultChosenColumns?.join(', ') || '&ndash;' }}
                                         </DataRow>
                                         <DataRow name="Execute query on open" :showBorder="false" :copy="false">
                                             {{ source.executeQueryOnOpen ? 'Yes' : 'No' }}
@@ -143,11 +143,11 @@
                                             <span v-else>&ndash;</span>
                                         </DataRow>
                                     </ContentBlock>
-                                    <ContentBlock header="Fields" class="mt-3">
+                                    <ContentBlock header="Columns" class="mt-3">
                                         <DataTable
-                                            :value="sourceFields"
-                                            v-if="sourceFields.length"
-                                            :paginator="sourceFields.length > 50"
+                                            :value="sourceColumns"
+                                            v-if="sourceColumns.length"
+                                            :paginator="sourceColumns.length > 50"
                                             :rows="50"
                                             :rowsPerPageOptions="[10, 25, 50, 100, 1000]"
                                             class="w-full"
@@ -230,7 +230,7 @@
                                                     class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400"
                                                 >
                                                     <i class="pi pi-list text-4xl mb-4 opacity-50"></i>
-                                                    <p class="text-lg font-medium mb-2">No fields found</p>
+                                                    <p class="text-lg font-medium mb-2">No columns found</p>
                                                 </div>
                                             </template>
                                         </DataTable>
@@ -297,9 +297,9 @@ if (route.query.tab) {
     activeTab.value = route.query.tab
 }
 
-const sourceFields = computed(() => {
+const sourceColumns = computed(() => {
     const result = []
-    for (const [key, value] of Object.entries(source.value.fields)) {
+    for (const [key, value] of Object.entries(source.value.columns)) {
         let item = Object.assign({ name: key }, value)
         result.push(item)
     }

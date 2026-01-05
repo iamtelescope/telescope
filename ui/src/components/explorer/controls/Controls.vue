@@ -78,24 +78,24 @@
         </Toolbar>
         <div :class="{ hidden: hideFilters }">
             <div class="mb-2">
-                <ContextFields
+                <ContextColumns
                     v-if="source.contextFields"
                     :source="source"
-                    :contextFields="sourceControlsStore.contextFields"
-                    :contextFieldsData="contextFieldsData"
-                    @fieldChanged="onContextFieldChanged"
+                    :contextColumns="sourceControlsStore.contextFields"
+                    :contextColumnsData="contextColumnsData"
+                    @columnChanged="onContextFieldChanged"
                 />
             </div>
             <div class="mb-2">
                 <IftaLabel>
-                    <FieldsEditor
-                        id="fields_editor"
+                    <ColumnsEditor
+                        id="columns_editor"
                         @change="onFieldsChange"
                         :source="source"
-                        :value="sourceControlsStore.fields"
+                        :value="sourceControlsStore.columns"
                         @submit="handleSearch"
                     />
-                    <label for="fields_editor">Fields selector</label>
+                    <label for="columns_editor">Columns selector</label>
                 </IftaLabel>
             </div>
             <div class="mb-2">
@@ -136,8 +136,8 @@ import { Button, Select, Toolbar, FloatLabel, IftaLabel, ToggleButton } from 'pr
 import DatetimePicker from '@/components/explorer/controls/DatetimePicker.vue'
 import GraphSettings from '@/components/explorer/controls/GraphSettings.vue'
 import QuerySettings from '@/components/explorer/controls/QuerySettings.vue'
-import ContextFields from '@/components/explorer/controls/ContextFields.vue'
-import FieldsEditor from '@/components/explorer/controls/FieldsEditor.vue'
+import ContextColumns from '@/components/explorer/controls/ContextColumns.vue'
+import ColumnsEditor from '@/components/explorer/controls/ColumnsEditor.vue'
 import QueryEditor from '@/components/explorer/controls/QueryEditor.vue'
 import RawQueryEditor from '@/components/explorer/controls/RawQueryEditor.vue'
 import SavedViews from '@/components/explorer/controls/saved_views/SavedViews.vue'
@@ -145,7 +145,7 @@ import { getLimits } from '@/utils/limits.js'
 
 import { useSourceControlsStore } from '@/stores/sourceControls'
 
-const props = defineProps(['source', 'loading', 'groupByInvalid', 'savedView', 'paramsChanged', 'contextFieldsData'])
+const props = defineProps(['source', 'loading', 'groupByInvalid', 'savedView', 'paramsChanged', 'contextColumnsData'])
 const emit = defineEmits(['searchRequest', 'searchCancel', 'shareURL', 'download', 'graphVisibilityChanged'])
 
 const sourceControlsStore = useSourceControlsStore()
@@ -217,7 +217,7 @@ const handleShareURL = () => {
 }
 
 // Auto-execute query when source is configured to do so
-// Context fields are already loaded before Explorer opens
+// Context columns are already loaded before Explorer opens
 onMounted(() => {
     if (props.source.executeQueryOnOpen) {
         handleSearch()

@@ -7,9 +7,9 @@ import clickhouse_connect
 
 from flyql.core.parser import parse, ParserError
 from flyql.core.exceptions import FlyqlError
-from flyql.generators.clickhouse.generator import to_sql, Field
+from flyql.generators.clickhouse.generator import to_sql, Column
 
-from telescope.models import SourceField
+from telescope.models import SourceColumn
 
 from telescope.fetchers.request import (
     AutocompleteRequest,
@@ -24,7 +24,7 @@ from telescope.fetchers.response import (
 from telescope.fetchers.fetcher import BaseFetcher
 from telescope.fetchers.models import Row
 
-from telescope.utils import convert_to_base_ch, get_telescope_field
+from telescope.utils import convert_to_base_ch, get_telescope_column
 
 
 logger = logging.getLogger("telescope.fetchers.clickhouse")
@@ -56,11 +56,11 @@ def escape_param(item: str) -> str:
         return item
 
 
-def build_time_clause(time_field, date_field, time_from, time_to):
+def build_time_clause(time_column, date_column, time_from, time_to):
     date_clause = ""
-    if date_field:
-        date_clause = f"{date_field} BETWEEN toDate(fromUnixTimestamp64Milli({time_from})) and toDate(fromUnixTimestamp64Milli({time_to})) AND "
-    return f"{date_clause}{time_field} BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
+    if date_column:
+        date_clause = f"{date_column} BETWEEN toDate(fromUnixTimestamp64Milli({time_from})) and toDate(fromUnixTimestamp64Milli({time_to})) AND "
+    return f"{date_clause}{time_column} BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
 
 
 class ClickhouseConnect:
@@ -110,15 +110,15 @@ class ClickhouseConnect:
             logger.exception("error while tempdir cleanup (ignoring): %s", err)
 
 
-def flyql_clickhouse_fields(source_fields: Dict[str, SourceField]):
+def flyql_clickhouse_columns(source_columns: Dict[str, SourceColumn]):
     return {
-        field.name: Field(
-            name=field.name,
-            jsonstring=field.jsonstring,
-            _type=field.type,
-            values=field.values,
+        column.name: Column(
+            name=column.name,
+            jsonstring=column.jsonstring,
+            _type=column.type,
+            values=column.values,
         )
-        for _, field in source_fields.items()
+        for _, column in source_columns.items()
     }
 
 
@@ -170,7 +170,7 @@ class Fetcher(BaseFetcher):
             return False, err.message
         else:
             try:
-                to_sql(parser.root, fields=flyql_clickhouse_fields(source._fields))
+                to_sql(parser.root, fields=flyql_clickhouse_columns(source._columns))
             except FlyqlError as err:
                 return False, err.message
 
@@ -211,7 +211,7 @@ class Fetcher(BaseFetcher):
                 else:
                     response.schema["result"] = True
                     response.schema["data"] = [
-                        get_telescope_field(x[0], x[1]) for x in result.result_rows
+                        get_telescope_column(x[0], x[1]) for x in result.result_rows
                     ]
                 try:
                     result = c.client.query(f"SHOW CREATE TABLE {target}")
@@ -237,16 +237,16 @@ class Fetcher(BaseFetcher):
                 "select name, type from system.columns where database = '%s' and table = '%s'"
                 % (data["database"], data["table"])
             )
-        return [get_telescope_field(x[0], x[1]) for x in result.result_rows]
+        return [get_telescope_column(x[0], x[1]) for x in result.result_rows]
 
     @classmethod
-    def autocomplete(cls, source, field, time_from, time_to, value):
+    def autocomplete(cls, source, column, time_from, time_to, value):
         incomplete = False
         from_db_table = f"{source.data['database']}.{source.data['table']}"
         time_clause = build_time_clause(
-            source.time_field, source.date_field, time_from, time_to
+            source.time_column, source.date_column, time_from, time_to
         )
-        query = f"SELECT DISTINCT {field} FROM {from_db_table} WHERE {time_clause} and {field} LIKE %(value)s ORDER BY {field} LIMIT 500"
+        query = f"SELECT DISTINCT {column} FROM {from_db_table} WHERE {time_clause} and {column} LIKE %(value)s ORDER BY {column} LIMIT 500"
 
         if source.data.get("settings"):
             query += f" SETTINGS {source.data['settings']}"
@@ -266,7 +266,7 @@ class Fetcher(BaseFetcher):
         if request.query:
             parser = parse(request.query)
             filter_clause = to_sql(
-                parser.root, fields=flyql_clickhouse_fields(request.source._fields)
+                parser.root, fields=flyql_clickhouse_columns(request.source._columns)
             )
         else:
             filter_clause = "true"
@@ -297,8 +297,8 @@ class Fetcher(BaseFetcher):
 
         total = 0
         time_clause = build_time_clause(
-            request.source.time_field,
-            request.source.date_field,
+            request.source.time_column,
+            request.source.date_column,
             request.time_from,
             request.time_to,
         )
@@ -306,22 +306,24 @@ class Fetcher(BaseFetcher):
             f"{request.source.data['database']}.{request.source.data['table']}"
         )
 
-        time_field_type = convert_to_base_ch(
-            request.source._fields[request.source.time_field].type.lower()
+        time_column_type = convert_to_base_ch(
+            request.source._columns[request.source.time_column].type.lower()
         )
         to_time_zone = ""
-        if time_field_type in ["datetime", "datetime64"]:
-            to_time_zone = f"toTimeZone({request.source.time_field}, 'UTC')"
-        elif time_field_type in ["timestamp", "uint64", "int64"]:
-            to_time_zone = f"toTimeZone(toDateTime({request.source.time_field}), 'UTC')"
+        if time_column_type in ["datetime", "datetime64"]:
+            to_time_zone = f"toTimeZone({request.source.time_column}, 'UTC')"
+        elif time_column_type in ["timestamp", "uint64", "int64"]:
+            to_time_zone = (
+                f"toTimeZone(toDateTime({request.source.time_column}), 'UTC')"
+            )
 
-        fields_names = sorted(request.source._fields.keys())
-        fields_to_select = []
-        for field in fields_names:
-            if field == request.source.time_field:
-                fields_to_select.append(to_time_zone)
+        columns_names = sorted(request.source._columns.keys())
+        columns_to_select = []
+        for column in columns_names:
+            if column == request.source.time_column:
+                columns_to_select.append(to_time_zone)
             else:
-                fields_to_select.append(field)
+                columns_to_select.append(column)
 
         stats = {}
         stats_by_ts = {}
@@ -336,9 +338,9 @@ class Fetcher(BaseFetcher):
                 stats_interval_seconds = 1
             stats_time_selector = f"toUnixTimestamp(toStartOfInterval({to_time_zone}, toIntervalSecond({stats_interval_seconds}))) * 1000"
         else:
-            if time_field_type in ["datetime", "timestamp", "uint64"]:
+            if time_column_type in ["datetime", "timestamp", "uint64"]:
                 stats_time_selector = f"toUnixTimestamp({to_time_zone})*1000"
-            elif time_field_type == "datetime64":
+            elif time_column_type == "datetime64":
                 stats_time_selector = f"toUnixTimestamp64Milli({to_time_zone})"
 
         with ClickhouseConnect(request.source.conn.data) as c:
@@ -399,17 +401,17 @@ class Fetcher(BaseFetcher):
         if request.query:
             parser = parse(request.query)
             filter_clause = to_sql(
-                parser.root, fields=flyql_clickhouse_fields(request.source._fields)
+                parser.root, fields=flyql_clickhouse_columns(request.source._columns)
             )
         else:
             filter_clause = "true"
 
-        order_by_clause = f"ORDER BY {request.source.time_field} DESC"
+        order_by_clause = f"ORDER BY {request.source.time_column} DESC"
         raw_where_clause = request.raw_query or "true"
 
         time_clause = build_time_clause(
-            request.source.time_field,
-            request.source.date_field,
+            request.source.time_column,
+            request.source.date_column,
             request.time_from,
             request.time_to,
         )
@@ -417,36 +419,36 @@ class Fetcher(BaseFetcher):
             f"{request.source.data['database']}.{request.source.data['table']}"
         )
 
-        fields_names = sorted(request.source._fields.keys())
-        fields_to_select = []
-        for field in fields_names:
-            if field == request.source.time_field:
-                time_field_type = convert_to_base_ch(
-                    request.source._fields[request.source.time_field].type.lower()
+        columns_names = sorted(request.source._columns.keys())
+        columns_to_select = []
+        for column in columns_names:
+            if column == request.source.time_column:
+                time_column_type = convert_to_base_ch(
+                    request.source._columns[request.source.time_column].type.lower()
                 )
-                if time_field_type in ["datetime", "datetime64"]:
-                    fields_to_select.append(f"toTimeZone({field}, 'UTC')")
-                elif time_field_type in ["timestamp", "uint64", "int64"]:
-                    fields_to_select.append(f"toTimeZone(toDateTime({field}), 'UTC')")
+                if time_column_type in ["datetime", "datetime64"]:
+                    columns_to_select.append(f"toTimeZone({column}, 'UTC')")
+                elif time_column_type in ["timestamp", "uint64", "int64"]:
+                    columns_to_select.append(f"toTimeZone(toDateTime({column}), 'UTC')")
             else:
-                fields_to_select.append(field)
-        fields_to_select = ", ".join(fields_to_select)
+                columns_to_select.append(column)
+        columns_to_select = ", ".join(columns_to_select)
 
         settings_clause = ""
         if request.source.data.get("settings"):
             settings_clause = f" SETTINGS {request.source.data['settings']}"
 
-        select_query = f"SELECT generateUUIDv4(),{fields_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}{settings_clause}"
+        select_query = f"SELECT generateUUIDv4(),{columns_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}{settings_clause}"
 
         rows = []
 
         with ClickhouseConnect(request.source.conn.data) as c:
-            selected_fields = [request.source._record_pseudo_id_field] + fields_names
+            selected_columns = [request.source._record_pseudo_id_column] + columns_names
             for item in c.client.query(select_query).result_rows:
                 rows.append(
                     Row(
                         source=request.source,
-                        selected_fields=selected_fields,
+                        selected_columns=selected_columns,
                         values=item,
                         tz=tz,
                     )

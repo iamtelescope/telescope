@@ -56,7 +56,7 @@
                                         </Select>
                                         <label for="connection_kind">Kind *</label>
                                     </FloatLabel>
-                                    <ErrorText :text="fieldErrors.kind" />
+                                    <ErrorText :text="columnErrors.kind" />
                                 </div>
 
                                 <div>
@@ -70,7 +70,7 @@
                                         />
                                         <label for="connection_name">Name *</label>
                                     </FloatLabel>
-                                    <ErrorText :text="fieldErrors.name" />
+                                    <ErrorText :text="columnErrors.name" />
                                 </div>
 
                                 <div>
@@ -84,7 +84,7 @@
                                         />
                                         <label for="connection_description">Description</label>
                                     </FloatLabel>
-                                    <ErrorText :text="fieldErrors.description" />
+                                    <ErrorText :text="columnErrors.description" />
                                 </div>
                             </div>
                         </ContentBlock>
@@ -198,8 +198,8 @@ const formData = ref({
 
 const connectionData = ref({}) // Connection-specific data from child components
 
-// Basic errors for main form fields
-const fieldErrors = ref({
+// Basic errors for main form columns
+const columnErrors = ref({
     name: '',
     description: '',
     kind: '',
@@ -207,8 +207,8 @@ const fieldErrors = ref({
 
 const connectionDataValidationErrors = ref({})
 
-const hasError = (field) => {
-    return fieldErrors.value[field] !== ''
+const hasError = (column) => {
+    return columnErrors.value[column] !== ''
 }
 
 const connectionFormRef = ref(null)
@@ -250,14 +250,14 @@ const handleTestConnection = async () => {
                 // Extract validation errors
                 let errorMessages = []
 
-                if (response.validation.fields) {
-                    for (const [field, errors] of Object.entries(response.validation.fields)) {
-                        errorMessages.push(`${field}: ${errors.join(', ')}`)
+                if (response.validation.columns) {
+                    for (const [column, errors] of Object.entries(response.validation.columns)) {
+                        errorMessages.push(`${column}: ${errors.join(', ')}`)
                     }
                 }
 
-                if (response.validation.non_field && response.validation.non_field.length > 0) {
-                    errorMessages.push(...response.validation.non_field)
+                if (response.validation.non_column && response.validation.non_column.length > 0) {
+                    errorMessages.push(...response.validation.non_column)
                 }
 
                 testResult.value = {
@@ -339,8 +339,8 @@ const handleTestConnection = async () => {
 }
 
 const resetErrors = () => {
-    for (const field in fieldErrors.value) {
-        fieldErrors.value[field] = ''
+    for (const column in columnErrors.value) {
+        columnErrors.value[column] = ''
     }
     connectionDataValidationErrors.value = {}
 }
@@ -367,13 +367,13 @@ const handleFormSubmit = async () => {
         if (response.result) {
             if (response.validation && !response.validation.result) {
                 // Handle validation errors from server
-                for (const [field, errors] of Object.entries(response.validation.fields)) {
-                    if (fieldErrors.value.hasOwnProperty(field)) {
-                        // Top-level connection fields (name, description, kind)
-                        fieldErrors.value[field] = errors.join(', ')
+                for (const [column, errors] of Object.entries(response.validation.columns)) {
+                    if (columnErrors.value.hasOwnProperty(column)) {
+                        // Top-level connection columns (name, description, kind)
+                        columnErrors.value[column] = errors.join(', ')
                     } else {
-                        // Connection data fields (host, port, user, etc.) - pass to child component
-                        connectionDataValidationErrors.value[field] = errors
+                        // Connection data columns (host, port, user, etc.) - pass to child component
+                        connectionDataValidationErrors.value[column] = errors
                     }
                 }
             } else {

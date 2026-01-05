@@ -70,7 +70,7 @@ const onShowGraphChange = () => {
 
 const groupByOptions = computed(() => {
     let result = []
-    for (const [key, value] of Object.entries(props.source.fields)) {
+    for (const [key, value] of Object.entries(props.source.columns)) {
         if (value.group_by) {
             result.push({ name: key })
         }

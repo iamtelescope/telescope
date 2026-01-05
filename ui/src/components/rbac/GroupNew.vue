@@ -86,8 +86,8 @@ const handleCreate = async () => {
     response.sendToast(toast)
     if (response.result) {
         if (!response.validation.result) {
-            for (const field in response.validation.fields) {
-                createFieldErrors.value[field] = response.validation.fields[field].join(', ')
+            for (const column in response.validation.columns) {
+                createFieldErrors.value[column] = response.validation.columns[column].join(', ')
             }
         } else {
             router.push({ name: 'rbacGroup', params: { groupId: response.data.id } })

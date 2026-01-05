@@ -20,8 +20,8 @@
                     <Stepper v-model:value="activeStep" linear>
                         <StepList>
                             <Step value="1">Connection</Step>
-                            <Step value="2">Fields Setup</Step>
-                            <Step value="3">Field Mapping</Step>
+                            <Step value="2">Columns Setup</Step>
+                            <Step value="3">Column Mapping</Step>
                             <Step value="4">Naming</Step>
                             <Step value="5">{{ source ? 'Review & Save' : 'Review & Create' }}</Step>
                         </StepList>
@@ -36,8 +36,8 @@
                             </StepPanel>
 
                             <StepPanel v-slot="{ activateCallback }" value="2">
-                                <FieldsSetupStep
-                                    v-model="fieldsSetupData"
+                                <ColumnsSetupStep
+                                    v-model="columnsSetupData"
                                     :connectionData="connectionData"
                                     @prev="activateCallback('1')"
                                     @next="activateCallback('3')"
@@ -45,9 +45,9 @@
                             </StepPanel>
 
                             <StepPanel v-slot="{ activateCallback }" value="3">
-                                <FieldMappingStep
-                                    v-model="fieldMappingData"
-                                    :fieldsSetupData="fieldsSetupData"
+                                <ColumnMappingStep
+                                    v-model="columnMappingData"
+                                    :columnsSetupData="columnsSetupData"
                                     :connectionData="connectionData"
                                     @prev="activateCallback('2')"
                                     @next="activateCallback('4')"
@@ -68,8 +68,8 @@
                                     v-model="step3Data"
                                     :basicInfo="basicInfo"
                                     :connectionData="connectionData"
-                                    :fieldsSetupData="fieldsSetupData"
-                                    :fieldMappingData="fieldMappingData"
+                                    :columnsSetupData="columnsSetupData"
+                                    :columnMappingData="columnMappingData"
                                     :source="source"
                                     @prev="activateCallback('4')"
                                     @create="handleCreateSource"
@@ -97,8 +97,8 @@ import StepPanels from 'primevue/steppanels'
 import StepPanel from 'primevue/steppanel'
 import BasicInfoStep from '@/components/sources/wizard/BasicInfoStep.vue'
 import ConnectionStep from '@/components/sources/wizard/ConnectionStep.vue'
-import FieldsSetupStep from '@/components/sources/wizard/FieldsSetupStep.vue'
-import FieldMappingStep from '@/components/sources/wizard/FieldMappingStep.vue'
+import ColumnsSetupStep from '@/components/sources/wizard/ColumnsSetupStep.vue'
+import ColumnMappingStep from '@/components/sources/wizard/ColumnMappingStep.vue'
 import Step3 from '@/components/sources/wizard/Step3.vue'
 import { SourceService } from '@/sdk/services/source'
 
@@ -143,31 +143,31 @@ const getInitialConnectionData = () => {
     return {}
 }
 
-const getInitialFieldsSetupData = () => {
-    if (props.source && props.source.fields) {
-        // Convert fields object to array
-        const fieldsArray = Object.entries(props.source.fields).map(([name, field]) => ({
+const getInitialColumnsSetupData = () => {
+    if (props.source && props.source.columns) {
+        // Convert columns object to array
+        const columnsArray = Object.entries(props.source.columns).map(([name, column]) => ({
             name,
-            display_name: field.display_name || '',
-            type: field.type,
-            values: field.values || '',
-            autocomplete: field.autocomplete || false,
-            suggest: field.suggest || false,
-            jsonstring: field.jsonstring || false,
-            group_by: field.group_by || false,
+            display_name: column.display_name || '',
+            type: column.type,
+            values: column.values || '',
+            autocomplete: column.autocomplete || false,
+            suggest: column.suggest || false,
+            jsonstring: column.jsonstring || false,
+            group_by: column.group_by || false,
         }))
-        return { fields: fieldsArray }
+        return { columns: columnsArray }
     }
-    return {}
+    return { columns: [] }
 }
 
-const getInitialFieldMappingData = () => {
+const getInitialColumnMappingData = () => {
     if (props.source) {
         return {
-            time_field: props.source.timeField,
-            date_field: props.source.dateField || '',
-            severity_field: props.source.severityField || '',
-            default_chosen_fields: props.source.defaultChosenFields || [],
+            time_column: props.source.timeColumn,
+            date_column: props.source.dateColumn || '',
+            severity_column: props.source.severityColumn || '',
+            default_chosen_columns: props.source.defaultChosenColumns || [],
             execute_query_on_open: props.source.executeQueryOnOpen ?? true,
         }
     }
@@ -176,41 +176,28 @@ const getInitialFieldMappingData = () => {
 
 const basicInfo = ref(getInitialBasicInfo())
 const connectionData = ref(getInitialConnectionData())
-const fieldsSetupData = ref(getInitialFieldsSetupData())
-const fieldMappingData = ref(getInitialFieldMappingData())
+const columnsSetupData = ref(getInitialColumnsSetupData())
+const columnMappingData = ref(getInitialColumnMappingData())
 const step3Data = ref({})
 
 const handleCreateSource = async (onComplete) => {
-    // Build the request data structure
     const data = {
-        // Basic info
         slug: basicInfo.value.slug,
         name: basicInfo.value.name,
         description: basicInfo.value.description,
-
-        // Field mapping
-        time_field: fieldMappingData.value.time_field,
-        date_field: fieldMappingData.value.date_field || '',
-        severity_field: fieldMappingData.value.severity_field || '',
-        default_chosen_fields: fieldMappingData.value.default_chosen_fields,
-        execute_query_on_open: fieldMappingData.value.execute_query_on_open ?? true,
-
-        // Dynamic fields - convert array to object with field names as keys
-        fields: {},
-
-        // Connection kind
+        time_column: columnMappingData.value.time_column,
+        date_column: columnMappingData.value.date_column || '',
+        severity_column: columnMappingData.value.severity_column || '',
+        default_chosen_columns: columnMappingData.value.default_chosen_columns,
+        execute_query_on_open: columnMappingData.value.execute_query_on_open ?? true,
+        columns: {},
         kind: connectionData.value.connection.kind,
-
-        // Connection info - only connection_id
         connection: {
             connection_id: connectionData.value.connection.id,
         },
-
-        // Source-specific data
         data: {},
     }
 
-    // Add database, table, and settings to data field for ClickHouse connections
     if (connectionData.value.connection.kind === 'clickhouse') {
         data.data.database = connectionData.value.database
         data.data.table = connectionData.value.table
@@ -225,17 +212,16 @@ const handleCreateSource = async (onComplete) => {
         data.data.namespace = connectionData.value.namespace || ''
     }
 
-    // Convert fields array to object
-    if (fieldsSetupData.value.fields && fieldsSetupData.value.fields.length > 0) {
-        fieldsSetupData.value.fields.forEach((field) => {
-            data.fields[field.name] = {
-                display_name: field.display_name || '',
-                type: field.type,
-                values: field.values || '',
-                autocomplete: field.autocomplete,
-                suggest: field.suggest,
-                jsonstring: field.jsonstring,
-                group_by: field.group_by,
+    if (columnsSetupData.value.columns && columnsSetupData.value.columns.length > 0) {
+        columnsSetupData.value.columns.forEach((column) => {
+            data.columns[column.name] = {
+                display_name: column.display_name || '',
+                type: column.type,
+                values: column.values || '',
+                autocomplete: column.autocomplete,
+                suggest: column.suggest,
+                jsonstring: column.jsonstring,
+                group_by: column.group_by,
             }
         })
     }
