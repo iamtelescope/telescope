@@ -79,9 +79,9 @@
         <div :class="{ hidden: hideFilters }">
             <div class="mb-2">
                 <ContextColumns
-                    v-if="source.contextFields"
+                    v-if="source.contextColumns"
                     :source="source"
-                    :contextColumns="sourceControlsStore.contextFields"
+                    :contextColumns="sourceControlsStore.contextColumns"
                     :contextColumnsData="contextColumnsData"
                     @columnChanged="onContextFieldChanged"
                 />
@@ -189,7 +189,7 @@ const onRawQueryChange = (value) => {
 }
 
 const onContextFieldChanged = (params) => {
-    sourceControlsStore.setContextField(params.name, params.value)
+    sourceControlsStore.setContextColumn(params.name, params.value)
 }
 
 const onGraphVisibilityChanged = () => {

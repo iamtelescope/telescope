@@ -185,8 +185,8 @@ import * as monaco from 'monaco-editor'
 
 const sourceService = new SourceService()
 
-const props = defineProps(['source', 'contextFields', 'contextColumnsData'])
-const emit = defineEmits(['fieldChanged'])
+const props = defineProps(['source', 'contextColumns', 'contextColumnsData'])
+const emit = defineEmits(['columnChanged'])
 
 // Helper to ensure array
 const ensureArray = (val) => {
@@ -197,12 +197,12 @@ const ensureArray = (val) => {
 }
 
 // Form values
-const selectedContexts = ref(ensureArray(props.contextFields?.contexts))
-const selectedNamespaces = ref(ensureArray(props.contextFields?.namespaces))
-const podsFieldSelector = ref(props.contextFields?.pods_field_selector || '')
-const podsLabelSelector = ref(props.contextFields?.pods_label_selector || '')
-const podsFlyqlFilter = ref(props.contextFields?.pods_flyql_filter || '')
-const showFlyqlFilter = ref(!!props.contextFields?.pods_flyql_filter)
+const selectedContexts = ref(ensureArray(props.contextColumns?.contexts))
+const selectedNamespaces = ref(ensureArray(props.contextColumns?.namespaces))
+const podsFieldSelector = ref(props.contextColumns?.pods_field_selector || '')
+const podsLabelSelector = ref(props.contextColumns?.pods_label_selector || '')
+const podsFlyqlFilter = ref(props.contextColumns?.pods_flyql_filter || '')
+const showFlyqlFilter = ref(!!props.contextColumns?.pods_flyql_filter)
 
 // Editor state
 const editorFocused = ref(false)
@@ -303,14 +303,13 @@ const onViewPods = () => {
     showPodsDialog.value = true
 }
 
-// Load pods when dialog opens
 const loadPods = async () => {
     podsLoading.value = true
     podsError.value = null
 
     try {
-        const response = await sourceService.getContextFieldData(props.source.slug, {
-            field: 'pods',
+        const response = await sourceService.getContextColumnData(props.source.slug, {
+            column: 'pods',
             params: {
                 contexts: selectedContexts.value,
                 namespaces: selectedNamespaces.value,
@@ -320,7 +319,31 @@ const loadPods = async () => {
             },
         })
 
-        if (response.result) {
+        if (response.validation && !response.validation.result) {
+            const errors = []
+
+            if (response.validation.fields) {
+                Object.entries(response.validation.fields).forEach(([field, messages]) => {
+                    if (Array.isArray(messages)) {
+                        messages.forEach((msg) => errors.push(`${field}: ${msg}`))
+                    }
+                })
+            }
+
+            if (response.validation.columns) {
+                Object.entries(response.validation.columns).forEach(([field, messages]) => {
+                    if (Array.isArray(messages)) {
+                        messages.forEach((msg) => errors.push(`${field}: ${msg}`))
+                    }
+                })
+            }
+
+            if (response.validation.non_field && Array.isArray(response.validation.non_field)) {
+                errors.push(...response.validation.non_field)
+            }
+
+            podsError.value = errors.length > 0 ? errors.join(', ') : 'Validation failed'
+        } else if (response.result) {
             pods.value = response.data?.data || []
         } else {
             podsError.value = response.error || 'Failed to fetch pods'
@@ -345,35 +368,35 @@ const showAnnotationsPopover = (event, annotations) => {
 
 // Event handlers
 const onContextsChange = () => {
-    emit('fieldChanged', {
+    emit('columnChanged', {
         name: 'contexts',
         value: selectedContexts.value,
     })
 }
 
 const onNamespacesChange = () => {
-    emit('fieldChanged', {
+    emit('columnChanged', {
         name: 'namespaces',
         value: selectedNamespaces.value,
     })
 }
 
 const onPodsFieldSelectorChange = () => {
-    emit('fieldChanged', {
+    emit('columnChanged', {
         name: 'pods_field_selector',
         value: podsFieldSelector.value,
     })
 }
 
 const onPodsLabelSelectorChange = () => {
-    emit('fieldChanged', {
+    emit('columnChanged', {
         name: 'pods_label_selector',
         value: podsLabelSelector.value,
     })
 }
 
 const onPodsFlyqlFilterChange = () => {
-    emit('fieldChanged', {
+    emit('columnChanged', {
         name: 'pods_flyql_filter',
         value: podsFlyqlFilter.value,
     })
@@ -382,7 +405,7 @@ const onPodsFlyqlFilterChange = () => {
 const onFlyqlToggleChange = () => {
     if (!showFlyqlFilter.value) {
         podsFlyqlFilter.value = ''
-        emit('fieldChanged', {
+        emit('columnChanged', {
             name: 'pods_flyql_filter',
             value: '',
         })
@@ -391,7 +414,7 @@ const onFlyqlToggleChange = () => {
 
 // Watch for external changes
 watch(
-    () => props.contextFields,
+    () => props.contextColumns,
     (newVal) => {
         if (newVal) {
             selectedContexts.value = ensureArray(newVal.contexts)
