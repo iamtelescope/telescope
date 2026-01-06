@@ -426,6 +426,7 @@ class SourceGraphDataView(APIView):
         )
 
         if not serializer.is_valid():
+            logger.info("Graph data request serializer validation failed: %s", serializer.errors)
             response.validation["result"] = False
             response.validation["columns"] = serializer.errors
             return Response(response.as_dict())
@@ -441,6 +442,7 @@ class SourceGraphDataView(APIView):
                 group_by=serializer.validated_data["group_by"],
                 context_columns=serializer.validated_data["context_columns"],
             )
+            logger.info("Fetching graph data with request: %s", graph_data_request)
             graph_data_response = fetcher.fetch_graph_data(graph_data_request)
         except Exception as err:
             logger.exception("Unhandled error: %s", err)

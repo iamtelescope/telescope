@@ -1,18 +1,19 @@
+import csv
 import os
 import logging
 import tempfile
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 import zoneinfo
 
 import mysql.connector
 
 from flyql.core.parser import parse, ParserError
 from flyql.core.exceptions import FlyqlError
-from flyql.generators.starrocks.generator import to_sql, Field
+from flyql.generators.starrocks.generator import to_sql, Column
 
 from telescope.constants import UTC_ZONE
-
-from telescope.models import SourceField
+from telescope.columns import ParsedColumn
+from telescope.models import Source, SourceColumn
 
 from telescope.fetchers.request import (
     DataRequest,
@@ -26,7 +27,7 @@ from telescope.fetchers.response import (
 from telescope.fetchers.fetcher import BaseFetcher
 from telescope.fetchers.models import Row
 
-from telescope.utils import convert_to_base_sr, get_telescope_field
+from telescope.utils import convert_to_base_sr, get_telescope_column
 
 
 logger = logging.getLogger("telescope.fetchers.starrocks")
@@ -58,11 +59,11 @@ def escape_param(item: str) -> str:
         return item
 
 
-def build_time_clause(time_field, date_field, time_from, time_to):
+def build_time_clause(time_column, date_column, time_from, time_to):
     date_clause = ""
-    if date_field:
-        date_clause = f"`{date_field}` BETWEEN date(to_datetime_ntz({time_from}, 3)) and date(to_datetime_ntz({time_to}, 3))  AND "
-    return f"{date_clause}`{time_field}` BETWEEN to_datetime_ntz({time_from}, 3) and to_datetime_ntz({time_to}, 3)"
+    if date_column:
+        date_clause = f"`{date_column}` BETWEEN date(to_datetime_ntz({time_from}, 3)) and date(to_datetime_ntz({time_to}, 3))  AND "
+    return f"{date_clause}`{time_column}` BETWEEN to_datetime_ntz({time_from}, 3) and to_datetime_ntz({time_to}, 3)"
 
 
 class StarrocksConnect:
@@ -112,15 +113,15 @@ class StarrocksConnect:
             logger.exception("error while tempdir cleanup (ignoring): %s", err)
 
 
-def flyql_clickhouse_fields(source_fields: Dict[str, SourceField]):
+def flyql_starrocks_columns(source_columns: Dict[str, SourceColumn]):
     return {
-        field.name: Field(
-            name=field.name,
-            jsonstring=field.jsonstring,
-            _type=field.type,
-            values=field.values,
+        column.name: Column(
+            name=column.name,
+            jsonstring=column.jsonstring,
+            _type=column.type,
+            values=column.values,
         )
-        for _, field in source_fields.items()
+        for _, column in source_columns.items()
     }
 
 
@@ -162,7 +163,7 @@ class ConnectionTestResponse:
 
 class Fetcher(BaseFetcher):
     @classmethod
-    def validate_query(cls, source, query):
+    def validate_query(cls, source: Source, query: str) -> tuple[bool, Optional[str]]:
         if not query:
             return True, None
 
@@ -172,7 +173,8 @@ class Fetcher(BaseFetcher):
             return False, err.message
         else:
             try:
-                to_sql(parser.root, fields=flyql_clickhouse_fields(source._fields))
+                assert parser.root
+                to_sql(parser.root, columns=flyql_starrocks_columns(source._columns))
             except FlyqlError as err:
                 return False, err.message
 
@@ -218,7 +220,7 @@ class Fetcher(BaseFetcher):
                     assert row
                     response.schema["result"] = True
                     response.schema["data"] = [
-                        get_telescope_field(row[0], row[1])
+                        get_telescope_column(row[0], row[1])
                     ]
                 try:
                     cur = c.client.cursor()
@@ -234,7 +236,7 @@ class Fetcher(BaseFetcher):
         return response
 
     @classmethod
-    def get_schema(cls, data: dict):
+    def get_schema(cls, data: dict) -> list[dict[str, Any]]:
         """Get schema without testing connection"""
         result = None
         target = f"`{data['database']}`.`{data['table']}`"
@@ -250,20 +252,21 @@ class Fetcher(BaseFetcher):
                 % (data["database"], data["table"])
             )
             result = cur.fetchall()
-        return [get_telescope_field(x[0], x[1]) for x in result]
+        return [get_telescope_column(x[0], x[1]) for x in result]
 
     @classmethod
-    def autocomplete(cls, source, field, time_from, time_to, value):
+    def autocomplete(cls, source: Source, column: str, time_from, time_to, value: str) -> AutocompleteResponse:
         incomplete = False
         from_db_table = f"{source.data['database']}.{source.data['table']}"
         time_clause = build_time_clause(
-            source.time_field, source.date_field, time_from, time_to
+            source.time_column, source.date_column, time_from, time_to
         )
         query_hints = ""
         if source.data.get("settings"):
             query_hints = f"/*+ SET_VAR({source.data['settings']}) */"
-        query = f"SELECT {query_hints} DISTINCT {field} FROM {from_db_table} WHERE {time_clause} and {field} LIKE %(value)s ORDER BY {field} LIMIT 500"
+        query = f"SELECT {query_hints} DISTINCT `{column}` FROM {from_db_table} WHERE {time_clause} and CAST(`{column}` AS STRING) LIKE %(value)s ORDER BY `{column}` LIMIT 500"
 
+        assert source.conn
         with StarrocksConnect(source.conn.data) as c:
             cur = c.client.cursor()
             cur.execute(query, {"value": f"%{value}%"})
@@ -277,11 +280,13 @@ class Fetcher(BaseFetcher):
     def fetch_graph_data(
         cls, 
         request: GraphDataRequest,
-    ):
+    ) -> GraphDataResponse:
+        logger.info("Fetching graph data for request: %s", request)
         if request.query:
             parser = parse(request.query)
+            assert parser.root
             filter_clause = to_sql(
-                parser.root, fields=flyql_clickhouse_fields(request.source._fields)
+                parser.root, columns=flyql_starrocks_columns(request.source._columns)
             )
         else:
             filter_clause = "true"
@@ -291,20 +296,37 @@ class Fetcher(BaseFetcher):
         group_by_value = ""
         group_by = request.group_by[0] if request.group_by else None
         if group_by:
-            if ":" in group_by.name:
-                spl = group_by.name.split(":")
-                if group_by.jsonstring:
-                    json_path = spl[1:]
-                    json_path = ", ".join([escape_param(x) for x in json_path])
-                    group_by_value = (
-                        f"JSONExtractString({group_by.root_name}, {json_path})"
-                    )
-                elif group_by.is_map():
-                    map_key = ":".join(spl[1:])
+            assert isinstance(group_by, ParsedColumn)
+            # If the name is the root name, ignore the presence of dots as we
+            # should assume the intent is to group by the identified column rather
+            # than a nested field.
+            if "." in group_by.name and group_by.root_name != group_by.name:
+                # Use the csv module to split respecting quotes
+                spl = list(csv.reader([group_by.name], delimiter=".", quotechar="'"))[0]
+                if group_by.is_map():
+                    map_key = "']['".join(spl[1:])
                     group_by_value = f"{group_by.root_name}['{map_key}']"
                 elif group_by.is_array():
-                    array_index = int(":".join(spl[1]))
+                    array_index = int(".".join(spl[1]))
                     group_by_value = f"{group_by.root_name}[{array_index}]"
+                elif group_by.is_json():
+                    json_path = spl[1:]
+                    # Starrocks documents that you double quote any json path elements
+                    # that contain dots. Let's just do it unconditionally.
+                    json_path = [f'"{x}"' for x in json_path]
+                    json_path_str = "->".join([escape_param(x) for x in json_path])
+                    group_by_value = (
+                        f"cast(`{group_by.root_name}`->{json_path_str} as string)"
+                    )
+                elif group_by.jsonstring:
+                    json_path = spl[1:]
+                    # Starrocks documents that you double quote any json path elements
+                    # that contain dots. Let's just do it unconditionally.
+                    json_path = [f'"{x}"' for x in json_path]
+                    json_path_str = "->".join([escape_param(x) for x in json_path])
+                    group_by_value = (
+                        f"cast(parse_json(`{group_by.root_name}`)->{json_path_str} as string)"
+                    )
                 else:
                     raise ValueError
             else:
@@ -312,8 +334,8 @@ class Fetcher(BaseFetcher):
 
         total = 0
         time_clause = build_time_clause(
-            request.source.time_field,
-            request.source.date_field,
+            request.source.time_column,
+            request.source.date_column,
             request.time_from,
             request.time_to,
         )
@@ -321,27 +343,27 @@ class Fetcher(BaseFetcher):
             f"{request.source.data['catalog']}.{request.source.data['database']}.{request.source.data['table']}"
         )
 
-        time_field_type = convert_to_base_sr(
-            request.source._fields[request.source.time_field].type.lower()
+        time_column_type = convert_to_base_sr(
+            request.source._columns[request.source.time_column].type.lower()
         )
         to_time_zone = ""
         # TODO: Understand what timezone handling is required
-        # if time_field_type in ["datetime", "datetime64"]:
-        #     to_time_zone = f"toTimeZone({request.source.time_field}, 'UTC')"
-        # elif time_field_type in ["timestamp", "uint64", "int64"]:
-        #     to_time_zone = f"toTimeZone(to_datetime_ntz({request.source.time_field}, 3), 'UTC')"
-        if time_field_type in ["datetime", "datetime64"]:
-            to_time_zone = f"`{request.source.time_field}`"
-        elif time_field_type in ["timestamp", "uint64", "int64"]:
-            to_time_zone = f"toTimeZone(to_datetime_ntz({request.source.time_field}, 3), 'UTC')"
+        # if time_column_type in ["datetime", "datetime64"]:
+        #     to_time_zone = f"toTimeZone({request.source.time_column}, 'UTC')"
+        # elif time_column_type in ["timestamp", "uint64", "int64"]:
+        #     to_time_zone = f"toTimeZone(to_datetime_ntz({request.source.time_column}, 3), 'UTC')"
+        if time_column_type in ["datetime", "datetime64"]:
+            to_time_zone = f"`{request.source.time_column}`"
+        elif time_column_type in ["timestamp", "uint64", "int64"]:
+            to_time_zone = f"toTimeZone(to_datetime_ntz({request.source.time_column}, 3), 'UTC')"
 
-        fields_names = sorted(request.source._fields.keys())
-        fields_to_select = []
-        for field in fields_names:
-            if field == request.source.time_field:
-                fields_to_select.append(to_time_zone)
+        columns_names = sorted(request.source._columns.keys())
+        columns_to_select = []
+        for column in columns_names:
+            if column == request.source.time_column:
+                columns_to_select.append(to_time_zone)
             else:
-                fields_to_select.append(field)
+                columns_to_select.append(column)
 
         stats = {}
         stats_by_ts = {}
@@ -356,9 +378,9 @@ class Fetcher(BaseFetcher):
                 stats_interval_seconds = 1
             stats_time_selector = f"unix_timestamp(time_slice({to_time_zone}, INTERVAL {stats_interval_seconds} SECOND)) * 1000"
         else:
-            if time_field_type in ["datetime", "timestamp", "uint64"]:
+            if time_column_type in ["datetime", "timestamp", "uint64"]:
                 stats_time_selector = f"unix_timestamp({to_time_zone})*1000"
-            elif time_field_type == "datetime64":
+            elif time_column_type == "datetime64":
                 stats_time_selector = f"unix_timestamp({to_time_zone})"
 
         assert request.source.conn
@@ -378,7 +400,7 @@ class Fetcher(BaseFetcher):
             stat_sql += " ORDER BY t"
 
             cur = c.client.cursor()
-            print(stat_sql)
+            logger.info("Executing stats query: %s", stat_sql)
             cur.execute(stat_sql)
             for item in cur.fetchall():
                 if group_by_value:
@@ -425,18 +447,19 @@ class Fetcher(BaseFetcher):
     ):
         if request.query:
             parser = parse(request.query)
+            assert parser.root
             filter_clause = to_sql(
-                parser.root, fields=flyql_clickhouse_fields(request.source._fields)
+                parser.root, columns=flyql_starrocks_columns(request.source._columns)
             )
         else:
             filter_clause = "true"
 
-        order_by_clause = f"ORDER BY `{request.source.time_field}` DESC"
+        order_by_clause = f"ORDER BY `{request.source.time_column}` DESC"
         raw_where_clause = request.raw_query or "true"
 
         time_clause = build_time_clause(
-            request.source.time_field,
-            request.source.date_field,
+            request.source.time_column,
+            request.source.date_column,
             request.time_from,
             request.time_to,
         )
@@ -444,40 +467,41 @@ class Fetcher(BaseFetcher):
             f"{request.source.data['catalog']}.{request.source.data['database']}.{request.source.data['table']}"
         )
 
-        fields_names = sorted(request.source._fields.keys())
-        fields_to_select = []
-        for field in fields_names:
+        columns_names = sorted(request.source._columns.keys())
+        columns_to_select = []
+        for column in columns_names:
             # TODO: Understand what timezone handling is required
-            # if field == request.source.time_field:
-            #     time_field_type = convert_to_base_sr(
-            #         request.source._fields[request.source.time_field].type.lower()
+            # if column == request.source.time_column:
+            #     time_column_type = convert_to_base_sr(
+            #         request.source._columns[request.source.time_column].type.lower()
             #     )
-            #     if time_field_type in ["datetime", "datetime64"]:
-            #         fields_to_select.append(f"toTimeZone({field}, 'UTC')")
-            #     elif time_field_type in ["timestamp", "uint64", "int64"]:
-            #         fields_to_select.append(f"toTimeZone(toDateTime({field}), 'UTC')")
+            #     if time_column_type in ["datetime", "datetime64"]:
+            #         columns_to_select.append(f"toTimeZone({column}, 'UTC')")
+            #     elif time_column_type in ["timestamp", "uint64", "int64"]:
+            #         columns_to_select.append(f"toTimeZone(toDateTime({column}), 'UTC')")
             # else:
-                fields_to_select.append(f'`{field}`')
-        fields_to_select = ", ".join(fields_to_select)
+                columns_to_select.append(f'`{column}`')
+        columns_to_select = ", ".join(columns_to_select)
 
         query_hints = ""
         if request.source.data.get("settings"):
             query_hints = f"/*+ SET_VAR({request.source.data['settings']}) */"
 
-        select_query = f"SELECT {query_hints} uuid_numeric(),{fields_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}"
+        select_query = f"SELECT {query_hints} uuid_numeric(),{columns_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}"
 
         rows = []
 
         assert request.source.conn
         with StarrocksConnect(request.source.conn.data) as c:
-            selected_fields = [request.source._record_pseudo_id_field] + fields_names
+            logger.info("Executing query: %s", select_query)
+            selected_columns = [request.source._record_pseudo_id_column] + columns_names
             cur = c.client.cursor()
             cur.execute(select_query)
             for item in cur.fetchall():
                 rows.append(
                     Row(
                         source=request.source,
-                        selected_fields=selected_fields,
+                        selected_columns=selected_columns,
                         values=item,
                         tz=tz or UTC_ZONE,
                     )

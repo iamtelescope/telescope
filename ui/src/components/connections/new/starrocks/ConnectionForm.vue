@@ -253,13 +253,13 @@ const connectionFieldErrors = reactive({
     tls_mode: '',
 })
 
-const hasError = (field) => {
-    return connectionFieldErrors[field] !== ''
+const hasError = (column) => {
+    return connectionFieldErrors[column] !== ''
 }
 
 const resetErrors = () => {
-    for (const field in connectionFieldErrors) {
-        connectionFieldErrors[field] = ''
+    for (const column in connectionFieldErrors) {
+        connectionFieldErrors[column] = ''
     }
     connectionTestErrors.value = []
 }
@@ -309,16 +309,16 @@ const handleTestConnection = async () => {
             emit('connectionDataValidated', { ...connectionData })
         } else {
             if (response.validation && !response.validation.result) {
-                for (const [field, errors] of Object.entries(response.validation.fields)) {
-                    if (connectionFieldErrors.hasOwnProperty(field)) {
-                        connectionFieldErrors[field] = errors[0]
+                for (const [column, errors] of Object.entries(response.validation.columns)) {
+                    if (connectionFieldErrors.hasOwnProperty(column)) {
+                        connectionFieldErrors[column] = errors[0]
                     } else {
-                        // Add validation errors for fields that don't have form inputs to the general error list
-                        connectionTestErrors.value = [...connectionTestErrors.value, `${field}: ${errors[0]}`]
+                        // Add validation errors for columns that don't have form inputs to the general error list
+                        connectionTestErrors.value = [...connectionTestErrors.value, `${column}: ${errors[0]}`]
                     }
                 }
-                if (response.validation.non_field && response.validation.non_field.length > 0) {
-                    connectionTestErrors.value = [...connectionTestErrors.value, ...response.validation.non_field]
+                if (response.validation.non_column && response.validation.non_column.length > 0) {
+                    connectionTestErrors.value = [...connectionTestErrors.value, ...response.validation.non_column]
                 }
             }
 
@@ -357,16 +357,16 @@ watch(
     () => props.validationErrors,
     (newErrors) => {
         if (newErrors && Object.keys(newErrors).length > 0) {
-            // Apply validation errors to form fields
-            for (const [field, errors] of Object.entries(newErrors)) {
-                if (connectionFieldErrors.hasOwnProperty(field)) {
-                    connectionFieldErrors[field] = errors.join(', ')
+            // Apply validation errors to form columns
+            for (const [column, errors] of Object.entries(newErrors)) {
+                if (connectionFieldErrors.hasOwnProperty(column)) {
+                    connectionFieldErrors[column] = errors.join(', ')
                 }
             }
         } else {
             // Clear all validation errors when parent sends empty errors
-            for (const field in connectionFieldErrors) {
-                connectionFieldErrors[field] = ''
+            for (const column in connectionFieldErrors) {
+                connectionFieldErrors[column] = ''
             }
         }
     },

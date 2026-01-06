@@ -10,7 +10,7 @@ class UIResponse {
         this.validation = {
             result: true,
             fields: {},
-            non_field: [],
+            non_column: [],
         }
     }
 
