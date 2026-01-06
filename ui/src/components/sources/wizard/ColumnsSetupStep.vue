@@ -122,12 +122,12 @@
                             <FloatLabel variant="on">
                                 <Select
                                     :inputId="'type-' + index"
-                                    v-model="field.type"
-                                    :options="fieldTypes"
+                                    v-model="column.type"
+                                    :options="columnTypes"
                                     editable
                                     :filter="isStarRocks"
                                     class="w-full"
-                                    :invalid="!field.type && showValidation"
+                                    :invalid="!column.type && showValidation"
                                 />
                                 <label :for="'type-' + index">Type *</label>
                             </FloatLabel>

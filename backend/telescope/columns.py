@@ -3,6 +3,8 @@ from flyql.columns import (
     ParserError as ColumnsParserError,
 )
 
+from telescope.models import Source
+
 
 class ParsedColumn:
     def __init__(
@@ -41,22 +43,36 @@ class ParsedColumn:
         return result
 
     def is_map(self):
-        return "Map" in self.type
+        return "map" in self.type.lower()
 
     def is_array(self):
-        return "Array" in self.type
+        return "array" in self.type.lower()
 
+    def is_json(self):
+        return "json" in self.type.lower()
 
-def parse_columns(source, text):
+def parse_columns(source: Source, text: str) -> list[ParsedColumn]:
     flyql_columns = parse_columns_flyql(text)
     parsed_columns = []
 
     for flyql_col in flyql_columns:
-        source_column_name = flyql_col.name.split(".")[0]
+        # Column names can contain periods, and so we should split reluctantly and match
+        # the longest possible column name from the source.
+        source_column_name = None
+        candidate = flyql_col.name
+        while candidate:
+            if candidate in source._columns:
+                source_column_name = candidate
+                break
+            # Remove the last dot-separated suffix
+            last_dot = candidate.rfind('.')
+            if last_dot == -1:
+                break
+            candidate = candidate[:last_dot]
 
-        if source_column_name not in source._columns:
+        if not source_column_name:
             raise ColumnsParserError(
-                message=f"Source have no '{source_column_name}' column", errno=100
+                message=f"Source have no '{flyql_col.name}' column", errno=100
             )
 
         source_column = source._columns[source_column_name]

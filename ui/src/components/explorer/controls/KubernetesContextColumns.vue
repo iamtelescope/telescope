@@ -338,8 +338,8 @@ const loadPods = async () => {
                 })
             }
 
-            if (response.validation.non_field && Array.isArray(response.validation.non_field)) {
-                errors.push(...response.validation.non_field)
+            if (response.validation.non_column && Array.isArray(response.validation.non_column)) {
+                errors.push(...response.validation.non_column)
             }
 
             podsError.value = errors.length > 0 ? errors.join(', ') : 'Validation failed'
