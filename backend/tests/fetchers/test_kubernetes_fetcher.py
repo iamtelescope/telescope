@@ -401,3 +401,199 @@ def test_autocomplete(kubernetes_source):
     response = Fetcher.autocomplete(kubernetes_source, "message", 0, 1000, "test")
     assert response.items == []
     assert response.incomplete is False
+
+
+@pytest.mark.django_db
+@patch("telescope.fetchers.kubernetes.api.KubeClientHelper")
+def test_kubehelper_filters_by_selected_contexts(mock_client_helper):
+    from telescope.fetchers.kubernetes.api import KubeHelper, KubeConfigHelper
+
+    mock_config = MagicMock()
+    mock_config.list_contexts.return_value = [
+        {"name": "ctx1", "cluster": "c1", "user": "u1", "namespace": "default"},
+        {"name": "ctx2", "cluster": "c2", "user": "u2", "namespace": "default"},
+        {"name": "ctx3", "cluster": "c3", "user": "u3", "namespace": "default"},
+    ]
+    mock_config.kubeconfig_hash = "test_hash"
+
+    helper = KubeHelper(
+        conn_id=1,
+        source_id=1,
+        max_concurrent_requests=5,
+        config=mock_config,
+        selected_contexts=["ctx1", "ctx3"],
+    )
+
+    helper.validate()
+
+    assert helper.contexts == {"ctx1", "ctx3"}
+    assert "ctx2" not in helper.contexts
+
+
+@pytest.mark.django_db
+@patch("telescope.fetchers.kubernetes.api.KubeClientHelper")
+def test_kubehelper_filters_by_selected_namespaces(mock_client_helper):
+    from telescope.fetchers.kubernetes.api import KubeHelper, KubeConfigHelper
+
+    mock_config = MagicMock()
+    mock_config.list_contexts.return_value = [
+        {"name": "ctx1", "cluster": "c1", "user": "u1", "namespace": "default"},
+    ]
+    mock_config.kubeconfig_hash = "test_hash"
+
+    mock_client = MagicMock()
+    mock_ns1 = MagicMock()
+    mock_ns1.metadata.name = "ns1"
+    mock_ns2 = MagicMock()
+    mock_ns2.metadata.name = "ns2"
+    mock_ns3 = MagicMock()
+    mock_ns3.metadata.name = "ns3"
+    mock_ns_list = MagicMock()
+    mock_ns_list.items = [mock_ns1, mock_ns2, mock_ns3]
+    mock_client.core.list_namespace.return_value = mock_ns_list
+
+    mock_client_helper_instance = MagicMock()
+    mock_client_helper_instance.get_client_for_context.return_value = mock_client
+    mock_client_helper.return_value = mock_client_helper_instance
+
+    helper = KubeHelper(
+        conn_id=1,
+        source_id=1,
+        max_concurrent_requests=5,
+        config=mock_config,
+        selected_contexts=["ctx1"],
+        selected_namespaces=["ns1", "ns3"],
+    )
+
+    helper.validate()
+
+    result = helper.namespaces
+    assert "ctx1" in result
+    assert set(result["ctx1"]) == {"ns1", "ns3"}
+    assert "ns2" not in result["ctx1"]
+
+
+@patch("telescope.fetchers.kubernetes.api.KubeClientHelper")
+def test_kubehelper_cache_keys_include_selections(mock_client_helper):
+    from telescope.fetchers.kubernetes.api import KubeHelper, KubeConfigHelper
+
+    mock_config = MagicMock()
+    mock_config.list_contexts.return_value = [
+        {"name": "ctx1", "cluster": "c1", "user": "u1", "namespace": "default"},
+    ]
+    mock_config.kubeconfig_hash = "test_hash"
+
+    helper1 = KubeHelper(
+        conn_id=1,
+        source_id=1,
+        max_concurrent_requests=5,
+        config=mock_config,
+    )
+
+    helper2 = KubeHelper(
+        conn_id=1,
+        source_id=1,
+        max_concurrent_requests=5,
+        config=mock_config,
+        selected_contexts=["ctx1"],
+    )
+
+    helper3 = KubeHelper(
+        conn_id=1,
+        source_id=1,
+        max_concurrent_requests=5,
+        config=mock_config,
+        selected_contexts=["ctx1"],
+        selected_namespaces=["ns1"],
+    )
+
+    assert helper1.namespaces_cache_key != helper2.namespaces_cache_key
+    assert helper1.pods_cache_key != helper2.pods_cache_key
+    assert helper2.pods_cache_key != helper3.pods_cache_key
+
+
+@pytest.mark.django_db
+@patch("telescope.fetchers.kubernetes.api.KubeClientHelper")
+def test_kubehelper_get_pods_filters_namespaces(mock_client_helper):
+    from telescope.fetchers.kubernetes.api import KubeHelper, KubeConfigHelper
+
+    mock_config = MagicMock()
+    mock_config.list_contexts.return_value = [
+        {"name": "ctx1", "cluster": "c1", "user": "u1", "namespace": "default"},
+    ]
+    mock_config.kubeconfig_hash = "test_hash"
+
+    mock_client = MagicMock()
+    mock_ns1 = MagicMock()
+    mock_ns1.metadata.name = "ns1"
+    mock_ns2 = MagicMock()
+    mock_ns2.metadata.name = "ns2"
+    mock_ns3 = MagicMock()
+    mock_ns3.metadata.name = "ns3"
+    mock_ns_list = MagicMock()
+    mock_ns_list.items = [mock_ns1, mock_ns2, mock_ns3]
+    mock_client.core.list_namespace.return_value = mock_ns_list
+    mock_client.core.list_namespaced_pod.return_value.items = []
+
+    mock_client_helper_instance = MagicMock()
+    mock_client_helper_instance.get_client_for_context.return_value = mock_client
+    mock_client_helper.return_value = mock_client_helper_instance
+
+    helper = KubeHelper(
+        conn_id=1,
+        source_id=1,
+        max_concurrent_requests=5,
+        config=mock_config,
+        selected_contexts=["ctx1"],
+        selected_namespaces=["ns1"],
+    )
+
+    helper.validate()
+    results, errors = helper.get_pods()
+
+    assert mock_client.core.list_namespaced_pod.call_count == 1
+    call_args = mock_client.core.list_namespaced_pod.call_args
+    assert call_args[1]["namespace"] == "ns1"
+
+
+@pytest.mark.django_db
+@patch("telescope.fetchers.kubernetes.api.KubeClientHelper")
+def test_kubehelper_cache_isolation(mock_client_helper):
+    from telescope.fetchers.kubernetes.api import KubeHelper, KubeConfigHelper
+    from django.core.cache import cache
+
+    cache.clear()
+
+    mock_config = MagicMock()
+    mock_config.list_contexts.return_value = [
+        {"name": "ctx1", "cluster": "c1", "user": "u1", "namespace": "default"},
+    ]
+    mock_config.kubeconfig_hash = "test_hash"
+
+    helper1 = KubeHelper(
+        conn_id=1,
+        source_id=1,
+        max_concurrent_requests=5,
+        config=mock_config,
+        selected_contexts=["ctx1"],
+        selected_namespaces=["ns1"],
+    )
+
+    helper2 = KubeHelper(
+        conn_id=1,
+        source_id=1,
+        max_concurrent_requests=5,
+        config=mock_config,
+        selected_contexts=["ctx1"],
+        selected_namespaces=["ns2"],
+    )
+
+    assert helper1.pods_cache_key != helper2.pods_cache_key
+
+    cache.set(helper1.pods_cache_key, {"ctx1": {"ns1": {"pod1": {}}}}, 30)
+
+    cached_value = cache.get(helper2.pods_cache_key)
+    assert cached_value is None
+
+    cached_value = cache.get(helper1.pods_cache_key)
+    assert cached_value == {"ctx1": {"ns1": {"pod1": {}}}}
