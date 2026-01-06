@@ -215,6 +215,7 @@ class KubeHelper:
             self.namespace_label_selector,
             self.namespace_field_selector,
             self.namespace_flyql_filter,
+            ",".join(sorted(selected_contexts)) if selected_contexts else "",
             self.config.kubeconfig_hash,
         )
         self.pods_cache_key = self._make_cache_key(
@@ -227,6 +228,8 @@ class KubeHelper:
             self.pods_label_selector,
             self.pods_field_selector,
             self.pods_flyql_filter,
+            ",".join(sorted(selected_contexts)) if selected_contexts else "",
+            ",".join(sorted(selected_namespaces)) if selected_namespaces else "",
             self.config.kubeconfig_hash,
         )
         self._contexts = None
@@ -294,26 +297,26 @@ class KubeHelper:
     def namespaces(self):
         if self._namespaces is None:
             all_namespaces = self._get_all_namespaces()
-            filtered_by_ctx = {
-                ctx: ns for ctx, ns in all_namespaces.items() if ctx in self.contexts
-            }
             if self.selected_namespaces:
                 self._namespaces = {
                     ctx: [n for n in ns if n in self.selected_namespaces]
-                    for ctx, ns in filtered_by_ctx.items()
+                    for ctx, ns in all_namespaces.items()
                 }
             else:
-                self._namespaces = filtered_by_ctx
+                self._namespaces = all_namespaces
         return self._namespaces
 
     def store_error(self, operation: str, sev: str, data: Dict[str, Any]):
         self.errors.append({"operation": operation, "sev": sev, "data": data})
 
     def get_namespaces(self) -> Tuple[Dict[str, T], Dict[str, Exception]]:
+        contexts_to_use = (
+            self.contexts if self.selected_contexts else self.allowed_contexts_set
+        )
         return self.execute_parallel(
             self.get_namespaces_from_client,
             max_workers=50,
-            contexts=self.allowed_contexts_set,
+            contexts=contexts_to_use,
         )
 
     def get_namespaces_from_client(self, client: KubeClient) -> List[str]:
@@ -338,27 +341,14 @@ class KubeHelper:
         if self._pods is None:
             cached = cache.get(self.pods_cache_key)
             if cached is not None:
-                all_pods = cached
+                self._pods = cached
             else:
                 all_pods, errors = self.get_pods()
                 if not errors:
                     cache.set(self.pods_cache_key, all_pods, CACHE_TTL)
                 else:
                     self.store_error("get_pods", "warn", errors)
-            filtered_by_ctx = {
-                ctx: pods for ctx, pods in all_pods.items() if ctx in self.contexts
-            }
-            if self.selected_namespaces:
-                self._pods = {
-                    ctx: {
-                        ns: pods_in_ns
-                        for ns, pods_in_ns in namespaces.items()
-                        if ns in self.selected_namespaces
-                    }
-                    for ctx, namespaces in filtered_by_ctx.items()
-                }
-            else:
-                self._pods = filtered_by_ctx
+                self._pods = all_pods
         return self._pods
 
     def get_pods(
@@ -374,13 +364,19 @@ class KubeHelper:
             context_name: str,
         ) -> Tuple[Dict[str, Dict[str, Dict]], Dict[str, Exception]]:
             namespaces = all_namespaces.get(context_name, [])
+            if self.selected_namespaces:
+                namespaces = [ns for ns in namespaces if ns in self.selected_namespaces]
             client = self.client_helper.get_client_for_context(context_name)
             return self._get_pods_for_namespaces(client, namespaces)
+
+        contexts_to_fetch = (
+            self.contexts if self.selected_contexts else set(all_namespaces.keys())
+        )
 
         with ThreadPoolExecutor(max_workers=10) as executor:
             future_to_context = {
                 executor.submit(get_pods_for_context, ctx): ctx
-                for ctx in all_namespaces.keys()
+                for ctx in contexts_to_fetch
             }
             for future in as_completed(future_to_context):
                 ctx = future_to_context[future]
