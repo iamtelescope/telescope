@@ -1,7 +1,7 @@
 <template>
     <DataView
-        :loadings="[sourceLoading, savedViewLoading, contextFieldsLoading]"
-        :errors="[sourceError, savedViewError, contextFieldsError]"
+        :loadings="[sourceLoading, savedViewLoading, contextColumnsLoading]"
+        :errors="[sourceError, savedViewError, contextColumnsError]"
     >
         <template #loader>
             <ExplorerLoader />
@@ -28,7 +28,7 @@ const {
 } = useGetSavedView(route.params.sourceSlug, route.query.view)
 const {
     data: contextColumnsData,
-    error: contextFieldsError,
-    loading: contextFieldsLoading,
+    error: contextColumnsError,
+    loading: contextColumnsLoading,
 } = useGetSourceContextColumnsData(route.params.sourceSlug)
 </script>

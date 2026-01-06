@@ -38,8 +38,8 @@
 import { ref, computed, watch } from 'vue'
 import { MultiSelect, FloatLabel } from 'primevue'
 
-const props = defineProps(['source', 'contextFields', 'contextColumnsData'])
-const emit = defineEmits(['fieldChanged'])
+const props = defineProps(['source', 'contextColumns', 'contextColumnsData'])
+const emit = defineEmits(['columnChanged'])
 
 // Helper to ensure array
 const ensureArray = (val) => {
@@ -57,9 +57,9 @@ const containerOptions = computed(() => {
 // Selected containers as full objects (for MultiSelect display)
 const selectedContainers = ref([])
 
-// Initialize selected containers from contextFields
+// Initialize selected containers from contextColumns
 const initSelectedContainers = () => {
-    const containerNames = ensureArray(props.contextFields?.container)
+    const containerNames = ensureArray(props.contextColumns?.container)
     if (containerNames.length > 0 && containerOptions.value.length > 0) {
         selectedContainers.value = containerOptions.value.filter((c) => containerNames.includes(c.name))
     } else {
@@ -69,7 +69,7 @@ const initSelectedContainers = () => {
 
 // Initialize on mount when data is available
 watch(
-    [() => props.contextFields, containerOptions],
+    [() => props.contextColumns, containerOptions],
     () => {
         initSelectedContainers()
     },
@@ -78,7 +78,7 @@ watch(
 
 const onContainersChange = () => {
     const names = selectedContainers.value.map((container) => container.name)
-    emit('fieldChanged', {
+    emit('columnChanged', {
         name: 'container',
         value: names,
     })

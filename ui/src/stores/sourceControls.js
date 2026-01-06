@@ -26,7 +26,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const _graphGroupBy = ref(null)
     const _showGraph = ref(null)
     const _limit = ref(null)
-    const _contextFields = ref(null)
+    const _contextColumns = ref(null)
     const _view = ref(null)
 
     function $reset() {
@@ -39,7 +39,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _graphGroupBy.value = null
         _showGraph.value = null
         _limit.value = null
-        _contextFields.value = null
+        _contextColumns.value = null
         _view.value = null
     }
 
@@ -58,7 +58,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _graphGroupBy.value = route.query.graph_group_by ?? viewParam?.data?.graph_group_by ?? source.severityColumn
         _showGraph.value = true
         _limit.value = 50
-        _contextFields.value = {}
+        _contextColumns.value = {}
         _view.value = viewParam
 
         if (!availableTimeZones.includes(_timeZone.value)) _timeZone.value = localTimeZone
@@ -80,13 +80,13 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         for (const [key, value] of Object.entries(route.query)) {
             if (key.startsWith('ctx')) {
                 let column = key.slice(4)
-                _contextFields.value[column] = value
+                _contextColumns.value[column] = value
             }
         }
         if (viewParam?.data?.context_columns) {
             for (const [key, value] of Object.entries(viewParam?.data?.context_columns)) {
-                if (!(key in _contextFields.value)) {
-                    _contextFields.value[key] = value
+                if (!(key in _contextColumns.value)) {
+                    _contextColumns.value[key] = value
                 }
             }
         }
@@ -140,8 +140,8 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         return _showGraph.value
     })
 
-    const contextFields = computed(() => {
-        return _contextFields.value
+    const contextColumns = computed(() => {
+        return _contextColumns.value
     })
 
     const routeQuery = computed(() => {
@@ -168,7 +168,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             }
         }
 
-        for (const [key, value] of Object.entries(contextFields.value)) {
+        for (const [key, value] of Object.entries(contextColumns.value)) {
             if (!view.value || JSON.stringify(value) !== JSON.stringify(view.value.data.context_columns?.[key]))
                 params[`ctx_${key}`] = value
         }
@@ -182,7 +182,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             limit: limit.value,
             from: from.value,
             to: to.value,
-            context_columns: structuredClone(contextFields.value),
+            context_columns: structuredClone(contextColumns.value),
         }
 
         if (query.value) params.query = query.value
@@ -196,7 +196,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             from: from.value,
             to: to.value,
             group_by: graphGroupBy.value || '',
-            context_columns: structuredClone(contextFields.value),
+            context_columns: structuredClone(contextColumns.value),
         }
 
         if (query.value) params.query = query.value
@@ -215,7 +215,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             limit: limit.value,
             graph_group_by: graphGroupBy.value,
             show_graph: showGraph.value,
-            context_columns: contextFields.value,
+            context_columns: contextColumns.value,
         }
     })
 
@@ -281,11 +281,11 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     }
 
     function setContextColumn(column, value) {
-        _contextFields.value[column] = value
+        _contextColumns.value[column] = value
     }
 
     function setContextColumns(value) {
-        _contextFields.value = value
+        _contextColumns.value = value
     }
 
     function addQueryExpression(column, operator, value) {
@@ -338,6 +338,6 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         dataRequestParams,
         graphRequestParams,
         showGraph,
-        contextFields,
+        contextColumns,
     }
 })
