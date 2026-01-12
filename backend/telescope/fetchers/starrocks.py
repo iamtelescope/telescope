@@ -281,7 +281,6 @@ class Fetcher(BaseFetcher):
         cls, 
         request: GraphDataRequest,
     ) -> GraphDataResponse:
-        logger.info("Fetching graph data for request: %s", request)
         if request.query:
             parser = parse(request.query)
             assert parser.root
@@ -400,7 +399,6 @@ class Fetcher(BaseFetcher):
             stat_sql += " ORDER BY t"
 
             cur = c.client.cursor()
-            logger.info("Executing stats query: %s", stat_sql)
             cur.execute(stat_sql)
             for item in cur.fetchall():
                 if group_by_value:
@@ -493,7 +491,6 @@ class Fetcher(BaseFetcher):
 
         assert request.source.conn
         with StarrocksConnect(request.source.conn.data) as c:
-            logger.info("Executing query: %s", select_query)
             selected_columns = [request.source._record_pseudo_id_column] + columns_names
             cur = c.client.cursor()
             cur.execute(select_query)
