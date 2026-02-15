@@ -3,7 +3,7 @@ _A handy tool that manages to make close what once was far_
 
 ## Introduction
 
-**Telescope** is a web application designed to provide an intuitive interface for exploring log data. It supports multiple types of sources, including [**ClickHouse**](https://github.com/ClickHouse/ClickHouse) and [**Docker**](https://www.docker.com/). Users can configure connections to their ClickHouse databases or access container logs via the Docker API. Telescope provides a unified querying experience across different source types, allowing users to filter, search, and analyze logs efficiently. While ClickHouse remains the primary backend for structured log storage, Docker support offers a convenient option for local development or ephemeral environments. Future versions may further extend source support.
+**Telescope** is a web application designed to provide an intuitive interface for exploring log data. It supports multiple types of sources, including [**ClickHouse**](https://github.com/ClickHouse/ClickHouse), [**Docker**](https://www.docker.com/), and [**Kubernetes**](https://kubernetes.io/). Users can configure connections to their ClickHouse databases, access container logs via the Docker API, or retrieve pod logs from Kubernetes clusters. Telescope provides a unified querying experience across different source types, allowing users to filter, search, and analyze logs efficiently. While ClickHouse remains the primary backend for structured log storage, Docker and Kubernetes support offers convenient options for local development, ephemeral environments, or cloud-native deployments. Future versions may further extend source support.
 
 
 ![Source data](screenshots/main.png?raw=true "Source data")
@@ -25,7 +25,7 @@ You can log in via GitHub to explore the core features of the system from an end
 ## Key Features
 
 ### 🔗 Source Management
-- Create and manage **multiple connections** to different data sources, including ClickHouse and Docker.
+- Create and manage **multiple connections** to different data sources, including ClickHouse, Docker, and Kubernetes.
 - Define which fields from a source should be used, and configure which ones are **suggested**, hidden, or support **autocompletion**.
 - Configure which users and groups have access to a source and define their **permissions**.
 
