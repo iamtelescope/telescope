@@ -6,3 +6,5 @@ backend/telescope/templates/index.html
 .DS_Store
 .idea
 **.sqlite3
+.venv/
+venv/

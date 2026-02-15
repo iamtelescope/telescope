@@ -52,8 +52,9 @@
     --p-highlight-focus-color: rgba(255, 255, 255, 0.87);
     --p-text-color: var(--p-surface-0);
     --p-text-hover-color: var(--p-surface-0);
-    --p-text-muted-color: var(--p-surface-400);
-    --p-text-hover-muted-color: var(--p-surface-300);
+    --p-text-muted-color: var(--p-surface-200);
+    --p-stepper-step-title-color: var(--p-surface-100);
+    --p-stepper-step-title-active-color: var(--p-primary-300);
 }
 
 @tailwind base;

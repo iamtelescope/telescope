@@ -210,7 +210,13 @@ const onGraphVisibilityChanged = () => {
 }
 
 const showHistogramm = computed(() => {
-    return graphData.value !== null && !graphError.value && graphValidation.value && graphValidation.value.result
+    return (
+        graphData.value !== null &&
+        graphData.value !== undefined &&
+        !graphError.value &&
+        graphValidation.value &&
+        graphValidation.value.result
+    )
 })
 
 const showSourceDataTable = computed(() => {

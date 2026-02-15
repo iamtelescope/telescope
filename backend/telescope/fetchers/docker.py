@@ -9,6 +9,7 @@ from flyql.core.exceptions import FlyqlError
 from flyql.matcher.evaluator import Evaluator
 from flyql.matcher.record import Record
 
+from telescope.constants import SOURCE_BODY_COL_NAME
 from telescope.utils import get_telescope_column
 
 from telescope.fetchers.request import (
@@ -153,10 +154,11 @@ class Fetcher(BaseFetcher):
         """Get schema without testing connection"""
         return [
             get_telescope_column("time", "datetime"),
+            get_telescope_column("severity", "string"),
             get_telescope_column("container_id", "string"),
             get_telescope_column("container_name", "string"),
             get_telescope_column("container_short_id", "string"),
-            get_telescope_column("message", "string"),
+            get_telescope_column(SOURCE_BODY_COL_NAME, "json"),
             get_telescope_column("status", "string"),
             get_telescope_column("stream", "string"),
             get_telescope_column("labels", "json"),
@@ -249,7 +251,7 @@ class Fetcher(BaseFetcher):
                                 "container_id",
                                 "container_short_id",
                                 "container_name",
-                                "message",
+                                SOURCE_BODY_COL_NAME,
                             ],
                             values=[
                                 ts,
@@ -368,7 +370,7 @@ class Fetcher(BaseFetcher):
                                 "container_id",
                                 "container_short_id",
                                 "container_name",
-                                "message",
+                                SOURCE_BODY_COL_NAME,
                             ],
                             values=[
                                 ts,
@@ -399,7 +401,7 @@ class Fetcher(BaseFetcher):
         tz,
     ):
 
-        from telescope.fetchers.graph_utils import generate_graph_from_rows
+        from telescope.fetchers.utils import generate_graph_from_rows
         from telescope.fetchers.response import DataAndGraphDataResponse
 
         rows = []
@@ -448,7 +450,7 @@ class Fetcher(BaseFetcher):
                                 "container_id",
                                 "container_short_id",
                                 "container_name",
-                                "message",
+                                SOURCE_BODY_COL_NAME,
                             ],
                             values=[
                                 ts,
@@ -469,11 +471,13 @@ class Fetcher(BaseFetcher):
                                 rows.append(row)
 
         group_by_field = request.group_by[0] if request.group_by else None
+        use_severity_grouping = not group_by_field
         graph_timestamps, graph_data, graph_total = generate_graph_from_rows(
             rows,
             request.time_from,
             request.time_to,
             group_by_field,
+            group_by_severity=use_severity_grouping,
         )
 
         rows = sorted(rows, key=lambda r: r.time["unixtime"], reverse=True)

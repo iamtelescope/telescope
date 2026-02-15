@@ -67,6 +67,10 @@ const calcRenderOptions = (type) => {
     if (type == 'column') {
         let max = 15
 
+        if (!props.stats || !props.stats.timestamps) {
+            return options
+        }
+
         let columns = props.stats.timestamps.length
         if (columns < 150) {
             columns = 150
@@ -96,7 +100,7 @@ const calcRenderOptions = (type) => {
 
 const calcPlotLines = () => {
     let plotLines = []
-    if (props.rows && props.rows.length > 1) {
+    if (props.rows && props.rows.length > 1 && props.stats) {
         let oldest_row = props.rows[props.rows.length - 1].time.unixtime
         let newest_row = props.rows[0].time.unixtime
         if (props.rows.length < props.stats.total) {
@@ -144,6 +148,11 @@ const tooltipRender = (data) => {
 }
 
 const getChartSettings = (type) => {
+    // Guard against undefined stats
+    if (!props.stats || !props.stats.data) {
+        return null
+    }
+
     let stacking = true
     if (type == 'line') {
         stacking = false

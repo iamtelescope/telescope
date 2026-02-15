@@ -6,9 +6,10 @@ from flyql.core.exceptions import FlyqlError
 from flyql.matcher.evaluator import Evaluator
 from flyql.matcher.record import Record
 
-from telescope.constants import UTC_ZONE
+from telescope.constants import UTC_ZONE, SOURCE_BODY_COL_NAME
 from telescope.utils import get_telescope_column
 from telescope.fetchers.fetcher import BaseFetcher
+import json
 from telescope.fetchers.models import Row
 from telescope.fetchers.request import DataRequest, GraphDataRequest
 from telescope.fetchers.response import (
@@ -120,6 +121,7 @@ class Fetcher(BaseFetcher):
     def get_schema(cls, data: dict):
         return [
             get_telescope_column("time", "datetime"),
+            get_telescope_column("severity", "string", autocomplete=False),
             get_telescope_column("context", "string", autocomplete=False),
             get_telescope_column("namespace", "string", autocomplete=False),
             get_telescope_column("pod", "string", autocomplete=False),
@@ -127,7 +129,7 @@ class Fetcher(BaseFetcher):
             get_telescope_column("node", "string", autocomplete=False),
             get_telescope_column("labels", "json", autocomplete=False),
             get_telescope_column("annotations", "json", autocomplete=False),
-            get_telescope_column("message", "string", autocomplete=False),
+            get_telescope_column(SOURCE_BODY_COL_NAME, "json", autocomplete=False),
             get_telescope_column("status", "string", autocomplete=False),
         ]
 
@@ -253,7 +255,7 @@ class Fetcher(BaseFetcher):
             return helper.get_deployments()
 
         else:
-            raise ValueError(f"Unsupported context field: {field}")
+            raise ValueError(f"Unsupported context column: {column}")
 
     @classmethod
     def autocomplete(cls, source, column, time_from, time_to, value):
@@ -359,7 +361,7 @@ class Fetcher(BaseFetcher):
                     "node",
                     "labels",
                     "annotations",
-                    "message",
+                    SOURCE_BODY_COL_NAME,
                     "status",
                 ],
                 values=[
@@ -403,7 +405,7 @@ class Fetcher(BaseFetcher):
 
     @classmethod
     def fetch_data_and_graph(cls, request, tz):
-        from telescope.fetchers.graph_utils import generate_graph_from_rows
+        from telescope.fetchers.utils import generate_graph_from_rows
         from telescope.fetchers.response import DataAndGraphDataResponse
         from telescope.constants import UTC_ZONE
 
@@ -527,7 +529,7 @@ class Fetcher(BaseFetcher):
                     "node",
                     "labels",
                     "annotations",
-                    "message",
+                    SOURCE_BODY_COL_NAME,
                     "status",
                 ],
                 values=[
@@ -552,11 +554,13 @@ class Fetcher(BaseFetcher):
                 all_rows.append(row)
 
         group_by_field = request.group_by[0] if request.group_by else None
+        use_severity_grouping = not group_by_field
         graph_timestamps, graph_data, graph_total = generate_graph_from_rows(
             all_rows,
             request.time_from,
             request.time_to,
             group_by_field,
+            group_by_severity=use_severity_grouping,
         )
 
         all_rows = sorted(all_rows, key=lambda r: r.time["unixtime"], reverse=True)

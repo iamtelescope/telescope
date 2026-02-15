@@ -8,10 +8,7 @@
         <table class="w-full min-w-full text-sm">
             <thead>
                 <tr>
-                    <th
-                        v-if="source.severityColumn.length != 0"
-                        class="border-b border-neutral-200 dark:border-neutral-700"
-                    ></th>
+                    <th class="border-b border-neutral-200 dark:border-neutral-700"></th>
                     <th
                         class="pl-2 pr-2 text-left border-l border-b border-neutral-200 dark:border-neutral-700 font-medium"
                     >
@@ -33,14 +30,12 @@
                     :key="row.record_id"
                     @click="handleRowClick(row)"
                 >
-                    <td
-                        v-if="source.severityColumn.length != 0"
-                        class="pl-1 pr-2 w-1 m-w-1 border-b border-neutral-200 dark:border-neutral-700"
-                    >
+                    <td class="pl-1 pr-2 w-1 m-w-1 border-b border-neutral-200 dark:border-neutral-700">
                         <div
+                            v-if="row.severity && row.severity !== ''"
                             class="rounded w-2 h-6"
                             :style="{ 'background-color': getRowColor(row) }"
-                            :title="row.data[source.severityColumn]"
+                            :title="row.severity"
                         ></div>
                     </td>
                     <td
@@ -137,7 +132,7 @@ const handleRowClick = (row) => {
 }
 
 const getRowColor = (row) => {
-    return getColor(row.data[props.source.severityColumn])
+    return getColor(row.severity)
 }
 
 const containsHtmlModifiers = (column) => {
@@ -151,16 +146,8 @@ const containsHtmlModifiers = (column) => {
 
 const getRowValue = (column, data) => {
     let value = ''
-    if (column.jsonstring) {
-        // explorer contains object
-        value = extractJsonPath(column, data)
-    } else if (column.name.includes(':')) {
-        if (Array.isArray(data[column.root_name])) {
-            const index = Number(column.name.split(':')[1])
-            value = data[column.root_name][index]
-        } else {
-            value = extractJsonPath(column, data)
-        }
+    if (column.is_segmented) {
+        value = extractSegment(column, data)
     } else {
         data = data[column.root_name]
         value = data
@@ -188,10 +175,9 @@ const getRowValueLength = (column, data) => {
     return String(value).length
 }
 
-const extractJsonPath = (column, data) => {
-    const path = column.name.split(':')
+const extractSegment = (column, data) => {
     let value = data
-    for (const key of path) {
+    for (const key of column.segments) {
         if (typeof value === 'object' && key in value) {
             value = value[key]
         } else {

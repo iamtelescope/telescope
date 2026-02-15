@@ -5,23 +5,40 @@ from flyql.columns import (
 
 
 class ParsedColumn:
-    def __init__(self, name, root_name, type, jsonstring, display_name, modifiers):
+    def __init__(
+        self,
+        name,
+        root_name,
+        type,
+        jsonstring,
+        display_name,
+        modifiers,
+        segments=None,
+        is_segmented=False,
+    ):
         self.name = name
         self.root_name = root_name
         self.type = type
         self.jsonstring = jsonstring
         self.display_name = display_name
         self.modifiers = modifiers
+        self.segments = segments
+        self.is_segmented = is_segmented
 
     def as_dict(self):
-        return {
+        result = {
             "name": self.name,
             "root_name": self.root_name,
             "type": self.type,
             "jsonstring": self.jsonstring,
             "display_name": self.display_name,
             "modifiers": self.modifiers,
+            "segments": self.segments,
+            "is_segmented": self.is_segmented,
         }
+        if self.segments:
+            result["segments"] = self.segments
+        return result
 
     def is_map(self):
         return "Map" in self.type
@@ -60,6 +77,8 @@ def parse_columns(source, text):
                 jsonstring=source_column.jsonstring,
                 display_name=display_name,
                 modifiers=flyql_col.modifiers,
+                segments=flyql_col.segments,
+                is_segmented=flyql_col.is_segmented,
             )
         )
 

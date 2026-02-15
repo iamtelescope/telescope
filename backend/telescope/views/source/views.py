@@ -1,6 +1,6 @@
 import logging
 
-from telescope.constants import UTC_ZONE
+from telescope.constants import UTC_ZONE, SOURCE_QUERY_MODE_COMBINED
 
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
@@ -463,7 +463,7 @@ class SourceDataAndGraphDataView(APIView):
         )
 
         # Only allow combined mode for sources that support it
-        if source.query_mode != "combined":
+        if source.query_mode != SOURCE_QUERY_MODE_COMBINED:
             response.mark_failed(
                 "This source does not support combined data/graph queries"
             )

@@ -13,7 +13,7 @@
         </div>
         <div class="flex flex-col gap-1">
             <div>
-                <label for="connection" class="font-medium">Connection *</label>
+                <label for="connection" class="font-medium text-lg">Connection *</label>
                 <Select
                     v-model="connection"
                     inputId="connection"
@@ -78,21 +78,21 @@
             <!-- ClickHouse specific columns -->
             <template v-if="connection?.kind === 'clickhouse'">
                 <div class="pt-2">
-                    <label for="database" class="font-medium">Database *</label>
+                    <label for="database" class="font-medium text-lg">Database *</label>
                     <InputText v-model="database" id="database" class="w-full font-mono" fluid />
                     <Message v-if="errors.database" severity="error" size="small" variant="simple" class="mt-2">
                         {{ errors.database }}
                     </Message>
                 </div>
                 <div class="pt-2">
-                    <label for="table" class="font-medium">Table *</label>
+                    <label for="table" class="font-medium text-lg">Table *</label>
                     <InputText v-model="table" id="table" class="w-full font-mono" fluid />
                     <Message v-if="errors.table" severity="error" size="small" variant="simple" class="mt-2">
                         {{ errors.table }}
                     </Message>
                 </div>
                 <div class="pt-2">
-                    <label for="settings" class="font-medium">Query Settings</label>
+                    <label for="settings" class="font-medium text-lg">Query Settings</label>
                     <Textarea
                         v-model="settings"
                         id="settings"
@@ -100,16 +100,16 @@
                         rows="3"
                         placeholder="e.g., use_query_cache = true, max_parallel_replicas = 1"
                     />
-                    <small class="text-gray-500 dark:text-gray-400 block mt-1">
+                    <Message size="small" severity="secondary" variant="simple">
                         ClickHouse SETTINGS clause (comma-separated key=value pairs)
-                    </small>
+                    </Message>
                 </div>
             </template>
 
             <!-- Kubernetes specific columns -->
             <template v-if="connection?.kind === 'kubernetes'">
                 <div class="pt-2">
-                    <label for="namespace_label_selector" class="font-medium">Namespace Label Selector</label>
+                    <label for="namespace_label_selector" class="font-medium text-lg">Namespace Label Selector</label>
                     <InputText
                         v-model="namespaceLabelSelector"
                         id="namespace_label_selector"
@@ -117,12 +117,12 @@
                         placeholder="e.g., env=prod,team=backend"
                         fluid
                     />
-                    <small class="text-gray-600 dark:text-gray-400 mt-1 block">
+                    <Message size="small" severity="secondary" variant="simple">
                         Kubernetes label selector (server-side filtering)
-                    </small>
+                    </Message>
                 </div>
                 <div class="pt-2">
-                    <label for="namespace_column_selector" class="font-medium">Namespace Field Selector</label>
+                    <label for="namespace_column_selector" class="font-medium text-lg">Namespace Field Selector</label>
                     <InputText
                         v-model="namespaceFieldSelector"
                         id="namespace_column_selector"
@@ -130,12 +130,12 @@
                         placeholder="e.g., metadata.name=default"
                         fluid
                     />
-                    <small class="text-gray-600 dark:text-gray-400 mt-1 block">
-                        Kubernetes column selector (server-side filtering)
-                    </small>
+                    <Message size="small" severity="secondary" variant="simple">
+                        Kubernetes field selector (server-side filtering)
+                    </Message>
                 </div>
                 <div class="pt-2">
-                    <label for="namespace" class="font-medium">Namespace FlyQL Filter</label>
+                    <label for="namespace" class="font-medium text-lg">Namespace FlyQL Filter</label>
                     <InputText
                         v-model="namespace"
                         id="namespace"
@@ -143,9 +143,9 @@
                         placeholder='e.g., name contains "prod" or name == "default"'
                         fluid
                     />
-                    <small class="text-gray-600 dark:text-gray-400 mt-1 block">
+                    <Message size="small" severity="secondary" variant="simple">
                         FlyQL query for client-side filtering. Available columns: name, status
-                    </small>
+                    </Message>
                 </div>
             </template>
         </div>

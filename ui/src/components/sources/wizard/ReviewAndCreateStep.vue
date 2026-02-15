@@ -65,7 +65,7 @@
                 </DataRow>
             </ContentBlock>
 
-            <ContentBlock header="Column Mapping">
+            <ContentBlock header="Settings">
                 <DataRow name="Time Column" :value="columnMappingData.time_column" :copy="false" />
                 <DataRow name="Date Column" :copy="false">
                     <EmptyValue :value="columnMappingData.date_column || ''" />
@@ -95,26 +95,26 @@
                         <div class="flex items-center gap-4 flex-shrink-0">
                             <div class="flex items-center gap-1.5">
                                 <ToggleSwitch :modelValue="column.autocomplete" readonly class="scale-75" />
-                                <span class="text-xs text-gray-600 dark:text-gray-400">Autocomplete</span>
+                                <span class="text-gray-600 dark:text-gray-300">Autocomplete</span>
                             </div>
                             <div class="flex items-center gap-1.5">
                                 <ToggleSwitch :modelValue="column.suggest" readonly class="scale-75" />
-                                <span class="text-xs text-gray-600 dark:text-gray-400">Suggest</span>
+                                <span class="text-gray-600 dark:text-gray-300">Suggest</span>
                             </div>
                             <div class="flex items-center gap-1.5">
                                 <ToggleSwitch :modelValue="column.jsonstring" readonly class="scale-75" />
-                                <span class="text-xs text-gray-600 dark:text-gray-400">JSON</span>
+                                <span class="text-gray-600 dark:text-gray-300">JSON</span>
                             </div>
                             <div class="flex items-center gap-1.5">
                                 <ToggleSwitch :modelValue="column.group_by" readonly class="scale-75" />
-                                <span class="text-xs text-gray-600 dark:text-gray-400">GROUP BY</span>
+                                <span class="text-gray-600 dark:text-gray-300">GROUP BY</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </ContentBlock>
         </div>
-        <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <div v-else class="text-center py-8 text-gray-500 dark:text-gray-300">
             <p>Please complete the previous steps first.</p>
         </div>
     </div>

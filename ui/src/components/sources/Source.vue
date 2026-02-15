@@ -101,6 +101,69 @@
                                         </DataRow>
                                     </ContentBlock>
 
+                                    <ContentBlock
+                                        header="Severity rules"
+                                        class="mt-3"
+                                        v-if="
+                                            source.severityRules &&
+                                            (source.severityRules.extract?.length > 0 ||
+                                                source.severityRules.remap?.length > 0)
+                                        "
+                                    >
+                                        <DataRow
+                                            name="Extraction"
+                                            :copy="false"
+                                            :showBorder="!!source.severityRules?.remap?.length"
+                                            v-if="source.severityRules?.extract?.length > 0"
+                                        >
+                                            <div class="flex flex-col gap-2">
+                                                <div
+                                                    v-for="(rule, index) in source.severityRules.extract"
+                                                    :key="index"
+                                                    class="flex items-center gap-2"
+                                                >
+                                                    <span class="text-gray-500 font-mono">#{{ index + 1 }}</span>
+                                                    <code class="font-mono" v-if="rule.type === 'json'">
+                                                        {{ JSON.stringify(rule.path || []) }}
+                                                    </code>
+                                                    <code class="font-mono" v-if="rule.type === 'regex'">
+                                                        {{ rule.case_insensitive ? 'i/' : '/' }}{{ rule.pattern }}/{{
+                                                            rule.group ?? 0
+                                                        }}
+                                                    </code>
+                                                </div>
+                                            </div>
+                                        </DataRow>
+                                        <DataRow
+                                            name="Remapping"
+                                            :copy="false"
+                                            :showBorder="false"
+                                            v-if="source.severityRules?.remap?.length > 0"
+                                        >
+                                            <div class="flex flex-col gap-2">
+                                                <div
+                                                    v-for="(rule, index) in source.severityRules.remap"
+                                                    :key="index"
+                                                    class="flex items-center gap-2"
+                                                >
+                                                    <span class="text-gray-500 font-mono">#{{ index + 1 }}</span>
+                                                    <code class="font-mono">
+                                                        {{ rule.case_insensitive ? 'i/' : '/' }}{{ rule.pattern }}/
+                                                    </code>
+                                                    <span class="text-gray-400">→</span>
+                                                    <div class="flex items-center gap-1">
+                                                        <div
+                                                            v-if="getColor(rule.value)"
+                                                            class="w-3 h-3 rounded"
+                                                            :style="{ backgroundColor: getColor(rule.value) }"
+                                                        ></div>
+                                                        <code class="font-mono">{{ rule.value }}</code>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </DataRow>
+                                    </ContentBlock>
+
                                     <ContentBlock header="Data" class="mt-3" v-if="source.kind === 'clickhouse'">
                                         <DataRow name="Database" :copy="false">
                                             <span class="font-mono">{{ source.data?.database || '&ndash;' }}</span>
@@ -115,7 +178,7 @@
                                         </DataRow>
                                     </ContentBlock>
                                     <ContentBlock header="Data" class="mt-3" v-if="source.kind === 'kubernetes'">
-                                        <DataRow name="Namespace Label Selector" :copy="false" :showBorder="false">
+                                        <DataRow name="Namespace Label Selector" :copy="false">
                                             <code
                                                 v-if="source.data?.namespace_label_selector"
                                                 class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded"
@@ -124,7 +187,7 @@
                                             </code>
                                             <span v-else>&ndash;</span>
                                         </DataRow>
-                                        <DataRow name="Namespace Field Selector" :copy="false" :showBorder="false">
+                                        <DataRow name="Namespace Field Selector" :copy="false">
                                             <code
                                                 v-if="source.data?.namespace_field_selector"
                                                 class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded"
@@ -267,8 +330,11 @@ import Tab from 'primevue/tab'
 import TabPanels from 'primevue/tabpanels'
 import TabPanel from 'primevue/tabpanel'
 import Button from 'primevue/button'
+import Tag from 'primevue/tag'
 
 import { Database } from 'lucide-vue-next'
+
+import { getColor } from '@/utils/colors.js'
 
 import Content from '@/components/common/Content.vue'
 import DataView from '@/components/common/DataView.vue'

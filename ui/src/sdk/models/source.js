@@ -12,6 +12,7 @@ class Source {
         this.timeColumn = data.time_column
         this.dateColumn = data.date_column
         this.severityColumn = data.severity_column
+        this.severityRules = data.severity_rules || null
         this.columns = data.columns
         this.contextColumns = data.context_columns
         this.defaultChosenColumns = data.default_chosen_columns

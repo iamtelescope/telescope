@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from datetime import datetime
 
-from telescope.fetchers.graph_utils import generate_graph_from_rows
+from telescope.fetchers.utils import generate_graph_from_rows
 from telescope.fetchers.models import Row
 from telescope.columns import ParsedColumn
 from telescope.constants import UTC_ZONE

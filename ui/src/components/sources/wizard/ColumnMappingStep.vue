@@ -253,12 +253,12 @@ watch(
             if (!defaultChosenFields.value && columns && columns.length > 0) {
                 let defaultColumns = []
                 if (isDocker) {
-                    defaultColumns = ['stream', 'container_name', 'message']
+                    defaultColumns = ['stream', 'container_name', 'body']
                 } else if (isKubernetes) {
-                    defaultColumns = ['pod_name', 'node_name', 'message']
+                    defaultColumns = ['pod_name', 'node_name', 'body']
                 }
                 const existingColumns = columns.map((f) => f.name)
-                const validDefaults = defaultColumns.filter((column) => existingColumns.includescolumn)
+                const validDefaults = defaultColumns.filter((column) => existingColumns.includes(column))
 
                 if (validDefaults.length > 0) {
                     defaultChosenFields.value = validDefaults.join(', ')

@@ -37,7 +37,7 @@
 
             <InlineError v-model="autoloadError" :dismissable="true" class="mb-3" />
 
-            <div v-if="columns.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+            <div v-if="columns.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-300">
                 <p>No columns configured yet. Click "Add Column" to start.</p>
             </div>
 
@@ -57,6 +57,7 @@
                 </template>
                 <template #actions>
                     <Button
+                        v-if="!isDocker && !isKubernetes"
                         icon="pi pi-trash"
                         severity="danger"
                         size="small"
@@ -81,6 +82,7 @@
                                     class="w-full"
                                     fluid
                                     :invalid="!column.name && showValidation"
+                                    :disabled="isDocker || isKubernetes"
                                 />
                                 <label :for="'name-' + index">Name *</label>
                             </FloatLabel>

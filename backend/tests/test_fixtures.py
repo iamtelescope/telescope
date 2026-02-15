@@ -144,10 +144,10 @@ def test_kubernetes_source_fixture(kubernetes_source):
     assert kubernetes_source.columns["time"]["type"] == "datetime"
     assert kubernetes_source.columns["time"]["autocomplete"] is False
     assert kubernetes_source.columns["time"]["suggest"] is True
-    assert kubernetes_source.columns["message"]["type"] == "string"
-    assert kubernetes_source.columns["message"]["display_name"] == "IsMessage"
-    assert kubernetes_source.columns["message"]["autocomplete"] is False
-    assert kubernetes_source.columns["message"]["jsonstring"] is True
+    assert kubernetes_source.columns["body"]["type"] == "json"
+    assert kubernetes_source.columns["body"]["display_name"] == "IsMessage"
+    assert kubernetes_source.columns["body"]["autocomplete"] is False
+    assert kubernetes_source.columns["body"]["jsonstring"] is False
     assert isinstance(kubernetes_source.permissions, set)
     for key, value in kubernetes_source._columns.items():
         assert isinstance(key, str)

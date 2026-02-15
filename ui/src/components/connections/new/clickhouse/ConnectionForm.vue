@@ -4,7 +4,7 @@
             <!-- Host and Port -->
             <div class="flex flex-row">
                 <div class="flex flex-col w-full mr-2">
-                    <label for="connection_host" class="font-medium block mb-1">Host *</label>
+                    <label for="connection_host" class="font-medium text-lg block mb-1">Host *</label>
                     <InputText
                         id="connection_host"
                         v-model="connectionData.host"
@@ -15,7 +15,7 @@
                     <ErrorText :text="connectionFieldErrors.host" />
                 </div>
                 <div class="flex flex-col w-full">
-                    <label for="connection_port" class="font-medium block mb-1">Port *</label>
+                    <label for="connection_port" class="font-medium text-lg block mb-1">Port *</label>
                     <InputNumber
                         id="connection_port"
                         :useGrouping="false"
@@ -32,7 +32,7 @@
 
             <div class="flex flex-row">
                 <div class="flex flex-col w-full mr-2">
-                    <label for="connection_user" class="font-medium block mb-1">User *</label>
+                    <label for="connection_user" class="font-medium text-lg block mb-1">User *</label>
                     <InputText
                         id="connection_user"
                         v-model="connectionData.user"
@@ -43,7 +43,7 @@
                     <ErrorText :text="connectionFieldErrors.user" />
                 </div>
                 <div class="flex flex-col w-full">
-                    <label for="connection_password" class="font-medium block mb-1">Password</label>
+                    <label for="connection_password" class="font-medium text-lg block mb-1">Password</label>
                     <Password
                         v-model="connectionData.password"
                         toggleMask
@@ -90,7 +90,7 @@
                     </div>
 
                     <div>
-                        <label for="connection_ca_cert" class="font-medium block mb-1">CA Certificate</label>
+                        <label for="connection_ca_cert" class="font-medium text-lg block mb-1">CA Certificate</label>
                         <Textarea
                             id="connection_ca_cert"
                             v-model="connectionData.ca_cert"
@@ -103,7 +103,7 @@
                     </div>
 
                     <div>
-                        <label for="connection_client_cert" class="font-medium block mb-1">Client Certificate</label>
+                        <label for="connection_client_cert" class="font-medium text-lg block mb-1">Client Certificate</label>
                         <Textarea
                             id="connection_client_cert"
                             v-model="connectionData.client_cert"
@@ -116,7 +116,7 @@
                     </div>
 
                     <div>
-                        <label for="connection_client_cert_key" class="font-medium block mb-1"
+                        <label for="connection_client_cert_key" class="font-medium text-lg block mb-1"
                             >Client Certificate Key</label
                         >
                         <Textarea
@@ -131,7 +131,7 @@
                     </div>
 
                     <div>
-                        <label for="connection_server_host_name" class="font-medium block mb-1">Server Host Name</label>
+                        <label for="connection_server_host_name" class="font-medium text-lg block mb-1">Server Host Name</label>
                         <InputText
                             id="connection_server_host_name"
                             v-model="connectionData.server_host_name"
@@ -143,7 +143,7 @@
                     </div>
 
                     <div>
-                        <label for="connection_tls_mode" class="font-medium block mb-1">TLS Mode</label>
+                        <label for="connection_tls_mode" class="font-medium text-lg block mb-1">TLS Mode</label>
                         <Select
                             id="connection_tls_mode"
                             v-model="connectionData.tls_mode"

@@ -472,12 +472,12 @@ def get_kubernetes_source_data(slug):
                 "group_by": True,
                 "values": [],
             },
-            "message": {
+            "body": {
                 "display_name": "IsMessage",
-                "type": "string",
+                "type": "json",
                 "autocomplete": False,
                 "suggest": True,
-                "jsonstring": True,
+                "jsonstring": False,
                 "group_by": True,
                 "values": [],
             },
@@ -492,7 +492,7 @@ def get_kubernetes_source_data(slug):
             },
         },
         "support_raw_query": False,
-        "default_chosen_columns": "pod, message",
+        "default_chosen_columns": "pod, body",
         "connection": {
             "kubeconfig": "apiVersion: v1\nclusters:\n- cluster:\n    server: https://kubernetes.default.svc\n  name: default\ncontexts:\n- context:\n    cluster: default\n    user: default\n  name: default\ncurrent-context: default\nkind: Config\npreferences: {}\nusers:\n- name: default\n  user:\n    token: test-token\n",
             "kubeconfig_hash": "test-hash-123",

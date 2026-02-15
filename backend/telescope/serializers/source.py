@@ -5,13 +5,17 @@ from rest_framework import serializers
 
 from telescope.models import Source, SavedView, SourceRoleBinding
 from telescope.utils import parse_time
-from telescope.columns import ParsedColumn, parse_columns
+from telescope.columns import ParsedColumn, parse_columns, ColumnsParserError
 from telescope.fetchers import get_fetchers
 from telescope.rbac.manager import RBACManager
 
 rbac_manager = RBACManager()
 from telescope.rbac import permissions
-from telescope.constants import VIEW_SCOPE_SOURCE, VIEW_SCOPE_PERSONAL
+from telescope.constants import (
+    VIEW_SCOPE_SOURCE,
+    VIEW_SCOPE_PERSONAL,
+    SOURCE_CAPABILITIES,
+)
 
 
 from telescope.utils import (
@@ -19,6 +23,8 @@ from telescope.utils import (
     ALLOWED_DATE_COLUMN_TYPES,
     convert_to_base_ch,
 )
+
+import re
 
 SUPPORTED_KINDS = {"clickhouse", "docker", "kubernetes"}
 
@@ -35,6 +41,9 @@ class SerializeErrorMsg:
     DATE_COLUMN_TYPE = "Column should have a valid date-related type"
     RAW_QUERIES_PERMISSIONS = "Insufficient permissions to use source raw queries"
     RAW_QUERIES_NOT_SUPPORTED = "This source does not support raw queries"
+    SEVERITY_RULES_NOT_SUPPORTED = (
+        "Severity rules are only supported for docker and kubernetes sources"
+    )
 
 
 class SourceAdminSerializer(serializers.ModelSerializer):
@@ -214,6 +223,7 @@ class SourceContextColumnDataSerializer(serializers.Serializer):
 
 class NewBaseSourceSerializer(serializers.Serializer):
     SEVERITY_COLUMN_NAME = "severity_column"
+    SEVERITY_RULES_NAME = "severity_rules"
     TIME_COLUMN_NAME = "time_column"
     DATE_COLUMN_NAME = "date_column"
     DEFAULT_CHOSEN_COLUMNS_NAME = "default_chosen_columns"
@@ -225,6 +235,9 @@ class NewBaseSourceSerializer(serializers.Serializer):
     time_column = serializers.CharField()
     date_column = serializers.CharField(allow_blank=True, allow_null=True, default="")
     severity_column = serializers.CharField(allow_blank=True, allow_null=True)
+    severity_rules = serializers.JSONField(
+        allow_null=True, required=False, default=None
+    )
     default_chosen_columns = serializers.ListField(child=serializers.CharField())
     execute_query_on_open = serializers.BooleanField(default=True)
     columns = serializers.DictField(child=SourceColumnSerializer())
@@ -308,6 +321,111 @@ class NewBaseSourceSerializer(serializers.Serializer):
 
         return errors
 
+    def validate_severity_rules_structure(self, severity_rules):
+        """Validate severity_rules JSON structure and patterns."""
+        errors = []
+
+        if not isinstance(severity_rules, dict):
+            return ["Severity rules must be a JSON object"]
+
+        extract = severity_rules.get("extract", [])
+
+        if extract and not isinstance(extract, list):
+            errors.append("'extract' must be a list of rules")
+            return errors
+
+        for idx, rule in enumerate(extract):
+            if not isinstance(rule, dict):
+                errors.append(f"Rule {idx}: must be a JSON object")
+                continue
+
+            rule_type = rule.get("type")
+            if rule_type not in ["json", "regex"]:
+                errors.append(f"Rule {idx}: type must be 'json' or 'regex'")
+                continue
+
+            if rule_type == "json":
+                path = rule.get("path")
+                if path is None:
+                    errors.append(f"Rule {idx}: JSON rule must have 'path' field")
+                elif not isinstance(path, list):
+                    errors.append(f"Rule {idx}: JSON 'path' must be a list")
+                elif len(path) == 0:
+                    errors.append(f"Rule {idx}: JSON 'path' must not be empty")
+
+            elif rule_type == "regex":
+                pattern = rule.get("pattern")
+                if not pattern:
+                    errors.append(f"Rule {idx}: Regex rule must have 'pattern' field")
+                else:
+                    try:
+                        re.compile(pattern)
+                    except re.error as e:
+                        errors.append(
+                            f"Rule {idx}: Invalid regex pattern '{pattern}': {str(e)}"
+                        )
+
+                group = rule.get("group")
+                if group is not None and (not isinstance(group, int) or group < 0):
+                    errors.append(f"Rule {idx}: 'group' must be a non-negative integer")
+
+        remap = severity_rules.get("remap")
+        if remap is not None:
+            if not isinstance(remap, list):
+                errors.append("'remap' must be a list of remap rules")
+            else:
+                for idx, remap_rule in enumerate(remap):
+                    if not isinstance(remap_rule, dict):
+                        errors.append(f"Remap rule {idx}: must be a JSON object")
+                        continue
+
+                    pattern = remap_rule.get("pattern")
+                    value = remap_rule.get("value")
+                    case_insensitive = remap_rule.get("case_insensitive")
+
+                    if not pattern:
+                        errors.append(f"Remap rule {idx}: must have 'pattern' field")
+                    else:
+                        try:
+                            re.compile(pattern)
+                        except re.error as e:
+                            errors.append(
+                                f"Remap rule {idx}: Invalid regex pattern '{pattern}': {str(e)}"
+                            )
+
+                    if not value:
+                        errors.append(f"Remap rule {idx}: must have 'value' field")
+
+                    if case_insensitive is not None and not isinstance(
+                        case_insensitive, bool
+                    ):
+                        errors.append(
+                            f"Remap rule {idx}: 'case_insensitive' must be a boolean"
+                        )
+
+        return errors
+
+    def type_validate_severity_rules(self, data, source_kind):
+        """Validate severity_rules based on source kind."""
+        errors = {}
+        severity_rules = data.get(self.SEVERITY_RULES_NAME)
+
+        if not severity_rules:
+            return errors
+
+        capabilities = SOURCE_CAPABILITIES.get(source_kind, {})
+        if not capabilities.get("severity_rules", False):
+            errors[self.SEVERITY_RULES_NAME] = (
+                SerializeErrorMsg.SEVERITY_RULES_NOT_SUPPORTED
+            )
+            return errors
+
+        validation_errors = self.validate_severity_rules_structure(severity_rules)
+        if validation_errors:
+            errors[self.SEVERITY_RULES_NAME] = validation_errors
+
+        return errors
+
     def validate(self, data):
         errors = {}
         errors.update(self.type_validate_severity_column(data))
@@ -365,10 +483,36 @@ class KubernetesSourceDataSerializer(serializers.Serializer):
 class NewDockerSourceSerializer(NewBaseSourceSerializer):
     data = DockerSourceDataSerializer(required=False, default=dict)
 
+    def validate(self, data):
+        errors = {}
+        errors.update(self.type_validate_severity_column(data))
+        errors.update(self.type_validate_time_column(data))
+        errors.update(self.type_validate_date_column(data))
+        errors.update(self.type_validate_default_chosen_columns(data))
+        errors.update(self.type_validate_severity_rules(data, "docker"))
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return data
+
 
 class NewKubernetesSourceSerializer(NewBaseSourceSerializer):
     data = KubernetesSourceDataSerializer(required=False, default=dict)
     execute_query_on_open = serializers.BooleanField(default=False)
+
+    def validate(self, data):
+        errors = {}
+        errors.update(self.type_validate_severity_column(data))
+        errors.update(self.type_validate_time_column(data))
+        errors.update(self.type_validate_date_column(data))
+        errors.update(self.type_validate_default_chosen_columns(data))
+        errors.update(self.type_validate_severity_rules(data, "kubernetes"))
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return data
 
 
 class UpdateDockerSourceSerializer(NewDockerSourceSerializer):
@@ -393,6 +537,24 @@ class UpdateKubernetesSourceSerializer(NewKubernetesSourceSerializer):
 
 class NewClickhouseSourceSerializer(NewBaseSourceSerializer):
     data = ClickhouseSourceDataSerializer(required=True)
+
+    def validate(self, data):
+        errors = {}
+        errors.update(self.type_validate_severity_column(data))
+        errors.update(self.type_validate_time_column(data))
+        errors.update(self.type_validate_date_column(data))
+        errors.update(self.type_validate_default_chosen_columns(data))
+
+        # Explicitly reject severity_rules for ClickHouse
+        if data.get(self.SEVERITY_RULES_NAME):
+            errors[self.SEVERITY_RULES_NAME] = (
+                SerializeErrorMsg.SEVERITY_RULES_NOT_SUPPORTED
+            )
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return data
 
 
 class UpdateClickhouseSourceSerializer(NewClickhouseSourceSerializer):

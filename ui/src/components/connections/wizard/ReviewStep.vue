@@ -102,7 +102,7 @@
                     <DataRow name="Matched Contexts" :copy="false" :showBorder="false">
                         <div v-if="testResult && testResult.matched_contexts">
                             <span class="font-semibold">{{ testResult.matched_contexts.length }}</span>
-                            <span v-if="testResult.total_contexts" class="text-gray-600 dark:text-gray-400">
+                            <span v-if="testResult.total_contexts" class="text-gray-600 dark:text-gray-300">
                                 of {{ testResult.total_contexts }}</span
                             >
                         </div>
@@ -111,7 +111,7 @@
                 </template>
             </ContentBlock>
         </div>
-        <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <div v-else class="text-center py-8 text-gray-500 dark:text-gray-300">
             <p>Please complete the previous steps first.</p>
         </div>
     </div>

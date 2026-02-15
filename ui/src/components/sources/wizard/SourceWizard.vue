@@ -20,8 +20,8 @@
                     <Stepper v-model:value="activeStep" linear>
                         <StepList>
                             <Step value="1">Connection</Step>
-                            <Step value="2">Columns Setup</Step>
-                            <Step value="3">Column Mapping</Step>
+                            <Step value="2">Columns</Step>
+                            <Step value="3">Settings</Step>
                             <Step value="4">Naming</Step>
                             <Step value="5">{{ source ? 'Review & Save' : 'Review & Create' }}</Step>
                         </StepList>
@@ -45,7 +45,16 @@
                             </StepPanel>
 
                             <StepPanel v-slot="{ activateCallback }" value="3">
+                                <DockerKubernetesColumnMappingStep
+                                    v-if="isDockerOrKubernetesSource"
+                                    v-model="columnMappingData"
+                                    :columnsSetupData="columnsSetupData"
+                                    :connectionData="connectionData"
+                                    @prev="activateCallback('2')"
+                                    @next="activateCallback('4')"
+                                />
                                 <ColumnMappingStep
+                                    v-else
                                     v-model="columnMappingData"
                                     :columnsSetupData="columnsSetupData"
                                     :connectionData="connectionData"
@@ -64,7 +73,7 @@
                             </StepPanel>
 
                             <StepPanel v-slot="{ activateCallback }" value="5">
-                                <Step3
+                                <ReviewAndCreateStep
                                     v-model="step3Data"
                                     :basicInfo="basicInfo"
                                     :connectionData="connectionData"
@@ -99,8 +108,10 @@ import BasicInfoStep from '@/components/sources/wizard/BasicInfoStep.vue'
 import ConnectionStep from '@/components/sources/wizard/ConnectionStep.vue'
 import ColumnsSetupStep from '@/components/sources/wizard/ColumnsSetupStep.vue'
 import ColumnMappingStep from '@/components/sources/wizard/ColumnMappingStep.vue'
-import Step3 from '@/components/sources/wizard/Step3.vue'
+import DockerKubernetesColumnMappingStep from '@/components/sources/wizard/DockerKubernetesColumnMappingStep.vue'
+import ReviewAndCreateStep from '@/components/sources/wizard/ReviewAndCreateStep.vue'
 import { SourceService } from '@/sdk/services/source'
+import { computed } from 'vue'
 
 const props = defineProps(['source', 'connections'])
 
@@ -167,6 +178,7 @@ const getInitialColumnMappingData = () => {
             time_column: props.source.timeColumn,
             date_column: props.source.dateColumn || '',
             severity_column: props.source.severityColumn || '',
+            severity_rules: props.source.severityRules || null,
             default_chosen_columns: props.source.defaultChosenColumns || [],
             execute_query_on_open: props.source.executeQueryOnOpen ?? true,
         }
@@ -180,6 +192,12 @@ const columnsSetupData = ref(getInitialColumnsSetupData())
 const columnMappingData = ref(getInitialColumnMappingData())
 const step3Data = ref({})
 
+// Computed property to check if source is Docker or Kubernetes
+const isDockerOrKubernetesSource = computed(() => {
+    const kind = connectionData.value?.connection?.kind
+    return kind === 'docker' || kind === 'kubernetes'
+})
+
 const handleCreateSource = async (onComplete) => {
     const data = {
         slug: basicInfo.value.slug,
@@ -188,6 +206,7 @@ const handleCreateSource = async (onComplete) => {
         time_column: columnMappingData.value.time_column,
         date_column: columnMappingData.value.date_column || '',
         severity_column: columnMappingData.value.severity_column || '',
+        severity_rules: columnMappingData.value.severity_rules || null,
         default_chosen_columns: columnMappingData.value.default_chosen_columns,
         execute_query_on_open: columnMappingData.value.execute_query_on_open ?? true,
         columns: {},
@@ -240,10 +259,20 @@ const handleCreateSource = async (onComplete) => {
 
     if (response.result) {
         if (response.validation && !response.validation.result) {
+            const errorMessages = []
+            if (response.validation.fields) {
+                for (const [field, messages] of Object.entries(response.validation.fields)) {
+                    messages.forEach((msg) => errorMessages.push(msg))
+                }
+            }
+            if (response.validation.non_field && response.validation.non_field.length > 0) {
+                errorMessages.push(...response.validation.non_field)
+            }
+
             toast.add({
                 severity: 'error',
                 summary: 'Validation Error',
-                detail: 'Please check the form for errors',
+                detail: errorMessages.join('\n') || 'Please check the form for errors',
                 life: 5000,
             })
         } else {

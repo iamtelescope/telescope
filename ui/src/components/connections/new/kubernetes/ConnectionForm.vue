@@ -14,7 +14,7 @@
             </div>
 
             <div v-if="connectionData.kubeconfig_is_local">
-                <label for="connection_kubeconfig_path" class="font-medium block mb-1"> Kubeconfig File Path * </label>
+                <label for="connection_kubeconfig_path" class="font-medium text-lg block mb-1"> Kubeconfig File Path * </label>
                 <InputText
                     id="connection_kubeconfig_path"
                     v-model="connectionData.kubeconfig"
@@ -25,14 +25,14 @@
                     @input="updateHash"
                 />
                 <ErrorText :text="connectionFieldErrors.kubeconfig" />
-                <small class="text-gray-600 mt-1 block">
+                <Message size="small" severity="secondary" variant="simple">
                     Enter the file path (e.g., /etc/kubeconfig) or home-relative path (e.g., ~/.kube/config) to your
                     kubeconfig file
-                </small>
+                </Message>
             </div>
 
             <div v-else>
-                <label for="connection_kubeconfig" class="font-medium block mb-1"> Kubeconfig Yaml Content * </label>
+                <label for="connection_kubeconfig" class="font-medium text-lg block mb-1"> Kubeconfig Yaml Content * </label>
                 <Textarea
                     id="connection_kubeconfig"
                     v-model="connectionData.kubeconfig"
@@ -44,15 +44,15 @@
                     @input="updateHash"
                 />
                 <ErrorText :text="connectionFieldErrors.kubeconfig" />
-                <small class="text-gray-600 mt-1 block">
+                <Message size="small" severity="secondary" variant="simple">
                     Paste the complete kubeconfig file content including certificates and keys and a single context
-                </small>
+                </Message>
             </div>
 
             <InputText type="hidden" v-model="connectionData.kubeconfig_hash" />
 
             <div>
-                <label for="context_filter" class="font-medium block mb-1"> Context FlyQL Filter </label>
+                <label for="context_filter" class="font-medium text-lg block mb-1"> Context FlyQL Filter </label>
                 <InputText
                     id="context_filter"
                     v-model="connectionData.context_filter"
@@ -62,14 +62,14 @@
                     class="font-mono text-sm"
                 />
                 <ErrorText :text="connectionFieldErrors.context_filter" />
-                <small class="text-gray-600 mt-1 block">
+                <Message size="small" severity="secondary" variant="simple">
                     Optional FlyQL query to filter available contexts from kubeconfig. Leave empty to use all contexts.
                     Available columns: name, cluster, user, namespace
-                </small>
+                </Message>
             </div>
 
             <div>
-                <label for="max_concurrent_requests" class="font-medium block mb-1"> Max Concurrent Requests </label>
+                <label for="max_concurrent_requests" class="font-medium text-lg block mb-1"> Max Concurrent Requests </label>
                 <InputNumber
                     id="max_concurrent_requests"
                     v-model="connectionData.max_concurrent_requests"
@@ -80,10 +80,10 @@
                     :invalid="hasError('max_concurrent_requests')"
                 />
                 <ErrorText :text="connectionFieldErrors.max_concurrent_requests" />
-                <small class="text-gray-600 mt-1 block">
+                <Message size="small" severity="secondary" variant="simple">
                     Maximum number of concurrent requests for parallel log fetching from single context. Lower values
                     reduce load on the Kubernetes API server.
-                </small>
+                </Message>
             </div>
         </div>
     </ContentBlock>

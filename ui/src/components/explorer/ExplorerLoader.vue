@@ -21,7 +21,7 @@
         </div>
 
         <!-- Context columns skeleton -->
-        <div class="flex flex-wrap items-end gap-2 mb-2 pt-2">
+        <div class="flex flex-wrap items-end gap-2 mb-2">
             <Skeleton width="180px" height="2.5rem" borderRadius="6px" />
             <Skeleton width="200px" height="2.5rem" borderRadius="6px" />
             <Skeleton class="flex-1 min-w-[150px]" height="2.5rem" borderRadius="6px" />

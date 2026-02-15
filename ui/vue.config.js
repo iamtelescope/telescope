@@ -10,7 +10,7 @@ module.exports = defineConfig({
     devServer: {
         client: false,
         webSocketServer: false,
-        proxy: 'http://127.0.0.1:8000',
+        proxy: process.env.VUE_APP_BACKEND_URL || 'http://127.0.0.1:8000',
         historyApiFallback: true,
     },
     configureWebpack: {

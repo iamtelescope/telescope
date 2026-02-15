@@ -1,18 +1,18 @@
 <template>
     <div
         class="flex flex-col h-full w-full overflow-y-auto border-t-4"
-        :style="{ borderColor: getColor(row.data[source.severityColumn]) }"
+        :style="{ borderColor: getColor(row.severity) }"
     >
         <div class="flex flex-col">
             <div class="p-4" v-if="source.severityColumn.length != 0">
                 <Tag
                     value="Primary"
                     :style="{
-                        backgroundColor: getColor(row.data[source.severityColumn]),
-                        color: getContrastColor(getColor(row.data[source.severityColumn])),
+                        backgroundColor: getColor(row.severity),
+                        color: getContrastColor(getColor(row.severity)),
                     }"
                     class="text-gray-900 mr-2 text-bold"
-                    >{{ source.severityColumn }}: {{ row.data[source.severityColumn] }}
+                    >{{ source.severityColumn }}: {{ row.severity }}
                 </Tag>
                 <span class="font-mono">{{ dateTimeString }}</span>
             </div>
@@ -34,7 +34,7 @@
                                         @click="
                                             updateQuery(
                                                 FlyQLOperator.EQUALS,
-                                                slotProps.data.path.join(':'),
+                                                formatPathForQuery(slotProps.data.path),
                                                 slotProps.data.value,
                                             )
                                         "
@@ -47,7 +47,7 @@
                                         @click="
                                             updateQuery(
                                                 FlyQLOperator.NOT_EQUALS,
-                                                slotProps.data.path.join(':'),
+                                                formatPathForQuery(slotProps.data.path),
                                                 slotProps.data.value,
                                             )
                                         "
@@ -55,10 +55,12 @@
                                     <span
                                         class="pr-2 cursor-pointer text-xl"
                                         :class="{
-                                            'text-blue-400': selectedColumns.includes(slotProps.data.path.join(':')),
+                                            'text-blue-400': selectedColumns.includes(
+                                                formatPathForDisplay(slotProps.data.path),
+                                            ),
                                         }"
                                     ></span>
-                                    <span class="font-mono">{{ slotProps.data.path.join(':') }}</span>
+                                    <span class="font-mono">{{ formatPathForDisplay(slotProps.data.path) }}</span>
                                 </template>
                             </Column>
                             <Column field="value" header="VALUE" sortable>
@@ -117,6 +119,21 @@ const dateTimeString = computed(() => {
 const selectedColumns = computed(() => {
     return sourceControlsStore.parsedColumns(props.source)
 })
+
+const formatPathForQuery = (pathArray) => {
+    return pathArray
+        .map((segment) => {
+            if (segment.includes('.')) {
+                return `"${segment.replace(/"/g, '\\"')}"`
+            }
+            return segment
+        })
+        .join('.')
+}
+
+const formatPathForDisplay = (pathArray) => {
+    return pathArray.join('.')
+}
 
 const updateQuery = (operator, field, value) => {
     sourceControlsStore.addQueryExpression(field, operator, value)

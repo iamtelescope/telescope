@@ -6,24 +6,24 @@
         </div>
         <div class="flex flex-col gap-1">
             <div>
-                <label for="name" class="font-medium">Name *</label>
+                <label for="name" class="font-medium text-lg">Name *</label>
                 <InputText name="name" id="name" class="w-full" fluid />
                 <Message v-if="$form.name?.invalid" severity="error" size="small" variant="simple">
                     {{ $form.name.error?.message }}
                 </Message>
             </div>
             <div class="pt-2">
-                <label for="slug" class="font-medium">Slug *</label>
+                <label for="slug" class="font-medium text-lg">Slug *</label>
                 <InputText name="slug" id="slug" class="w-full" fluid :disabled="props.isEditing" />
-                <small v-if="props.isEditing" class="text-gray-500 dark:text-gray-400 block mt-1">
+                <Message v-if="props.isEditing" size="small" severity="secondary" variant="simple">
                     Slug cannot be changed after creation
-                </small>
+                </Message>
                 <Message v-if="$form.slug?.invalid" severity="error" size="small" variant="simple">
                     {{ $form.slug.error?.message }}
                 </Message>
             </div>
             <div class="pt-2">
-                <label for="description" class="font-medium">Description</label>
+                <label for="description" class="font-medium text-lg">Description</label>
                 <InputText name="description" id="description" class="w-full" fluid />
                 <Message v-if="$form.description?.invalid" severity="error" size="small" variant="simple">
                     {{ $form.description.error?.message }}

@@ -2,7 +2,7 @@
     <ContentBlock header="Target" :collapsible="false">
         <div class="p-4 flex flex-col gap-4">
             <div>
-                <label for="connection_address" class="font-medium block mb-1">Address *</label>
+                <label for="connection_address" class="font-medium text-lg block mb-1">Address *</label>
                 <InputText
                     id="connection_address"
                     v-model="connectionData.address"

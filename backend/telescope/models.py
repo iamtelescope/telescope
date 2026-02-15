@@ -5,7 +5,15 @@ from typing import List, Dict
 from django.db import models
 from django.contrib.auth.models import User, Group
 
-from telescope.constants import VIEW_SCOPE_SOURCE, VIEW_SCOPE_PERSONAL
+from telescope.constants import (
+    VIEW_SCOPE_SOURCE,
+    VIEW_SCOPE_PERSONAL,
+    SOURCE_CAPABILITIES,
+    SOURCE_BODY_COL_NAME,
+    SOURCE_QUERY_MODE_SEPARATE,
+    SOURCE_QUERY_MODE_COMBINED,
+    SOURCE_SEVERITY_COL_NAME,
+)
 
 logger = logging.getLogger("telescope.models")
 
@@ -64,6 +72,7 @@ class Source(models.Model):
     date_column = models.CharField(max_length=128)
     uniq_column = models.CharField(max_length=128)
     severity_column = models.CharField(max_length=128)
+    severity_rules = models.JSONField(null=True, blank=True, default=None)
     columns = models.JSONField()
     modifiers = models.JSONField()
     default_chosen_columns = models.JSONField()
@@ -72,7 +81,7 @@ class Source(models.Model):
     context_columns = models.JSONField()
     conn = models.ForeignKey(Connection, on_delete=models.SET_NULL, null=True)
     data = models.JSONField(default=dict, blank=True)
-    query_mode = models.CharField(max_length=16, default="separate")
+    query_mode = models.CharField(max_length=16, default=SOURCE_QUERY_MODE_SEPARATE)
 
     def __init__(self, *args, **kwargs):
         super(Source, self).__init__(*args, **kwargs)
@@ -84,18 +93,39 @@ class Source(models.Model):
     def __repr__(self):
         return str(self)
 
+    def has_capability(self, capability: str) -> bool:
+        """
+        Check if this source has a specific capability based on its kind.
+
+        Args:
+            capability: The capability to check (e.g., SOURCE_CAPABILITY_SEVERITY_RULES)
+
+        Returns:
+            True if the source kind supports this capability, False otherwise
+        """
+        capabilities = SOURCE_CAPABILITIES.get(self.kind, {})
+        return capabilities.get(capability, False)
+
     @classmethod
     def create(cls, kind, data):
         data["context_columns"] = {}
         data["support_raw_query"] = True
-        query_mode = "separate"  # Default for ClickHouse
+        query_mode = SOURCE_QUERY_MODE_SEPARATE
 
         if kind == "docker":
             data["support_raw_query"] = False
             data["context_columns"] = {
                 "container": {},
             }
-            query_mode = "combined"  # Docker uses combined mode
+            if "default_chosen_columns" not in data:
+                data["default_chosen_columns"] = [
+                    "stream",
+                    "container_name",
+                    SOURCE_BODY_COL_NAME,
+                ]
+            if "severity_column" not in data:
+                data["severity_column"] = SOURCE_SEVERITY_COL_NAME
+            query_mode = SOURCE_QUERY_MODE_COMBINED
 
         if kind == "kubernetes":
             data["support_raw_query"] = False
@@ -106,7 +136,15 @@ class Source(models.Model):
                 "pods_field_selector": "",
                 "pods_flyql_filter": "",
             }
-            query_mode = "combined"  # Kubernetes uses combined mode
+            if "default_chosen_columns" not in data:
+                data["default_chosen_columns"] = [
+                    "pod",
+                    "container",
+                    SOURCE_BODY_COL_NAME,
+                ]
+            if "severity_column" not in data:
+                data["severity_column"] = SOURCE_SEVERITY_COL_NAME
+            query_mode = SOURCE_QUERY_MODE_COMBINED
 
         return Source.objects.create(
             kind=kind, query_mode=query_mode, **data, modifiers=[]

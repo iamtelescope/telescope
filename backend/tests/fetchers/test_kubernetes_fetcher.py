@@ -132,14 +132,15 @@ def test_connection_success(mock_config_helper, mock_kube_helper):
 
     assert resp.reachability["result"] is True
     assert resp.schema["result"] is True
-    assert len(resp.schema["data"]) == 10
+    assert len(resp.schema["data"]) == 11  # Added severity column
 
 
 def test_get_schema():
     schema = Fetcher.get_schema({})
-    assert len(schema) == 10
+    assert len(schema) == 11  # Added severity column
     column_names = [column["name"] for column in schema]
     assert "time" in column_names
+    assert "severity" in column_names  # New severity column
     assert "context" in column_names
     assert "namespace" in column_names
     assert "pod" in column_names
@@ -147,7 +148,7 @@ def test_get_schema():
     assert "node" in column_names
     assert "labels" in column_names
     assert "annotations" in column_names
-    assert "message" in column_names
+    assert "body" in column_names
     assert "status" in column_names
 
 
@@ -301,8 +302,8 @@ def test_fetch_data_simple(mock_config_helper, mock_kube_helper, kubernetes_sour
     response = Fetcher.fetch_data(request, tz=UTC_ZONE)
 
     assert len(response.rows) == 2
-    assert response.rows[0].data["message"] == "Log line 2"
-    assert response.rows[1].data["message"] == "Log line 1"
+    assert response.rows[0].data["body"] == {"message": "Log line 2"}
+    assert response.rows[1].data["body"] == {"message": "Log line 1"}
     assert response.rows[0].data["context"] == "context1"
     assert response.rows[0].data["namespace"] == "default"
     assert response.rows[0].data["pod"] == "pod1"
@@ -354,7 +355,7 @@ def test_fetch_data_with_query(mock_config_helper, mock_kube_helper, kubernetes_
 
     request = DataRequest(
         source=kubernetes_source,
-        query='message ~ "Error"',
+        query='pod = "pod1"',
         raw_query="",
         time_from=1000000000000,
         time_to=2000000000000,
@@ -363,8 +364,8 @@ def test_fetch_data_with_query(mock_config_helper, mock_kube_helper, kubernetes_
     )
     response = Fetcher.fetch_data(request, tz=UTC_ZONE)
 
-    assert len(response.rows) == 1
-    assert "Error" in response.rows[0].data["message"]
+    assert len(response.rows) == 2  # Both entries match pod1
+    assert response.rows[0].data["pod"] == "pod1"
 
 
 @patch("telescope.fetchers.kubernetes.fetcher.KubeHelper")
