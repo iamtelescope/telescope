@@ -103,7 +103,9 @@
                     </div>
 
                     <div>
-                        <label for="connection_client_cert" class="font-medium text-lg block mb-1">Client Certificate</label>
+                        <label for="connection_client_cert" class="font-medium text-lg block mb-1"
+                            >Client Certificate</label
+                        >
                         <Textarea
                             id="connection_client_cert"
                             v-model="connectionData.client_cert"
@@ -131,7 +133,9 @@
                     </div>
 
                     <div>
-                        <label for="connection_server_host_name" class="font-medium text-lg block mb-1">Server Host Name</label>
+                        <label for="connection_server_host_name" class="font-medium text-lg block mb-1"
+                            >Server Host Name</label
+                        >
                         <InputText
                             id="connection_server_host_name"
                             v-model="connectionData.server_host_name"

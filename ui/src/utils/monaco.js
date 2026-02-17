@@ -96,13 +96,13 @@ function initMonacoSetup() {
     monaco.languages.register({ id: 'columns' })
     monaco.languages.setLanguageConfiguration('columns', {
         autoClosingPairs: [{ open: '(', close: ')' }],
-        wordPattern: /([^\`\~\!\$\^\&\*\(\)\=\+\[\{\]\}\\\|\;\:\'\"\,\<\>\/\s]+)/g
+        wordPattern: /([^\`\~\!\$\^\&\*\(\)\=\+\[\{\]\}\\\|\;\:\'\"\,\<\>\/\s]+)/g,
     })
     monaco.languages.registerDocumentSemanticTokensProvider('columns', getColumnsTokenProvider())
 
     monaco.languages.register({ id: 'flyql' })
     monaco.languages.setLanguageConfiguration('flyql', {
-        wordPattern: /([^\`\~\!\$\^\&\*\(\)\=\+\[\{\]\}\\\|\;\:\'\"\,\<\>\/\s]+)/g
+        wordPattern: /([^\`\~\!\$\^\&\*\(\)\=\+\[\{\]\}\\\|\;\:\'\"\,\<\>\/\s]+)/g,
     })
     monaco.languages.registerDocumentSemanticTokensProvider('flyql', getFlyqlTokenProvider())
 }
