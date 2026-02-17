@@ -180,7 +180,7 @@ const extractSegment = (column, data) => {
     const extractPath = (path, obj) => {
         if (!path) return obj
         if (typeof obj !== 'object' || obj === null) return undefined
-        
+
         let candidate = path
         while (candidate) {
             if (candidate in obj) {
@@ -194,7 +194,7 @@ const extractSegment = (column, data) => {
         }
         return undefined
     }
-    
+
     return extractPath(column.name, data)
 }
 </script>
