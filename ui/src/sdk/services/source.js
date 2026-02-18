@@ -32,7 +32,7 @@ class SourceService {
         return response
     }
     getSourceSchema = async (kind, data) => {
-        let response = await http.Post(`/ui/v1/services/getSourceSchema/${kind}`, data)
+        let response = await http.Post(`ui/v1/services/getSourceSchema/${kind}`, data)
         return response
     }
     grantSourceRole = async (sourceSlug, user, group, role) => {
