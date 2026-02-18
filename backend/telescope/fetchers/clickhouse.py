@@ -406,7 +406,14 @@ class Fetcher(BaseFetcher):
         else:
             filter_clause = "true"
 
-        order_by_clause = f"ORDER BY {request.source.time_column} DESC"
+        effective_order_by = (
+            request.order_by_expression
+            or request.source.order_by_expression
+        )
+        if effective_order_by:
+            order_by_clause = f"ORDER BY {effective_order_by}"
+        else:
+            order_by_clause = f"ORDER BY {request.source.time_column} DESC"
         raw_where_clause = request.raw_query or "true"
 
         time_clause = build_time_clause(

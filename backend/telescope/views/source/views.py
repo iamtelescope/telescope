@@ -329,6 +329,7 @@ class SourceDataView(APIView):
                 time_to=serializer.validated_data["to"],
                 limit=serializer.validated_data["limit"],
                 context_columns=serializer.validated_data["context_columns"],
+                order_by_expression=serializer.validated_data.get("order_by_expression", ""),
             )
             data_response = fetcher.fetch_data(
                 data_request,
