@@ -170,7 +170,7 @@ class Fetcher(BaseFetcher):
             return False, err.message
         else:
             try:
-                to_sql(parser.root, fields=flyql_clickhouse_columns(source._columns))
+                to_sql(parser.root, columns=flyql_clickhouse_columns(source._columns))
             except FlyqlError as err:
                 return False, err.message
 
@@ -266,7 +266,7 @@ class Fetcher(BaseFetcher):
         if request.query:
             parser = parse(request.query)
             filter_clause = to_sql(
-                parser.root, fields=flyql_clickhouse_columns(request.source._columns)
+                parser.root, columns=flyql_clickhouse_columns(request.source._columns)
             )
         else:
             filter_clause = "true"
@@ -401,7 +401,7 @@ class Fetcher(BaseFetcher):
         if request.query:
             parser = parse(request.query)
             filter_clause = to_sql(
-                parser.root, fields=flyql_clickhouse_columns(request.source._columns)
+                parser.root, columns=flyql_clickhouse_columns(request.source._columns)
             )
         else:
             filter_clause = "true"
