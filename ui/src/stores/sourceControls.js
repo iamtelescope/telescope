@@ -58,7 +58,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _to.value = tryToMillis(route.query.to ?? viewParam?.data?.to ?? 'now')
         _timeZone.value = route.query.timeZone ?? viewParam?.data?.timeZone ?? localTimeZone
         _graphGroupBy.value = route.query.graph_group_by ?? viewParam?.data?.graph_group_by ?? source.severityColumn
-        _orderByExpression.value = route.query.order_by_expression ?? source.orderByExpression ?? ''
+        _orderByExpression.value = route.query.order_by_expression ?? viewParam?.data?.order_by_expression ?? source.orderByExpression ?? ''
         _showGraph.value = true
         _limit.value = 50
         _contextColumns.value = {}
@@ -225,6 +225,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             graph_group_by: graphGroupBy.value,
             show_graph: showGraph.value,
             context_columns: contextColumns.value,
+            order_by_expression: orderByExpression.value,
         }
     })
 
@@ -242,6 +243,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setGraphGroupBy(value.data.graph_group_by)
         setShowGraph(value.data.show_graph)
         setContextColumns(value.data.context_columns)
+        setOrderByExpression(value.data.order_by_expression || '')
 
         // Some old views might not have this
         if (value.data.timeZone) setTimeZone(value.data.timeZone)

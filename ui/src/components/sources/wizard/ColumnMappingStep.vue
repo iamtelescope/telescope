@@ -76,16 +76,18 @@
                         {{ defaultChosenFieldsError }}
                     </Message>
                 </div>
-            </div>
-            <div v-if="!isDockerConnection && !isKubernetesConnection">
-                <label for="orderByExpression" class="font-medium block mb-2">Order By expression</label>
-                <InputText
-                    id="orderByExpression"
-                    v-model="orderByExpression"
-                    class="w-full"
-                    fluid
-                    placeholder="e.g. timestamp DESC, id ASC"
-                />
+
+                <div>
+                    <label for="orderByExpression" class="font-medium block mb-2">Order By expression</label>
+                    <InputText
+                            id="orderByExpression"
+                            v-model="orderByExpression"
+                            class="w-full"
+                            fluid
+                            placeholder="e.g. timestamp DESC, id ASC"
+                            :disabled="isDockerConnection || isKubernetesConnection"
+                        />
+                </div>
             </div>
             <div class="pt-3 flex items-center gap-2">
                 <ToggleSwitch v-model="executeQueryOnOpen" inputId="executeQueryOnOpen" />
