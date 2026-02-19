@@ -181,6 +181,7 @@ const getInitialColumnMappingData = () => {
             severity_rules: props.source.severityRules || null,
             default_chosen_columns: props.source.defaultChosenColumns || [],
             execute_query_on_open: props.source.executeQueryOnOpen ?? true,
+            order_by_expression: props.source.orderByExpression || '',
         }
     }
     return {}
@@ -209,6 +210,7 @@ const handleCreateSource = async (onComplete) => {
         severity_rules: columnMappingData.value.severity_rules || null,
         default_chosen_columns: columnMappingData.value.default_chosen_columns,
         execute_query_on_open: columnMappingData.value.execute_query_on_open ?? true,
+        order_by_expression: columnMappingData.value.order_by_expression || '',
         columns: {},
         kind: connectionData.value.connection.kind,
         connection: {

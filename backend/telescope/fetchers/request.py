@@ -29,6 +29,7 @@ class DataRequest:
         time_to: int,
         limit: int,
         context_columns: Dict,
+        order_by_expression: str = "",
     ):
         self.source = source
         self.query = query
@@ -37,6 +38,7 @@ class DataRequest:
         self.time_to = time_to
         self.limit = limit
         self.context_columns = context_columns
+        self.order_by_expression = order_by_expression
 
 
 class GraphDataRequest:

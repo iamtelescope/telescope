@@ -24,6 +24,7 @@ class Source {
         this.data = data.data || {} // Source-specific data (e.g., database, table for ClickHouse)
         this.permissions = getDefaultIfUndefined(data.permissions, [])
         this.queryMode = data.query_mode || 'separate'
+        this.orderByExpression = data.order_by_expression || ''
     }
     isEditable() {
         if (this.permissions.includes('edit')) {
