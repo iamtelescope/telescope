@@ -69,6 +69,17 @@
                 />
             </template>
 
+            <!-- StarRocks specific columns -->
+            <template v-if="selectedKind === 'starrocks'">
+                <StarRocksConnectionStep
+                    ref="starrocksFormRef"
+                    :connection="connection"
+                    :validationErrors="{}"
+                    @connectionDataValidated="onConnectionDataChanged"
+                    @connectionDataChanged="onConnectionDataChanged"
+                />
+            </template>
+
             <!-- Docker specific columns -->
             <template v-if="selectedKind === 'docker'">
                 <DockerConnectionStep
@@ -119,6 +130,7 @@ import { ref, computed, watch } from 'vue'
 import { Button, Select } from 'primevue'
 import { useToast } from 'primevue/usetoast'
 import ClickHouseConnectionStep from '@/components/connections/new/clickhouse/ConnectionForm.vue'
+import StarRocksConnectionStep from '@/components/connections/new/starrocks/ConnectionForm.vue'
 import DockerConnectionStep from '@/components/connections/new/docker/ConnectionForm.vue'
 import KubernetesConnectionStep from '@/components/connections/new/kubernetes/ConnectionForm.vue'
 import ConnectionTestResult from '@/components/connections/new/ConnectionTestResult.vue'
@@ -139,6 +151,7 @@ const toast = useToast()
 
 const connectionKindOptions = [
     { label: 'ClickHouse', value: 'clickhouse' },
+    { label: 'StarRocks', value: 'starrocks' },
     { label: 'Docker', value: 'docker' },
     { label: 'Kubernetes', value: 'kubernetes' },
 ]
@@ -149,6 +162,7 @@ const testConnectionLoading = ref(false)
 const testResult = ref(null)
 
 const clickhouseFormRef = ref(null)
+const starrocksFormRef = ref(null)
 const dockerFormRef = ref(null)
 const kubernetesFormRef = ref(null)
 
@@ -175,6 +189,10 @@ const validateForm = () => {
     // Validate the appropriate form based on selected kind
     if (selectedKind.value === 'clickhouse' && clickhouseFormRef.value) {
         return clickhouseFormRef.value.validate()
+    }
+
+    if (selectedKind.value === 'starrocks' && starrocksFormRef.value) {
+        return starrocksFormRef.value.validate()
     }
 
     if (selectedKind.value === 'docker' && dockerFormRef.value) {

@@ -23,6 +23,7 @@ from telescope.serializers.connection import (
     ClickhouseConnectionSerializer,
     DockerConnectionSerializer,
     KubernetesConnectionSerializer,
+    StarrocksConnectionSerializer,
     ConnectionRoleSerializer,
 )
 
@@ -30,6 +31,7 @@ CONNECTION_KIND_TO_SERIALIZER = {
     "clickhouse": ClickhouseConnectionSerializer,
     "docker": DockerConnectionSerializer,
     "kubernetes": KubernetesConnectionSerializer,
+    "starrocks": StarrocksConnectionSerializer,
 }
 
 rbac_manager = RBACManager()

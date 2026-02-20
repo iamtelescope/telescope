@@ -27,6 +27,7 @@ from telescope.serializers.source import (
     ClickhouseConnectionSerializer,
     DockerConnectionSerializer,
     KubernetesConnectionSerializer,
+    StarrocksConnectionSerializer,
     SourceDataRequestSerializer,
     SourceGraphDataRequestSerializer,
     SourceDataAndGraphDataRequestSerializer,
@@ -35,6 +36,7 @@ from telescope.serializers.source import (
     GetSourceSchemaClickhouseSerializer,
     GetSourceSchemaDockerSerializer,
     GetSourceSchemaKubernetesSerializer,
+    GetSourceSchemaStarrocksSerializer,
 )
 
 logger = logging.getLogger("telescope.views.source")
@@ -43,12 +45,14 @@ CONNECTION_KIND_TO_SERIALIZER = {
     "clickhouse": ClickhouseConnectionSerializer,
     "docker": DockerConnectionSerializer,
     "kubernetes": KubernetesConnectionSerializer,
+    "starrocks": StarrocksConnectionSerializer,
 }
 
 SCHEMA_KIND_TO_SERIALIZER = {
     "clickhouse": GetSourceSchemaClickhouseSerializer,
     "docker": GetSourceSchemaDockerSerializer,
     "kubernetes": GetSourceSchemaKubernetesSerializer,
+    "starrocks": GetSourceSchemaStarrocksSerializer,
 }
 
 source_srv = SourceService()
@@ -422,6 +426,7 @@ class SourceGraphDataView(APIView):
         )
 
         if not serializer.is_valid():
+            logger.info("Graph data request serializer validation failed: %s", serializer.errors)
             response.validation["result"] = False
             response.validation["columns"] = serializer.errors
             return Response(response.as_dict())
@@ -437,6 +442,7 @@ class SourceGraphDataView(APIView):
                 group_by=serializer.validated_data["group_by"],
                 context_columns=serializer.validated_data["context_columns"],
             )
+            logger.info("Fetching graph data with request: %s", graph_data_request)
             graph_data_response = fetcher.fetch_graph_data(graph_data_request)
         except Exception as err:
             logger.exception("Unhandled error: %s", err)
@@ -578,6 +584,10 @@ class GetSourceSchemaView(APIView):
             # Build data dict with connection data + additional params
             data = dict(connection.data)
             if kind == "clickhouse":
+                data["database"] = serializer.validated_data["database"]
+                data["table"] = serializer.validated_data["table"]
+            elif kind == "starrocks":
+                data["catalog"] = serializer.validated_data["catalog"]
                 data["database"] = serializer.validated_data["database"]
                 data["table"] = serializer.validated_data["table"]
 

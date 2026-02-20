@@ -1,21 +1,21 @@
+import csv
 import os
 import logging
 import tempfile
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 import zoneinfo
 
-import clickhouse_connect
+import mysql.connector
 
 from flyql.core.parser import parse, ParserError
 from flyql.core.exceptions import FlyqlError
-from flyql.generators.clickhouse.generator import to_sql, Column
+from flyql.generators.starrocks.generator import to_sql, Column
 
 from telescope.constants import UTC_ZONE
-
-from telescope.models import SourceColumn
+from telescope.columns import ParsedColumn
+from telescope.models import Source, SourceColumn
 
 from telescope.fetchers.request import (
-    AutocompleteRequest,
     DataRequest,
     GraphDataRequest,
 )
@@ -27,14 +27,14 @@ from telescope.fetchers.response import (
 from telescope.fetchers.fetcher import BaseFetcher
 from telescope.fetchers.models import Row
 
-from telescope.utils import convert_to_base_ch, get_telescope_column
+from telescope.utils import convert_to_base_sr, get_telescope_column
 
 
-logger = logging.getLogger("telescope.fetchers.clickhouse")
+logger = logging.getLogger("telescope.fetchers.starrocks")
 
 
-SSL_CERTS_PARAMS = ["ca_cert", "client_cert", "client_cert_key"]
-OPTIONAL_SSL_PARAMS = ["server_host_name", "tls_mode"]
+SSL_CERTS_PARAMS = {"ca_cert": "ssl_ca", "client_cert": "ssl_cert", "client_cert_key": "ssl_key"}
+OPTIONAL_SSL_PARAMS = ["tls_versions"]
 
 ESCAPE_CHARS_MAP = {
     "\b": "\\b",
@@ -62,11 +62,11 @@ def escape_param(item: str) -> str:
 def build_time_clause(time_column, date_column, time_from, time_to):
     date_clause = ""
     if date_column:
-        date_clause = f"{date_column} BETWEEN toDate(fromUnixTimestamp64Milli({time_from})) and toDate(fromUnixTimestamp64Milli({time_to})) AND "
-    return f"{date_clause}`{time_column}` BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
+        date_clause = f"`{date_column}` BETWEEN date(to_datetime_ntz({time_from}, 3)) and date(to_datetime_ntz({time_to}, 3))  AND "
+    return f"{date_clause}`{time_column}` BETWEEN to_datetime_ntz({time_from}, 3) and to_datetime_ntz({time_to}, 3)"
 
 
-class ClickhouseConnect:
+class StarrocksConnect:
     def __init__(self, data: dict):
         self.data = data
         self.temp_dir = None
@@ -76,8 +76,8 @@ class ClickhouseConnect:
     @property
     def client(self):
         if self._client is None:
-            self._client = clickhouse_connect.get_client(
-                apply_server_timezone=False, **self.client_kwargs
+            self._client = mysql.connector.connect(
+               **self.client_kwargs
             )
         return self._client
 
@@ -87,21 +87,21 @@ class ClickhouseConnect:
             "port": self.data["port"],
             "user": self.data["user"],
             "password": self.data["password"],
-            "secure": self.data["ssl"],
-            "verify": self.data["verify"],
+            "ssl_disabled": not self.data["ssl"],
+            "ssl_verify_cert": self.data["verify"],
         }
-        for name in OPTIONAL_SSL_PARAMS:
-            if self.data.get(name) and self.data[name] != "":
-                client_kwargs[name] = self.data[name]
+        for config in OPTIONAL_SSL_PARAMS:
+            if self.data.get(config) and self.data[config] != "":
+                client_kwargs[config] = self.data[config]
 
         self.temp_dir = tempfile.TemporaryDirectory()
 
-        for name in SSL_CERTS_PARAMS:
-            if self.data.get(name):
-                path = os.path.join(self.temp_dir.name, f"{name}.pem")
+        for config, key in SSL_CERTS_PARAMS.items():
+            if self.data.get(config):
+                path = os.path.join(self.temp_dir.name, f"{config}.pem")
                 with open(path, "w") as fd:
-                    fd.write(self.data[name])
-                client_kwargs[name] = path
+                    fd.write(self.data[config])
+                client_kwargs[key] = path
         self.client_kwargs = client_kwargs
         return self
 
@@ -113,7 +113,7 @@ class ClickhouseConnect:
             logger.exception("error while tempdir cleanup (ignoring): %s", err)
 
 
-def flyql_clickhouse_columns(source_columns: Dict[str, SourceColumn]):
+def flyql_starrocks_columns(source_columns: Dict[str, SourceColumn]):
     return {
         column.name: Column(
             name=column.name,
@@ -163,7 +163,7 @@ class ConnectionTestResponse:
 
 class Fetcher(BaseFetcher):
     @classmethod
-    def validate_query(cls, source, query):
+    def validate_query(cls, source: Source, query: str) -> tuple[bool, Optional[str]]:
         if not query:
             return True, None
 
@@ -173,7 +173,8 @@ class Fetcher(BaseFetcher):
             return False, err.message
         else:
             try:
-                to_sql(parser.root, columns=flyql_clickhouse_columns(source._columns))
+                assert parser.root
+                to_sql(parser.root, columns=flyql_starrocks_columns(source._columns))
             except FlyqlError as err:
                 return False, err.message
 
@@ -182,9 +183,10 @@ class Fetcher(BaseFetcher):
     @classmethod
     def test_connection_ng(cls, data: dict) -> ConnectionTestResponseNg:
         response = ConnectionTestResponseNg()
-        with ClickhouseConnect(data) as c:
+        with StarrocksConnect(data) as c:
             try:
-                c.client.query("SELECT now()")
+                cur = c.client.cursor()
+                cur.execute("SELECT now()")
             except Exception as err:
                 response.error = str(err)
                 logger.exception("connection test failed: %s", err)
@@ -196,29 +198,36 @@ class Fetcher(BaseFetcher):
     def test_connection(cls, data: dict) -> ConnectionTestResponse:
         response = ConnectionTestResponse()
         target = f"`{data['database']}`.`{data['table']}`"
-        with ClickhouseConnect(data) as c:
+        with StarrocksConnect(data) as c:
             try:
-                c.client.query(f"SELECT 1 FROM {target} LIMIT 1")
+                cur = c.client.cursor()
+                cur.execute(f"SELECT 1 FROM {target} LIMIT 1")
             except Exception as err:
                 response.reachability["error"] = str(err)
                 response.schema["error"] = "Skipped due to reachability test failed"
             else:
                 response.reachability["result"] = True
                 try:
-                    result = c.client.query(
+                    cur = c.client.cursor()
+                    cur.execute(
                         "select name, type from system.columns where database = '%s' and table = '%s'"
                         % (data["database"], data["table"])
                     )
+                    row = cur.fetchone()
                 except Exception as err:
                     response.schema["error"] = str(err)
                 else:
+                    assert row
                     response.schema["result"] = True
                     response.schema["data"] = [
-                        get_telescope_column(x[0], x[1]) for x in result.result_rows
+                        get_telescope_column(row[0], row[1])
                     ]
                 try:
-                    result = c.client.query(f"SHOW CREATE TABLE {target}")
-                    response.schema["raw"] = result.result_rows[0][0]
+                    cur = c.client.cursor()
+                    cur.execute(f"SHOW CREATE TABLE {target}")
+                    row = cur.fetchone()
+                    assert row
+                    response.schema["raw"] = row[0]
                 except Exception as err:
                     logger.exception(
                         "failed to get raw table schema (ignoring): %s", err
@@ -227,49 +236,56 @@ class Fetcher(BaseFetcher):
         return response
 
     @classmethod
-    def get_schema(cls, data: dict):
+    def get_schema(cls, data: dict) -> list[dict[str, Any]]:
         """Get schema without testing connection"""
         result = None
         target = f"`{data['database']}`.`{data['table']}`"
-        with ClickhouseConnect(data) as c:
+        with StarrocksConnect(data) as c:
             # First validate the table exists - this will throw an error if it doesn't
-            c.client.query(f"SELECT 1 FROM {target} LIMIT 1")
+            cur = c.client.cursor()
+            cur.execute(f"SELECT 1 FROM {target} LIMIT 1")
+            cur.fetchall()
 
             # Now get the schema
-            result = c.client.query(
-                "select name, type from system.columns where database = '%s' and table = '%s'"
+            cur.execute(
+                "select column_name, column_type from information_schema.columns where table_schema = '%s' and table_name = '%s'"
                 % (data["database"], data["table"])
             )
-        return [get_telescope_column(x[0], x[1]) for x in result.result_rows]
+            result = cur.fetchall()
+        return [get_telescope_column(x[0], x[1]) for x in result]
 
     @classmethod
-    def autocomplete(cls, source, column, time_from, time_to, value):
+    def autocomplete(cls, source: Source, column: str, time_from, time_to, value: str) -> AutocompleteResponse:
         incomplete = False
         from_db_table = f"{source.data['database']}.{source.data['table']}"
         time_clause = build_time_clause(
             source.time_column, source.date_column, time_from, time_to
         )
-        query = f"SELECT DISTINCT {column} FROM {from_db_table} WHERE {time_clause} and {column} LIKE %(value)s ORDER BY {column} LIMIT 500"
-
+        query_hints = ""
         if source.data.get("settings"):
-            query += f" SETTINGS {source.data['settings']}"
+            query_hints = f"/*+ SET_VAR({source.data['settings']}) */"
+        query = f"SELECT {query_hints} DISTINCT `{column}` FROM {from_db_table} WHERE {time_clause} and CAST(`{column}` AS STRING) LIKE %(value)s ORDER BY `{column}` LIMIT 500"
 
-        with ClickhouseConnect(source.conn.data) as c:
-            result = c.client.query(query, {"value": f"%{value}%"})
-            items = [str(x[0]) for x in result.result_rows]
+        assert source.conn
+        with StarrocksConnect(source.conn.data) as c:
+            cur = c.client.cursor()
+            cur.execute(query, {"value": f"%{value}%"})
+            result = cur.fetchall()
+            items = [str(x[0]) for x in result]
         if len(items) >= 500:
             incomplete = True
         return AutocompleteResponse(items=items, incomplete=incomplete)
 
     @classmethod
     def fetch_graph_data(
-        cls,
+        cls, 
         request: GraphDataRequest,
-    ):
+    ) -> GraphDataResponse:
         if request.query:
             parser = parse(request.query)
+            assert parser.root
             filter_clause = to_sql(
-                parser.root, columns=flyql_clickhouse_columns(request.source._columns)
+                parser.root, columns=flyql_starrocks_columns(request.source._columns)
             )
         else:
             filter_clause = "true"
@@ -279,24 +295,41 @@ class Fetcher(BaseFetcher):
         group_by_value = ""
         group_by = request.group_by[0] if request.group_by else None
         if group_by:
-            if "." in group_by.name:
-                spl = group_by.name.split(".")
-                if group_by.jsonstring:
-                    json_path = spl[1:]
-                    json_path = ", ".join([escape_param(x) for x in json_path])
-                    group_by_value = (
-                        f"JSONExtractString({group_by.root_name}, {json_path})"
-                    )
-                elif group_by.is_map():
-                    map_key = ".".join(spl[1:])
+            assert isinstance(group_by, ParsedColumn)
+            # If the name is the root name, ignore the presence of dots as we
+            # should assume the intent is to group by the identified column rather
+            # than a nested field.
+            if "." in group_by.name and group_by.root_name != group_by.name:
+                # Use the csv module to split respecting quotes
+                spl = list(csv.reader([group_by.name], delimiter=".", quotechar="'"))[0]
+                if group_by.is_map():
+                    map_key = "']['".join(spl[1:])
                     group_by_value = f"{group_by.root_name}['{map_key}']"
                 elif group_by.is_array():
                     array_index = int(".".join(spl[1]))
                     group_by_value = f"{group_by.root_name}[{array_index}]"
+                elif group_by.is_json():
+                    json_path = spl[1:]
+                    # Starrocks documents that you double quote any json path elements
+                    # that contain dots. Let's just do it unconditionally.
+                    json_path = [f'"{x}"' for x in json_path]
+                    json_path_str = "->".join([escape_param(x) for x in json_path])
+                    group_by_value = (
+                        f"cast(`{group_by.root_name}`->{json_path_str} as string)"
+                    )
+                elif group_by.jsonstring:
+                    json_path = spl[1:]
+                    # Starrocks documents that you double quote any json path elements
+                    # that contain dots. Let's just do it unconditionally.
+                    json_path = [f'"{x}"' for x in json_path]
+                    json_path_str = "->".join([escape_param(x) for x in json_path])
+                    group_by_value = (
+                        f"cast(parse_json(`{group_by.root_name}`)->{json_path_str} as string)"
+                    )
                 else:
                     raise ValueError
             else:
-                group_by_value = f"toString({group_by.root_name})"
+                group_by_value = f"`{group_by.root_name}`"
 
         total = 0
         time_clause = build_time_clause(
@@ -306,17 +339,22 @@ class Fetcher(BaseFetcher):
             request.time_to,
         )
         from_db_table = (
-            f"{request.source.data['database']}.{request.source.data['table']}"
+            f"{request.source.data['catalog']}.{request.source.data['database']}.{request.source.data['table']}"
         )
 
-        time_column_type = convert_to_base_ch(
+        time_column_type = convert_to_base_sr(
             request.source._columns[request.source.time_column].type.lower()
         )
         to_time_zone = ""
+        # TODO: Understand what timezone handling is required
+        # if time_column_type in ["datetime", "datetime64"]:
+        #     to_time_zone = f"toTimeZone({request.source.time_column}, 'UTC')"
+        # elif time_column_type in ["timestamp", "uint64", "int64"]:
+        #     to_time_zone = f"toTimeZone(to_datetime_ntz({request.source.time_column}, 3), 'UTC')"
         if time_column_type in ["datetime", "datetime64"]:
-            to_time_zone = f"toTimeZone(`{request.source.time_column}`, 'UTC')"
+            to_time_zone = f"`{request.source.time_column}`"
         elif time_column_type in ["timestamp", "uint64", "int64"]:
-            to_time_zone = f"toTimeZone(toDateTime(`{request.source.time_column}`), 'UTC')"
+            to_time_zone = f"toTimeZone(to_datetime_ntz({request.source.time_column}, 3), 'UTC')"
 
         columns_names = sorted(request.source._columns.keys())
         columns_to_select = []
@@ -337,16 +375,20 @@ class Fetcher(BaseFetcher):
             stats_interval_seconds = round(seconds / max_points)
             if stats_interval_seconds == 0:
                 stats_interval_seconds = 1
-            stats_time_selector = f"toUnixTimestamp(toStartOfInterval({to_time_zone}, toIntervalSecond({stats_interval_seconds}))) * 1000"
+            stats_time_selector = f"unix_timestamp(time_slice({to_time_zone}, INTERVAL {stats_interval_seconds} SECOND)) * 1000"
         else:
             if time_column_type in ["datetime", "timestamp", "uint64"]:
-                stats_time_selector = f"toUnixTimestamp({to_time_zone})*1000"
+                stats_time_selector = f"unix_timestamp({to_time_zone})*1000"
             elif time_column_type == "datetime64":
-                stats_time_selector = f"toUnixTimestamp64Milli({to_time_zone})"
+                stats_time_selector = f"unix_timestamp({to_time_zone})"
 
         assert request.source.conn
-        with ClickhouseConnect(request.source.conn.data) as c:
-            stat_sql = f"SELECT {stats_time_selector} as t, COUNT() as Count"
+        with StarrocksConnect(request.source.conn.data) as c:
+            query_hints = ""
+            if request.source.data.get("settings"):
+                query_hints = f"/*+ SET_VAR({request.source.data['settings']}) */"
+
+            stat_sql = f"SELECT {query_hints} {stats_time_selector} as t, COUNT() as Count"
             if group_by_value:
                 assert group_by
                 stat_sql += f", {group_by_value} as `{group_by.name}`"
@@ -356,10 +398,9 @@ class Fetcher(BaseFetcher):
                 stat_sql += f", `{group_by.name}`"
             stat_sql += " ORDER BY t"
 
-            if request.source.data.get("settings"):
-                stat_sql += f" SETTINGS {request.source.data['settings']}"
-
-            for item in c.client.query(stat_sql).result_rows:
+            cur = c.client.cursor()
+            cur.execute(stat_sql)
+            for item in cur.fetchall():
                 if group_by_value:
                     ts, count, groupper = item
                     if not groupper:
@@ -404,8 +445,9 @@ class Fetcher(BaseFetcher):
     ):
         if request.query:
             parser = parse(request.query)
+            assert parser.root
             filter_clause = to_sql(
-                parser.root, columns=flyql_clickhouse_columns(request.source._columns)
+                parser.root, columns=flyql_starrocks_columns(request.source._columns)
             )
         else:
             filter_clause = "true"
@@ -420,36 +462,39 @@ class Fetcher(BaseFetcher):
             request.time_to,
         )
         from_db_table = (
-            f"{request.source.data['database']}.{request.source.data['table']}"
+            f"{request.source.data['catalog']}.{request.source.data['database']}.{request.source.data['table']}"
         )
 
         columns_names = sorted(request.source._columns.keys())
         columns_to_select = []
         for column in columns_names:
-            if column == request.source.time_column:
-                time_column_type = convert_to_base_ch(
-                    request.source._columns[request.source.time_column].type.lower()
-                )
-                if time_column_type in ["datetime", "datetime64"]:
-                    columns_to_select.append(f"toTimeZone(`{column}`, 'UTC')")
-                elif time_column_type in ["timestamp", "uint64", "int64"]:
-                    columns_to_select.append(f"toTimeZone(toDateTime(`{column}`), 'UTC')")
-            else:
+            # TODO: Understand what timezone handling is required
+            # if column == request.source.time_column:
+            #     time_column_type = convert_to_base_sr(
+            #         request.source._columns[request.source.time_column].type.lower()
+            #     )
+            #     if time_column_type in ["datetime", "datetime64"]:
+            #         columns_to_select.append(f"toTimeZone({column}, 'UTC')")
+            #     elif time_column_type in ["timestamp", "uint64", "int64"]:
+            #         columns_to_select.append(f"toTimeZone(toDateTime({column}), 'UTC')")
+            # else:
                 columns_to_select.append(f'`{column}`')
         columns_to_select = ", ".join(columns_to_select)
 
-        settings_clause = ""
+        query_hints = ""
         if request.source.data.get("settings"):
-            settings_clause = f" SETTINGS {request.source.data['settings']}"
+            query_hints = f"/*+ SET_VAR({request.source.data['settings']}) */"
 
-        select_query = f"SELECT generateUUIDv4(),{columns_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}{settings_clause}"
+        select_query = f"SELECT {query_hints} uuid_numeric(),{columns_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}"
 
         rows = []
 
         assert request.source.conn
-        with ClickhouseConnect(request.source.conn.data) as c:
+        with StarrocksConnect(request.source.conn.data) as c:
             selected_columns = [request.source._record_pseudo_id_column] + columns_names
-            for item in c.client.query(select_query).result_rows:
+            cur = c.client.cursor()
+            cur.execute(select_query)
+            for item in cur.fetchall():
                 rows.append(
                     Row(
                         source=request.source,

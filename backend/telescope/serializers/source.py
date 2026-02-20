@@ -1,6 +1,10 @@
 from typing import List
 from django.contrib.auth.models import User, Group
 
+from flyql.columns import (
+    ParserError as ColumnsParserError,
+)
+
 from rest_framework import serializers
 
 from telescope.models import Source, SavedView, SourceRoleBinding
@@ -26,7 +30,7 @@ from telescope.utils import (
 
 import re
 
-SUPPORTED_KINDS = {"clickhouse", "docker", "kubernetes"}
+SUPPORTED_KINDS = {"clickhouse", "starrocks", "docker", "kubernetes"}
 
 
 class SerializeErrorMsg:
@@ -147,6 +151,23 @@ class ClickhouseConnectionSerializer(serializers.Serializer):
     server_hostname = serializers.CharField(allow_blank=True)
     alt_hosts = serializers.CharField(allow_blank=True)
 
+class StarrocksConnectionSerializer(serializers.Serializer):
+    host = serializers.CharField()
+    port = serializers.IntegerField()
+    user = serializers.CharField()
+    password = serializers.CharField(allow_blank=True)
+    catalog = serializers.CharField()
+    database = serializers.CharField()
+    table = serializers.CharField()
+    ssl = serializers.BooleanField()
+    verify = serializers.BooleanField()
+    ca_cert = serializers.CharField(allow_blank=True)
+    certfile = serializers.CharField(allow_blank=True)
+    keyfile = serializers.CharField(allow_blank=True)
+    ssl_version = serializers.CharField(allow_blank=True)
+    ciphers = serializers.CharField(allow_blank=True)
+    server_hostname = serializers.CharField(allow_blank=True)
+    alt_hosts = serializers.CharField(allow_blank=True)
 
 class DockerConnectionSerializer(serializers.Serializer):
     address = serializers.CharField()
@@ -164,17 +185,17 @@ class KubernetesConnectionSerializer(serializers.Serializer):
         required=True, help_text="Whether kubeconfig is a local file path"
     )
 
-    def validate(self, data):
+    def validate(self, attrs):
         errors = {}
-        if not data.get("kubeconfig"):
+        if not attrs.get("kubeconfig"):
             errors["kubeconfig"] = "Kubeconfig content or file path is required."
-        if not data.get("kubeconfig_hash"):
+        if not attrs.get("kubeconfig_hash"):
             errors["kubeconfig_hash"] = "Kubeconfig hash is required."
-        if data.get("kubeconfig_is_local") is None:
+        if attrs.get("kubeconfig_is_local") is None:
             errors["kubeconfig_is_local"] = "Local file path indicator is required."
         if errors:
             raise serializers.ValidationError(errors)
-        return data
+        return attrs
 
 
 class GetSourceSchemaClickhouseSerializer(serializers.Serializer):
@@ -182,6 +203,11 @@ class GetSourceSchemaClickhouseSerializer(serializers.Serializer):
     database = serializers.CharField()
     table = serializers.CharField()
 
+class GetSourceSchemaStarrocksSerializer(serializers.Serializer):
+    connection_id = serializers.IntegerField()
+    catalog = serializers.CharField()
+    database = serializers.CharField()
+    table = serializers.CharField()
 
 class GetSourceSchemaDockerSerializer(serializers.Serializer):
     connection_id = serializers.IntegerField()
@@ -297,6 +323,7 @@ class NewBaseSourceSerializer(serializers.Serializer):
         if not value:
             raise ValueError(SerializeErrorMsg.EMPTY_COLUMN)
 
+        # TODO: support StarRocks time field type validation
         column_type = convert_to_base_ch(
             data["columns"].get(value, {}).get("type", "").lower()
         )
@@ -311,7 +338,7 @@ class NewBaseSourceSerializer(serializers.Serializer):
         errors = {}
 
         if value:
-
+            # TODO: support StarRocks date field type validation
             column_type = convert_to_base_ch(
                 data["columns"].get(value, {}).get("type", "").lower()
             )
@@ -426,17 +453,17 @@ class NewBaseSourceSerializer(serializers.Serializer):
 
         return errors
 
-    def validate(self, data):
+    def validate(self, attrs):
         errors = {}
-        errors.update(self.type_validate_severity_column(data))
-        errors.update(self.type_validate_time_column(data))
-        errors.update(self.type_validate_date_column(data))
-        errors.update(self.type_validate_default_chosen_columns(data))
+        errors.update(self.type_validate_severity_column(attrs))
+        errors.update(self.type_validate_time_column(attrs))
+        errors.update(self.type_validate_date_column(attrs))
+        errors.update(self.type_validate_default_chosen_columns(attrs))
 
         if errors:
             raise serializers.ValidationError(errors)
 
-        return data
+        return attrs
 
     def validate_default_chosen_columns(self, value):
         if not value:
@@ -450,6 +477,12 @@ class NewBaseSourceSerializer(serializers.Serializer):
 
 
 class ClickhouseSourceDataSerializer(serializers.Serializer):
+    database = serializers.CharField(required=True)
+    table = serializers.CharField(required=True)
+    settings = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+class StarrocksSourceDataSerializer(serializers.Serializer):
+    catalog = serializers.CharField(required=True)
     database = serializers.CharField(required=True)
     table = serializers.CharField(required=True)
     settings = serializers.CharField(required=False, allow_blank=True, allow_null=True)
@@ -567,6 +600,19 @@ class UpdateClickhouseSourceSerializer(NewClickhouseSourceSerializer):
         return value
 
 
+class NewStarrocksSourceSerializer(NewBaseSourceSerializer):
+    data = StarrocksSourceDataSerializer(required=True)
+
+
+class UpdateStarrocksSourceSerializer(NewStarrocksSourceSerializer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.required = False
+
+    def validate_slug(self, value):
+        return value
+
 class SourceCreateResponseSerializer(serializers.Serializer):
     slug = serializers.SlugField(max_length=64, required=True)
 
@@ -629,10 +675,10 @@ class SourceDataRequestSerializer(serializers.Serializer):
 
     def validate_columns(self, value: str) -> List[ParsedColumn]:
         try:
-            value = parse_columns(self.context["source"], value)
+            result = parse_columns(self.context["source"], value)
         except ColumnsParserError as err:
             raise serializers.ValidationError(err.message)
-        return value
+        return result
 
     def validate_query(self, value):
         if not value:
@@ -653,8 +699,8 @@ class SourceDataRequestSerializer(serializers.Serializer):
                     )
         return value
 
-    def validate(self, data):
-        if data.get("raw_query"):
+    def validate(self, attrs):
+        if attrs.get("raw_query"):
             if not self.context["source"].support_raw_query:
                 raise serializers.ValidationError(
                     SerializeErrorMsg.RAW_QUERIES_NOT_SUPPORTED
@@ -667,7 +713,7 @@ class SourceDataRequestSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     SerializeErrorMsg.RAW_QUERIES_PERMISSIONS
                 )
-        return data
+        return attrs
 
 
 class SourceGraphDataRequestSerializer(SourceDataRequestSerializer):
@@ -680,10 +726,10 @@ class SourceGraphDataRequestSerializer(SourceDataRequestSerializer):
 
     def validate_group_by(self, value: str) -> List[ParsedColumn]:
         try:
-            value = parse_columns(self.context["source"], value)
+            result = parse_columns(self.context["source"], value)
         except ColumnsParserError as err:
             raise serializers.ValidationError(err.message)
-        return value
+        return result
 
 
 class SourceDataAndGraphDataRequestSerializer(serializers.Serializer):
@@ -722,19 +768,19 @@ class SourceDataAndGraphDataRequestSerializer(serializers.Serializer):
 
     def validate_columns(self, value: str) -> List[ParsedColumn]:
         try:
-            value = parse_columns(self.context["source"], value)
+            result = parse_columns(self.context["source"], value)
         except ColumnsParserError as err:
             raise serializers.ValidationError(err.message)
-        return value
+        return result
 
     def validate_group_by(self, value: str) -> List[ParsedColumn]:
         if not value:
             return []
         try:
-            value = parse_columns(self.context["source"], value)
+            result = parse_columns(self.context["source"], value)
         except ColumnsParserError as err:
             raise serializers.ValidationError(err.message)
-        return value
+        return result
 
     def validate_query(self, value):
         if not value:
@@ -757,8 +803,8 @@ class SourceDataAndGraphDataRequestSerializer(serializers.Serializer):
                     )
         return value
 
-    def validate(self, data):
-        if data.get("raw_query"):
+    def validate(self, attrs):
+        if attrs.get("raw_query"):
             from telescope.rbac.manager import RBACManager
             from telescope.rbac import permissions
 
@@ -776,4 +822,4 @@ class SourceDataAndGraphDataRequestSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     SerializeErrorMsg.RAW_QUERIES_PERMISSIONS
                 )
-        return data
+        return attrs

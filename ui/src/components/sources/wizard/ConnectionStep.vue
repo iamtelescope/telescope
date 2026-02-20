@@ -106,6 +106,44 @@
                 </div>
             </template>
 
+            <!-- StarRocks specific columns -->
+            <template v-if="connection?.kind === 'starrocks'">
+                <div class="pt-2">
+                    <label for="catalog" class="font-medium">Catalog *</label>
+                    <InputText v-model="catalog" id="catalog" class="w-full font-mono" fluid />
+                    <Message v-if="errors.catalog" severity="error" size="small" variant="simple" class="mt-2">
+                        {{ errors.catalog }}
+                    </Message>
+                </div>
+                <div class="pt-2">
+                    <label for="database" class="font-medium">Database *</label>
+                    <InputText v-model="database" id="database" class="w-full font-mono" fluid />
+                    <Message v-if="errors.database" severity="error" size="small" variant="simple" class="mt-2">
+                        {{ errors.database }}
+                    </Message>
+                </div>
+                <div class="pt-2">
+                    <label for="table" class="font-medium">Table *</label>
+                    <InputText v-model="table" id="table" class="w-full font-mono" fluid />
+                    <Message v-if="errors.table" severity="error" size="small" variant="simple" class="mt-2">
+                        {{ errors.table }}
+                    </Message>
+                </div>
+                <div class="pt-2">
+                    <label for="settings" class="font-medium">Query Hints</label>
+                    <Textarea
+                        v-model="settings"
+                        id="settings"
+                        class="w-full font-mono"
+                        rows="3"
+                        placeholder="e.g., query_timeout=60, time_zone='UTC'"
+                    />
+                    <small class="text-gray-500 dark:text-gray-400 block mt-1">
+                        StarRocks query hints (comma-separated key=value pairs)
+                    </small>
+                </div>
+            </template>
+
             <!-- Kubernetes specific columns -->
             <template v-if="connection?.kind === 'kubernetes'">
                 <div class="pt-2">
@@ -192,6 +230,7 @@ const filteredConnections = computed(() => {
 
 // Initialize form columns from props
 const connection = ref(preselectedConnection.value || null)
+const catalog = ref(props.modelValue?.catalog || 'default_catalog')
 const database = ref(props.modelValue?.database || '')
 const table = ref(props.modelValue?.table || '')
 const settings = ref(props.modelValue?.settings || '')
@@ -206,6 +245,7 @@ const connectionCache = ref({})
 // Initialize cache with current values if editing
 if (preselectedConnection.value) {
     connectionCache.value[preselectedConnection.value.id] = {
+        catalog: props.modelValue?.catalog || 'default_catalog',
         database: props.modelValue?.database || '',
         table: props.modelValue?.table || '',
         settings: props.modelValue?.settings || '',
@@ -227,6 +267,7 @@ const handleConnectionChange = () => {
 
     if (cached) {
         // Restore cached values
+        catalog.value = cached.catalog || 'default_catalog'
         database.value = cached.database || ''
         table.value = cached.table || ''
         settings.value = cached.settings || ''
@@ -235,6 +276,7 @@ const handleConnectionChange = () => {
         namespace.value = cached.namespace || ''
     } else {
         // Clear columns for new connection
+        catalog.value = 'default_catalog'
         database.value = ''
         table.value = ''
         settings.value = ''
@@ -251,6 +293,7 @@ const handleConnectionChange = () => {
 watch([database, table, settings, namespaceLabelSelector, namespaceFieldSelector, namespace], () => {
     if (connection.value) {
         connectionCache.value[connection.value.id] = {
+            catalog: catalog.value,
             database: database.value,
             table: table.value,
             settings: settings.value,
@@ -287,7 +330,25 @@ const validate = () => {
         }
     }
 
+    // StarRocks specific validation
+    if (connection.value?.kind === 'starrocks') {
+        if (!catalog.value) {
+            errors.value.catalog = 'Catalog is required for StarRocks connections'
+        }
+        if (!database.value) {
+            errors.value.database = 'Database is required for StarRocks connections'
+        }
+        if (!table.value) {
+            errors.value.table = 'Table is required for StarRocks connections'
+        }
+    }
+
     // Kubernetes specific validation - all columns are optional now
+    if (connection.value?.kind === 'kubernetes') {
+        if (!namespace.value) {
+            errors.value.namespace = 'Namespace is required for Kubernetes sources'
+        }
+    }
 
     return Object.keys(errors.value).length === 0
 }
@@ -296,6 +357,7 @@ const handleNext = () => {
     if (validate()) {
         const values = {
             connection: connection.value,
+            catalog: catalog.value,
             database: database.value,
             table: table.value,
             settings: settings.value,

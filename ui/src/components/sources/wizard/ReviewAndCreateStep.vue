@@ -143,6 +143,7 @@ const isEditing = computed(() => !!props.source)
 
 const connectionKindOptions = [
     { label: 'ClickHouse', value: 'clickhouse' },
+    { label: 'StarRocks', value: 'starrocks' },
     { label: 'Docker', value: 'docker' },
     { label: 'Kubernetes', value: 'kubernetes' },
 ]

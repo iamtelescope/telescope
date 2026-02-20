@@ -82,6 +82,57 @@
                         <EmptyValue :value="targetData.data.tls_mode || ''" />
                     </DataRow>
                 </template>
+                <template v-else-if="targetData.kind === 'starrocks'">
+                    <DataRow name="Host" :value="targetData.data.host" :copy="false" />
+                    <DataRow name="Port" :value="targetData.data.port" :copy="false" />
+                    <DataRow name="User" :value="targetData.data.user" :copy="false" />
+                    <DataRow name="HTTPS" :copy="false">
+                        <span
+                            :class="
+                                targetData.data.ssl
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : 'text-red-600 dark:text-red-400'
+                            "
+                        >
+                            {{ targetData.data.ssl ? 'Enabled' : 'Disabled' }}
+                        </span>
+                    </DataRow>
+                    <DataRow v-if="targetData.data.ssl" name="Verify" :copy="false">
+                        <span
+                            :class="
+                                targetData.data.verify
+                                    ? 'text-green-600 dark:text-green-400'
+                                    : 'text-red-600 dark:text-red-400'
+                            "
+                        >
+                            {{ targetData.data.verify ? 'Yes' : 'No' }}
+                        </span>
+                    </DataRow>
+                    <DataRow v-if="targetData.data.ssl" name="CA Certificate" :copy="false">
+                        <pre v-if="targetData.data.ca_cert" class="text-xs whitespace-pre-wrap break-words">{{
+                            targetData.data.ca_cert
+                        }}</pre>
+                        <EmptyValue v-else value="" />
+                    </DataRow>
+                    <DataRow v-if="targetData.data.ssl" name="Client Certificate" :copy="false">
+                        <pre v-if="targetData.data.client_cert" class="text-xs whitespace-pre-wrap break-words">{{
+                            targetData.data.client_cert
+                        }}</pre>
+                        <EmptyValue v-else value="" />
+                    </DataRow>
+                    <DataRow v-if="targetData.data.ssl" name="Client Certificate Key" :copy="false">
+                        <pre v-if="targetData.data.client_cert_key" class="text-xs whitespace-pre-wrap break-words">{{
+                            targetData.data.client_cert_key
+                        }}</pre>
+                        <EmptyValue v-else value="" />
+                    </DataRow>
+                    <DataRow v-if="targetData.data.ssl" name="Server Host Name" :copy="false">
+                        <EmptyValue :value="targetData.data.server_host_name || ''" />
+                    </DataRow>
+                    <DataRow v-if="targetData.data.ssl" name="TLS Mode" :copy="false" :showBorder="false">
+                        <EmptyValue :value="targetData.data.tls_mode || ''" />
+                    </DataRow>
+                </template>
                 <template v-else-if="targetData.kind === 'docker'">
                     <DataRow name="Address" :value="targetData.data.address" :copy="false" :showBorder="false" />
                 </template>
@@ -133,6 +184,7 @@ const isEditing = computed(() => !!props.connection)
 
 const connectionKindOptions = [
     { label: 'ClickHouse', value: 'clickhouse' },
+    { label: 'StarRocks', value: 'starrocks' },
     { label: 'Docker', value: 'docker' },
     { label: 'Kubernetes', value: 'kubernetes' },
 ]

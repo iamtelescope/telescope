@@ -174,6 +174,81 @@
                                             </template>
                                         </template>
 
+                                        <template v-else-if="connection?.kind === 'starrocks'">
+                                            <DataRow name="Host" :value="connection.data.host" :copy="false" />
+                                            <DataRow name="Port" :value="connection.data.port" :copy="false" />
+                                            <DataRow name="User" :value="connection.data.user" :copy="false" />
+                                            <DataRow name="HTTPS" :copy="false">
+                                                <span
+                                                    :class="
+                                                        connection.data.ssl
+                                                            ? 'text-green-600 dark:text-green-400'
+                                                            : 'text-red-600 dark:text-red-400'
+                                                    "
+                                                >
+                                                    {{ connection.data.ssl ? 'Enabled' : 'Disabled' }}
+                                                </span>
+                                            </DataRow>
+                                            <template v-if="connection.data.ssl">
+                                                <DataRow name="Verify" :copy="false">
+                                                    <span
+                                                        :class="
+                                                            connection.data.verify
+                                                                ? 'text-green-600 dark:text-green-400'
+                                                                : 'text-red-600 dark:text-red-400'
+                                                        "
+                                                    >
+                                                        {{ connection.data.verify ? 'Enabled' : 'Disabled' }}
+                                                    </span>
+                                                </DataRow>
+                                                <DataRow name="CA Certificate" :copy="false">
+                                                    <pre
+                                                        v-if="connection.data.ca_cert"
+                                                        class="text-xs whitespace-pre-wrap break-words"
+                                                        >{{ connection.data.ca_cert }}</pre
+                                                    >
+                                                    <EmptyValue
+                                                        v-else
+                                                        :value="connection.data.ca_cert"
+                                                        :isDark="isDark"
+                                                    />
+                                                </DataRow>
+                                                <DataRow name="Client Certificate" :copy="false">
+                                                    <pre
+                                                        v-if="connection.data.client_cert"
+                                                        class="text-xs whitespace-pre-wrap break-words"
+                                                        >{{ connection.data.client_cert }}</pre
+                                                    >
+                                                    <EmptyValue
+                                                        v-else
+                                                        :value="connection.data.client_cert"
+                                                        :isDark="isDark"
+                                                    />
+                                                </DataRow>
+                                                <DataRow name="Client Certificate Key" :copy="false">
+                                                    <pre
+                                                        v-if="connection.data.client_cert_key"
+                                                        class="text-xs whitespace-pre-wrap break-words"
+                                                        >{{ connection.data.client_cert_key }}</pre
+                                                    >
+                                                    <EmptyValue
+                                                        v-else
+                                                        :value="connection.data.client_cert_key"
+                                                        :isDark="isDark"
+                                                    />
+                                                </DataRow>
+                                                <DataRow name="Server Host Name" :copy="false">
+                                                    <EmptyValue
+                                                        :value="connection.data.server_host_name"
+                                                        :isDark="isDark"
+                                                    />
+                                                </DataRow>
+                                                <DataRow name="TLS Mode" :copy="false" :showBorder="false">
+                                                    <EmptyValue :value="connection.data.tls_mode" :isDark="isDark" />
+                                                </DataRow>
+                                            </template>
+                                        </template>
+
                                         <template v-else-if="connection?.kind === 'docker'">
                                             <DataRow
                                                 name="Address"
