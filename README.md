@@ -14,7 +14,7 @@ _A handy tool that manages to make close what once was far_
 
 :speech_balloon: **[Telegram](https://t.me/+CGnCz48GF8xmY2Yy)**
 
-:whale:	**[Run locally using Docker](https://iamtelescope.github.io/telescope/docs/setup/quickstart.html)**
+:whale:	**[Run locally using Docker](https://docs.iamtelescope.net/#quickstart)**
 
 ## 🚀 Live installation
 An live instance is available at [https://demo.iamtelescope.net](https://demo.iamtelescope.net).
