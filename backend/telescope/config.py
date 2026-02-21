@@ -206,7 +206,7 @@ def get_default_config():
         },
         "frontend": {
             "github_url": "https://github.com/iamtelescope/telescope",
-            "docs_url": "https://iamtelescope.github.io/telescope/docs",
+            "docs_url": "https://docs.iamtelescope.net",
             "show_docs_url": True,
             "base_url": "",
         },
