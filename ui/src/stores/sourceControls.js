@@ -28,6 +28,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const _limit = ref(null)
     const _contextColumns = ref(null)
     const _view = ref(null)
+    const _orderByExpression = ref(null)
 
     function $reset() {
         _columns.value = null
@@ -41,6 +42,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _limit.value = null
         _contextColumns.value = null
         _view.value = null
+        _orderByExpression.value = null
     }
 
     function init(source, viewParam) {
@@ -56,6 +58,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _to.value = tryToMillis(route.query.to ?? viewParam?.data?.to ?? 'now')
         _timeZone.value = route.query.timeZone ?? viewParam?.data?.timeZone ?? localTimeZone
         _graphGroupBy.value = route.query.graph_group_by ?? viewParam?.data?.graph_group_by ?? source.severityColumn
+        _orderByExpression.value = route.query.order_by_expression ?? viewParam?.data?.order_by_expression ?? source.orderByExpression ?? ''
         _showGraph.value = true
         _limit.value = 50
         _contextColumns.value = {}
@@ -144,6 +147,10 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         return _contextColumns.value
     })
 
+    const orderByExpression = computed(() => {
+        return _orderByExpression.value
+    })
+
     const routeQuery = computed(() => {
         let params = {
             columns: columns.value,
@@ -157,6 +164,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
         if (query.value) params.query = query.value
         if (rawQuery.value) params.raw_query = rawQuery.value
+        if (orderByExpression.value) params.order_by_expression = orderByExpression.value
 
         if (view.value) {
             params.view = _view.value.slug
@@ -187,6 +195,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
         if (query.value) params.query = query.value
         if (rawQuery.value) params.raw_query = rawQuery.value
+        if (orderByExpression.value) params.order_by_expression = orderByExpression.value
 
         return params
     })
@@ -216,6 +225,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             graph_group_by: graphGroupBy.value,
             show_graph: showGraph.value,
             context_columns: contextColumns.value,
+            order_by_expression: orderByExpression.value,
         }
     })
 
@@ -233,6 +243,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setGraphGroupBy(value.data.graph_group_by)
         setShowGraph(value.data.show_graph)
         setContextColumns(value.data.context_columns)
+        setOrderByExpression(value.data.order_by_expression || '')
 
         // Some old views might not have this
         if (value.data.timeZone) setTimeZone(value.data.timeZone)
@@ -280,6 +291,10 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _showGraph.value = value
     }
 
+    function setOrderByExpression(value) {
+        _orderByExpression.value = value
+    }
+
     function setContextColumn(column, value) {
         _contextColumns.value[column] = value
     }
@@ -322,6 +337,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setTimeZone,
         setGraphGroupBy,
         setShowGraph,
+        setOrderByExpression,
         setContextColumn,
         from,
         to,
@@ -339,5 +355,6 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         graphRequestParams,
         showGraph,
         contextColumns,
+        orderByExpression,
     }
 })

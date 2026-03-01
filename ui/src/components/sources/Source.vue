@@ -96,6 +96,9 @@
                                         <DataRow name="Default chosen columns" :copy="false">
                                             {{ source.defaultChosenColumns?.join(', ') || '&ndash;' }}
                                         </DataRow>
+                                        <DataRow name="Order By expression" :copy="false">
+                                            {{ source.orderByExpression || '&ndash;' }}
+                                        </DataRow>
                                         <DataRow name="Execute query on open" :showBorder="false" :copy="false">
                                             {{ source.executeQueryOnOpen ? 'Yes' : 'No' }}
                                         </DataRow>

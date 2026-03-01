@@ -86,17 +86,30 @@
                     @columnChanged="onContextFieldChanged"
                 />
             </div>
-            <div class="mb-2">
-                <IftaLabel>
-                    <ColumnsEditor
-                        id="columns_editor"
-                        @change="onFieldsChange"
-                        :source="source"
-                        :value="sourceControlsStore.columns"
-                        @submit="handleSearch"
-                    />
-                    <label for="columns_editor">Columns selector</label>
-                </IftaLabel>
+            <div class="mb-2 flex gap-2 items-start">
+                <div class="flex-1">
+                    <IftaLabel>
+                        <ColumnsEditor
+                            id="columns_editor"
+                            @change="onFieldsChange"
+                            :source="source"
+                            :value="sourceControlsStore.columns"
+                            @submit="handleSearch"
+                        />
+                        <label for="columns_editor">Columns selector</label>
+                    </IftaLabel>
+                </div>
+                <div v-if="source.kind === 'clickhouse'" style="width: 500px; flex-shrink: 0">
+                    <IftaLabel>
+                        <OrderByEditor
+                            id="order_by_expression"
+                            @change="onOrderByExpressionChange"
+                            :value="sourceControlsStore.orderByExpression"
+                            @submit="handleSearch"
+                        />
+                        <label for="order_by_expression">Order By</label>
+                    </IftaLabel>
+                </div>
             </div>
             <div class="mb-2">
                 <IftaLabel>
@@ -140,6 +153,7 @@ import ContextColumns from '@/components/explorer/controls/ContextColumns.vue'
 import ColumnsEditor from '@/components/explorer/controls/ColumnsEditor.vue'
 import QueryEditor from '@/components/explorer/controls/QueryEditor.vue'
 import RawQueryEditor from '@/components/explorer/controls/RawQueryEditor.vue'
+import OrderByEditor from '@/components/explorer/controls/OrderByEditor.vue'
 import SavedViews from '@/components/explorer/controls/saved_views/SavedViews.vue'
 import { getLimits } from '@/utils/limits.js'
 
@@ -186,6 +200,10 @@ const onEnableRawQueryEditorChange = (value) => {
 
 const onRawQueryChange = (value) => {
     sourceControlsStore.setRawQuery(value)
+}
+
+const onOrderByExpressionChange = (value) => {
+    sourceControlsStore.setOrderByExpression(value)
 }
 
 const onContextFieldChanged = (params) => {

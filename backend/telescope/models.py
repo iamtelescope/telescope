@@ -82,6 +82,7 @@ class Source(models.Model):
     conn = models.ForeignKey(Connection, on_delete=models.SET_NULL, null=True)
     data = models.JSONField(default=dict, blank=True)
     query_mode = models.CharField(max_length=16, default=SOURCE_QUERY_MODE_SEPARATE)
+    order_by_expression = models.CharField(max_length=512, blank=True, default="")
 
     def __init__(self, *args, **kwargs):
         super(Source, self).__init__(*args, **kwargs)

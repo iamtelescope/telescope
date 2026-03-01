@@ -240,6 +240,7 @@ class NewBaseSourceSerializer(serializers.Serializer):
     )
     default_chosen_columns = serializers.ListField(child=serializers.CharField())
     execute_query_on_open = serializers.BooleanField(default=True)
+    order_by_expression = serializers.CharField(allow_blank=True, default="")
     columns = serializers.DictField(child=SourceColumnSerializer())
     connection = serializers.JSONField()
 
@@ -604,6 +605,7 @@ class SourceDataRequestSerializer(serializers.Serializer):
     columns = serializers.CharField()
     query = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     raw_query = serializers.CharField(allow_blank=True, allow_null=True, required=False)
+    order_by_expression = serializers.CharField(allow_blank=True, required=False, default="")
     _from = serializers.CharField()
     to = serializers.CharField()
     limit = serializers.IntegerField()

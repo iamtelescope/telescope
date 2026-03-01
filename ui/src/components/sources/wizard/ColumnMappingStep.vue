@@ -76,6 +76,18 @@
                         {{ defaultChosenFieldsError }}
                     </Message>
                 </div>
+
+                <div>
+                    <label for="orderByExpression" class="font-medium block mb-2">Order By expression</label>
+                    <InputText
+                            id="orderByExpression"
+                            v-model="orderByExpression"
+                            class="w-full"
+                            fluid
+                            placeholder="e.g. timestamp DESC, id ASC"
+                            :disabled="isDockerConnection || isKubernetesConnection"
+                        />
+                </div>
             </div>
             <div class="pt-3 flex items-center gap-2">
                 <ToggleSwitch v-model="executeQueryOnOpen" inputId="executeQueryOnOpen" />
@@ -97,6 +109,7 @@ const timeField = ref(props.modelValue?.time_column || '')
 const dateField = ref(props.modelValue?.date_column || '')
 const severityField = ref(props.modelValue?.severity_column || '')
 const executeQueryOnOpen = ref(props.modelValue?.execute_query_on_open ?? true)
+const orderByExpression = ref(props.modelValue?.order_by_expression || '')
 
 // Convert array to comma-separated string if needed
 const getInitialDefaultChosenFields = () => {
@@ -219,17 +232,19 @@ const handleNext = () => {
         severity_column: severityField.value,
         default_chosen_columns: defaultChosenFields.value,
         execute_query_on_open: executeQueryOnOpen.value,
+        order_by_expression: orderByExpression.value,
     })
     emit('next')
 }
 
-watch([timeField, dateField, severityField, defaultChosenFields, executeQueryOnOpen], () => {
+watch([timeField, dateField, severityField, defaultChosenFields, executeQueryOnOpen, orderByExpression], () => {
     emit('update:modelValue', {
         time_column: timeField.value,
         date_column: dateField.value,
         severity_column: severityField.value,
         default_chosen_columns: defaultChosenFields.value,
         execute_query_on_open: executeQueryOnOpen.value,
+        order_by_expression: orderByExpression.value,
     })
 })
 
