@@ -25,7 +25,6 @@ from telescope.fetchers.response import (
 from telescope.fetchers.fetcher import BaseFetcher
 from telescope.fetchers.models import Row, UTC_ZONE
 
-
 logger = logging.getLogger("telescope.fetchers.docker")
 
 

@@ -287,13 +287,17 @@ class SourceDataAutocompleteView(APIView):
             response.validation["columns"] = serializer.errors
             return Response(response.as_dict())
         fetcher = get_fetchers()[source.kind]
-        autocomplete_response = fetcher.autocomplete(
-            source=source,
-            column=serializer.validated_data["column"],
-            time_from=serializer.validated_data["from"],
-            time_to=serializer.validated_data["to"],
-            value=serializer.validated_data["value"],
-        )
+        try:
+            autocomplete_response = fetcher.autocomplete(
+                source=source,
+                column=serializer.validated_data["column"],
+                time_from=serializer.validated_data["from"],
+                time_to=serializer.validated_data["to"],
+                value=serializer.validated_data["value"],
+            )
+        except ValueError as err:
+            response.mark_failed(str(err))
+            return Response(response.as_dict())
         response.data["items"] = autocomplete_response.items
         response.data["incomplete"] = autocomplete_response.incomplete
         return Response(response.as_dict())
