@@ -5,7 +5,6 @@ from rest_framework.response import Response
 from telescope.services.connection import ConnectionService
 from telescope.auth.token import TokenAuth
 
-
 connection_srv = ConnectionService()
 
 

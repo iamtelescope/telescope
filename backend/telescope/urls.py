@@ -11,7 +11,6 @@ import telescope.api.source.views as source_api
 import telescope.api.connection.views as connection_api
 import telescope.api.stub as stub_api
 
-
 urlpatterns = [
     path("login", auth.LoginView.as_view(), name="login"),
     path("login/<str:secret_path>", auth.LocalLoginView.as_view(), name="local_login"),

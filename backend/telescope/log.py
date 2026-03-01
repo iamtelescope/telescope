@@ -2,7 +2,6 @@ import os
 import json
 import logging
 
-
 DEFAULT_FORMAT = (
     "%(asctime)s\t"
     "%(process)-6d\t"

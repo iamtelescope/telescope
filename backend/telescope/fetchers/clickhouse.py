@@ -26,7 +26,6 @@ from telescope.fetchers.models import Row
 
 from telescope.utils import convert_to_base_ch, get_telescope_column
 
-
 logger = logging.getLogger("telescope.fetchers.clickhouse")
 
 
@@ -241,6 +240,8 @@ class Fetcher(BaseFetcher):
 
     @classmethod
     def autocomplete(cls, source, column, time_from, time_to, value):
+        if column not in source._columns:
+            raise ValueError(f"Invalid column: {column!r}")
         incomplete = False
         from_db_table = f"{source.data['database']}.{source.data['table']}"
         time_clause = build_time_clause(

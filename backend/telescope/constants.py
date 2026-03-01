@@ -1,6 +1,5 @@
 import zoneinfo
 
-
 VIEW_SCOPE_PERSONAL = "personal"
 VIEW_SCOPE_SOURCE = "source"
 VIEW_KIND_SOURCE = "source"
