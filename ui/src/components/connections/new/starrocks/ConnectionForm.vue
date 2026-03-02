@@ -57,7 +57,7 @@
                 </div>
             </div>
 
-            <ContentBlock header="HTTPS/TLS Configuration" :collapsible="false" class="mt-4">
+            <ContentBlock header="TLS Configuration" :collapsible="false" class="mt-4">
                 <template #actions>
                     <div class="flex items-center gap-6">
                         <div class="flex items-center" v-if="connectionData.ssl">
@@ -69,7 +69,7 @@
                             />
                         </div>
                         <div class="flex items-center">
-                            <label for="connection_ssl" class="mr-2 font-medium">HTTPS enabled</label>
+                            <label for="connection_ssl" class="mr-2 font-medium">TLS enabled</label>
                             <ToggleSwitch
                                 id="connection_ssl"
                                 v-model="connectionData.ssl"

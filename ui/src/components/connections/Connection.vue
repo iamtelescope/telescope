@@ -178,7 +178,7 @@
                                             <DataRow name="Host" :value="connection.data.host" :copy="false" />
                                             <DataRow name="Port" :value="connection.data.port" :copy="false" />
                                             <DataRow name="User" :value="connection.data.user" :copy="false" />
-                                            <DataRow name="HTTPS" :copy="false">
+                                            <DataRow name="TLS" :copy="false">
                                                 <span
                                                     :class="
                                                         connection.data.ssl
