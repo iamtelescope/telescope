@@ -216,8 +216,8 @@ const connectionTestErrors = ref([])
 
 const connectionData = reactive({
     host: props.connection?.data?.host || 'localhost',
-    port: props.connection?.data?.port || 8123,
-    user: props.connection?.data?.user || 'default',
+    port: props.connection?.data?.port || 9030,
+    user: props.connection?.data?.user || 'root',
     password: props.connection?.data?.password || '',
     ssl: props.connection?.data?.ssl !== undefined ? props.connection?.data?.ssl : false,
     verify: props.connection?.data?.verify || true,
