@@ -249,6 +249,7 @@ const sourceFilters = ref({
 const availableKinds = [
     { label: 'Docker', value: 'docker' },
     { label: 'ClickHouse', value: 'clickhouse' },
+    { label: 'StarRocks', value: 'starrocks' },
     { label: 'Kubernetes', value: 'kubernetes' },
 ]
 

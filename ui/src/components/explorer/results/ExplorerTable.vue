@@ -176,14 +176,25 @@ const getRowValueLength = (column, data) => {
 }
 
 const extractSegment = (column, data) => {
-    let value = data
-    for (const key of column.segments) {
-        if (typeof value === 'object' && key in value) {
-            value = value[key]
-        } else {
-            return undefined
+    // Helper function to recursively extract path with dot-aware key matching
+    const extractPath = (path, obj) => {
+        if (!path) return obj
+        if (typeof obj !== 'object' || obj === null) return undefined
+
+        let candidate = path
+        while (candidate) {
+            if (candidate in obj) {
+                const remainingPath = path.substring(candidate.length + 1)
+                return extractPath(remainingPath, obj[candidate])
+            }
+            // Remove the last dot-separated suffix
+            const lastDot = candidate.lastIndexOf('.')
+            if (lastDot === -1) break
+            candidate = candidate.substring(0, lastDot)
         }
+        return undefined
     }
-    return value
+
+    return extractPath(column.name, data)
 }
 </script>

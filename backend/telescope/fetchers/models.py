@@ -1,5 +1,5 @@
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Sequence
 from zoneinfo import ZoneInfo
 
 from telescope.models import Source
@@ -22,7 +22,7 @@ class Row:
         self,
         source: Source,
         selected_columns: List[str],
-        values: List[Any],
+        values: Sequence[Any],
         tz: ZoneInfo = UTC_ZONE,
         severity: str = None,
     ):

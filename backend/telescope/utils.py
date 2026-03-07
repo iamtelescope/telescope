@@ -148,6 +148,32 @@ CLICKHOUSE_TYPES: List[str] = [
     "boolean",
 ]
 
+STARROCKS_TYPES: List[str] = [
+    "string",
+    "varchar",
+    "char",
+    "binary",
+    "varbinary",
+    "bool",
+    "boolean",
+    "int",
+    "tinyint",
+    "smallint",
+    "bigint",
+    "largeint",
+    "float",
+    "double",
+    "decimal",
+    "date",
+    "datetime",
+    "bitmap",
+    "hll",
+    "json",
+    "array",
+    "map",
+    "struct",
+]
+
 ALLOWED_TIME_COLUMN_TYPES: List[str] = [
     "datetime",
     "datetime64",
@@ -244,6 +270,15 @@ def convert_to_base_ch(full_type: str) -> str:
     """Finds the longest matching ClickHouse type in the given full type string."""
     res: str = ""
     for t in CLICKHOUSE_TYPES:
+        if t in full_type and len(t) > len(res):
+            res = t
+    return res
+
+
+def convert_to_base_sr(full_type: str) -> str:
+    """Finds the longest matching StarRocks type in the given full type string."""
+    res: str = ""
+    for t in STARROCKS_TYPES:
         if t in full_type and len(t) > len(res):
             res = t
     return res

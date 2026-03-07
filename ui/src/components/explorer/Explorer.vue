@@ -102,7 +102,7 @@ const props = defineProps(['source', 'savedView', 'contextColumnsData'])
 // Determine query mode
 const useCombinedMode = computed(() => props.source?.queryMode === 'combined')
 
-// Separate mode (ClickHouse)
+// Separate mode (ClickHouse, Starrocks)
 const {
     rows: separateRows,
     columns: separateColumns,

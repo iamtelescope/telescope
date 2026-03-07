@@ -119,6 +119,18 @@
                                 />
                                 <label :for="'type-' + index">Type *</label>
                             </FloatLabel>
+                            <FloatLabel variant="on">
+                                <Select
+                                    :inputId="'type-' + index"
+                                    v-model="column.type"
+                                    :options="columnTypes"
+                                    editable
+                                    :filter="isStarRocks"
+                                    class="w-full"
+                                    :invalid="!column.type && showValidation"
+                                />
+                                <label :for="'type-' + index">Type *</label>
+                            </FloatLabel>
                             <Message
                                 v-if="!column.type && showValidation"
                                 severity="error"
@@ -189,6 +201,10 @@ const isClickHouse = computed(() => {
     return props.connectionData?.connection?.kind === 'clickhouse'
 })
 
+const isStarRocks = computed(() => {
+    return props.connectionData?.connection?.kind === 'starrocks'
+})
+
 const isDocker = computed(() => {
     return props.connectionData?.connection?.kind === 'docker'
 })
@@ -212,6 +228,8 @@ const columnTypes = computed(() => {
     const connectionKind = props.connectionData?.connection?.kind
     if (connectionKind === 'clickhouse') {
         return FieldTypes.clickhouse || []
+    } else if (connectionKind === 'starrocks') {
+        return FieldTypes.starrocks || []
     } else if (connectionKind === 'docker') {
         return FieldTypes.docker || []
     } else if (connectionKind === 'kubernetes') {
@@ -290,6 +308,11 @@ const handleAutoloadColumns = async () => {
 
         // Add kind-specific params
         if (kind === 'clickhouse') {
+            data.database = props.connectionData.database
+            data.table = props.connectionData.table
+        }
+        if (kind === 'starrocks') {
+            data.catalog = props.connectionData.catalog
             data.database = props.connectionData.database
             data.table = props.connectionData.table
         }

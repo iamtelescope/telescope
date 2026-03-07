@@ -137,11 +137,33 @@ const clickhouseTypes = [
     'boolean',
 ]
 
+const starrocksTypes = [
+    'BIGINT',
+    'BIT',
+    'BLOB',
+    'BOOLEAN',
+    'CHAR',
+    'DATE',
+    'DATETIME',
+    'DECIMAL',
+    'DOUBLE',
+    'FLOAT',
+    'INT',
+    'LARGEINT',
+    'SMALLINT',
+    'STRING',
+    'TEXT',
+    'TIME',
+    'TINYINT',
+    'VARCHAR',
+]
+
 const dockerTypes = ['datetime', 'string']
 const kubernetesTypes = ['datetime', 'string']
 
 const FieldTypes = {
     clickhouse: clickhouseTypes,
+    starrocks: starrocksTypes,
     docker: dockerTypes,
     kubernetes: kubernetesTypes,
 }

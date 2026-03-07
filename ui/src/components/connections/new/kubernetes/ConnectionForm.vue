@@ -14,7 +14,9 @@
             </div>
 
             <div v-if="connectionData.kubeconfig_is_local">
-                <label for="connection_kubeconfig_path" class="font-medium text-lg block mb-1"> Kubeconfig File Path * </label>
+                <label for="connection_kubeconfig_path" class="font-medium text-lg block mb-1">
+                    Kubeconfig File Path *
+                </label>
                 <InputText
                     id="connection_kubeconfig_path"
                     v-model="connectionData.kubeconfig"
@@ -32,7 +34,9 @@
             </div>
 
             <div v-else>
-                <label for="connection_kubeconfig" class="font-medium text-lg block mb-1"> Kubeconfig Yaml Content * </label>
+                <label for="connection_kubeconfig" class="font-medium text-lg block mb-1">
+                    Kubeconfig Yaml Content *
+                </label>
                 <Textarea
                     id="connection_kubeconfig"
                     v-model="connectionData.kubeconfig"
@@ -69,7 +73,9 @@
             </div>
 
             <div>
-                <label for="max_concurrent_requests" class="font-medium text-lg block mb-1"> Max Concurrent Requests </label>
+                <label for="max_concurrent_requests" class="font-medium text-lg block mb-1">
+                    Max Concurrent Requests
+                </label>
                 <InputNumber
                     id="max_concurrent_requests"
                     v-model="connectionData.max_concurrent_requests"
