@@ -8,3 +8,5 @@ backend/telescope/templates/index.html
 **.sqlite3
 .venv/
 venv/
+_bmad-output/
+_bmad
