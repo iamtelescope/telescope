@@ -42,7 +42,11 @@ def mock_starrocks_source():
 def mock_starrocks_source_no_settings():
     """Create a mock Starrocks source without settings"""
     source = Mock(spec=Source)
-    source.data = {"catalog": "default_catalog", "database": "test_db", "table": "test_table"}
+    source.data = {
+        "catalog": "default_catalog",
+        "database": "test_db",
+        "table": "test_table",
+    }
     source.time_column = "timestamp"
     source.date_column = None
     source._columns = {
@@ -102,7 +106,10 @@ def test_fetch_data_includes_settings(mock_starrocks_connect, mock_starrocks_sou
     assert "time_zone='UTC'" in query
 
     # Assert SET_VAR is at the start of the query
-    assert query.lstrip().startswith("SELECT /*+ SET_VAR(query_timeout=60, time_zone='UTC'")
+    assert query.lstrip().startswith(
+        "SELECT /*+ SET_VAR(query_timeout=60, time_zone='UTC'"
+    )
+
 
 @patch("telescope.fetchers.starrocks.StarrocksConnect")
 def test_fetch_data_without_settings(
@@ -181,9 +188,7 @@ def test_fetch_graph_data_includes_settings(
 
 
 @patch("telescope.fetchers.starrocks.StarrocksConnect")
-def test_autocomplete_includes_settings(
-    mock_starrocks_connect, mock_starrocks_source
-):
+def test_autocomplete_includes_settings(mock_starrocks_connect, mock_starrocks_source):
     """Test that autocomplete() includes SET_VAR clause when configured"""
     # Setup mock
     mock_client = MagicMock()
@@ -294,4 +299,6 @@ def test_settings_query_position(mock_starrocks_connect, mock_starrocks_source):
     select_pos = query.find("SELECT")
     settings_pos = query.find("SET_VAR")
     from_pos = query.find("FROM")
-    assert select_pos < settings_pos < from_pos, "SET_VAR clause should come after SELECT"
+    assert (
+        select_pos < settings_pos < from_pos
+    ), "SET_VAR clause should come after SELECT"

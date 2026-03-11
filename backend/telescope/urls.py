@@ -97,6 +97,8 @@ urlpatterns = [
     path("ui/v1/sources/<slug:slug>/grantRole", source.SourceGrantRoleView.as_view()),
     path("ui/v1/sources/<slug:slug>/revokeRole", source.SourceRevokeRoleView.as_view()),
     path("ui/v1/sources/<slug:slug>", source.SourceView.as_view()),
+    path("liveness", index.liveness, name="liveness"),
+    path("readiness", index.readiness, name="readiness"),
     re_path("^api.*$", stub_api.ApiStubView.as_view()),
     re_path("^.*$", index.index),
 ]

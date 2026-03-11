@@ -20,7 +20,9 @@ class BaseFetcher:
         raise NotImplementedError
 
     @classmethod
-    def autocomplete(cls, source, column, time_from, time_to, value) -> AutocompleteResponse:
+    def autocomplete(
+        cls, source, column, time_from, time_to, value
+    ) -> AutocompleteResponse:
         raise NotImplementedError
 
     @classmethod

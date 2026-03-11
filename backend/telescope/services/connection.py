@@ -18,7 +18,7 @@ from telescope.serializers.connection import (
     ClickhouseConnectionSerializer,
     DockerConnectionSerializer,
     KubernetesConnectionSerializer,
-    StarrocksConnectionSerializer
+    StarrocksConnectionSerializer,
 )
 
 
