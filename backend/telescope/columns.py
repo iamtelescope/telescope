@@ -51,6 +51,7 @@ class ParsedColumn:
     def is_json(self):
         return "json" in self.type.lower()
 
+
 def parse_columns(source: Source, text: str) -> list[ParsedColumn]:
     flyql_columns = parse_columns_flyql(text)
     parsed_columns = []
@@ -65,7 +66,7 @@ def parse_columns(source: Source, text: str) -> list[ParsedColumn]:
                 source_column_name = candidate
                 break
             # Remove the last dot-separated suffix
-            last_dot = candidate.rfind('.')
+            last_dot = candidate.rfind(".")
             if last_dot == -1:
                 break
             candidate = candidate[:last_dot]

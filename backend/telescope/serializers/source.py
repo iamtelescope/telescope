@@ -151,6 +151,7 @@ class ClickhouseConnectionSerializer(serializers.Serializer):
     server_hostname = serializers.CharField(allow_blank=True)
     alt_hosts = serializers.CharField(allow_blank=True)
 
+
 class StarrocksConnectionSerializer(serializers.Serializer):
     host = serializers.CharField()
     port = serializers.IntegerField()
@@ -168,6 +169,7 @@ class StarrocksConnectionSerializer(serializers.Serializer):
     ciphers = serializers.CharField(allow_blank=True)
     server_hostname = serializers.CharField(allow_blank=True)
     alt_hosts = serializers.CharField(allow_blank=True)
+
 
 class DockerConnectionSerializer(serializers.Serializer):
     address = serializers.CharField()
@@ -203,11 +205,13 @@ class GetSourceSchemaClickhouseSerializer(serializers.Serializer):
     database = serializers.CharField()
     table = serializers.CharField()
 
+
 class GetSourceSchemaStarrocksSerializer(serializers.Serializer):
     connection_id = serializers.IntegerField()
     catalog = serializers.CharField()
     database = serializers.CharField()
     table = serializers.CharField()
+
 
 class GetSourceSchemaDockerSerializer(serializers.Serializer):
     connection_id = serializers.IntegerField()
@@ -481,6 +485,7 @@ class ClickhouseSourceDataSerializer(serializers.Serializer):
     table = serializers.CharField(required=True)
     settings = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
+
 class StarrocksSourceDataSerializer(serializers.Serializer):
     catalog = serializers.CharField(required=True)
     database = serializers.CharField(required=True)
@@ -612,6 +617,7 @@ class UpdateStarrocksSourceSerializer(NewStarrocksSourceSerializer):
 
     def validate_slug(self, value):
         return value
+
 
 class SourceCreateResponseSerializer(serializers.Serializer):
     slug = serializers.SlugField(max_length=64, required=True)

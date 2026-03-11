@@ -262,3 +262,11 @@ class APIToken(models.Model):
             user=user,
             token=secrets.token_hex(20),
         )
+
+
+class HealthCheck(models.Model):
+    key = models.CharField(max_length=64, unique=True)
+    value = models.CharField(max_length=256)
+
+    def __str__(self):
+        return self.key

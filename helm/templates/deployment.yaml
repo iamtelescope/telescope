@@ -72,14 +72,14 @@ spec:
             allowPrivilegeEscalation: false
           livenessProbe:
             httpGet:
-              path: /health
+              path: {{ trimSuffix "/" .Values.config.frontend.base_url }}/liveness
               port: {{ .Values.listenPort }}
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
-              path: /ready
+              path: {{ trimSuffix "/" .Values.config.frontend.base_url }}/readiness
               port: {{ .Values.listenPort }}
             initialDelaySeconds: 5
             periodSeconds: 2

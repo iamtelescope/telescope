@@ -430,7 +430,9 @@ class SourceGraphDataView(APIView):
         )
 
         if not serializer.is_valid():
-            logger.info("Graph data request serializer validation failed: %s", serializer.errors)
+            logger.info(
+                "Graph data request serializer validation failed: %s", serializer.errors
+            )
             response.validation["result"] = False
             response.validation["columns"] = serializer.errors
             return Response(response.as_dict())

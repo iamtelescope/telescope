@@ -29,11 +29,14 @@ from telescope.fetchers.models import Row
 
 from telescope.utils import convert_to_base_sr, get_telescope_column
 
-
 logger = logging.getLogger("telescope.fetchers.starrocks")
 
 
-SSL_CERTS_PARAMS = {"ca_cert": "ssl_ca", "client_cert": "ssl_cert", "client_cert_key": "ssl_key"}
+SSL_CERTS_PARAMS = {
+    "ca_cert": "ssl_ca",
+    "client_cert": "ssl_cert",
+    "client_cert_key": "ssl_key",
+}
 OPTIONAL_SSL_PARAMS = ["tls_versions"]
 
 ESCAPE_CHARS_MAP = {
@@ -76,9 +79,7 @@ class StarrocksConnect:
     @property
     def client(self):
         if self._client is None:
-            self._client = mysql.connector.connect(
-               **self.client_kwargs
-            )
+            self._client = mysql.connector.connect(**self.client_kwargs)
         return self._client
 
     def __enter__(self, *args, **kwargs):
@@ -219,9 +220,7 @@ class Fetcher(BaseFetcher):
                 else:
                     assert row
                     response.schema["result"] = True
-                    response.schema["data"] = [
-                        get_telescope_column(row[0], row[1])
-                    ]
+                    response.schema["data"] = [get_telescope_column(row[0], row[1])]
                 try:
                     cur = c.client.cursor()
                     cur.execute(f"SHOW CREATE TABLE {target}")
@@ -255,7 +254,9 @@ class Fetcher(BaseFetcher):
         return [get_telescope_column(x[0], x[1]) for x in result]
 
     @classmethod
-    def autocomplete(cls, source: Source, column: str, time_from, time_to, value: str) -> AutocompleteResponse:
+    def autocomplete(
+        cls, source: Source, column: str, time_from, time_to, value: str
+    ) -> AutocompleteResponse:
         incomplete = False
         from_db_table = f"{source.data['database']}.{source.data['table']}"
         time_clause = build_time_clause(
@@ -278,7 +279,7 @@ class Fetcher(BaseFetcher):
 
     @classmethod
     def fetch_graph_data(
-        cls, 
+        cls,
         request: GraphDataRequest,
     ) -> GraphDataResponse:
         if request.query:
@@ -323,9 +324,7 @@ class Fetcher(BaseFetcher):
                     # that contain dots. Let's just do it unconditionally.
                     json_path = [f'"{x}"' for x in json_path]
                     json_path_str = "->".join([escape_param(x) for x in json_path])
-                    group_by_value = (
-                        f"cast(parse_json(`{group_by.root_name}`)->{json_path_str} as string)"
-                    )
+                    group_by_value = f"cast(parse_json(`{group_by.root_name}`)->{json_path_str} as string)"
                 else:
                     raise ValueError
             else:
@@ -338,9 +337,7 @@ class Fetcher(BaseFetcher):
             request.time_from,
             request.time_to,
         )
-        from_db_table = (
-            f"{request.source.data['catalog']}.{request.source.data['database']}.{request.source.data['table']}"
-        )
+        from_db_table = f"{request.source.data['catalog']}.{request.source.data['database']}.{request.source.data['table']}"
 
         time_column_type = convert_to_base_sr(
             request.source._columns[request.source.time_column].type.lower()
@@ -354,7 +351,9 @@ class Fetcher(BaseFetcher):
         if time_column_type in ["datetime", "datetime64"]:
             to_time_zone = f"`{request.source.time_column}`"
         elif time_column_type in ["timestamp", "uint64", "int64"]:
-            to_time_zone = f"toTimeZone(to_datetime_ntz({request.source.time_column}, 3), 'UTC')"
+            to_time_zone = (
+                f"toTimeZone(to_datetime_ntz({request.source.time_column}, 3), 'UTC')"
+            )
 
         columns_names = sorted(request.source._columns.keys())
         columns_to_select = []
@@ -388,7 +387,9 @@ class Fetcher(BaseFetcher):
             if request.source.data.get("settings"):
                 query_hints = f"/*+ SET_VAR({request.source.data['settings']}) */"
 
-            stat_sql = f"SELECT {query_hints} {stats_time_selector} as t, COUNT() as Count"
+            stat_sql = (
+                f"SELECT {query_hints} {stats_time_selector} as t, COUNT() as Count"
+            )
             if group_by_value:
                 assert group_by
                 stat_sql += f", {group_by_value} as `{group_by.name}`"
@@ -461,9 +462,7 @@ class Fetcher(BaseFetcher):
             request.time_from,
             request.time_to,
         )
-        from_db_table = (
-            f"{request.source.data['catalog']}.{request.source.data['database']}.{request.source.data['table']}"
-        )
+        from_db_table = f"{request.source.data['catalog']}.{request.source.data['database']}.{request.source.data['table']}"
 
         columns_names = sorted(request.source._columns.keys())
         columns_to_select = []
@@ -478,7 +477,7 @@ class Fetcher(BaseFetcher):
             #     elif time_column_type in ["timestamp", "uint64", "int64"]:
             #         columns_to_select.append(f"toTimeZone(toDateTime({column}), 'UTC')")
             # else:
-                columns_to_select.append(f'`{column}`')
+            columns_to_select.append(f"`{column}`")
         columns_to_select = ", ".join(columns_to_select)
 
         query_hints = ""
