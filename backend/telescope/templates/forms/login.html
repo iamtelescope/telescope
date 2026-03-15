@@ -10,7 +10,7 @@
     </div>
     <div class="form-box">
       <div class="form-label">Sign in to your account</div>
-      <form action="login" method="post">
+      <form action="login" method="post" data-testid="login-form">
         {% csrf_token %}
 
         {% for field in form %}
@@ -25,7 +25,7 @@
           {{ err }}
         {% endfor %}
         </div>
-        <input class="btn-submit"  type="submit" value="Submit">
+        <input class="btn-submit"  type="submit" value="Submit" data-testid="login-submit">
       </form>
       {% if github_enabled or okta_enabled %}
       <div style="display: flex; justify-content: center; align-items:center; margin-top: 10px;">or sign in with</div>

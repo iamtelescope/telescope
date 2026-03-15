@@ -11,7 +11,7 @@
             </ListHeader>
         </template>
         <template #content>
-            <DataView :loadings="[loading]" :errors="[error]">
+            <DataView :loadings="[loading]" :errors="[error]" data-testid="sources-page">
                 <template #loader>
                     <ContentBlock header="Logs" :collapsible="false">
                         <SkeletonList :columns="4" :rows="10" />
@@ -30,6 +30,7 @@
                         :rows="50"
                         :rowsPerPageOptions="[10, 25, 50, 100, 1000]"
                         :row-hover="true"
+                        data-testid="sources-table"
                     >
                         <Column
                             field="slug"

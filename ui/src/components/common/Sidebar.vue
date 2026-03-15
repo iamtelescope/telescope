@@ -22,6 +22,7 @@
                     @click="$emit('toggle-collapse')"
                     title="Collapse Panel"
                     :disabled="collapsed"
+                    data-testid="sidebar-collapse-btn"
                 >
                     <PanelLeftClose :size="20" :stroke-width="1.5" />
                 </button>
@@ -38,6 +39,7 @@
                 @click="$emit('toggle-collapse')"
                 title="Expand Panel"
                 :disabled="!collapsed"
+                data-testid="sidebar-expand-btn"
             >
                 <PanelLeftOpen :size="20" :stroke-width="1.5" />
             </button>
@@ -110,6 +112,7 @@
                 to="/rbac/roles"
                 class="flex items-center ml-2 mr-3 px-3 py-2 mb-2 text-base rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
                 :class="{ 'bg-black bg-opacity-30': $route.name?.startsWith('rbacRole') }"
+                data-testid="nav-roles"
             >
                 <i class="pi pi-key mr-3 text-lg"></i>
                 Roles
@@ -189,6 +192,7 @@
                 class="flex items-center justify-center w-10 h-10 mb-2 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
                 :class="{ 'bg-black bg-opacity-30': $route.name?.startsWith('rbacRole') }"
                 title="Roles"
+                data-testid="nav-roles"
             >
                 <i class="pi pi-key text-lg"></i>
             </router-link>
@@ -234,6 +238,7 @@
                     @click="toggleDark()"
                     class="hover:bg-white hover:bg-opacity-30"
                     style="border-color: var(--p-primary-700); color: rgb(209 213 219)"
+                    data-testid="theme-toggle"
                 ></Button>
             </div>
         </div>
@@ -323,6 +328,7 @@
                 class="hover:bg-white hover:bg-opacity-30"
                 :title="isDark ? 'Switch to Light' : 'Switch to Dark'"
                 style="border-color: var(--p-primary-500); color: rgb(209 213 219)"
+                data-testid="theme-toggle"
             ></Button>
             <div class="rounded p-1 -m-1" :class="{ 'bg-black bg-opacity-30': $route.name === 'userProfile' }">
                 <Avatar

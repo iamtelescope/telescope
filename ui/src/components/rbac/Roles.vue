@@ -12,7 +12,7 @@
             </ListHeader>
         </template>
         <template #content>
-            <DataView :loadings="[loading]" :errors="[error]">
+            <DataView :loadings="[loading]" :errors="[error]" data-testid="roles-page">
                 <template #loader>
                     <ContentBlock header="Roles" :collapsible="false">
                         <SkeletonList :columns="3" :rows="10" />
@@ -30,6 +30,7 @@
                         :rowsPerPageOptions="[10, 25, 50, 100, 1000]"
                         :row-hover="true"
                         class="w-full"
+                        data-testid="roles-table"
                     >
                         <Column field="name" :sortable="true" header="Name" class="pl-4">
                             <template #body="{ data }">
