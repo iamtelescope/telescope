@@ -3,7 +3,7 @@ _A handy tool that manages to make close what once was far_
 
 ## Introduction
 
-**Telescope** is a web application designed to provide an intuitive interface for exploring log data. It supports multiple types of sources, including [**ClickHouse**](https://github.com/ClickHouse/ClickHouse), [**Docker**](https://www.docker.com/), and [**Kubernetes**](https://kubernetes.io/). Users can configure connections to their ClickHouse databases, access container logs via the Docker API, or retrieve pod logs from Kubernetes clusters. Telescope provides a unified querying experience across different source types, allowing users to filter, search, and analyze logs efficiently. While ClickHouse remains the primary backend for structured log storage, Docker and Kubernetes support offers convenient options for local development, ephemeral environments, or cloud-native deployments. Future versions may further extend source support.
+**Telescope** is a web application designed to provide an intuitive interface for exploring log data. It supports multiple types of sources, including [**ClickHouse**](https://github.com/ClickHouse/ClickHouse), [**StarRocks**](https://github.com/StarRocks/starrocks), [**Docker**](https://www.docker.com/), and [**Kubernetes**](https://kubernetes.io/). Users can configure connections to their ClickHouse or StarRocks databases, access container logs via the Docker API, or retrieve pod logs from Kubernetes clusters. Telescope provides a unified querying experience across different source types, allowing users to filter, search, and analyze logs efficiently. While ClickHouse and StarRocks serve as the primary backends for structured log storage, Docker and Kubernetes support offers convenient options for local development, ephemeral environments, or cloud-native deployments. Future versions may further extend source support.
 
 
 ![Source data](screenshots/main.png?raw=true "Source data")
@@ -25,7 +25,7 @@ You can log in via GitHub to explore the core features of the system from an end
 ## Key Features
 
 ### 🔗 Source Management
-- Create and manage **multiple connections** to different data sources, including ClickHouse, Docker, and Kubernetes.
+- Create and manage **multiple connections** to different data sources, including ClickHouse, StarRocks, Docker, and Kubernetes.
 - Define which fields from a source should be used, and configure which ones are **suggested**, hidden, or support **autocompletion**.
 - Configure which users and groups have access to a source and define their **permissions**.
 
@@ -35,7 +35,7 @@ You can log in via GitHub to explore the core features of the system from an end
 - Customize your view by selecting relevant columns, adjusting data presentation, and applying filters to focus on what matters most.
 - Use a time and date selector with support for relative time ranges to refine your log queries effortlessly.
 - Configure **graph grouping**, including support for nested fields like **JSON strings, Maps or Arrays**.
-- Execute advanced queries with **RAW SQL filtering** using `WHERE` clause with ClickHouse SQL expressions for precise data filtering.
+- Execute advanced queries with **RAW SQL filtering** using `WHERE` clause with ClickHouse or StarRocks SQL expressions for precise data filtering.
 - Enjoy a clean, minimalist design that keeps the focus on your log data, ensuring a seamless and distraction-free analysis experience.
 
 ### 🔒 Role-Based Access Control (RBAC) and Authentication Support
