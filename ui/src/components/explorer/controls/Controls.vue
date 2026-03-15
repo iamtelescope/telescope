@@ -1,6 +1,6 @@
 <template>
     <div>
-        <Toolbar class="toolbar-slim border-none p-0 mb-2">
+        <Toolbar class="toolbar-slim border-none p-0 mb-2" data-testid="explorer-controls">
             <template #start>
                 <Button
                     :class="{
@@ -10,6 +10,7 @@
                     :label="loading ? 'Cancel' : 'Execute'"
                     size="small"
                     @click="handleSearch"
+                    data-testid="explorer-execute-btn"
                 >
                     <template #icon>
                         <i v-if="loading" class="pi pi-spin pi-spinner"></i>
@@ -73,10 +74,11 @@
                     onIcon="pi pi-eye"
                     offIcon="pi pi-eye-slash"
                     size="small"
+                    data-testid="explorer-toggle-controls-btn"
                 />
             </template>
         </Toolbar>
-        <div :class="{ hidden: hideFilters }">
+        <div :class="{ hidden: hideFilters }" data-testid="explorer-filters">
             <div class="mb-2">
                 <ContextColumns
                     v-if="source.contextColumns"
@@ -86,7 +88,7 @@
                     @columnChanged="onContextFieldChanged"
                 />
             </div>
-            <div class="mb-2">
+            <div class="mb-2" data-testid="explorer-columns-editor">
                 <IftaLabel>
                     <ColumnsEditor
                         id="columns_editor"
@@ -98,7 +100,7 @@
                     <label for="columns_editor">Columns selector</label>
                 </IftaLabel>
             </div>
-            <div class="mb-2">
+            <div class="mb-2" data-testid="explorer-flyql-editor">
                 <IftaLabel>
                     <QueryEditor
                         id="flyql_editor"
@@ -112,7 +114,11 @@
                     <label for="flyql_editor">FlyQL query</label>
                 </IftaLabel>
             </div>
-            <div v-if="source.isRawQueryAllowed() && showRawQueryEditor" class="mb-2">
+            <div
+                v-if="source.isRawQueryAllowed() && showRawQueryEditor"
+                class="mb-2"
+                data-testid="explorer-raw-query-editor"
+            >
                 <IftaLabel>
                     <RawQueryEditor
                         id="raw_query_editor"

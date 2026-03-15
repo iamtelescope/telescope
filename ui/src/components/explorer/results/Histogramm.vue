@@ -17,7 +17,7 @@
                 <span class="pl-2 font-medium">{{ groupByLabel || '–' }}</span>
             </div>
         </div>
-        <div class="flex flex-col" id="histogramm">
+        <div class="flex flex-col" id="histogramm" data-testid="explorer-histogram">
             <YagrChart v-if="chartSettings" :theme="theme" :settings="chartSettings" />
         </div>
     </div>

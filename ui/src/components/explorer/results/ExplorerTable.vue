@@ -4,7 +4,7 @@
             <Row :source="source" :row="selectedRow" :timeZone="props.timeZone"></Row>
         </template>
     </Drawer>
-    <div class="overflow-x-auto" v-if="rows && rows.length > 0">
+    <div class="overflow-x-auto" v-if="rows && rows.length > 0" data-testid="explorer-table">
         <table class="w-full min-w-full text-sm">
             <thead>
                 <tr>

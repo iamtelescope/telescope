@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-col overflow-y-auto">
+    <div class="flex flex-col overflow-y-auto" data-testid="saved-views-list">
         <div class="text-2xl p-4 border-b border-neutral-300 dark:border-neutral-600">
             <i class="pi pi-eye" /> <span class="font-medium">{{ source.name }}</span> source Saved Views
         </div>

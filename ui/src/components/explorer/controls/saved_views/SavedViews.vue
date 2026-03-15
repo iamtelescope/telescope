@@ -60,7 +60,14 @@
                 :loading="deleteLoading || saveLoading"
             />
             <Menu ref="savedViewsMenu" id="saved_views_menu" :model="savedViewMenuItems" :popup="true" />
-            <Button size="small" label="Views" icon="pi pi-folder-open" text @click="savedViewsListVisible = true" />
+            <Button
+                size="small"
+                label="Views"
+                icon="pi pi-folder-open"
+                text
+                @click="savedViewsListVisible = true"
+                data-testid="saved-views-btn"
+            />
         </div>
     </div>
 </template>

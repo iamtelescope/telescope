@@ -1,5 +1,5 @@
 <template>
-    <div class="p-2">
+    <div class="p-2" data-testid="explorer">
         <Controls
             ref="controlsRef"
             @searchRequest="onSearchRequest"
@@ -14,7 +14,12 @@
             @graphVisibilityChanged="onGraphVisibilityChanged"
             :groupByInvalid="!!(graphValidation && !graphValidation.result && graphValidation.columns.group_by)"
         />
-        <BorderCard class="mb-2" :loading="graphLoading" v-if="sourceControlsStore.showGraph && !showInitialMessage">
+        <BorderCard
+            class="mb-2"
+            :loading="graphLoading"
+            v-if="sourceControlsStore.showGraph && !showInitialMessage"
+            data-testid="explorer-graph"
+        >
             <Skeleton v-if="graphLoading && graphData === null" width="100%" height="235px"></Skeleton>
             <Error v-if="graphError" :error="graphError"></Error>
             <ValidationError
@@ -32,7 +37,7 @@
                 :groupByLabel="sourceControlsStore.graphGroupBy"
             />
         </BorderCard>
-        <BorderCard :loading="loading">
+        <BorderCard :loading="loading" data-testid="explorer-results">
             <Skeleton v-if="loading && rows === null" width="100%" height="400px"></Skeleton>
             <Error v-if="error" :error="error"></Error>
             <ValidationError
