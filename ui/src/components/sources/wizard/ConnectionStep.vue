@@ -343,13 +343,6 @@ const validate = () => {
         }
     }
 
-    // Kubernetes specific validation - all columns are optional now
-    if (connection.value?.kind === 'kubernetes') {
-        if (!namespace.value) {
-            errors.value.namespace = 'Namespace is required for Kubernetes sources'
-        }
-    }
-
     return Object.keys(errors.value).length === 0
 }
 
