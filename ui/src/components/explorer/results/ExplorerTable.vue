@@ -1,5 +1,11 @@
 <template>
-    <Drawer v-model:visible="visible" :modal="false" position="right" pt:root:style="width:70%;">
+    <Drawer
+        v-model:visible="visible"
+        :modal="false"
+        position="right"
+        pt:root:style="width:70%;"
+        data-testid="detail-drawer"
+    >
         <template #container>
             <Row :source="source" :row="selectedRow" :timeZone="props.timeZone"></Row>
         </template>
@@ -26,9 +32,10 @@
             <tbody>
                 <tr
                     class="hover:bg-slate-100 dark:hover:bg-neutral-800 hover:cursor-pointer"
-                    v-for="row in rows"
+                    v-for="(row, index) in rows"
                     :key="row.record_id"
                     @click="handleRowClick(row)"
+                    :data-testid="`table-row-${index}`"
                 >
                     <td class="pl-1 pr-2 w-1 m-w-1 border-b border-neutral-200 dark:border-neutral-700">
                         <div

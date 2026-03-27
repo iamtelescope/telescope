@@ -1,6 +1,19 @@
 <template>
-    <Button icon="pi pi-calendar" class="mr-2" :label="rangeLabel" text size="small" @click="toggleDropdown" />
-    <Popover ref="dropdown" :pt="{ content: { class: 'pr-0' } }" @show="initFromProps">
+    <Button
+        icon="pi pi-calendar"
+        class="mr-2"
+        :label="rangeLabel"
+        text
+        size="small"
+        @click="toggleDropdown"
+        data-testid="datetime-picker-btn"
+    />
+    <Popover
+        ref="dropdown"
+        :pt="{ content: { class: 'pr-0' } }"
+        @show="initFromProps"
+        data-testid="datetime-picker-popover"
+    >
         <div class="flex w-full">
             <div class="flex flex-col mr-3">
                 <div class="flex flex-col">
@@ -11,6 +24,7 @@
                         v-model="inputFrom.text"
                         @update:model-value="() => (inputFrom.manualOverride = true)"
                         :invalid="inputFrom.error !== null"
+                        data-testid="datetime-from"
                     />
                     <ErrorText v-if="inputFrom.error" :text="inputFrom.error" />
                 </div>
@@ -22,6 +36,7 @@
                         v-model="inputTo.text"
                         @update:model-value="() => (inputTo.manualOverride = true)"
                         :invalid="inputTo.error !== null"
+                        data-testid="datetime-to"
                     />
                     <ErrorText v-if="inputTo.error" :text="inputTo.error" />
                 </div>
@@ -35,9 +50,17 @@
                         size="small"
                         filter
                         autoFilterFocus
+                        data-testid="datetime-timezone"
                     />
                 </div>
-                <Button label="Apply" severity="primary" size="small" class="mt-4" @click="handleSelectManual" />
+                <Button
+                    label="Apply"
+                    severity="primary"
+                    size="small"
+                    class="mt-4"
+                    @click="handleSelectManual"
+                    data-testid="datetime-apply-btn"
+                />
             </div>
             <div class="border-r border-l pt-0 pb-0 p-2">
                 <DatePicker
