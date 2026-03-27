@@ -62,7 +62,7 @@
                     data-testid="datetime-apply-btn"
                 />
             </div>
-            <div class="border-r border-l pt-0 pb-0 p-2">
+            <div class="border-r border-l border-surface-200 dark:border-surface-700 pt-0 pb-0 p-2">
                 <DatePicker
                     v-model="selectedDates"
                     selectionMode="range"
