@@ -205,8 +205,8 @@ class Fetcher(BaseFetcher):
                 response.reachability["result"] = True
                 try:
                     result = c.client.query(
-                        "select name, type from system.columns where database = '%s' and table = '%s'"
-                        % (data["database"], data["table"])
+                        "select name, type from system.columns where database = %(database)s and table = %(table)s",
+                        parameters={"database": data["database"], "table": data["table"]},
                     )
                 except Exception as err:
                     response.schema["error"] = str(err)
@@ -236,8 +236,8 @@ class Fetcher(BaseFetcher):
 
             # Now get the schema
             result = c.client.query(
-                "select name, type from system.columns where database = '%s' and table = '%s'"
-                % (data["database"], data["table"])
+                "select name, type from system.columns where database = %(database)s and table = %(table)s",
+                parameters={"database": data["database"], "table": data["table"]},
             )
         return [get_telescope_column(x[0], x[1]) for x in result.result_rows]
 
