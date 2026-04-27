@@ -138,7 +138,7 @@ const getKeySuggestions = (range) => {
                 kind: monaco.languages.CompletionItemKind.Keyword,
                 range: range,
                 documentation: documentation,
-                insertText: name,
+                insertText: name.includes('.') ? '"' + name + '"' : name,
                 command: {
                     id: 'editor.action.triggerSuggest',
                 },
@@ -180,7 +180,9 @@ const getValueSuggestions = async (key, value, range, quoteChar) => {
         incomplete: false,
     }
     let items = []
-    if (sourceColumnsNames.includes(key)) {
+    const unquotedKey = key.replace(/^"|"$/g, '')
+    if (sourceColumnsNames.includes(unquotedKey)) {
+        key = unquotedKey
         if (props.source.columns[key].autocomplete) {
             if (props.source.columns[key].values.length > 0) {
                 items = prepareSuggestionValues(props.source.columns[key].values, quoteChar)
@@ -219,8 +221,9 @@ const getSuggestions = async (word, position, textBeforeCursor) => {
     parser.parse(textBeforeCursor, false, true)
 
     if (parser.state == State.KEY || parser.state == State.INITIAL || parser.state == State.BOOL_OP_DELIMITER) {
-        if (sourceColumnsNames.includes(word.word)) {
-            suggestions = getOperatorsSuggestions(word.word, position)
+        const unquotedWord = word.word.replace(/^"|"$/g, '')
+        if (sourceColumnsNames.includes(unquotedWord)) {
+            suggestions = getOperatorsSuggestions(unquotedWord, position)
         } else {
             suggestions = getKeySuggestions(range)
         }
