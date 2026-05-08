@@ -18,7 +18,8 @@ def test_update_source_invalid_kind(test_user, service, docker_connection):
     Source.objects.create(
         slug=slug,
         columns={},
-        modifiers={},
+        transformers=[],
+        renderers=[],
         default_chosen_columns={},
         conn=docker_connection,
         context_columns={},
@@ -84,7 +85,8 @@ def test_update_kubernetes_source_invalid_kind(
     Source.objects.create(
         slug=slug,
         columns={},
-        modifiers={},
+        transformers=[],
+        renderers=[],
         default_chosen_columns={},
         conn=kubernetes_connection,
         context_columns={},

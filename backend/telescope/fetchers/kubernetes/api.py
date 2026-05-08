@@ -15,9 +15,10 @@ from django.core.cache import cache
 
 T = TypeVar("T")
 
-from flyql.core.parser import parse
-from flyql.matcher.evaluator import Evaluator
-from flyql.matcher.record import Record
+from flyql import parse, FlyqlError
+from flyql.matcher import Evaluator, Record
+
+from telescope.flyql_registry import transformer_registry
 
 from kubernetes.config.kube_config import KubeConfigLoader
 from kubernetes import config as kubernetes_config
@@ -190,7 +191,11 @@ class KubeHelper:
         self.context_flyql_filter_ast = None
         self.namespace_flyql_filter_ast = None
         self.pods_flyql_filter_ast = None
-        self.flyql_evaluator = Evaluator()
+        self.flyql_evaluator = Evaluator(registry=transformer_registry())
+        self._flyql_error_logged = False
+        # Per-filter error map written by _safe_evaluate. Callers consult this
+        # to skip caching half-built results and to surface store_error to UI.
+        self._flyql_filter_errors: Dict[str, str] = {}
 
         self.client_helper = KubeClientHelper(self.config)
 
@@ -245,6 +250,26 @@ class KubeHelper:
         key_str = ":".join(str(arg) for arg in args)
         return hashlib.md5(key_str.encode()).hexdigest()
 
+    def _safe_evaluate(self, ast, data, filter_name: str) -> bool:
+        # Matcher raises FlyqlError on regex/LIKE without re2, on invalid
+        # column types, etc. Treat as a non-match so a single malformed
+        # filter doesn't abort the whole context/namespace/pod scan; log
+        # the first occurrence per KubeHelper instance to keep logs sane,
+        # and flip the per-filter dirty flag so the caller can skip caching
+        # the (incomplete) result and surface a non-fatal error to the user.
+        try:
+            return self.flyql_evaluator.evaluate(ast, Record(data=data))
+        except FlyqlError as err:
+            self._flyql_filter_errors[filter_name] = str(err)
+            if not self._flyql_error_logged:
+                logger.warning(
+                    "flyql %s filter error (logging once per request): %s",
+                    filter_name,
+                    err,
+                )
+                self._flyql_error_logged = True
+            return False
+
     @property
     def allowed_contexts(self) -> List[str]:
         if self._allowed_contexts is None:
@@ -256,14 +281,26 @@ class KubeHelper:
                 matched = []
                 if self.context_flyql_filter_ast is not None:
                     for context in contexts:
-                        if self.flyql_evaluator.evaluate(
-                            self.context_flyql_filter_ast, Record(data=context)
+                        if self._safe_evaluate(
+                            self.context_flyql_filter_ast, context, "context"
                         ):
                             matched.append(context)
                     self._allowed_contexts = matched
                 else:
                     self._allowed_contexts = contexts
-                cache.set(self.contexts_cache_key, self._allowed_contexts, CACHE_TTL)
+                # Skip cache write if the context filter raised — otherwise
+                # one transient bad regex pollutes the cache for CACHE_TTL
+                # and downstream "no contexts" diagnostics become misleading.
+                if "context" in self._flyql_filter_errors:
+                    self.store_error(
+                        "context_filter",
+                        "warn",
+                        {"error": self._flyql_filter_errors["context"]},
+                    )
+                else:
+                    cache.set(
+                        self.contexts_cache_key, self._allowed_contexts, CACHE_TTL
+                    )
         return self._allowed_contexts
 
     @property
@@ -289,6 +326,12 @@ class KubeHelper:
         if errors:
             logger.warning("Namespace fetch errors: %s", errors)
             self.store_error("get_namespaces", "warn", errors)
+        elif "namespace" in self._flyql_filter_errors:
+            self.store_error(
+                "namespace_filter",
+                "warn",
+                {"error": self._flyql_filter_errors["namespace"]},
+            )
         else:
             cache.set(self.namespaces_cache_key, all_namespaces, CACHE_TTL)
         return all_namespaces
@@ -328,8 +371,8 @@ class KubeHelper:
         for ns in namespaces.items:
             if self.namespace_flyql_filter_ast:
                 ns_dict = ns.to_dict()
-                if self.flyql_evaluator.evaluate(
-                    self.namespace_flyql_filter_ast, Record(data=ns_dict)
+                if self._safe_evaluate(
+                    self.namespace_flyql_filter_ast, ns_dict, "namespace"
                 ):
                     result.append(ns.metadata.name)
             else:
@@ -344,10 +387,16 @@ class KubeHelper:
                 self._pods = cached
             else:
                 all_pods, errors = self.get_pods()
-                if not errors:
-                    cache.set(self.pods_cache_key, all_pods, CACHE_TTL)
-                else:
+                if errors:
                     self.store_error("get_pods", "warn", errors)
+                elif "pods" in self._flyql_filter_errors:
+                    self.store_error(
+                        "pods_filter",
+                        "warn",
+                        {"error": self._flyql_filter_errors["pods"]},
+                    )
+                else:
+                    cache.set(self.pods_cache_key, all_pods, CACHE_TTL)
                 self._pods = all_pods
         return self._pods
 
@@ -405,8 +454,8 @@ class KubeHelper:
             ).items:
                 if self.pods_flyql_filter_ast:
                     pod_dict = pod.to_dict()
-                    if not self.flyql_evaluator.evaluate(
-                        self.pods_flyql_filter_ast, Record(data=pod_dict)
+                    if not self._safe_evaluate(
+                        self.pods_flyql_filter_ast, pod_dict, "pods"
                     ):
                         continue
                 pods[pod.metadata.name] = {

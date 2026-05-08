@@ -158,8 +158,8 @@ const starrocksTypes = [
     'VARCHAR',
 ]
 
-const dockerTypes = ['datetime', 'string']
-const kubernetesTypes = ['datetime', 'string']
+const dockerTypes = ['datetime', 'string', 'json']
+const kubernetesTypes = ['datetime', 'string', 'json']
 
 const FieldTypes = {
     clickhouse: clickhouseTypes,

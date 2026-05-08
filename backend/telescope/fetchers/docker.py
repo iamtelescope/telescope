@@ -4,12 +4,12 @@ import logging
 from dateutil import parser as duparser
 import docker
 
-from flyql.core.parser import parse, ParserError
-from flyql.core.exceptions import FlyqlError
-from flyql.matcher.evaluator import Evaluator
-from flyql.matcher.record import Record
+from flyql import parse, ParserError, FlyqlError
+from flyql.matcher import Evaluator, Record
 
 from telescope.constants import SOURCE_BODY_COL_NAME
+from telescope.flyql_errors import format_flyql_error
+from telescope.flyql_registry import transformer_registry
 from telescope.utils import get_telescope_column
 
 from telescope.fetchers.request import (
@@ -83,13 +83,13 @@ class Fetcher(BaseFetcher):
         try:
             parser = parse(query)
         except ParserError as err:
-            return False, err.message
+            return False, format_flyql_error(query, err)
         else:
             try:
                 # row_match(parser.root, source._columns, None)
                 return True, None
             except FlyqlError as err:
-                return False, err.message
+                return False, format_flyql_error(query, err)
 
         return True, None
 
@@ -197,7 +197,8 @@ class Fetcher(BaseFetcher):
         since = request.time_from / 1000
         until = request.time_to / 1000
 
-        evaluator = Evaluator()
+        evaluator = Evaluator(registry=transformer_registry())
+        flyql_error_logged = False
         stats_by_ts = {}
         unique_ts = {request.time_from, request.time_to}
         stats_names = set()
@@ -268,7 +269,19 @@ class Fetcher(BaseFetcher):
                         if not root:
                             rows.append(row)
                         else:
-                            if evaluator.evaluate(root, Record(data=row.data)):
+                            try:
+                                matched = evaluator.evaluate(
+                                    root, Record(data=row.data)
+                                )
+                            except FlyqlError as err:
+                                if not flyql_error_logged:
+                                    logger.warning(
+                                        "flyql evaluator error (logging once per request): %s",
+                                        err,
+                                    )
+                                    flyql_error_logged = True
+                                continue
+                            if matched:
                                 rows.append(row)
 
         for row in rows:
@@ -329,7 +342,8 @@ class Fetcher(BaseFetcher):
         until = request.time_to / 1000
         ts = None
         root = None
-        evaluator = Evaluator()
+        evaluator = Evaluator(registry=transformer_registry())
+        flyql_error_logged = False
         if request.query:
             parser = parse(request.query)
             root = parser.root
@@ -386,7 +400,19 @@ class Fetcher(BaseFetcher):
                         if not root:
                             rows.append(row)
                         else:
-                            if evaluator.evaluate(root, Record(data=row.data)):
+                            try:
+                                matched = evaluator.evaluate(
+                                    root, Record(data=row.data)
+                                )
+                            except FlyqlError as err:
+                                if not flyql_error_logged:
+                                    logger.warning(
+                                        "flyql evaluator error (logging once per request): %s",
+                                        err,
+                                    )
+                                    flyql_error_logged = True
+                                continue
+                            if matched:
                                 rows.append(row)
         rows = sorted(rows, key=lambda r: r.time["unixtime"], reverse=True)[
             : request.limit
@@ -409,7 +435,8 @@ class Fetcher(BaseFetcher):
         until = request.time_to / 1000
         ts = None
         root = None
-        evaluator = Evaluator()
+        evaluator = Evaluator(registry=transformer_registry())
+        flyql_error_logged = False
         if request.query:
             parser = parse(request.query)
             root = parser.root
@@ -466,7 +493,19 @@ class Fetcher(BaseFetcher):
                         if not root:
                             rows.append(row)
                         else:
-                            if evaluator.evaluate(root, Record(data=row.data)):
+                            try:
+                                matched = evaluator.evaluate(
+                                    root, Record(data=row.data)
+                                )
+                            except FlyqlError as err:
+                                if not flyql_error_logged:
+                                    logger.warning(
+                                        "flyql evaluator error (logging once per request): %s",
+                                        err,
+                                    )
+                                    flyql_error_logged = True
+                                continue
+                            if matched:
                                 rows.append(row)
 
         group_by_field = request.group_by[0] if request.group_by else None

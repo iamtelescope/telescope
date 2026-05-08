@@ -11,6 +11,7 @@ from telescope.fetchers.response import (
     DataResponse,
     GraphDataResponse,
     DataAndGraphDataResponse,
+    JsonKeysResponse,
 )
 
 
@@ -24,6 +25,12 @@ class BaseFetcher:
         cls, source, column, time_from, time_to, value
     ) -> AutocompleteResponse:
         raise NotImplementedError
+
+    @classmethod
+    def discover_json_keys(
+        cls, source, column, segments, time_from, time_to
+    ) -> JsonKeysResponse:
+        return JsonKeysResponse(keys=[])
 
     @classmethod
     def fetch_data(

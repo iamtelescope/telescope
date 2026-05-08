@@ -81,7 +81,8 @@ def test_generate_graph_with_grouping(mock_source):
         type="string",
         jsonstring=False,
         display_name="namespace",
-        modifiers=[],
+        transformers=[],
+        renderers=[],
     )
 
     timestamps, data, total = generate_graph_from_rows(
@@ -114,7 +115,8 @@ def test_generate_graph_json_grouping(mock_source):
         type="json",
         jsonstring=True,
         display_name="labels.app",
-        modifiers=[],
+        transformers=[],
+        renderers=[],
     )
 
     timestamps, data, total = generate_graph_from_rows(
@@ -149,7 +151,8 @@ def test_generate_graph_json_nested_grouping(mock_source):
         type="json",
         jsonstring=True,
         display_name="metadata.labels.tier",
-        modifiers=[],
+        transformers=[],
+        renderers=[],
     )
 
     timestamps, data, total = generate_graph_from_rows(
@@ -177,7 +180,8 @@ def test_generate_graph_missing_group_column(mock_source):
         type="string",
         jsonstring=False,
         display_name="namespace",
-        modifiers=[],
+        transformers=[],
+        renderers=[],
     )
 
     timestamps, data, total = generate_graph_from_rows(
@@ -253,7 +257,8 @@ def test_generate_graph_invalid_json_grouping(mock_source):
         type="json",
         jsonstring=True,
         display_name="labels.app",
-        modifiers=[],
+        transformers=[],
+        renderers=[],
     )
 
     timestamps, data, total = generate_graph_from_rows(
@@ -304,7 +309,8 @@ def test_generate_graph_grouping_with_multiple_timestamps(mock_source):
         type="string",
         jsonstring=False,
         display_name="namespace",
-        modifiers=[],
+        transformers=[],
+        renderers=[],
     )
 
     timestamps, data, total = generate_graph_from_rows(

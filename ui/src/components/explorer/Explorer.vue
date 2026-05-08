@@ -14,6 +14,7 @@
             @graphVisibilityChanged="onGraphVisibilityChanged"
             :groupByInvalid="!!(graphValidation && !graphValidation.result && graphValidation.columns.group_by)"
         />
+        <FlyqlDiagnostics v-if="flyqlDiagnostics.length" :diagnostics="flyqlDiagnostics" />
         <BorderCard
             class="mb-2"
             :loading="graphLoading"
@@ -88,9 +89,11 @@ import Controls from '@/components/explorer/controls/Controls.vue'
 import BorderCard from '@/components/common/BorderCard.vue'
 import Error from '@/components/common/Error.vue'
 import ValidationError from '@/components/common/ValidationError.vue'
+import FlyqlDiagnostics from '@/components/common/FlyqlDiagnostics.vue'
 import ExplorerTable from '@/components/explorer/results/ExplorerTable.vue'
 import Histogramm from '@/components/explorer/results/Histogramm.vue'
 import LimitMessage from '@/components/explorer/controls/LimitMessage.vue'
+import { validateFlyqlInputs } from '@/sdk/flyql-validator'
 import { localTimeZone } from '@/utils/datetimeranges'
 
 const controlsRef = ref(null)
@@ -102,6 +105,7 @@ const sourceControlsStore = useSourceControlsStore()
 
 const lastSearchRouteQuery = ref(null)
 const displayTimeZone = ref(localTimeZone)
+const flyqlDiagnostics = ref([])
 const props = defineProps(['source', 'savedView', 'contextColumnsData'])
 
 // Determine query mode
@@ -165,6 +169,16 @@ const onSearchRequest = () => {
     lastSearchRouteQuery.value = sourceControlsStore.routeQuery
     displayTimeZone.value = sourceControlsStore.timeZone
     router.push({ path: route.path, query: sourceControlsStore.routeQuery })
+
+    const check = validateFlyqlInputs(props.source, {
+        query: sourceControlsStore.query,
+        columns: sourceControlsStore.columns,
+    })
+    if (!check.valid) {
+        flyqlDiagnostics.value = check.diagnostics
+        return
+    }
+    flyqlDiagnostics.value = []
 
     if (useCombinedMode.value) {
         // Combined mode: single request with graph params merged

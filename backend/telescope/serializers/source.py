@@ -1,9 +1,7 @@
 from typing import List
 from django.contrib.auth.models import User, Group
 
-from flyql.columns import (
-    ParserError as ColumnsParserError,
-)
+from flyql import FlyqlError
 
 from rest_framework import serializers
 
@@ -627,6 +625,40 @@ class SourceUpdateResponseSerializer(SourceCreateResponseSerializer):
     pass
 
 
+class SourceJsonKeysRequestSerializer(serializers.Serializer):
+    column = serializers.CharField()
+    # flyql-vue's onKeyDiscovery sends segments=[column] for root-level
+    # discovery and [column, ...subkeys] for nested levels — never empty.
+    # Enforcing min_length=1 stops a hand-crafted POST from triggering the
+    # full ClickHouse JSONExtract / k8s pod scan path with no path filter.
+    # Per-segment blank check rejects empty strings; whitespace-only segments
+    # still pass but are functionally inert (they won't match a real key).
+    segments = serializers.ListField(
+        child=serializers.CharField(allow_blank=False),
+        min_length=1,
+    )
+    _from = serializers.CharField()
+    to = serializers.CharField()
+
+    def get_fields(self):
+        fields = super().get_fields()
+        _from = fields.pop("_from")
+        fields["from"] = _from
+        return fields
+
+    def validate_from(self, value):
+        value, error = parse_time(value)
+        if error:
+            raise serializers.ValidationError(error)
+        return value
+
+    def validate_to(self, value):
+        value, error = parse_time(value)
+        if error:
+            raise serializers.ValidationError(error)
+        return value
+
+
 class SourceAutocompleteRequestSerializer(serializers.Serializer):
     column = serializers.CharField()
     value = serializers.CharField(allow_blank=True)
@@ -683,7 +715,9 @@ class SourceDataRequestSerializer(serializers.Serializer):
         try:
             result = parse_columns(self.context["source"], value)
         except ColumnsParserError as err:
-            raise serializers.ValidationError(err.message)
+            raise serializers.ValidationError(getattr(err, "message", str(err)))
+        except FlyqlError as err:
+            raise serializers.ValidationError(getattr(err, "message", str(err)))
         return result
 
     def validate_query(self, value):
@@ -734,7 +768,9 @@ class SourceGraphDataRequestSerializer(SourceDataRequestSerializer):
         try:
             result = parse_columns(self.context["source"], value)
         except ColumnsParserError as err:
-            raise serializers.ValidationError(err.message)
+            raise serializers.ValidationError(getattr(err, "message", str(err)))
+        except FlyqlError as err:
+            raise serializers.ValidationError(getattr(err, "message", str(err)))
         return result
 
 
@@ -776,7 +812,9 @@ class SourceDataAndGraphDataRequestSerializer(serializers.Serializer):
         try:
             result = parse_columns(self.context["source"], value)
         except ColumnsParserError as err:
-            raise serializers.ValidationError(err.message)
+            raise serializers.ValidationError(getattr(err, "message", str(err)))
+        except FlyqlError as err:
+            raise serializers.ValidationError(getattr(err, "message", str(err)))
         return result
 
     def validate_group_by(self, value: str) -> List[ParsedColumn]:
@@ -785,7 +823,9 @@ class SourceDataAndGraphDataRequestSerializer(serializers.Serializer):
         try:
             result = parse_columns(self.context["source"], value)
         except ColumnsParserError as err:
-            raise serializers.ValidationError(err.message)
+            raise serializers.ValidationError(getattr(err, "message", str(err)))
+        except FlyqlError as err:
+            raise serializers.ValidationError(getattr(err, "message", str(err)))
         return result
 
     def validate_query(self, value):

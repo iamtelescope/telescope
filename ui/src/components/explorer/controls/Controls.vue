@@ -89,30 +89,26 @@
                 />
             </div>
             <div class="mb-2" data-testid="explorer-columns-editor">
-                <IftaLabel>
-                    <ColumnsEditor
-                        id="columns_editor"
-                        @change="onFieldsChange"
-                        :source="source"
-                        :value="sourceControlsStore.columns"
-                        @submit="handleSearch"
-                    />
-                    <label for="columns_editor">Columns selector</label>
-                </IftaLabel>
+                <ColumnsEditor
+                    id="columns_editor"
+                    @change="onFieldsChange"
+                    :source="source"
+                    :value="sourceControlsStore.columns"
+                    :from="sourceControlsStore.from"
+                    :to="sourceControlsStore.to"
+                    @submit="handleSearch"
+                />
             </div>
             <div class="mb-2" data-testid="explorer-flyql-editor">
-                <IftaLabel>
-                    <QueryEditor
-                        id="flyql_editor"
-                        @change="onQueryChange"
-                        :source="source"
-                        :value="sourceControlsStore.query"
-                        :from="sourceControlsStore.from"
-                        :to="sourceControlsStore.to"
-                        @submit="handleSearch"
-                    />
-                    <label for="flyql_editor">FlyQL query</label>
-                </IftaLabel>
+                <QueryEditor
+                    id="flyql_editor"
+                    @change="onQueryChange"
+                    :source="source"
+                    :value="sourceControlsStore.query"
+                    :from="sourceControlsStore.from"
+                    :to="sourceControlsStore.to"
+                    @submit="handleSearch"
+                />
             </div>
             <div
                 v-if="source.isRawQueryAllowed() && showRawQueryEditor"

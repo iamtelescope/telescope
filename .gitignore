@@ -10,3 +10,4 @@ backend/telescope/templates/index.html
 venv/
 _bmad-output/
 _bmad
+.agents/

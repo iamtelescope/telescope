@@ -32,6 +32,7 @@ from telescope.serializers.source import (
     SourceGraphDataRequestSerializer,
     SourceDataAndGraphDataRequestSerializer,
     SourceAutocompleteRequestSerializer,
+    SourceJsonKeysRequestSerializer,
     SourceContextColumnDataSerializer,
     GetSourceSchemaClickhouseSerializer,
     GetSourceSchemaDockerSerializer,
@@ -269,6 +270,43 @@ class SourceRevokeRoleView(SourceRoleView):
                     response.add_msg("Grant does not exist")
         except Exception as err:
             response.mark_failed(f"failed to revoke role: {err}")
+        return Response(response.as_dict())
+
+
+class SourceJsonKeysView(APIView):
+    @method_decorator(login_required)
+    def post(self, request, slug):
+        response = UIResponse()
+
+        source = rbac_manager.get_source(
+            user=request.user,
+            source_slug=slug,
+            required_permissions=[permissions.Source.USE.value],
+            fetch_connection=True,
+        )
+        serializer = SourceJsonKeysRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            response.validation["result"] = False
+            response.validation["columns"] = serializer.errors
+            return Response(response.as_dict())
+
+        fetcher = get_fetchers()[source.kind]
+        try:
+            keys_response = fetcher.discover_json_keys(
+                source=source,
+                column=serializer.validated_data["column"],
+                segments=serializer.validated_data["segments"],
+                time_from=serializer.validated_data["from"],
+                time_to=serializer.validated_data["to"],
+            )
+        except ValueError as err:
+            response.mark_failed(str(err))
+            return Response(response.as_dict())
+        except Exception as err:
+            logger.exception("json key discovery failed: %s", err)
+            response.mark_failed("failed to discover json keys")
+            return Response(response.as_dict())
+        response.data["keys"] = [k.as_dict() for k in keys_response.keys]
         return Response(response.as_dict())
 
 

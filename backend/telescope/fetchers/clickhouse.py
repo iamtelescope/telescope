@@ -6,11 +6,12 @@ import zoneinfo
 
 import clickhouse_connect
 
-from flyql.core.parser import parse, ParserError
-from flyql.core.exceptions import FlyqlError
-from flyql.generators.clickhouse.generator import to_sql, Column
+from flyql import parse, ParserError, FlyqlError
+from flyql.generators.clickhouse import Column, to_sql_where
 
 from telescope.constants import UTC_ZONE
+from telescope.flyql_errors import format_flyql_error
+from telescope.flyql_registry import transformer_registry
 
 from telescope.models import SourceColumn
 
@@ -23,6 +24,8 @@ from telescope.fetchers.response import (
     AutocompleteResponse,
     DataResponse,
     GraphDataResponse,
+    JsonKeyEntry,
+    JsonKeysResponse,
 )
 from telescope.fetchers.fetcher import BaseFetcher
 from telescope.fetchers.models import Row
@@ -112,12 +115,32 @@ class ClickhouseConnect:
             logger.exception("error while tempdir cleanup (ignoring): %s", err)
 
 
+def _clickhouse_jsontype_to_flyql(ch_types):
+    """Map the set of ClickHouse JSONType() outputs observed at a key to a
+    single flyql display type. Mixed types fall back to 'unknown'."""
+    if not ch_types:
+        return "unknown"
+    mapping = {
+        "Object": "object",
+        "Array": "array",
+        "String": "string",
+        "Bool": "bool",
+        "Int64": "int",
+        "UInt64": "int",
+        "Double": "float",
+        "Null": "unknown",
+    }
+    flyql_types = {mapping.get(t, "unknown") for t in ch_types if t != "Null"}
+    if len(flyql_types) == 1:
+        return next(iter(flyql_types))
+    return "unknown"
+
+
 def flyql_clickhouse_columns(source_columns: Dict[str, SourceColumn]):
     return {
         column.name: Column(
             name=column.name,
-            jsonstring=column.jsonstring,
-            _type=column.type,
+            _type="jsonstring" if column.jsonstring else column.type,
             values=column.values,
         )
         for _, column in source_columns.items()
@@ -169,12 +192,16 @@ class Fetcher(BaseFetcher):
         try:
             parser = parse(query)
         except ParserError as err:
-            return False, err.message
+            return False, format_flyql_error(query, err)
         else:
             try:
-                to_sql(parser.root, columns=flyql_clickhouse_columns(source._columns))
+                to_sql_where(
+                    parser.root,
+                    columns=flyql_clickhouse_columns(source._columns),
+                    registry=transformer_registry(),
+                )
             except FlyqlError as err:
-                return False, err.message
+                return False, format_flyql_error(query, err)
 
         return True, None
 
@@ -206,7 +233,10 @@ class Fetcher(BaseFetcher):
                 try:
                     result = c.client.query(
                         "select name, type from system.columns where database = %(database)s and table = %(table)s",
-                        parameters={"database": data["database"], "table": data["table"]},
+                        parameters={
+                            "database": data["database"],
+                            "table": data["table"],
+                        },
                     )
                 except Exception as err:
                     response.schema["error"] = str(err)
@@ -242,6 +272,91 @@ class Fetcher(BaseFetcher):
         return [get_telescope_column(x[0], x[1]) for x in result.result_rows]
 
     @classmethod
+    def discover_json_keys(cls, source, column, segments, time_from, time_to):
+        if column not in source._columns:
+            raise ValueError(f"Invalid column: {column!r}")
+        source_column = source._columns[column]
+        col_type = (source_column.type or "").lower()
+        is_jsonstring = source_column.jsonstring or col_type == "jsonstring"
+        is_json = "json" in col_type and not is_jsonstring
+        is_map = "map(" in col_type
+
+        from_db_table = f"{source.data['database']}.{source.data['table']}"
+        time_clause = build_time_clause(
+            source.time_column, source.date_column, time_from, time_to
+        )
+        settings_clause = (
+            f" SETTINGS {source.data['settings']}" if source.data.get("settings") else ""
+        )
+
+        if is_jsonstring or is_json:
+            # `JSONExtractKeysAndValuesRaw` returns Array(Tuple(String, String));
+            # variadic path args dive into nested objects. We aggregate over a
+            # recent sample (ordered by time DESC) so the editor reflects what
+            # the user is currently looking at, not the full table.
+            path_params = {f"path_{i}": seg for i, seg in enumerate(segments[1:])}
+            path_args_sql = "".join(
+                f", {{path_{i}:String}}" for i in range(len(segments) - 1)
+            )
+            non_empty_clause = (
+                f" AND `{column}` != '' AND isValidJSON(`{column}`)"
+                if is_jsonstring
+                else ""
+            )
+            sql = (
+                f"WITH sample AS ("
+                f"  SELECT JSONExtractKeysAndValuesRaw(`{column}`{path_args_sql}) AS kv"
+                f"  FROM {from_db_table}"
+                f"  WHERE {time_clause}{non_empty_clause}"
+                f"  ORDER BY `{source.time_column}` DESC"
+                f"  LIMIT 1000"
+                f") "
+                f"SELECT pair.1 AS key, groupUniqArray(JSONType(pair.2)) AS types "
+                f"FROM sample ARRAY JOIN kv AS pair "
+                f"GROUP BY key ORDER BY key LIMIT 200"
+            ) + settings_clause
+            with ClickhouseConnect(source.conn.data) as c:
+                result = c.client.query(sql, parameters=path_params)
+                entries = []
+                for row in result.result_rows:
+                    key, types = row[0], row[1] or []
+                    ch_types = [str(t) for t in types]
+                    has_children = any(t == "Object" for t in ch_types)
+                    entries.append(
+                        JsonKeyEntry(
+                            name=str(key),
+                            type=_clickhouse_jsontype_to_flyql(ch_types),
+                            has_children=has_children,
+                        )
+                    )
+            return JsonKeysResponse(keys=entries)
+
+        if is_map:
+            # Map(K, V) is flat; `mapKeys()` returns Array(K). We only support
+            # discovery at the root level — nested maps would require recursing
+            # the value type, which is uncommon. Deeper segments return empty.
+            if len(segments) > 1:
+                return JsonKeysResponse(keys=[])
+            sql = (
+                f"SELECT k, COUNT() AS cnt FROM ("
+                f"  SELECT arrayJoin(mapKeys(`{column}`)) AS k"
+                f"  FROM {from_db_table}"
+                f"  WHERE {time_clause}"
+                f"  ORDER BY `{source.time_column}` DESC"
+                f"  LIMIT 1000"
+                f") GROUP BY k ORDER BY cnt DESC LIMIT 200"
+            ) + settings_clause
+            with ClickhouseConnect(source.conn.data) as c:
+                result = c.client.query(sql)
+                entries = [
+                    JsonKeyEntry(name=str(row[0]), type="string", has_children=False)
+                    for row in result.result_rows
+                ]
+            return JsonKeysResponse(keys=entries)
+
+        return JsonKeysResponse(keys=[])
+
+    @classmethod
     def autocomplete(cls, source, column, time_from, time_to, value):
         if column not in source._columns:
             raise ValueError(f"Invalid column: {column!r}")
@@ -269,8 +384,10 @@ class Fetcher(BaseFetcher):
     ):
         if request.query:
             parser = parse(request.query)
-            filter_clause = to_sql(
-                parser.root, columns=flyql_clickhouse_columns(request.source._columns)
+            filter_clause = to_sql_where(
+                parser.root,
+                columns=flyql_clickhouse_columns(request.source._columns),
+                registry=transformer_registry(),
             )
         else:
             filter_clause = "true"
@@ -407,8 +524,10 @@ class Fetcher(BaseFetcher):
     ):
         if request.query:
             parser = parse(request.query)
-            filter_clause = to_sql(
-                parser.root, columns=flyql_clickhouse_columns(request.source._columns)
+            filter_clause = to_sql_where(
+                parser.root,
+                columns=flyql_clickhouse_columns(request.source._columns),
+                registry=transformer_registry(),
             )
         else:
             filter_clause = "true"

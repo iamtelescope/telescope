@@ -4,9 +4,9 @@ import { defineStore } from 'pinia'
 
 import { useToast } from 'primevue'
 
-import { Parser as ColumnsParser } from 'flyql/columns'
 import { BoolOperator as FlyQLBoolOperator } from 'flyql'
 
+import { parseColumnNames } from '@/sdk/flyql'
 import { getBooleanFromString } from '@/utils/utils'
 import { availableTimeZones, localTimeZone } from '@/utils/datetimeranges'
 
@@ -93,11 +93,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     }
 
     const parsedColumns = computed(() => {
-        return (source) => {
-            const parser = new ColumnsParser()
-            parser.parse(columns.value, false, true)
-            return parser.columns.map((c) => c.name)
-        }
+        return (_source) => parseColumnNames(columns.value)
     })
 
     const from = computed(() => {

@@ -417,7 +417,8 @@ def test_permission_levels_hierarchy(docker_connection):
                 "values": [],
             }
         },
-        modifiers=[],
+        transformers=[],
+        renderers=[],
         default_chosen_columns="container_short_id, stream, message",
         support_raw_query=False,
         context_columns=[],
