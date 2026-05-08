@@ -70,12 +70,12 @@ class Source {
             }
         }
         if (columns.length == 1) {
-            text += `${columns[0]}=*value*`
+            text += `${columns[0]} like '%value%'`
         } else if (columns.length == 2 || columns.length == 3) {
-            text += `${columns[0]}=*value* and ${columns[1] != 'value'}`
+            text += `${columns[0]} like '%value%' and ${columns[1]}!='value'`
         }
         if (columns.length == 4) {
-            text += `${columns[0]}="*like value*" and ${columns[1]}!=value or (${columns[2]}=~".*rege[xX]$" and ${columns[3]}!~"reg ex$")`
+            text += `${columns[0]} like '%value%' and ${columns[1]}!='value' or (${columns[2]}~".*rege[xX]$" and ${columns[3]}!~"reg ex$")`
         }
         return text
     }

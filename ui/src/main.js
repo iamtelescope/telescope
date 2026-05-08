@@ -13,6 +13,7 @@ import ToastService from 'primevue/toastservice'
 import ConfirmationService from 'primevue/confirmationservice'
 import Tooltip from 'primevue/tooltip'
 
+import 'flyql-vue/flyql.css'
 import '@/assets/css/main.css'
 
 import 'primeicons/primeicons.css'

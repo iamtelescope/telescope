@@ -7,12 +7,13 @@ import zoneinfo
 
 import mysql.connector
 
-from flyql.core.parser import parse, ParserError
-from flyql.core.exceptions import FlyqlError
-from flyql.generators.starrocks.generator import to_sql, Column
+from flyql import parse, ParserError, FlyqlError
+from flyql.generators.starrocks import Column, to_sql_where
 
 from telescope.constants import UTC_ZONE
 from telescope.columns import ParsedColumn
+from telescope.flyql_errors import format_flyql_error
+from telescope.flyql_registry import transformer_registry
 from telescope.models import Source, SourceColumn
 
 from telescope.fetchers.request import (
@@ -118,8 +119,7 @@ def flyql_starrocks_columns(source_columns: Dict[str, SourceColumn]):
     return {
         column.name: Column(
             name=column.name,
-            jsonstring=column.jsonstring,
-            _type=column.type,
+            _type="jsonstring" if column.jsonstring else column.type,
             values=column.values,
         )
         for _, column in source_columns.items()
@@ -171,13 +171,17 @@ class Fetcher(BaseFetcher):
         try:
             parser = parse(query)
         except ParserError as err:
-            return False, err.message
+            return False, format_flyql_error(query, err)
         else:
             try:
                 assert parser.root
-                to_sql(parser.root, columns=flyql_starrocks_columns(source._columns))
+                to_sql_where(
+                    parser.root,
+                    columns=flyql_starrocks_columns(source._columns),
+                    registry=transformer_registry(),
+                )
             except FlyqlError as err:
-                return False, err.message
+                return False, format_flyql_error(query, err)
 
         return True, None
 
@@ -285,8 +289,10 @@ class Fetcher(BaseFetcher):
         if request.query:
             parser = parse(request.query)
             assert parser.root
-            filter_clause = to_sql(
-                parser.root, columns=flyql_starrocks_columns(request.source._columns)
+            filter_clause = to_sql_where(
+                parser.root,
+                columns=flyql_starrocks_columns(request.source._columns),
+                registry=transformer_registry(),
             )
         else:
             filter_clause = "true"
@@ -447,8 +453,10 @@ class Fetcher(BaseFetcher):
         if request.query:
             parser = parse(request.query)
             assert parser.root
-            filter_clause = to_sql(
-                parser.root, columns=flyql_starrocks_columns(request.source._columns)
+            filter_clause = to_sql_where(
+                parser.root,
+                columns=flyql_starrocks_columns(request.source._columns),
+                registry=transformer_registry(),
             )
         else:
             filter_clause = "true"

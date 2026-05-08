@@ -92,6 +92,10 @@ urlpatterns = [
         source.SourceDataAutocompleteView.as_view(),
     ),
     path(
+        "ui/v1/sources/<slug:slug>/jsonKeys",
+        source.SourceJsonKeysView.as_view(),
+    ),
+    path(
         "ui/v1/sources/<slug:slug>/roleBindings", source.SourceRoleBindingView.as_view()
     ),
     path("ui/v1/sources/<slug:slug>/grantRole", source.SourceGrantRoleView.as_view()),

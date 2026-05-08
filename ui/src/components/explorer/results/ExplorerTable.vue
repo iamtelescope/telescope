@@ -58,14 +58,14 @@
                         :key="column.name"
                     >
                         <div
-                            v-if="containsHtmlModifiers(column)"
+                            v-if="renderCell(column, row.data).isHtml"
                             :class="{ 'whitespace-pre-wrap break-all': getRowValueLength(column, row.data) > 50 }"
-                            v-html="getRowValue(column, row.data)"
+                            v-html="renderCell(column, row.data).value"
                         />
                         <pre
                             v-else
                             :class="{ 'whitespace-pre-wrap break-all': getRowValueLength(column, row.data) > 50 }"
-                            >{{ getRowValue(column, row.data) || '&dash;' }}</pre
+                            >{{ renderCell(column, row.data).value || '&dash;' }}</pre
                         >
                     </td>
                 </tr>
@@ -86,7 +86,7 @@ import Drawer from 'primevue/drawer'
 import Row from '@/components/explorer/results/Row.vue'
 
 import { getColor } from '@/utils/colors.js'
-import { MODIFIERS } from '@/utils/modifiers.js'
+import { applyColumnPipeline } from '@/utils/flyql-registries.js'
 import { DateTime } from 'luxon'
 
 const props = defineProps(['source', 'rows', 'columns', 'timeZone'])
@@ -142,40 +142,18 @@ const getRowColor = (row) => {
     return getColor(row.severity)
 }
 
-const containsHtmlModifiers = (column) => {
-    for (const modifier of column.modifiers) {
-        if (MODIFIERS[modifier.name].type == 'html') {
-            return true
-        }
-    }
-    return false
-}
-
-const getRowValue = (column, data) => {
-    let value = ''
+const renderCell = (column, data) => {
+    let raw
     if (column.is_segmented) {
-        value = extractSegment(column, data)
+        raw = extractSegment(column, data)
     } else {
-        data = data[column.root_name]
-        value = data
+        raw = data[column.root_name]
     }
-    for (const modifier of column.modifiers) {
-        if (MODIFIERS[modifier.name].type == 'value') {
-            let func = MODIFIERS[modifier.name].func
-            value = func(value, ...modifier.arguments)
-        }
-    }
-    for (const modifier of column.modifiers) {
-        if (MODIFIERS[modifier.name].type == 'html') {
-            let func = MODIFIERS[modifier.name].func
-            value = func(value, ...modifier.arguments)
-        }
-    }
-    return value
+    return applyColumnPipeline(column, raw)
 }
 
 const getRowValueLength = (column, data) => {
-    let value = getRowValue(column, data)
+    const { value } = renderCell(column, data)
     if (typeof value === 'object') {
         return JSON.stringify(value).length
     }
@@ -183,25 +161,34 @@ const getRowValueLength = (column, data) => {
 }
 
 const extractSegment = (column, data) => {
-    // Helper function to recursively extract path with dot-aware key matching
-    const extractPath = (path, obj) => {
-        if (!path) return obj
-        if (typeof obj !== 'object' || obj === null) return undefined
-
-        let candidate = path
-        while (candidate) {
-            if (candidate in obj) {
-                const remainingPath = path.substring(candidate.length + 1)
-                return extractPath(remainingPath, obj[candidate])
-            }
-            // Remove the last dot-separated suffix
-            const lastDot = candidate.lastIndexOf('.')
-            if (lastDot === -1) break
-            candidate = candidate.substring(0, lastDot)
-        }
-        return undefined
+    // Walk flyql's parsed segments — they're already unquoted and split,
+    // so a path like `labels.'app.kubernetes.io/component'` arrives as
+    // ['labels', 'app.kubernetes.io/component'] and a literal-dot key
+    // matches directly without the quote-stripping/prefix-peeling that
+    // `column.name` would require.
+    let segments = column.segments
+    if (!segments || segments.length === 0) {
+        // Fallback for older payloads that don't carry segments — split
+        // by dot, ignoring quote handling. Top-level dotted column names
+        // are still resolved via root_name elsewhere.
+        segments = column.name ? column.name.split('.') : []
     }
-
-    return extractPath(column.name, data)
+    let cur = data
+    for (let i = 0; i < segments.length; i++) {
+        if (cur === null || typeof cur !== 'object') return undefined
+        const seg = segments[i]
+        if (!(seg in cur)) {
+            // Tolerant lookup: the column might be a dotted top-level
+            // name (e.g. `container.id`) that lives flat in `data`. Try
+            // re-joining the remaining segments with dots.
+            if (i === 0) {
+                const rejoined = segments.join('.')
+                if (rejoined in cur) return cur[rejoined]
+            }
+            return undefined
+        }
+        cur = cur[seg]
+    }
+    return cur
 }
 </script>

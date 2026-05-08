@@ -65,24 +65,16 @@
         </div>
 
         <!-- Row 2: FlyQL Editor (conditionally shown) -->
-        <IftaLabel v-if="showFlyqlFilter">
-            <div
-                id="pods_flyql_filter"
-                :style="{ height: `${editorHeight}px` }"
-                class="editor border rounded-lg border-neutral-300 pl-2 pr-2 dark:border-neutral-600 w-full"
-                :class="{ 'border-sky-800 dark:border-sky-700': editorFocused }"
-            >
-                <vue-monaco-editor
-                    v-model:value="podsFlyqlFilter"
-                    theme="telescope"
-                    language="flyql"
-                    :options="getDefaultMonacoOptions()"
-                    @mount="handleMount"
-                    @change="onPodsFlyqlFilterChange"
-                />
-            </div>
-            <label for="pods_flyql_filter">Pod FlyQL Filter</label>
-        </IftaLabel>
+        <div v-if="showFlyqlFilter" data-testid="pods-flyql-filter">
+            <FlyqlEditor
+                :modelValue="podsFlyqlFilter"
+                @update:modelValue="onPodsFlyqlFilterChange"
+                :columns="podsSchema"
+                :registry="transformerRegistry"
+                :dark="isDark"
+                placeholder='metadata.name ~ "api" and not metadata.name ~ "worker"'
+            />
+        </div>
 
         <!-- Pods Preview Dialog -->
         <Dialog v-model:visible="showPodsDialog" :modal="true" :style="{ width: '90vw' }" @show="loadPods">
@@ -169,7 +161,6 @@ import {
     MultiSelect,
     InputText,
     ToggleSwitch,
-    IftaLabel,
     FloatLabel,
     Button,
     Dialog,
@@ -177,11 +168,12 @@ import {
     Column,
     Popover,
 } from 'primevue'
-import { VueMonacoEditor } from '@guolao/vue-monaco-editor'
-import { getDefaultMonacoOptions } from '@/utils/monaco.js'
+import { useDark } from '@vueuse/core'
+import { ColumnSchema } from 'flyql'
+import { FlyqlEditor } from 'flyql-vue'
+import { transformerRegistry } from '@/utils/flyql-registries.js'
 import { SourceService } from '@/sdk/services/source.js'
 import Loader from '@/components/common/Loader.vue'
-import * as monaco from 'monaco-editor'
 
 const sourceService = new SourceService()
 
@@ -204,8 +196,19 @@ const podsLabelSelector = ref(props.contextColumns?.pods_label_selector || '')
 const podsFlyqlFilter = ref(props.contextColumns?.pods_flyql_filter || '')
 const showFlyqlFilter = ref(!!props.contextColumns?.pods_flyql_filter)
 
-// Editor state
-const editorFocused = ref(false)
+const isDark = useDark()
+
+// Minimal pod schema — top-level Kubernetes object fields. `metadata`/`spec`/
+// `status` are marked `object` so flyql-vue treats them as schemaless
+// containers, letting users type any nested path (e.g. `metadata.name`)
+// without the editor flagging it unknown.
+const podsSchema = ColumnSchema.fromPlainObject({
+    apiVersion: { type: 'string' },
+    kind: { type: 'string' },
+    metadata: { type: 'object' },
+    spec: { type: 'object' },
+    status: { type: 'object' },
+})
 
 // Pods preview state
 const showPodsDialog = ref(false)
@@ -227,73 +230,6 @@ const contextOptions = computed(() => {
 const namespaceOptions = computed(() => {
     return props.contextColumnsData?.namespaces || []
 })
-
-// Editor height calculation
-const editorHeight = computed(() => {
-    const lines = (podsFlyqlFilter.value.match(/\n/g) || '').length + 1
-    return 24 + lines * 20
-})
-
-const completionProvider = ref(null)
-
-const handleMount = (editor) => {
-    editor.updateOptions({
-        placeholder: 'metadata.name ~ "api" and not metadata.name ~ "worker"',
-    })
-    editor.onDidFocusEditorText(() => {
-        editorFocused.value = true
-    })
-    editor.onDidBlurEditorText(() => {
-        editorFocused.value = false
-    })
-
-    completionProvider.value = monaco.languages.registerCompletionItemProvider('flyql', {
-        provideCompletionItems: (model, position) => {
-            const word = model.getWordUntilPosition(position)
-            const range = {
-                startLineNumber: position.lineNumber,
-                endLineNumber: position.lineNumber,
-                startColumn: word.startColumn,
-                endColumn: word.endColumn,
-            }
-
-            const suggestions = [
-                {
-                    label: 'apiVersion',
-                    kind: monaco.languages.CompletionItemKind.Field,
-                    insertText: 'apiVersion',
-                    range: range,
-                },
-                {
-                    label: 'kind',
-                    kind: monaco.languages.CompletionItemKind.Field,
-                    insertText: 'kind',
-                    range: range,
-                },
-                {
-                    label: 'metadata',
-                    kind: monaco.languages.CompletionItemKind.Field,
-                    insertText: 'metadata',
-                    range: range,
-                },
-                {
-                    label: 'spec',
-                    kind: monaco.languages.CompletionItemKind.Field,
-                    insertText: 'spec',
-                    range: range,
-                },
-                {
-                    label: 'status',
-                    kind: monaco.languages.CompletionItemKind.Field,
-                    insertText: 'status',
-                    range: range,
-                },
-            ]
-
-            return { suggestions }
-        },
-    })
-}
 
 // View pods handler - just opens the dialog
 const onViewPods = () => {
@@ -395,10 +331,11 @@ const onPodsLabelSelectorChange = () => {
     })
 }
 
-const onPodsFlyqlFilterChange = () => {
+const onPodsFlyqlFilterChange = (value) => {
+    podsFlyqlFilter.value = value
     emit('columnChanged', {
         name: 'pods_flyql_filter',
-        value: podsFlyqlFilter.value,
+        value,
     })
 }
 

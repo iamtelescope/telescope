@@ -85,6 +85,10 @@ class SourceService {
         let response = await http.Post(`ui/v1/sources/${sourceSlug}/autocomplete`, params)
         return response
     }
+    discoverJsonKeys = async (sourceSlug, params) => {
+        let response = await http.Post(`ui/v1/sources/${sourceSlug}/jsonKeys`, params)
+        return response
+    }
     getContextColumnData = async (sourceSlug, params) => {
         let response = await http.Post(`ui/v1/sources/${sourceSlug}/contextColumnData`, params)
         return response

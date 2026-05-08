@@ -1,12 +1,12 @@
 import logging
 from datetime import datetime
 
-from flyql.core.parser import parse, ParserError
-from flyql.core.exceptions import FlyqlError
-from flyql.matcher.evaluator import Evaluator
-from flyql.matcher.record import Record
+from flyql import parse, ParserError, FlyqlError
+from flyql.matcher import Evaluator, Record
 
 from telescope.constants import UTC_ZONE, SOURCE_BODY_COL_NAME
+from telescope.flyql_errors import format_flyql_error
+from telescope.flyql_registry import transformer_registry
 from telescope.utils import get_telescope_column
 from telescope.fetchers.fetcher import BaseFetcher
 import json
@@ -16,6 +16,8 @@ from telescope.fetchers.response import (
     AutocompleteResponse,
     DataResponse,
     GraphDataResponse,
+    JsonKeyEntry,
+    JsonKeysResponse,
 )
 from telescope.fetchers.kubernetes.api import (
     KubeConfigHelper,
@@ -50,9 +52,9 @@ class Fetcher(BaseFetcher):
             parse(query)
             return True, None
         except ParserError as err:
-            return False, err.message
+            return False, format_flyql_error(query, err)
         except FlyqlError as err:
-            return False, err.message
+            return False, format_flyql_error(query, err)
 
     @classmethod
     def test_connection_ng(cls, data: dict) -> ConnectionTestResponseNg:
@@ -262,6 +264,54 @@ class Fetcher(BaseFetcher):
         return AutocompleteResponse(items=[], incomplete=False)
 
     @classmethod
+    def discover_json_keys(cls, source, column, segments, time_from, time_to):
+        # K8s columns we can discover cheaply: `labels` and `annotations` come
+        # from pod metadata that the helper already lists (no log fetch). The
+        # `body` column (live log content) is skipped here because sampling it
+        # requires a full log read; that case is left for a future pass.
+        if column not in ("labels", "annotations"):
+            return JsonKeysResponse(keys=[])
+        if len(segments) > 1:
+            return JsonKeysResponse(keys=[])
+
+        conn_data = source.conn.data
+        source_data = source.data
+
+        helper = KubeHelper(
+            conn_id=source.conn.id,
+            source_id=source.id,
+            max_concurrent_requests=conn_data.get("max_concurrent_requests", 20),
+            config=KubeConfigHelper(
+                kubeconfig=conn_data["kubeconfig"],
+                kubeconfig_hash=conn_data.get("kubeconfig_hash", ""),
+                is_local=conn_data.get("kubeconfig_is_local", False),
+            ),
+            context_flyql_filter=conn_data.get("context_filter", ""),
+            namespace_label_selector=source_data.get("namespace_label_selector", ""),
+            namespace_field_selector=source_data.get("namespace_field_selector", ""),
+            namespace_flyql_filter=source_data.get("namespace", ""),
+        )
+
+        try:
+            helper.validate()
+        except KubeHelperError:
+            return JsonKeysResponse(keys=[])
+
+        keys = set()
+        for namespaces in helper.pods.values():
+            for pods in namespaces.values():
+                for pod_data in pods.values():
+                    bag = pod_data.get(column) or {}
+                    if isinstance(bag, dict):
+                        keys.update(bag.keys())
+
+        entries = [
+            JsonKeyEntry(name=str(k), type="string", has_children=False)
+            for k in sorted(keys)
+        ]
+        return JsonKeysResponse(keys=entries)
+
+    @classmethod
     def fetch_data(cls, request: DataRequest, tz):
         conn_data = request.source.conn.data
         source_data = request.source.data
@@ -342,7 +392,8 @@ class Fetcher(BaseFetcher):
 
         logger.info("Total log entries fetched: %d", len(log_entries))
 
-        evaluator = Evaluator()
+        evaluator = Evaluator(registry=transformer_registry())
+        flyql_error_logged = False
         query_ast = None
         if request.query:
             parser = parse(request.query)
@@ -380,7 +431,16 @@ class Fetcher(BaseFetcher):
             )
 
             if query_ast:
-                if evaluator.evaluate(query_ast, Record(data=row.data)):
+                try:
+                    matched = evaluator.evaluate(query_ast, Record(data=row.data))
+                except FlyqlError as err:
+                    if not flyql_error_logged:
+                        logger.warning(
+                            "flyql evaluator error (logging once per request): %s", err
+                        )
+                        flyql_error_logged = True
+                    continue
+                if matched:
                     rows.append(row)
             else:
                 rows.append(row)
@@ -510,7 +570,8 @@ class Fetcher(BaseFetcher):
 
         logger.info("Total log entries fetched: %d", len(log_entries))
 
-        evaluator = Evaluator()
+        evaluator = Evaluator(registry=transformer_registry())
+        flyql_error_logged = False
         query_ast = None
         if request.query:
             parser = parse(request.query)
@@ -548,7 +609,16 @@ class Fetcher(BaseFetcher):
             )
 
             if query_ast:
-                if evaluator.evaluate(query_ast, Record(data=row.data)):
+                try:
+                    matched = evaluator.evaluate(query_ast, Record(data=row.data))
+                except FlyqlError as err:
+                    if not flyql_error_logged:
+                        logger.warning(
+                            "flyql evaluator error (logging once per request): %s", err
+                        )
+                        flyql_error_logged = True
+                    continue
+                if matched:
                     all_rows.append(row)
             else:
                 all_rows.append(row)

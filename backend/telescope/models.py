@@ -74,7 +74,8 @@ class Source(models.Model):
     severity_column = models.CharField(max_length=128)
     severity_rules = models.JSONField(null=True, blank=True, default=None)
     columns = models.JSONField()
-    modifiers = models.JSONField()
+    transformers = models.JSONField(default=list)
+    renderers = models.JSONField(default=list)
     default_chosen_columns = models.JSONField()
     support_raw_query = models.BooleanField()
     execute_query_on_open = models.BooleanField(default=True)
@@ -147,7 +148,7 @@ class Source(models.Model):
             query_mode = SOURCE_QUERY_MODE_COMBINED
 
         return Source.objects.create(
-            kind=kind, query_mode=query_mode, **data, modifiers=[]
+            kind=kind, query_mode=query_mode, **data, transformers=[], renderers=[]
         )
 
     @property
