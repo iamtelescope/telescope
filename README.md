@@ -42,6 +42,64 @@ You can log in via GitHub to explore the core features of the system from an end
 - Authenticate with GitHub, with the ability to enforce **organization membership** requirements for access control.
 - Define and manage **user and group permissions** to control access to specific sources based on their roles.
 
+
+### Authentication configuration
+
+Telescope supports browser login with GitHub, Okta, and Keycloak. Keycloak uses
+the generic OpenID Connect provider and one configured realm. Set its issuer
+URL (not the Keycloak server root) in `server_url`; Telescope discovers the
+authorization, token, and userinfo endpoints from that realm's
+`/.well-known/openid-configuration`.
+
+Example Keycloak configuration:
+
+```yaml
+auth:
+  providers:
+    keycloak:
+      enabled: true
+      client_id: "telescope"
+      secret: !env KEYCLOAK_SECRET
+      server_url: "https://sso.example/realms/telescope"
+      default_group: "telescope-users"
+  force_auth_provider: keycloak  # optional
+```
+
+The Keycloak client must be confidential, have Standard Flow enabled, use
+PKCE method `S256`, and allow this redirect URI:
+
+```text
+https://<public-host>/login/oidc/keycloak/login/callback/
+```
+
+Use an `http://localhost` URI only for local development.
+
+When `frontend.base_url` is configured, include that subpath before
+`/login/`. Keycloak groups and roles are not synchronized; a successful login
+adds the user only to the configured `default_group`. Logout clears the local
+Django session and does not call the Keycloak logout endpoint. REST API
+authentication continues to use the existing Session and Telescope API Token
+methods.
+
+To place every Keycloak user into a read-only group, set
+`default_group` to the exact Telescope group name, for example:
+
+```yaml
+default_group: "read only"
+```
+
+Create that group in Telescope and assign its `viewer` role on each required
+source and connection for configuration-only access. To let users query logs
+without edit/delete/grant permissions, assign the `user` role on the required
+sources; it grants `source_read` and `source_use`. Use the connection
+`viewer` role for connection visibility. Creating sources additionally requires
+the global `global_create_source` permission and connection `use` permission.
+The group name alone does not grant permissions, and Keycloak group or role
+claims are intentionally ignored.
+
+See the [permission hierarchy](https://docs.iamtelescope.net/concepts/auth/#permission-hierarchy)
+for the complete role and permission matrix.
+
 ## Contributing
 
 Patches are welcome! Please take a look at [Contributing guidelines](CONTRIBUTING.md).

@@ -58,8 +58,43 @@ data:
             {{- range .Values.config.auth.providers.github.organizations }}
             - {{ . | quote }}
             {{- end }}
-          default_group: {{ .Values.config.auth.providers.github.default_group }}
-      force_github_auth: {{ .Values.config.auth.force_github_auth }}
+          {{ if .Values.config.auth.providers.github.default_group }}
+          default_group: {{ .Values.config.auth.providers.github.default_group | quote }}
+          {{ else }}
+          default_group: null
+          {{ end }}
+        okta:
+          enabled: {{ .Values.config.auth.providers.okta.enabled }}
+          client_id: {{ .Values.config.auth.providers.okta.client_id | quote }}
+          secret: !env OKTA_SECRET
+          base_url: {{ .Values.config.auth.providers.okta.base_url | quote }}
+          {{ if .Values.config.auth.providers.okta.default_group }}
+          default_group: {{ .Values.config.auth.providers.okta.default_group | quote }}
+          {{ else }}
+          default_group: null
+          {{ end }}
+          scope: {{ .Values.config.auth.providers.okta.scope | quote }}
+          pkce_enabled: {{ .Values.config.auth.providers.okta.pkce_enabled }}
+        keycloak:
+          enabled: {{ .Values.config.auth.providers.keycloak.enabled }}
+          client_id: {{ .Values.config.auth.providers.keycloak.client_id | quote }}
+          {{- if .Values.config.auth.providers.keycloak.enabled }}
+          secret: !env KEYCLOAK_SECRET
+          {{- else }}
+          secret: ""
+          {{- end }}
+          server_url: {{ .Values.config.auth.providers.keycloak.server_url | quote }}
+          {{ if .Values.config.auth.providers.keycloak.default_group }}
+          default_group: {{ .Values.config.auth.providers.keycloak.default_group | quote }}
+          {{ else }}
+          default_group: null
+          {{ end }}
+      {{ if .Values.config.auth.force_auth_provider }}
+      force_auth_provider: {{ .Values.config.auth.force_auth_provider | quote }}
+      {{ else }}
+      force_auth_provider: null
+      {{ end }}
+      local_login_secret_path: !env LOCAL_LOGIN_SECRET_PATH
       enable_testing_auth: {{ .Values.config.auth.enable_testing_auth }}
       testing_auth_username: {{ .Values.config.auth.testing_auth_username | quote }}
     frontend:

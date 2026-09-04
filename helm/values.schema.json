@@ -146,17 +146,72 @@
                     "client_id": {
                       "type": "string"
                     },
+                    "key": {
+                      "type": "string"
+                    },
                     "organizations": {
                       "type": "array",
                       "items": {
                         "type": "string"
                       }
+                    },
+                    "default_group": {
+                      "type": ["string", "null"]
+                    }
+                  },
+                  "required": ["enabled"]
+                },
+                "okta": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "client_id": {
+                      "type": "string"
+                    },
+                    "secret": {
+                      "type": "string"
+                    },
+                    "base_url": {
+                      "type": "string"
+                    },
+                    "default_group": {
+                      "type": ["string", "null"]
+                    },
+                    "scope": {
+                      "type": "string"
+                    },
+                    "pkce_enabled": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["enabled"]
+                },
+                "keycloak": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "client_id": {
+                      "type": "string"
+                    },
+                    "server_url": {
+                      "type": "string"
+                    },
+                    "default_group": {
+                      "type": ["string", "null"]
                     }
                   },
                   "required": ["enabled"]
                 }
               },
-              "required": ["github"]
+              "required": ["github", "okta", "keycloak"]
+            },
+            "force_auth_provider": {
+              "type": ["string", "null"],
+              "enum": [null, "github", "okta", "keycloak"]
             }
           },
           "required": ["providers"]

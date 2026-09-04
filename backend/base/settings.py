@@ -44,6 +44,8 @@ if CONFIG["auth"]["providers"]["github"]["enabled"]:
 
 if CONFIG["auth"]["providers"]["okta"]["enabled"]:
     INSTALLED_APPS.append("allauth.socialaccount.providers.okta")
+if CONFIG["auth"]["providers"]["keycloak"]["enabled"]:
+    INSTALLED_APPS.append("allauth.socialaccount.providers.openid_connect")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -190,6 +192,25 @@ if CONFIG["auth"]["providers"]["okta"]["enabled"]:
         okta_config["OAUTH_PKCE_ENABLED"] = True
 
     SOCIALACCOUNT_PROVIDERS["okta"] = okta_config
+
+if CONFIG["auth"]["providers"]["keycloak"]["enabled"]:
+    keycloak_config = {
+        "OAUTH_PKCE_ENABLED": True,
+        "APPS": [
+            {
+                "provider_id": "keycloak",
+                "name": "Keycloak",
+                "client_id": CONFIG["auth"]["providers"]["keycloak"]["client_id"],
+                "secret": CONFIG["auth"]["providers"]["keycloak"]["secret"],
+                "settings": {
+                    "server_url": CONFIG["auth"]["providers"]["keycloak"][
+                        "server_url"
+                    ].rstrip("/"),
+                },
+            }
+        ],
+    }
+    SOCIALACCOUNT_PROVIDERS["openid_connect"] = keycloak_config
 
 if CONFIG["django"].get("SECURE_PROXY_SSL_HEADER"):
     header_config = CONFIG["django"]["SECURE_PROXY_SSL_HEADER"]

@@ -9,3 +9,17 @@ django:
     default:
       ENGINE: "django.db.backends.sqlite3"
       NAME: "/db.sqlite3"
+
+# Optional Keycloak OIDC browser login example. Keep the client secret in the
+# environment instead of committing it to this file:
+# export KEYCLOAK_SECRET="your-keycloak-client-secret"
+#
+# auth:
+#   providers:
+#     keycloak:
+#       enabled: true
+#       client_id: "telescope"
+#       secret: !env KEYCLOAK_SECRET
+#       server_url: "https://sso.example/realms/telescope"
+#       default_group: "read only"
+#   force_auth_provider: keycloak

@@ -35,9 +35,36 @@ SCHEMA = {
             "properties": {
                 "providers": {
                     "type": "object",
+                    "properties": {
+                        "keycloak": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                },
+                                "client_id": {
+                                    "type": "string",
+                                },
+                                "secret": {
+                                    "type": "string",
+                                },
+                                "server_url": {
+                                    "type": "string",
+                                },
+                                "default_group": {
+                                    "type": ["string", "null"],
+                                },
+                            },
+                            "additionalProperties": True,
+                        },
+                    },
+                    "additionalProperties": True,
                 },
-                "force_github_auth": {
-                    "type": "boolean",
+                "force_auth_provider": {
+                    "type": ["string", "null"],
+                },
+                "local_login_secret_path": {
+                    "type": ["string", "null"],
                 },
                 "enable_testing_auth": {
                     "type": "boolean",
@@ -46,6 +73,7 @@ SCHEMA = {
                     "type": "string",
                 },
             },
+            "additionalProperties": True,
         },
         "limits": {
             "max_saved_views_per_user": {
@@ -115,13 +143,13 @@ def validate(config, schema):
         errors.append((path, error.message))
 
     if not errors:
-        if config["auth"]["force_auth_provider"]:
+        if config["auth"]["force_auth_provider"] is not None:
             provider = config["auth"]["force_auth_provider"]
-            if provider not in ["github", "okta"]:
+            if provider not in ["github", "okta", "keycloak"]:
                 errors.append(
                     (
                         "auth.force_auth_provider",
-                        "must be either 'github' or 'okta'",
+                        "must be one of 'github', 'okta', or 'keycloak'",
                     )
                 )
             elif not config["auth"]["providers"].get(provider, {}).get("enabled"):
@@ -129,6 +157,25 @@ def validate(config, schema):
                     (
                         "auth.force_auth_provider",
                         f"cannot be '{provider}' if {provider} provider is not enabled",
+                    )
+                )
+
+    auth = config.get("auth", {})
+    providers = (
+        auth.get("providers", {}) if isinstance(auth, collections.abc.Mapping) else {}
+    )
+    keycloak = (
+        providers.get("keycloak", {})
+        if isinstance(providers, collections.abc.Mapping)
+        else {}
+    )
+    if isinstance(keycloak, collections.abc.Mapping) and keycloak.get("enabled"):
+        for field in ("client_id", "secret", "server_url"):
+            if not isinstance(keycloak.get(field), str) or not keycloak[field]:
+                errors.append(
+                    (
+                        f"auth.providers.keycloak.{field}",
+                        "must be a non-empty string when keycloak provider is enabled",
                     )
                 )
 
@@ -197,6 +244,13 @@ def get_default_config():
                     "default_group": None,
                     "scope": "openid profile email",
                     "pkce_enabled": True,
+                },
+                "keycloak": {
+                    "enabled": False,
+                    "client_id": "",
+                    "secret": "",
+                    "server_url": "",
+                    "default_group": None,
                 },
             },
             "force_auth_provider": None,
