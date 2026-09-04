@@ -4,3 +4,12 @@ django:
     default:
       ENGINE: "django.db.backends.sqlite3"
 #      NAME: "/db.sqlite3"
+
+auth:
+  providers:
+    keycloak:
+      enabled: true
+      client_id: "telescope"
+      secret: "test-keycloak-secret"
+      server_url: "https://keycloak.example/realms/telescope"
+      default_group: "keycloak-users"

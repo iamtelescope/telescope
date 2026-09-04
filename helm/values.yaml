@@ -60,8 +60,12 @@ config:
         default_group: null
         scope: "openid profile email"
         pkce_enabled: true
+      keycloak:
+        enabled: false
+        client_id: ""
+        server_url: ""
+        default_group: null
     force_auth_provider: null
-    local_login_secret_path: null
     enable_testing_auth: false
     testing_auth_username: "telescope"
   frontend:
@@ -128,6 +132,8 @@ djangoCollectstatic: 1
 # - DJANGO_SECRET_KEY: Always required for Django security
 # - GITHUB_SECRET: Required only when config.auth.providers.github.enabled=true
 # - OKTA_SECRET: Required only when config.auth.providers.okta.enabled=true
+# - KEYCLOAK_SECRET: Required only when config.auth.providers.keycloak.enabled=true
+# - LOCAL_LOGIN_SECRET_PATH: Optional; required only when local login is configured
 # - DATABASE_PASSWORD: Required only when database.type="postgresql"
 #
 # To use a custom secret name:
@@ -138,6 +144,8 @@ djangoCollectstatic: 1
 #     --from-literal=DJANGO_SECRET_KEY="your-django-secret" \
 #     --from-literal=GITHUB_SECRET="your-github-oauth-secret" \
 #     --from-literal=OKTA_SECRET="your-okta-oauth-secret" \
+#     --from-literal=KEYCLOAK_SECRET="your-keycloak-client-secret" \
+#     --from-literal=LOCAL_LOGIN_SECRET_PATH="emergency-login-token" \
 #     --from-literal=DATABASE_PASSWORD="your-db-password"
 
 # PodDisruptionBudget for high availability

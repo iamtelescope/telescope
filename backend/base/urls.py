@@ -17,6 +17,13 @@ if settings.CONFIG["auth"]["providers"]["okta"]["enabled"]:
 
     oauth_patterns.extend(okta_patterns)
 
+if settings.CONFIG["auth"]["providers"]["keycloak"]["enabled"]:
+    from allauth.socialaccount.providers.openid_connect.urls import (
+        urlpatterns as keycloak_patterns,
+    )
+
+    oauth_patterns.extend(keycloak_patterns)
+
 urlpatterns = [
     path(
         "editor.worker.js",

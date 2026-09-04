@@ -34,6 +34,7 @@ class LoginView(views.LoginView):
         "base_url": settings.BASE_URL or "",
         "github_enabled": settings.CONFIG["auth"]["providers"]["github"]["enabled"],
         "okta_enabled": settings.CONFIG["auth"]["providers"]["okta"]["enabled"],
+        "keycloak_enabled": settings.CONFIG["auth"]["providers"]["keycloak"]["enabled"],
         "force_auth_provider": settings.CONFIG["auth"]["force_auth_provider"],
     }
 
@@ -59,6 +60,9 @@ class LocalLoginView(views.LoginView):
                     "enabled"
                 ],
                 "okta_enabled": settings.CONFIG["auth"]["providers"]["okta"]["enabled"],
+                "keycloak_enabled": settings.CONFIG["auth"]["providers"]["keycloak"][
+                    "enabled"
+                ],
                 "force_auth_provider": None,
             }
         )
@@ -157,7 +161,7 @@ class WhoAmIView(APIView):
             if social_account.provider == "github":
                 data["username"] = user_data["login"]
                 data["avatar_url"] = user_data["avatar_url"]
-            elif social_account.provider == "okta":
+            elif social_account.provider in ("okta", "keycloak"):
                 data["username"] = user_data.get(
                     "preferred_username", user_data.get("email", request.user.username)
                 )
