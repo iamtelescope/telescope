@@ -230,6 +230,37 @@ class SavedView(models.Model):
         self.kind = kind
 
 
+class Dashboard(models.Model):
+    slug = models.CharField(max_length=262, unique=True)
+    name = models.CharField(max_length=255)
+    description = models.CharField(max_length=4096, blank=True)
+    owner = models.ForeignKey(
+        User, null=True, on_delete=models.SET_NULL, related_name="dashboards"
+    )
+    shared = models.BooleanField(default=False)
+    data = models.JSONField()
+    version = models.IntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        User, null=True, on_delete=models.SET_NULL, related_name="dashboard_updater"
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(Dashboard, self).__init__(*args, **kwargs)
+        self.permissions = set()
+
+    def __str__(self):
+        return self.slug
+
+    def __repr__(self):
+        return str(self)
+
+    def add_perms(self, perms):
+        for perm in perms:
+            self.permissions.add(perm)
+
+
 class SourceRoleBinding(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     group = models.ForeignKey(Group, on_delete=models.CASCADE, null=True)

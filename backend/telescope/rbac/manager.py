@@ -16,6 +16,7 @@ from telescope.models import (
     Source,
     Connection,
     SavedView,
+    Dashboard,
 )
 from telescope.constants import (
     VIEW_SCOPE_PERSONAL,
@@ -525,3 +526,27 @@ class RBACManager:
         view.add_perms(self.calculate_view_permissions(user, source, view))
         view.set_kind(self.get_saved_view_kind(user, view))
         return view
+
+    # Dashboard management
+    def calculate_dashboard_permissions(self, user: User, dashboard: Dashboard) -> set:
+        if user.is_superuser or (
+            dashboard.owner_id is not None and dashboard.owner_id == user.pk
+        ):
+            return {
+                permissions.Dashboard.READ.value,
+                permissions.Dashboard.EDIT.value,
+                permissions.Dashboard.DELETE.value,
+            }
+        if dashboard.shared:
+            return {permissions.Dashboard.READ.value}
+        return set()
+
+    def get_dashboards(self, user: User) -> List[Dashboard]:
+        queryset = Dashboard.objects.select_related("owner", "updated_by")
+        if not user.is_superuser:
+            queryset = queryset.filter(Q(owner=user) | Q(shared=True))
+        dashboards = []
+        for dashboard in queryset.order_by("name"):
+            dashboard.add_perms(self.calculate_dashboard_permissions(user, dashboard))
+            dashboards.append(dashboard)
+        return dashboards

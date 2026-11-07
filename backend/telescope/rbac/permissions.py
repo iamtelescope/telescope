@@ -42,6 +42,12 @@ class SavedView(Enum):
     EDIT = "edit"
 
 
+class Dashboard(Enum):
+    READ = "read"
+    EDIT = "edit"
+    DELETE = "delete"
+
+
 GLOBAL_TO_SOURCE = {
     Global.READ_SOURCE.value: Source.READ.value,
     Global.EDIT_SOURCE.value: Source.EDIT.value,
