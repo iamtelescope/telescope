@@ -89,6 +89,8 @@ SOFTWARE.
   exception from attributes or span events, HTTP headers and bodies, span events, pod/node infrastructure correlations and
   their time ranges) are adapted from HyperDX `packages/app/src/components/DBRowOverviewPanel.tsx`, `ExceptionSubpanel.tsx`,
   `HttpMessageSections.tsx`, `SpanEventsSubpanel.tsx`, `DBInfraPanel.tsx` and `infraCorrelations.ts` (MIT, above).
+- `ui/src/features/charts/ChartExplorer.vue` and `config.js` (a standalone chart page whose whole chart config lives in one
+  JSON `config` URL param, saved to a dashboard or an alert) are adapted from HyperDX `packages/app/src/DBChartPage.tsx` (MIT, above).
 
 ## Drain3
 

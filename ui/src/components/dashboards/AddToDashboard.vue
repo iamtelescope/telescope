@@ -32,19 +32,19 @@
             >
                 <div class="flex gap-2">
                     <span class="w-20 shrink-0 text-surface-500">Source</span>
-                    <span class="font-medium truncate">{{ source.name }}</span>
+                    <span class="font-medium truncate">{{ source?.name || 'none' }}</span>
                 </div>
                 <div class="flex gap-2">
                     <span class="w-20 shrink-0 text-surface-500">Filter</span>
-                    <span class="font-mono truncate" :title="store.query">{{ store.query || 'none' }}</span>
+                    <span class="font-mono truncate" :title="summary.query">{{ summary.query || 'none' }}</span>
                 </div>
-                <div v-if="store.rawQuery" class="flex gap-2">
+                <div v-if="summary.rawQuery" class="flex gap-2">
                     <span class="w-20 shrink-0 text-surface-500">Raw SQL</span>
-                    <span class="font-mono truncate" :title="store.rawQuery">{{ store.rawQuery }}</span>
+                    <span class="font-mono truncate" :title="summary.rawQuery">{{ summary.rawQuery }}</span>
                 </div>
                 <div class="flex gap-2">
                     <span class="w-20 shrink-0 text-surface-500">Chart</span>
-                    <span>count(), stacked bars{{ store.graphGroupBy ? ` by ${store.graphGroupBy}` : '' }}</span>
+                    <span>{{ summary.chart }}</span>
                 </div>
             </div>
 
@@ -160,10 +160,11 @@ import ErrorText from '@/components/common/ErrorText.vue'
 import { Dashboard } from '@/sdk/models/dashboard'
 import { DashboardService } from '@/sdk/services/dashboard'
 import { useSourceControlsStore } from '@/stores/sourceControls'
-import { bottomY, emptyDashboardData, newTileId } from '@/utils/dashboards'
+import { bottomY, defaultTileSize, emptyDashboardData, newTileId } from '@/utils/dashboards'
 import { fieldErrorsText } from '@/utils/utils'
 
-const props = defineProps(['source'])
+// `tile` ({title, description, chart}) replaces the explorer's count() chart, e.g. from the chart explorer.
+const props = defineProps(['source', 'tile'])
 
 const srv = new DashboardService()
 const router = useRouter()
@@ -185,12 +186,26 @@ const problem = ref('')
 const added = ref(null)
 
 const editable = computed(() => dashboards.value.filter((d) => d.canEdit()))
+const summary = computed(() => {
+    const c = props.tile?.chart
+    if (!c) {
+        const by = store.graphGroupBy ? ` by ${store.graphGroupBy}` : ''
+        return { query: store.query, rawQuery: store.rawQuery, chart: `count(), stacked bars${by}` }
+    }
+    const series = c.series?.length > 1 ? `, ${c.series.length} series` : ''
+    return {
+        query: c.query,
+        rawQuery: c.raw_query,
+        chart: `${c.display}${series}${c.group_by ? ` by ${c.group_by}` : ''}`,
+    }
+})
 const canAdd = computed(() => (mode.value === 'existing' ? !!dashboardSlug.value : !!newName.value.trim()))
 
 const open = async () => {
     problem.value = ''
     added.value = null
-    title.value = store.graphGroupBy ? `${props.source.name} by ${store.graphGroupBy}` : props.source.name
+    if (props.tile) title.value = props.tile.title
+    else title.value = store.graphGroupBy ? `${props.source.name} by ${store.graphGroupBy}` : props.source.name
     visible.value = true
     loading.value = true
     const response = await srv.getDashboards()
@@ -204,7 +219,21 @@ const open = async () => {
     }
 }
 
-const buildTile = (tiles) => ({
+const buildTile = (tiles) => {
+    if (!props.tile) return explorerTile(tiles)
+    const { description, chart } = props.tile
+    const tile = {
+        id: newTileId(tiles),
+        x: 0,
+        y: bottomY(tiles),
+        ...defaultTileSize(chart.display),
+        title: title.value,
+    }
+    if (description) tile.description = description
+    return { ...tile, chart: JSON.parse(JSON.stringify(chart)) }
+}
+
+const explorerTile = (tiles) => ({
     id: newTileId(tiles),
     x: 0,
     y: bottomY(tiles),
