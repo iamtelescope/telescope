@@ -21,9 +21,10 @@
                         <StepList>
                             <Step value="1">Connection</Step>
                             <Step value="2">Columns</Step>
-                            <Step value="3">Settings</Step>
-                            <Step value="4">Naming</Step>
-                            <Step value="5">{{ source ? 'Review & Save' : 'Review & Create' }}</Step>
+                            <Step v-if="otelVisible" :value="sv('otel')">OTel</Step>
+                            <Step :value="sv('settings')">Settings</Step>
+                            <Step :value="sv('naming')">Naming</Step>
+                            <Step :value="sv('review')">{{ source ? 'Review & Save' : 'Review & Create' }}</Step>
                         </StepList>
                         <StepPanels pt:root:class="pb-0 pr-0 pl-0 pt-6">
                             <StepPanel v-slot="{ activateCallback }" value="1">
@@ -40,39 +41,54 @@
                                     v-model="columnsSetupData"
                                     :connectionData="connectionData"
                                     @prev="activateCallback('1')"
-                                    @next="activateCallback('3')"
+                                    @next="afterColumns(activateCallback)"
                                 />
                             </StepPanel>
 
-                            <StepPanel v-slot="{ activateCallback }" value="3">
+                            <StepPanel v-if="otelVisible" v-slot="{ activateCallback }" :value="sv('otel')">
+                                <OtelRolesStep
+                                    v-model="otelData"
+                                    :columnsSetupData="columnsSetupData"
+                                    :sources="otelSources"
+                                    :currentSlug="source?.slug"
+                                    :detecting="otelDetecting"
+                                    :detectMessage="otelMessage"
+                                    @detect="runOtelDetect(true)"
+                                    @prev="activateCallback('2')"
+                                    @next="activateCallback(sv('settings'))"
+                                />
+                            </StepPanel>
+
+                            <StepPanel v-slot="{ activateCallback }" :value="sv('settings')">
                                 <DockerKubernetesColumnMappingStep
                                     v-if="isDockerOrKubernetesSource"
                                     v-model="columnMappingData"
                                     :columnsSetupData="columnsSetupData"
                                     :connectionData="connectionData"
                                     @prev="activateCallback('2')"
-                                    @next="activateCallback('4')"
+                                    @next="activateCallback(sv('naming'))"
                                 />
                                 <ColumnMappingStep
                                     v-else
+                                    :key="mappingKey"
                                     v-model="columnMappingData"
                                     :columnsSetupData="columnsSetupData"
                                     :connectionData="connectionData"
-                                    @prev="activateCallback('2')"
-                                    @next="activateCallback('4')"
+                                    @prev="activateCallback(otelVisible ? sv('otel') : '2')"
+                                    @next="activateCallback(sv('naming'))"
                                 />
                             </StepPanel>
 
-                            <StepPanel v-slot="{ activateCallback }" value="4">
+                            <StepPanel v-slot="{ activateCallback }" :value="sv('naming')">
                                 <BasicInfoStep
                                     v-model="basicInfo"
                                     :isEditing="!!source"
-                                    @prev="activateCallback('3')"
-                                    @next="activateCallback('5')"
+                                    @prev="activateCallback(sv('settings'))"
+                                    @next="activateCallback(sv('review'))"
                                 />
                             </StepPanel>
 
-                            <StepPanel v-slot="{ activateCallback }" value="5">
+                            <StepPanel v-slot="{ activateCallback }" :value="sv('review')">
                                 <ReviewAndCreateStep
                                     v-model="step3Data"
                                     :basicInfo="basicInfo"
@@ -80,7 +96,7 @@
                                     :columnsSetupData="columnsSetupData"
                                     :columnMappingData="columnMappingData"
                                     :source="source"
-                                    @prev="activateCallback('4')"
+                                    @prev="activateCallback(sv('naming'))"
                                     @create="handleCreateSource"
                                 />
                             </StepPanel>
@@ -110,7 +126,10 @@ import ColumnsSetupStep from '@/components/sources/wizard/ColumnsSetupStep.vue'
 import ColumnMappingStep from '@/components/sources/wizard/ColumnMappingStep.vue'
 import DockerKubernetesColumnMappingStep from '@/components/sources/wizard/DockerKubernetesColumnMappingStep.vue'
 import ReviewAndCreateStep from '@/components/sources/wizard/ReviewAndCreateStep.vue'
+import OtelRolesStep from '@/components/sources/wizard/OtelRolesStep.vue'
 import { SourceService } from '@/sdk/services/source'
+import { OtelService } from '@/sdk/services/otel'
+import { Source } from '@/sdk/models/source'
 import { computed } from 'vue'
 
 const props = defineProps(['source', 'connections'])
@@ -118,6 +137,7 @@ const props = defineProps(['source', 'connections'])
 const router = useRouter()
 const toast = useToast()
 const sourceSrv = new SourceService()
+const otelSrv = new OtelService()
 
 const activeStep = ref('1')
 
@@ -193,6 +213,77 @@ const columnsSetupData = ref(getInitialColumnsSetupData())
 const columnMappingData = ref(getInitialColumnMappingData())
 const step3Data = ref({})
 
+// OTel roles step: shown for ClickHouse tables that detection recognises, or sources that already have roles.
+const savedOtel = props.source?.otel
+const otelData = ref(savedOtel ? { enabled: true, ...savedOtel } : null)
+const otelVisible = ref(!!savedOtel)
+const otelDetecting = ref(false)
+const otelMessage = ref(null)
+const otelSources = ref([])
+const mappingKey = ref(0)
+
+// Step values are their positions, so the badges stay numbered when the OTel step is shown.
+const stepOrder = computed(() => [
+    'connection',
+    'columns',
+    ...(otelVisible.value ? ['otel'] : []),
+    'settings',
+    'naming',
+    'review',
+])
+const sv = (name) => String(stepOrder.value.indexOf(name) + 1)
+let otelDetectedFor = savedOtel ? tableKey() : null
+
+function tableKey() {
+    const c = connectionData.value
+    return `${c?.connection?.id}/${c?.database}/${c?.table}`
+}
+
+const loadOtelSources = async () => {
+    const response = await sourceSrv.getSources()
+    if (response.result) otelSources.value = response.data.map((item) => new Source(item))
+}
+
+const runOtelDetect = async (force = false) => {
+    const c = connectionData.value
+    otelDetecting.value = true
+    const response = await otelSrv.detect(c.connection.id, c.database, c.table)
+    otelDetecting.value = false
+    const found = response.result ? response.data?.otel : null
+    if (!found) {
+        if (force) otelMessage.value = { severity: 'warn', text: 'This table does not match an OpenTelemetry schema.' }
+        return false
+    }
+    // Editing a source that had no roles: offer them, but leave it off until turned on.
+    const enable = force || !props.source
+    otelData.value = { enabled: enable, ...found }
+    otelMessage.value = {
+        severity: enable ? 'success' : 'info',
+        text: `Detected an OpenTelemetry ${found.signal} table. Roles are prefilled from the exporter schema.`,
+    }
+    if (!props.source && !force) {
+        columnMappingData.value = { ...columnMappingData.value, ...response.data.settings }
+        mappingKey.value += 1
+    }
+    return true
+}
+
+const afterColumns = async (activateCallback) => {
+    if (connectionData.value?.connection?.kind !== 'clickhouse') {
+        otelVisible.value = false
+        return activateCallback(sv('settings'))
+    }
+    if (otelDetectedFor !== tableKey()) {
+        otelDetectedFor = tableKey()
+        otelMessage.value = null
+        otelData.value = null
+        otelVisible.value = await runOtelDetect()
+        if (otelVisible.value) loadOtelSources()
+    }
+    activateCallback(sv(otelVisible.value ? 'otel' : 'settings'))
+}
+if (savedOtel) loadOtelSources()
+
 // Computed property to check if source is Docker or Kubernetes
 const isDockerOrKubernetesSource = computed(() => {
     const kind = connectionData.value?.connection?.kind
@@ -223,6 +314,10 @@ const handleCreateSource = async (onComplete) => {
         data.data.table = connectionData.value.table
         if (connectionData.value.settings) {
             data.data.settings = connectionData.value.settings
+        }
+        if (otelVisible.value && otelData.value?.enabled) {
+            const { enabled, metric_tables, ...otel } = otelData.value
+            data.data.otel = metric_tables ? { ...otel, metric_tables } : otel
         }
     }
 

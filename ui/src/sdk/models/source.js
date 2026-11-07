@@ -25,6 +25,19 @@ class Source {
         this.permissions = getDefaultIfUndefined(data.permissions, [])
         this.queryMode = data.query_mode || 'separate'
     }
+    // OTel semantic roles from data.otel (ClickHouse only), null when absent.
+    get otel() {
+        return this.kind === 'clickhouse' ? this.data.otel || null : null
+    }
+    get otelSignal() {
+        return this.otel?.signal || null
+    }
+    otelRole(role) {
+        return this.otel?.roles?.[role] ?? null
+    }
+    otelLink(signal) {
+        return this.otel?.links?.[signal] || null
+    }
     isEditable() {
         if (this.permissions.includes('edit')) {
             return true
