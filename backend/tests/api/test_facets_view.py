@@ -84,7 +84,6 @@ def test_facets_defaults(user_client, clickhouse_source):
     [
         ({"columns": ["nope"]}, "columns", "unknown column: nope"),
         ({"map_keys": {"nope": ["a"]}}, "map_keys", "unknown column: nope"),
-        ({"text": "x"}, "text", "text search needs a body column"),
         ({"limit": 0}, "limit", None),
         ({"sample": 0}, "sample", None),
         ({"query": "nope=1"}, "query", None),
@@ -99,6 +98,27 @@ def test_facets_validation(user_client, clickhouse_source, changes, field, messa
     errors = result["validation"]["columns"][field]
     if message:
         assert errors == [message]
+
+
+@pytest.mark.django_db
+def test_facets_text_needs_a_body_column(user_client, clickhouse_source):
+    clickhouse_source.columns.pop("message")
+    clickhouse_source.save()
+    with patch("telescope.views.source.facets.fetch_facets") as fetch:
+        result = post(user_client, clickhouse_source, body(text="x"))
+    assert not fetch.called
+    assert result["validation"]["columns"]["text"] == [
+        "text search needs a body column"
+    ]
+
+
+@pytest.mark.django_db
+def test_facets_text_uses_the_explorer_body_column(user_client, clickhouse_source):
+    with patch(
+        "telescope.views.source.facets.fetch_facets", return_value=RESULT
+    ) as fetch:
+        post(user_client, clickhouse_source, body(text="x"))
+    assert fetch.called
 
 
 @pytest.mark.django_db

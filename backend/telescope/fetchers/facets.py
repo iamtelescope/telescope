@@ -12,6 +12,7 @@ from flyql import parse
 from telescope.constants import UTC_ZONE, CHART_QUERY_TIMEOUT_SECONDS
 from telescope.flyql_registry import transformer_registry
 from telescope.fetchers.request import DataRequest
+from telescope.fetchers.search import body_column
 
 # HyperDX DEFAULT_METADATA_MAX_ROWS_TO_READ
 DEFAULT_MAX_ROWS_TO_READ = 3_000_000
@@ -55,16 +56,6 @@ def plan_facets(request: FacetRequest) -> List[Facet]:
         for key in keys:
             facets.append(Facet(id=f"{name}.{key}", kind="value", column=name, key=key))
     return facets
-
-
-def body_column(source) -> Optional[str]:
-    roles = (source.data or {}).get("otel", {}).get("roles", {})
-    if roles.get("body") in source._columns:
-        return roles["body"]
-    for name in source._columns:
-        if name.lower() == "body":
-            return name
-    return None
 
 
 def build_response(facets, counts, total_sampled, sampled, limit):

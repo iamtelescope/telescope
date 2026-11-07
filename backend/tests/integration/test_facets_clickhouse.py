@@ -34,6 +34,7 @@ def source(ch_settings_dict, otel_db):
         name: SourceColumn(name, "", t, False, True, True, True, [])
         for name, t in COLUMNS.items()
     }
+    source.columns = dict(source._columns)
     source.conn = Mock(
         data={
             "host": ch_settings_dict["host"],

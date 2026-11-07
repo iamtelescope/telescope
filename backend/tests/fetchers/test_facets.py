@@ -37,6 +37,7 @@ def make_source(kind="clickhouse", **data):
         "Body": column("Body", "String"),
         "attrs": column("attrs", "Map(LowCardinality(String), String)"),
     }
+    source.columns = dict(source._columns)
     source.conn = Mock(data={})
     return source
 
