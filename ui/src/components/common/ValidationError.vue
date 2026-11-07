@@ -15,11 +15,14 @@
 <script setup>
 import { computed } from 'vue'
 import Message from 'primevue/message'
+import { flattenFieldErrors } from '@/utils/utils'
 
 const props = defineProps(['message', 'validation'])
 
-const fieldErrors = computed(() => ({
-    ...(props.validation?.fields || {}),
-    ...(props.validation?.columns || {}),
-}))
+const fieldErrors = computed(() =>
+    flattenFieldErrors({
+        ...(props.validation?.fields || {}),
+        ...(props.validation?.columns || {}),
+    }),
+)
 </script>
