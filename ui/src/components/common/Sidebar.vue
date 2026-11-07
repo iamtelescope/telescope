@@ -61,6 +61,15 @@
                 <ScrollText class="mr-3 w-4 h-4" />
                 <span class="transition-opacity duration-300">Logs</span>
             </router-link>
+            <router-link
+                to="/dashboards"
+                class="flex items-center ml-2 mr-4 px-3 py-2 mb-2 text-base rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
+                :class="{ 'bg-black bg-opacity-30': $route.name === 'dashboards' || $route.name === 'dashboard' }"
+                data-testid="nav-dashboards"
+            >
+                <LayoutDashboard class="mr-3 w-4 h-4" />
+                <span class="transition-opacity duration-300">Dashboards</span>
+            </router-link>
 
             <div class="pl-4 py-3 text-base font-semibold text-gray-300 mt-4">Data</div>
             <router-link
@@ -134,6 +143,15 @@
                 title="Logs"
             >
                 <ScrollText class="w-4 h-4" />
+            </router-link>
+            <router-link
+                to="/dashboards"
+                class="flex items-center justify-center w-10 h-10 mb-2 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
+                :class="{ 'bg-black bg-opacity-30': $route.name === 'dashboards' || $route.name === 'dashboard' }"
+                title="Dashboards"
+                data-testid="nav-dashboards"
+            >
+                <LayoutDashboard class="w-4 h-4" />
             </router-link>
 
             <!-- Invisible Data Section Header for height consistency -->
@@ -353,7 +371,7 @@ import { Avatar, Button } from 'primevue'
 import { useAuthStore } from '@/stores/auth'
 import { useConfigStore } from '@/stores/config'
 import { useDark, useToggle } from '@vueuse/core'
-import { PanelLeftOpen, PanelLeftClose, Cable, ScrollText } from 'lucide-vue-next'
+import { PanelLeftOpen, PanelLeftClose, Cable, ScrollText, LayoutDashboard } from 'lucide-vue-next'
 
 defineProps(['collapsed'])
 
