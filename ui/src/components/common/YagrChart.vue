@@ -1,24 +1,35 @@
 <template>
-    <div style="height: 200px; max-height: 800px">
-        <div id="yaggrChart" class="w-full h-full"></div>
+    <div :style="{ height: typeof height === 'number' ? `${height}px` : height, maxHeight: '800px' }">
+        <div ref="root" class="w-full h-full"></div>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 
 import Yagr from '@gravity-ui/yagr'
 
-const props = defineProps(['settings', 'theme'])
-const chart = ref(null)
+const props = defineProps({
+    settings: Object,
+    theme: String,
+    height: { type: [Number, String], default: 200 },
+})
+const root = ref(null)
+let chart = null
 
+// Yagr's adaptive size already observes the root element and reflows on resize.
 onMounted(() => {
-    chart.value = new Yagr(yaggrChart, props.settings)
+    chart = new Yagr(root.value, props.settings)
 })
 
 watch(props, () => {
-    chart.value.dispose()
-    chart.value = new Yagr(yaggrChart, props.settings)
-    chart.value.setTheme(props.theme)
+    chart.dispose()
+    chart = new Yagr(root.value, props.settings)
+    chart.setTheme(props.theme)
+})
+
+onBeforeUnmount(() => {
+    chart?.dispose()
+    chart = null
 })
 </script>
