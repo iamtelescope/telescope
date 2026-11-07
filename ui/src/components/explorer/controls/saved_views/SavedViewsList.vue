@@ -117,6 +117,12 @@
                                     @keydown.enter="saveTags(data)"
                                     @keydown.esc="tagEditing = null"
                                 />
+                                <small
+                                    v-if="tagError && tagEditing === keyOf(data)"
+                                    class="w-full text-red-500"
+                                    :data-testid="`saved-view-tags-error-${data.slug}`"
+                                    >{{ tagError }}</small
+                                >
                                 <i
                                     v-else-if="data.isEditable() && metaFor(data).id"
                                     class="pi pi-tag text-surface-400 hover:text-primary text-sm"
@@ -196,6 +202,7 @@ const favoritesOnly = ref(false)
 const tagFilter = ref(null)
 const tagEditing = ref(null)
 const tagText = ref('')
+const tagError = ref('')
 const EMPTY = { id: null, tags: [], favorite: false, alerts: [] }
 const keyOf = (view) => `${view.slug}:${view.user?.id ?? ''}`
 const metaFor = (view) => meta.value[keyOf(view)] || EMPTY
@@ -209,14 +216,23 @@ const patch = async (view, data) => {
     if (!m.id) return
     const r = await alertSrv.updateSavedView(props.source.slug, m.id, data)
     if (r.result) meta.value = { ...meta.value, [keyOf(view)]: r.data }
+    return r
 }
 const toggleFavorite = (view) => patch(view, { favorite: !metaFor(view).favorite })
 const editTags = (view) => {
     tagText.value = metaFor(view).tags.join(', ')
+    tagError.value = ''
     tagEditing.value = keyOf(view)
 }
+const messagesOf = (v) => (typeof v === 'string' ? [v] : Object.values(v || {}).flatMap(messagesOf))
+// A rejected save keeps the input open with the server's reason, so the typed tags are not lost.
 const saveTags = async (view) => {
-    await patch(view, { tags: tagText.value.split(',').map((t) => t.trim()) })
+    const r = await patch(view, { tags: tagText.value.split(',').map((t) => t.trim()) })
+    if (r && !r.result) {
+        const reasons = [...r.errors, ...messagesOf(r.validation.fields), ...messagesOf(r.validation.non_field)]
+        tagError.value = [...new Set(reasons)].join(' ') || 'Tags were not saved'
+        return
+    }
     tagEditing.value = null
 }
 const openAlert = (alert) => router.push({ name: 'alertDetail', params: { alertId: alert.id } })
