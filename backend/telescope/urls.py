@@ -1,4 +1,4 @@
-from django.urls import path, re_path
+from django.urls import include, path, re_path
 
 
 import telescope.views.index as index
@@ -105,6 +105,15 @@ urlpatterns = [
     path("ui/v1/sources/<slug:slug>", source.SourceView.as_view()),
     path("ui/v1/dashboards", dashboard.DashboardView.as_view()),
     path("ui/v1/dashboards/<slug:slug>", dashboard.DashboardView.as_view()),
+    # Feature apps and stubs own their full paths; filled in by later packages.
+    path("", include("telescope.urls_facets")),
+    path("", include("telescope.urls_patterns")),
+    path("", include("telescope.urls_deltas")),
+    path("", include("telescope_alerts.urls")),
+    path("", include("telescope_otel.urls")),
+    path("", include("telescope_otel.urls_trace")),
+    path("", include("telescope_otel.urls_map")),
+    path("", include("telescope_api2.urls")),
     path("liveness", index.liveness, name="liveness"),
     path("readiness", index.readiness, name="readiness"),
     re_path("^api.*$", stub_api.ApiStubView.as_view()),

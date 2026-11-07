@@ -65,6 +65,11 @@ ESCAPE_CHARS_MAP = {
 }
 
 
+def _client_query(client, sql, **kw):
+    # Every ClickHouse query goes through here; the hook for query attribution.
+    return client.query(sql, **kw)
+
+
 def escape_param(item: str) -> str:
     if item is None:
         return "NULL"
@@ -241,7 +246,7 @@ class Fetcher(BaseFetcher):
         response = ConnectionTestResponseNg()
         with ClickhouseConnect(data) as c:
             try:
-                c.client.query("SELECT now()")
+                _client_query(c.client, "SELECT now()")
             except Exception as err:
                 response.error = str(err)
                 logger.exception("connection test failed: %s", err)
@@ -255,14 +260,15 @@ class Fetcher(BaseFetcher):
         target = f"`{data['database']}`.`{data['table']}`"
         with ClickhouseConnect(data) as c:
             try:
-                c.client.query(f"SELECT 1 FROM {target} LIMIT 1")
+                _client_query(c.client, f"SELECT 1 FROM {target} LIMIT 1")
             except Exception as err:
                 response.reachability["error"] = str(err)
                 response.schema["error"] = "Skipped due to reachability test failed"
             else:
                 response.reachability["result"] = True
                 try:
-                    result = c.client.query(
+                    result = _client_query(
+                        c.client,
                         "select name, type from system.columns where database = %(database)s and table = %(table)s",
                         parameters={
                             "database": data["database"],
@@ -277,7 +283,7 @@ class Fetcher(BaseFetcher):
                         get_telescope_column(x[0], x[1]) for x in result.result_rows
                     ]
                 try:
-                    result = c.client.query(f"SHOW CREATE TABLE {target}")
+                    result = _client_query(c.client, f"SHOW CREATE TABLE {target}")
                     response.schema["raw"] = result.result_rows[0][0]
                 except Exception as err:
                     logger.exception(
@@ -293,10 +299,11 @@ class Fetcher(BaseFetcher):
         target = f"`{data['database']}`.`{data['table']}`"
         with ClickhouseConnect(data) as c:
             # First validate the table exists - this will throw an error if it doesn't
-            c.client.query(f"SELECT 1 FROM {target} LIMIT 1")
+            _client_query(c.client, f"SELECT 1 FROM {target} LIMIT 1")
 
             # Now get the schema
-            result = c.client.query(
+            result = _client_query(
+                c.client,
                 "select name, type from system.columns where database = %(database)s and table = %(table)s",
                 parameters={"database": data["database"], "table": data["table"]},
             )
@@ -349,7 +356,7 @@ class Fetcher(BaseFetcher):
                 f"GROUP BY key ORDER BY key LIMIT 200"
             ) + settings_clause
             with ClickhouseConnect(source.conn.data) as c:
-                result = c.client.query(sql, parameters=path_params)
+                result = _client_query(c.client, sql, parameters=path_params)
                 entries = []
                 for row in result.result_rows:
                     key, types = row[0], row[1] or []
@@ -380,7 +387,7 @@ class Fetcher(BaseFetcher):
                 f") GROUP BY k ORDER BY cnt DESC LIMIT 200"
             ) + settings_clause
             with ClickhouseConnect(source.conn.data) as c:
-                result = c.client.query(sql)
+                result = _client_query(c.client, sql)
                 entries = [
                     JsonKeyEntry(name=str(row[0]), type="string", has_children=False)
                     for row in result.result_rows
@@ -404,7 +411,7 @@ class Fetcher(BaseFetcher):
             query += f" SETTINGS {source.data['settings']}"
 
         with ClickhouseConnect(source.conn.data) as c:
-            result = c.client.query(query, {"value": f"%{value}%"})
+            result = _client_query(c.client, query, parameters={"value": f"%{value}%"})
             items = [str(x[0]) for x in result.result_rows]
         if len(items) >= 500:
             incomplete = True
@@ -493,7 +500,7 @@ class Fetcher(BaseFetcher):
             if request.source.data.get("settings"):
                 stat_sql += f" SETTINGS {request.source.data['settings']}"
 
-            for item in c.client.query(stat_sql).result_rows:
+            for item in _client_query(c.client, stat_sql).result_rows:
                 if group_by_value:
                     ts, count, groupper = item
                     if not groupper:
@@ -587,7 +594,7 @@ class Fetcher(BaseFetcher):
         assert request.source.conn
         with ClickhouseConnect(request.source.conn.data) as c:
             selected_columns = [request.source._record_pseudo_id_column] + columns_names
-            for item in c.client.query(select_query).result_rows:
+            for item in _client_query(c.client, select_query).result_rows:
                 rows.append(
                     Row(
                         source=request.source,
@@ -632,7 +639,8 @@ class Fetcher(BaseFetcher):
         with ClickhouseConnect(source.conn.data) as c:
 
             def run(sql, parameters=None):
-                return c.client.query(
+                return _client_query(
+                    c.client,
                     sql + settings_clause,
                     parameters=parameters,
                     settings={"max_execution_time": CHART_QUERY_TIMEOUT_SECONDS},

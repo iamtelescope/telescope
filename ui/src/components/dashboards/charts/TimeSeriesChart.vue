@@ -22,6 +22,7 @@ import {
     severityRank,
 } from '@/components/dashboards/charts/palette.js'
 import { getChartSettings } from '@/utils/chartSettings.js'
+import { useMarkers, markerPlotLines } from '@/composables/useMarkers.js'
 
 const props = defineProps(['data', 'chart', 'timeZone'])
 const emit = defineEmits(['rangeSelected'])
@@ -31,6 +32,11 @@ const isDark = useDark()
 const wrapper = ref(null)
 const mounted = ref(false)
 const theme = computed(() => (isDark.value ? 'dark' : 'light'))
+const markers = useMarkers(() => ({
+    chart: props.chart,
+    from: props.data.timestamps[0],
+    to: props.data.timestamps[props.data.timestamps.length - 1],
+}))
 
 const groupsCount = computed(() => new Set(props.data.series.map((s) => s.group)).size)
 
@@ -92,6 +98,7 @@ const settings = computed(() => {
         legend: series.length > 1,
         lineWidth: props.chart.display === 'line' ? 2 : 1,
         fitColumns: true,
+        plotLines: markerPlotLines(markers.value),
         // Room on the right for the last x tick label, which sits on the plot edge.
         padding: [14, 22, 0, 4],
         onSelect: (range) => emit('rangeSelected', range),

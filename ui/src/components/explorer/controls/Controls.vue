@@ -65,6 +65,7 @@
                     @graphVisibilityChanged="onGraphVisibilityChanged"
                 />
                 <AddToDashboard :source="source" />
+                <ControlsExtras :source="source" />
             </template>
             <template #end>
                 <SavedViews :savedView="savedView" :source="source" class="mr-2" @change="onSavedViewChanged" />
@@ -145,6 +146,7 @@ import QueryEditor from '@/components/explorer/controls/QueryEditor.vue'
 import RawQueryEditor from '@/components/explorer/controls/RawQueryEditor.vue'
 import SavedViews from '@/components/explorer/controls/saved_views/SavedViews.vue'
 import AddToDashboard from '@/components/dashboards/AddToDashboard.vue'
+import ControlsExtras from '@/components/explorer/controls/ControlsExtras.vue'
 import { getLimits } from '@/utils/limits.js'
 
 import { useSourceControlsStore } from '@/stores/sourceControls'

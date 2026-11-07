@@ -16,10 +16,18 @@
                 </Tag>
                 <span class="font-mono">{{ dateTimeString }}</span>
             </div>
+            <DetailsExtras
+                v-if="detailsExtrasAvailable(source, row)"
+                :source="source"
+                :row="row"
+                :timeZone="timeZone"
+            />
             <Tabs value="0">
                 <TabList>
                     <Tab value="0">FLATTENED</Tab>
                     <Tab value="1">JSON</Tab>
+                    <Tab v-if="contextAvailable(source, row)" value="context">CONTEXT</Tab>
+                    <Tab v-if="traceAvailable(source, row)" value="trace">TRACE</Tab>
                 </TabList>
                 <TabPanels :pt="{ root: { className: 'p-0' } }">
                     <TabPanel value="0">
@@ -82,6 +90,12 @@
                             }}</pre>
                         </div>
                     </TabPanel>
+                    <TabPanel v-if="contextAvailable(source, row)" value="context">
+                        <ContextTab :source="source" :row="row" :timeZone="timeZone" />
+                    </TabPanel>
+                    <TabPanel v-if="traceAvailable(source, row)" value="trace">
+                        <TraceTab :source="source" :row="row" :timeZone="timeZone" />
+                    </TabPanel>
                 </TabPanels>
             </Tabs>
         </div>
@@ -104,6 +118,11 @@ import { useSourceControlsStore } from '@/stores/sourceControls'
 import { getColor, getContrastColor } from '@/utils/colors.js'
 import Tag from 'primevue/tag'
 import { DateTime } from 'luxon'
+import ContextTab, { available as contextAvailable } from '@/components/explorer/results/tabs/ContextTab.vue'
+import TraceTab, { available as traceAvailable } from '@/components/explorer/results/tabs/TraceTab.vue'
+import DetailsExtras, {
+    available as detailsExtrasAvailable,
+} from '@/components/explorer/results/tabs/DetailsExtras.vue'
 
 const sourceControlsStore = useSourceControlsStore()
 

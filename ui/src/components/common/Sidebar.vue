@@ -70,6 +70,17 @@
                 <LayoutDashboard class="mr-3 w-4 h-4" />
                 <span class="transition-opacity duration-300">Dashboards</span>
             </router-link>
+            <router-link
+                v-for="item in navItems('explore')"
+                :key="item.to"
+                :to="item.to"
+                class="flex items-center ml-2 mr-4 px-3 py-2 mb-2 text-base rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
+                :class="{ 'bg-black bg-opacity-30': isActive(item) }"
+                :data-testid="item.testid"
+            >
+                <component :is="item.icon" class="mr-3 w-4 h-4" />
+                <span class="transition-opacity duration-300">{{ item.label }}</span>
+            </router-link>
 
             <div class="pl-4 py-3 text-base font-semibold text-gray-300 mt-4">Data</div>
             <router-link
@@ -93,6 +104,17 @@
             >
                 <i class="pi pi-database mr-3 text-lg"></i>
                 Sources
+            </router-link>
+            <router-link
+                v-for="item in navItems('data')"
+                :key="item.to"
+                :to="item.to"
+                class="flex items-center ml-2 mr-3 px-3 py-2 mb-2 text-base rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
+                :class="{ 'bg-black bg-opacity-30': isActive(item) }"
+                :data-testid="item.testid"
+            >
+                <component :is="item.icon" class="mr-3 w-4 h-4" />
+                {{ item.label }}
             </router-link>
 
             <div v-if="user.hasAccessToSettings()" class="pl-4 py-3 text-base font-semibold text-gray-300 mt-4">
@@ -153,6 +175,17 @@
             >
                 <LayoutDashboard class="w-4 h-4" />
             </router-link>
+            <router-link
+                v-for="item in navItems('explore')"
+                :key="item.to"
+                :to="item.to"
+                class="flex items-center justify-center w-10 h-10 mb-2 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
+                :class="{ 'bg-black bg-opacity-30': isActive(item) }"
+                :title="item.label"
+                :data-testid="item.testid"
+            >
+                <component :is="item.icon" class="w-4 h-4" />
+            </router-link>
 
             <!-- Invisible Data Section Header for height consistency -->
             <div class="py-3 text-base font-semibold text-gray-300 mt-4 opacity-0 pointer-events-none">Data</div>
@@ -177,6 +210,17 @@
                 title="Sources"
             >
                 <i class="pi pi-database text-lg"></i>
+            </router-link>
+            <router-link
+                v-for="item in navItems('data')"
+                :key="item.to"
+                :to="item.to"
+                class="flex items-center justify-center w-10 h-10 mb-2 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
+                :class="{ 'bg-black bg-opacity-30': isActive(item) }"
+                :title="item.label"
+                :data-testid="item.testid"
+            >
+                <component :is="item.icon" class="w-4 h-4" />
             </router-link>
 
             <!-- Invisible Administration Section Header for height consistency -->
@@ -365,19 +409,24 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { Avatar, Button } from 'primevue'
 import { useAuthStore } from '@/stores/auth'
 import { useConfigStore } from '@/stores/config'
 import { useDark, useToggle } from '@vueuse/core'
 import { PanelLeftOpen, PanelLeftClose, Cable, ScrollText, LayoutDashboard } from 'lucide-vue-next'
+import { featureNav } from '@/features/registry.js'
 
 defineProps(['collapsed'])
 
 defineEmits(['toggle-collapse'])
 
 const router = useRouter()
+const route = useRoute()
+
+const navItems = (section) => featureNav.filter((item) => (item.section || 'explore') === section)
+const isActive = (item) => (item.routeNames || []).includes(route.name)
 const configStore = useConfigStore()
 configStore.load()
 const { user } = storeToRefs(useAuthStore())

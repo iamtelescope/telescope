@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 
 import ExploreView from '../views/sources/ExploreView.vue'
 import HomeView from '../views/RootView.vue'
+import { featureRoutes } from '@/features/registry.js'
 
 const routes = [
     {
@@ -119,6 +120,7 @@ const routes = [
         name: 'rbacRoles',
         component: () => import('@/components/rbac/Roles.vue'),
     },
+    ...featureRoutes,
 ]
 
 const router = createRouter({

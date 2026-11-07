@@ -91,6 +91,7 @@
                 />
             </div>
             <Menu ref="menu" :model="menuItems" :popup="true" @show="menuOpen = true" @hide="menuOpen = false" />
+            <TileMenuExtras ref="menuExtras" :tile="tile" :range="range" :timeZone="timeZone" />
         </div>
         <div class="flex-1 min-h-0 px-3 pb-2">
             <ChartView
@@ -137,6 +138,7 @@ import { Button, Menu, Dialog } from 'primevue'
 import { GripVertical } from 'lucide-vue-next'
 
 import ChartView from '@/components/dashboards/ChartView.vue'
+import TileMenuExtras from '@/components/dashboards/TileMenuExtras.vue'
 import { useChartData } from '@/composables/dashboards/useDashboardService'
 import { buildDrilldownRoute } from '@/utils/drilldown'
 
@@ -145,6 +147,7 @@ const emit = defineEmits(['edit', 'duplicate', 'delete', 'rangeSelected'])
 
 const router = useRouter()
 const menu = ref()
+const menuExtras = ref()
 const menuOpen = ref(false)
 const titleEl = ref()
 const titleTruncated = ref(false)
@@ -216,6 +219,8 @@ const menuItems = computed(() => {
             { label: 'Delete', icon: 'pi pi-trash', command: () => emit('delete') },
         )
     }
+    const extras = menuExtras.value?.items || []
+    if (extras.length) items.push({ separator: true }, ...extras)
     return items
 })
 

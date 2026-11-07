@@ -33,6 +33,7 @@ import YagrChart from '@/components/common/YagrChart.vue'
 
 import { getColor } from '@/utils/colors.js'
 import { getChartSettings as buildChartSettings } from '@/utils/chartSettings.js'
+import { useMarkers, markerPlotLines } from '@/composables/useMarkers.js'
 
 const props = defineProps(['source', 'stats', 'rows', 'timeZone', 'groupByLabel'])
 const emit = defineEmits(['rangeSelected'])
@@ -42,6 +43,11 @@ const chartDefaultType = ref('column')
 const chartTypeOptions = ref(['column', 'area', 'line'])
 const isDark = useDark()
 const selectedChartType = ref(null)
+const markers = useMarkers(() => ({
+    source: props.source,
+    from: props.stats?.timestamps?.[0],
+    to: props.stats?.timestamps?.[props.stats.timestamps.length - 1],
+}))
 
 const onChartTypeSelect = (e) => {
     let type = e.value ?? chartDefaultType.value
@@ -110,7 +116,7 @@ const getChartSettings = (type) => {
         theme: theme.value,
         width: document.getElementById('histogramm').getBoundingClientRect().width,
         nameLabel: props.groupByLabel || 'Name',
-        plotLines: calcPlotLines(),
+        plotLines: [...calcPlotLines(), ...markerPlotLines(markers.value)],
         onSelect: (range) => emit('rangeSelected', range),
     })
 }
@@ -119,7 +125,7 @@ onMounted(() => {
     chartSettings.value = getChartSettings(chartType.value)
 })
 
-watch(props, () => {
+watch([props, markers], () => {
     chartSettings.value = getChartSettings(chartType.value)
 })
 </script>
