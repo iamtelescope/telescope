@@ -160,23 +160,26 @@ const groups = computed(() => {
         const id = key === null ? column : `${column}.${key}`
         return { id, column, key, kind, title: facetPath(column, key), values: values || [], more: more.has(id) }
     }
+    const column = (name) =>
+        isMapType(props.source.columns[name]?.type)
+            ? group(name, null, 'keys', data.value.map_keys[name])
+            : group(name, null, 'value', data.value.facets[name])
+    const withKeys = (name) => [
+        column(name),
+        ...(expandedKeys.value[name] || []).map((key) =>
+            group(name, key, 'value', data.value.facets[`${name}.${key}`]),
+        ),
+    ]
+    // Pinned facets first, in pin order (a pinned Map key too), then the other default columns.
     const result = []
-    // Keys of a map column that is not shown are pinned: they go first, with the pinned columns.
-    for (const [column, keys] of Object.entries(mapKeys.value)) {
-        if (columnIds.value.includes(column)) continue
-        for (const key of keys) result.push(group(column, key, 'value', data.value.facets[`${column}.${key}`]))
+    for (const id of pinned.value) {
+        const { column: name, key } = splitFacetId(id, props.source.columns)
+        if (!(name in props.source.columns)) continue
+        if (key === null) result.push(...withKeys(name))
+        else result.push(group(name, key, 'value', data.value.facets[id]))
     }
-    for (const column of columnIds.value) {
-        if (isMapType(props.source.columns[column]?.type)) {
-            result.push(group(column, null, 'keys', data.value.map_keys[column]))
-        } else {
-            result.push(group(column, null, 'value', data.value.facets[column]))
-        }
-        for (const key of mapKeys.value[column] || []) {
-            result.push(group(column, key, 'value', data.value.facets[`${column}.${key}`]))
-        }
-    }
-    return result
+    for (const name of columnIds.value) if (!pinned.value.includes(name)) result.push(...withKeys(name))
+    return result.filter((g, i) => result.findIndex((other) => other.id === g.id) === i)
 })
 
 const addable = computed(() =>
