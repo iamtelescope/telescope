@@ -59,7 +59,17 @@ export const newTileId = (tiles) => {
 export const defaultTileSize = (display) =>
     display === 'number' || display === 'text' ? { w: 6, h: 4 } : { w: 12, h: 8 }
 
+export const GRID_COLUMNS = 24
+
 export const bottomY = (tiles) => Math.max(0, ...(tiles || []).map((t) => t.y + t.h))
+
+// Bottom of the grid, right after the last row's tiles when it fits; vertical compaction then lifts it up.
+export const newTilePosition = (tiles, w) => {
+    if (!tiles?.length) return { x: 0, y: 0 }
+    const lastY = Math.max(...tiles.map((t) => t.y))
+    const x = Math.max(...tiles.filter((t) => t.y === lastY).map((t) => t.x + t.w))
+    return { x: x + w <= GRID_COLUMNS ? x : 0, y: bottomY(tiles) }
+}
 
 export const formatValue = (value, format) => {
     if (value === null || value === undefined) return '–'
