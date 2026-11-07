@@ -159,6 +159,15 @@ def test_sections_and_tile_fields(root_user, clickhouse_source):
 
 
 @pytest.mark.django_db
+@pytest.mark.django_db
+def test_number_format_keeps_spaces(root_user, clickhouse_source):
+    fmt = {"unit": "number", "decimals": 0, "prefix": "~ ", "suffix": " req/s"}
+    serializer = validate(chart_data(number_format=fmt), root_user)
+    assert serializer.is_valid(), serializer.errors
+    assert serializer.validated_data["tiles"][0]["chart"]["number_format"] == fmt
+
+
+@pytest.mark.django_db
 def test_v2_data_upgrades_to_v3(root_user, clickhouse_source):
     data = get_dashboard_data()
     data.update(version=2, variables=[])

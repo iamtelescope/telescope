@@ -213,8 +213,13 @@ class ChartSeriesSerializer(StrictSerializer):
 class NumberFormatSerializer(StrictSerializer):
     unit = serializers.ChoiceField(choices=NUMBER_UNITS)
     decimals = serializers.IntegerField(min_value=0, max_value=6)
-    prefix = serializers.CharField(required=False, allow_blank=True, max_length=16)
-    suffix = serializers.CharField(required=False, allow_blank=True, max_length=16)
+    # Spaces are kept, so " req/s" stays apart from the number.
+    prefix = serializers.CharField(
+        required=False, allow_blank=True, max_length=16, trim_whitespace=False
+    )
+    suffix = serializers.CharField(
+        required=False, allow_blank=True, max_length=16, trim_whitespace=False
+    )
     compact = serializers.BooleanField(required=False)
 
 
