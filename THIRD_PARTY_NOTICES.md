@@ -85,6 +85,10 @@ SOFTWARE.
   the window, the row cap) is adapted from HyperDX `packages/app/src/hooks/useReleaseAnnotations.tsx`; the kiosk header and `?kiosk=1`
   in `ui/src/views/dashboards/DashboardView.vue` follow `components/DashboardKioskHeader.tsx` and `hooks/useDashboardKioskMode.ts`,
   and the crosshair sync in `ui/src/components/dashboards/charts/TimeSeriesChart.vue` follows `src/chartSync.tsx` (MIT, above).
+- `ui/src/components/explorer/results/sections/rowpanel.js` and the row panel sections next to it (top-level attributes,
+  exception from attributes or span events, HTTP headers and bodies, span events, pod/node infrastructure correlations and
+  their time ranges) are adapted from HyperDX `packages/app/src/components/DBRowOverviewPanel.tsx`, `ExceptionSubpanel.tsx`,
+  `HttpMessageSections.tsx`, `SpanEventsSubpanel.tsx`, `DBInfraPanel.tsx` and `infraCorrelations.ts` (MIT, above).
 
 ## Drain3
 

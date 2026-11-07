@@ -54,6 +54,8 @@ METRIC_KINDS = ("gauge", "sum", "histogram", "exponential_histogram", "summary")
 # 9 = nanoseconds, 6 = microseconds, 3 = milliseconds, 0 = seconds.
 DURATION_PRECISIONS = (0, 3, 6, 9)
 DEFAULT_DURATION_PRECISION = 9
+# Row panel Overview: column names or attribute keys shown first (P3.4).
+MAX_HIGHLIGHTED = 50
 
 _TABLE_RE = re.compile(r"^[A-Za-z0-9_.\-]{1,256}$")
 _SLUG_RE = re.compile(r"^[-a-zA-Z0-9_]{1,64}$")
@@ -69,7 +71,7 @@ def validate_otel(otel, columns, source_exists=None):
     if not isinstance(otel, dict):
         return ["otel must be an object"]
     errors = []
-    unknown = set(otel) - {"signal", "roles", "links", "metric_tables"}
+    unknown = set(otel) - {"signal", "roles", "links", "metric_tables", "highlighted"}
     if unknown:
         errors.append(f"unknown otel keys: {', '.join(sorted(unknown))}")
 
@@ -110,6 +112,16 @@ def validate_otel(otel, columns, source_exists=None):
             errors.append(f"link {target} must be a source slug")
         elif source_exists is not None and not source_exists(slug):
             errors.append(f"source {slug} not found")
+
+    highlighted = otel.get("highlighted")
+    if highlighted is not None and (
+        not isinstance(highlighted, list)
+        or len(highlighted) > MAX_HIGHLIGHTED
+        or not all(isinstance(k, str) and 0 < len(k) <= 256 for k in highlighted)
+    ):
+        errors.append(
+            f"highlighted must be a list of at most {MAX_HIGHLIGHTED} attribute keys"
+        )
 
     tables = otel.get("metric_tables")
     if tables is not None:
