@@ -107,11 +107,11 @@ watch(
 onBeforeUnmount(abort)
 
 const openExplorer = (group) => {
-    router.push(buildDrilldownRoute(props.tile.chart, props.range, group))
+    router.push(buildDrilldownRoute(props.tile.chart, props.range, group, props.timeZone))
 }
 
 const onRowClick = (group) => {
-    if (props.tile.chart.group_by) openExplorer(group)
+    if (props.tile.chart.group_by && !props.editing) openExplorer(group)
 }
 
 const onFullscreenRange = (range) => {

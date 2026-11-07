@@ -10,10 +10,11 @@ export function buildDrilldownQuery(tileQuery, dashboardQuery, groupBy, group) {
 }
 
 // Explorer route for a tile; `group` is the clicked table or bar row, if any.
-export function buildDrilldownRoute(chart, range, group) {
+export function buildDrilldownRoute(chart, range, group, timeZone) {
     const query = {
         from: range.from,
         to: range.to,
+        timeZone,
         graph_group_by: chart.group_by || '',
     }
     const q = buildDrilldownQuery(chart.query, range.query, chart.group_by, group)

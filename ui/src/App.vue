@@ -4,7 +4,10 @@
         <Sidebar :collapsed="sidebarCollapsed" @toggle-collapse="sidebarCollapsed = !sidebarCollapsed" />
         <div class="flex flex-col flex-1 h-full min-w-0">
             <div class="overflow-auto">
-                <router-view />
+                <router-view v-slot="{ Component, route }">
+                    <!-- A new dashboard slug gets a fresh DashboardView instead of a reused one. -->
+                    <component :is="Component" :key="route.name === 'dashboard' ? route.path : undefined" />
+                </router-view>
             </div>
         </div>
     </div>

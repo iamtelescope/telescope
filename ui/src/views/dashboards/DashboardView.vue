@@ -138,7 +138,7 @@
 
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import { Button, ConfirmDialog, InputText, Menu, Select, Tag, useConfirm, useToast } from 'primevue'
 import { GridLayout, GridItem } from 'grid-layout-plus'
 import { LayoutDashboard } from 'lucide-vue-next'
@@ -154,6 +154,7 @@ import { DashboardService } from '@/sdk/services/dashboard'
 import { createRequestQueue } from '@/utils/requestQueue'
 import { REFRESH_MS, REFRESH_OPTIONS, bottomY, defaultTileSize, newTileId } from '@/utils/dashboards'
 import { exportDashboard } from '@/utils/dashboardFile'
+import { availableTimeZones } from '@/utils/datetimeranges'
 import { fieldErrorsText } from '@/utils/utils'
 
 const route = useRoute()
@@ -186,7 +187,8 @@ const range = computed(() => ({
     to: toMillisOrString(route.query.to ?? draft.value?.time.to),
     query: route.query.query ?? draft.value?.query ?? '',
 }))
-const timeZone = computed(() => route.query.time_zone ?? draft.value?.time.time_zone ?? 'UTC')
+const validZone = (tz) => (availableTimeZones.includes(tz) ? tz : null)
+const timeZone = computed(() => validZone(route.query.time_zone) ?? validZone(draft.value?.time.time_zone) ?? 'UTC')
 const tileById = computed(() => Object.fromEntries((draft.value?.tiles || []).map((t) => [t.id, t])))
 
 const rebuildLayout = () => {
@@ -247,6 +249,20 @@ watch(
     },
 )
 onBeforeUnmount(() => clearInterval(timer))
+
+const isDirty = () => {
+    if (!editing.value || !draft.value || !dashboard.value) return false
+    syncLayout()
+    return JSON.stringify(draft.value) !== JSON.stringify(dashboard.value.data)
+}
+const confirmLeave = () => !isDirty() || window.confirm('Discard unsaved dashboard changes?')
+onBeforeRouteLeave(confirmLeave)
+onBeforeRouteUpdate((to, from) => to.params.dashboardSlug === from.params.dashboardSlug || confirmLeave())
+const onBeforeUnload = (event) => {
+    if (isDirty()) event.preventDefault()
+}
+window.addEventListener('beforeunload', onBeforeUnload)
+onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload))
 
 const cancelEdit = () => {
     editing.value = false
@@ -341,7 +357,10 @@ const deleteDashboard = () => {
         accept: async () => {
             const response = await remove(slug)
             response.sendToastErrors(toast)
-            if (response.result) router.push({ name: 'dashboards' }).then(() => response.sendToastMessages(toast))
+            if (response.result) {
+                editing.value = false
+                router.push({ name: 'dashboards' }).then(() => response.sendToastMessages(toast))
+            }
         },
     })
 }
