@@ -34,6 +34,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const _limit = ref(null)
     const _contextColumns = ref(null)
     const _view = ref(null)
+    const _resultsMode = ref('rows')
 
     function $reset() {
         _columns.value = null
@@ -50,6 +51,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _limit.value = null
         _contextColumns.value = null
         _view.value = null
+        _resultsMode.value = 'rows'
     }
 
     function init(source, viewParam) {
@@ -73,6 +75,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _limit.value = 50
         _contextColumns.value = {}
         _view.value = viewParam
+        _resultsMode.value = (route.query.mode ?? viewParam?.data?.mode) === 'patterns' ? 'patterns' : 'rows'
 
         if (!availableTimeZones.includes(_timeZone.value)) _timeZone.value = localTimeZone
 
@@ -172,6 +175,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         if (rawQuery.value) params.raw_query = rawQuery.value
         if (text.value) params.text = text.value
 
+        if (_resultsMode.value !== (view.value?.data.mode ?? 'rows')) params.mode = _resultsMode.value
         if (view.value) {
             params.view = _view.value.slug
 
@@ -237,6 +241,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             graph_group_by: graphGroupBy.value,
             show_graph: showGraph.value,
             context_columns: contextColumns.value,
+            mode: _resultsMode.value,
         }
     })
 
@@ -255,6 +260,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setGraphGroupBy(value.data.graph_group_by)
         setShowGraph(value.data.show_graph)
         setContextColumns(value.data.context_columns)
+        _resultsMode.value = value.data.mode === 'patterns' ? 'patterns' : 'rows'
 
         // Some old views might not have this
         if (value.data.timeZone) setTimeZone(value.data.timeZone)
@@ -363,6 +369,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         from,
         to,
         view,
+        resultsMode: _resultsMode,
         timeZone,
         limit,
         columns,

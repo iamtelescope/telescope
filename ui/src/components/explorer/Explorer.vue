@@ -184,7 +184,10 @@ const lastSearchRouteQuery = ref(null)
 const displayTimeZone = ref(localTimeZone)
 const flyqlDiagnostics = ref([])
 const searchSeq = ref(0)
-const resultsMode = ref('rows')
+const resultsMode = computed({
+    get: () => sourceControlsStore.resultsMode,
+    set: (value) => (sourceControlsStore.resultsMode = value),
+})
 const resultsModes = [
     { label: 'Rows', value: 'rows' },
     { label: 'Patterns', value: 'patterns' },
@@ -460,6 +463,7 @@ onMounted(() => {
         () => sourceControlsStore.liveInterval,
         () => router.replace({ path: route.path, query: sourceControlsStore.routeQuery }),
     )
+    watch(resultsMode, () => router.replace({ path: route.path, query: sourceControlsStore.routeQuery }))
 })
 
 const onPatternFilter = () => {
