@@ -9,7 +9,7 @@ import clickhouse_connect
 from flyql import parse, ParserError, FlyqlError
 from flyql.generators.clickhouse import Column, to_sql_where
 
-from telescope.constants import UTC_ZONE
+from telescope.constants import UTC_ZONE, CHART_QUERY_TIMEOUT_SECONDS
 from telescope.flyql_errors import format_flyql_error
 from telescope.flyql_registry import transformer_registry
 
@@ -19,6 +19,7 @@ from telescope.fetchers.request import (
     AutocompleteRequest,
     DataRequest,
     GraphDataRequest,
+    ChartDataRequest,
 )
 from telescope.fetchers.response import (
     AutocompleteResponse,
@@ -26,13 +27,25 @@ from telescope.fetchers.response import (
     GraphDataResponse,
     JsonKeyEntry,
     JsonKeysResponse,
+    ChartDataResponse,
 )
 from telescope.fetchers.fetcher import BaseFetcher
+from telescope.fetchers.chart import ChartPlan, agg_expression, quote_column
 from telescope.fetchers.models import Row
 
 from telescope.utils import convert_to_base_ch, get_telescope_column
 
 logger = logging.getLogger("telescope.fetchers.clickhouse")
+
+CHART_AGGS = {
+    "count": "count()",
+    "sum": "sum({c})",
+    "avg": "avgOrNull({c})",
+    "min": "minOrNull({c})",
+    "max": "maxOrNull({c})",
+    "quantile": "quantileOrNull({l})({c})",
+    "uniq": "uniq({c})",
+}
 
 
 SSL_CERTS_PARAMS = ["ca_cert", "client_cert", "client_cert_key"]
@@ -66,6 +79,24 @@ def build_time_clause(time_column, date_column, time_from, time_to):
     if date_column:
         date_clause = f"{date_column} BETWEEN toDate(fromUnixTimestamp64Milli({time_from})) and toDate(fromUnixTimestamp64Milli({time_to})) AND "
     return f"{date_clause}`{time_column}` BETWEEN fromUnixTimestamp64Milli({time_from}) and fromUnixTimestamp64Milli({time_to})"
+
+
+def build_group_by_value(group_by) -> str:
+    if "." in group_by.name:
+        spl = group_by.name.split(".")
+        if group_by.jsonstring:
+            json_path = spl[1:]
+            json_path = ", ".join([escape_param(x) for x in json_path])
+            return f"JSONExtractString({group_by.root_name}, {json_path})"
+        elif group_by.is_map():
+            map_key = ".".join(spl[1:])
+            return f"{group_by.root_name}[{escape_param(map_key)}]"
+        elif group_by.is_array():
+            array_index = int(".".join(spl[1]))
+            return f"{group_by.root_name}[{array_index}]"
+        else:
+            raise ValueError
+    return f"toString({group_by.root_name})"
 
 
 class ClickhouseConnect:
@@ -286,7 +317,9 @@ class Fetcher(BaseFetcher):
             source.time_column, source.date_column, time_from, time_to
         )
         settings_clause = (
-            f" SETTINGS {source.data['settings']}" if source.data.get("settings") else ""
+            f" SETTINGS {source.data['settings']}"
+            if source.data.get("settings")
+            else ""
         )
 
         if is_jsonstring or is_json:
@@ -394,27 +427,8 @@ class Fetcher(BaseFetcher):
 
         raw_where_clause = request.raw_query or "true"
 
-        group_by_value = ""
         group_by = request.group_by[0] if request.group_by else None
-        if group_by:
-            if "." in group_by.name:
-                spl = group_by.name.split(".")
-                if group_by.jsonstring:
-                    json_path = spl[1:]
-                    json_path = ", ".join([escape_param(x) for x in json_path])
-                    group_by_value = (
-                        f"JSONExtractString({group_by.root_name}, {json_path})"
-                    )
-                elif group_by.is_map():
-                    map_key = ".".join(spl[1:])
-                    group_by_value = f"{group_by.root_name}['{map_key}']"
-                elif group_by.is_array():
-                    array_index = int(".".join(spl[1]))
-                    group_by_value = f"{group_by.root_name}[{array_index}]"
-                else:
-                    raise ValueError
-            else:
-                group_by_value = f"toString({group_by.root_name})"
+        group_by_value = build_group_by_value(group_by) if group_by else ""
 
         total = 0
         time_clause = build_time_clause(
@@ -583,3 +597,87 @@ class Fetcher(BaseFetcher):
                     )
                 )
         return DataResponse(rows=rows)
+
+    @classmethod
+    def fetch_chart_data(cls, request: ChartDataRequest) -> ChartDataResponse:
+        source = request.source
+        plan = ChartPlan(request)
+        if request.query:
+            parser = parse(request.query)
+            filter_clause = to_sql_where(
+                parser.root,
+                columns=flyql_clickhouse_columns(source._columns),
+                registry=transformer_registry(),
+            )
+        else:
+            filter_clause = "true"
+        raw_where_clause = request.raw_query or "true"
+        time_clause = build_time_clause(
+            source.time_column, source.date_column, plan.time_from, plan.query_to
+        )
+        where = f"{time_clause} AND ({filter_clause}) AND ({raw_where_clause})"
+        from_db_table = f"{source.data['database']}.{source.data['table']}"
+        settings_clause = ""
+        if source.data.get("settings"):
+            settings_clause = f" SETTINGS {source.data['settings']}"
+        aggs = ", ".join(
+            f"{agg_expression(CHART_AGGS, source, item)} AS `__telescope_v{i}`"
+            for i, item in enumerate(request.series)
+        )
+        group = ""
+        if plan.group_by:
+            group = f"ifNull(toString({build_group_by_value(plan.group_by)}), '')"
+
+        assert source.conn
+        with ClickhouseConnect(source.conn.data) as c:
+
+            def run(sql, parameters=None):
+                return c.client.query(
+                    sql + settings_clause,
+                    parameters=parameters,
+                    settings={"max_execution_time": CHART_QUERY_TIMEOUT_SECONDS},
+                ).result_rows
+
+            if plan.kind == "number" or (plan.kind == "table" and not group):
+                rows = run(f"SELECT {aggs} FROM {from_db_table} WHERE {where}")
+                return plan.number(rows) if plan.kind == "number" else plan.table(rows)
+            if plan.kind == "table":
+                return plan.table(
+                    run(
+                        f"SELECT {group} AS `__telescope_g`, {aggs} FROM {from_db_table} WHERE {where}"
+                        f" GROUP BY `__telescope_g` ORDER BY `__telescope_v0` DESC, `__telescope_g`"
+                        f" LIMIT {plan.limit + 1}"
+                    )
+                )
+
+            time_column = quote_column(source, source.time_column)
+            time_type = convert_to_base_ch(
+                source._columns[source.time_column].type.lower()
+            )
+            if time_type in ["timestamp", "uint64", "int64"]:
+                time_column = f"toDateTime({time_column})"
+            step = plan.step_ms // 1000
+            bucket = f"intDiv(toUnixTimestamp({time_column}), {step}) * {plan.step_ms}"
+            if not group:
+                return plan.timeseries(
+                    run(
+                        f"SELECT {bucket} AS `__telescope_t`, {aggs} FROM {from_db_table} WHERE {where}"
+                        f" GROUP BY `__telescope_t` ORDER BY `__telescope_t`"
+                    )
+                )
+            groups, truncated = plan.top_groups(
+                run(
+                    f"SELECT {group} AS `__telescope_g` FROM {from_db_table} WHERE {where}"
+                    f" GROUP BY `__telescope_g` ORDER BY count() DESC, `__telescope_g`"
+                    f" LIMIT {plan.limit + 1}"
+                )
+            )
+            if not groups:
+                return plan.timeseries([], groups, truncated)
+            rows = run(
+                f"SELECT {bucket} AS `__telescope_t`, {group} AS `__telescope_g`, {aggs}"
+                f" FROM {from_db_table} WHERE {where} AND {group} IN {{groups:Array(String)}}"
+                f" GROUP BY `__telescope_t`, `__telescope_g` ORDER BY `__telescope_t`",
+                {"groups": groups},
+            )
+            return plan.timeseries(rows, groups, truncated)

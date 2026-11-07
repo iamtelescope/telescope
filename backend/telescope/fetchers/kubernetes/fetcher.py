@@ -1,3 +1,4 @@
+import copy
 import logging
 from datetime import datetime
 
@@ -9,6 +10,8 @@ from telescope.flyql_errors import format_flyql_error
 from telescope.flyql_registry import transformer_registry
 from telescope.utils import get_telescope_column
 from telescope.fetchers.fetcher import BaseFetcher
+from telescope.fetchers.chart import ChartPlan
+from telescope.fetchers.utils import row_group_value
 import json
 from telescope.fetchers.models import Row
 from telescope.fetchers.request import DataRequest, GraphDataRequest
@@ -464,11 +467,7 @@ class Fetcher(BaseFetcher):
         )
 
     @classmethod
-    def fetch_data_and_graph(cls, request, tz):
-        from telescope.fetchers.utils import generate_graph_from_rows
-        from telescope.fetchers.response import DataAndGraphDataResponse
-        from telescope.constants import UTC_ZONE
-
+    def _collect_rows(cls, request, tz):
         conn_data = request.source.conn.data
         source_data = request.source.data
 
@@ -508,18 +507,10 @@ class Fetcher(BaseFetcher):
         try:
             helper.validate()
         except KubeHelperError as e:
-            return DataAndGraphDataResponse(
-                rows=[], graph_timestamps=[], graph_data={}, graph_total=0, error=str(e)
-            )
+            return [], str(e)
 
         if not helper.contexts:
-            return DataAndGraphDataResponse(
-                rows=[],
-                graph_timestamps=[],
-                graph_data={},
-                graph_total=0,
-                error="No contexts available",
-            )
+            return [], "No contexts available"
 
         total_namespaces = sum(len(ns) for ns in helper.namespaces.values())
         if total_namespaces == 0:
@@ -527,32 +518,14 @@ class Fetcher(BaseFetcher):
                 error_details = "; ".join(
                     f"{err['operation']}: {err['data']}" for err in helper.errors
                 )
-                return DataAndGraphDataResponse(
-                    rows=[],
-                    graph_timestamps=[],
-                    graph_data={},
-                    graph_total=0,
-                    error=f"Failed to fetch namespaces: {error_details}",
-                )
-            return DataAndGraphDataResponse(
-                rows=[],
-                graph_timestamps=[],
-                graph_data={},
-                graph_total=0,
-                error="No namespaces found matching the filters",
-            )
+                return [], f"Failed to fetch namespaces: {error_details}"
+            return [], "No namespaces found matching the filters"
 
         total_pods = sum(
             len(pods) for ns_pods in helper.pods.values() for pods in ns_pods.values()
         )
         if total_pods == 0:
-            return DataAndGraphDataResponse(
-                rows=[],
-                graph_timestamps=[],
-                graph_data={},
-                graph_total=0,
-                error="No pods found matching the filters",
-            )
+            return [], "No pods found matching the filters"
 
         logger.info(
             "Fetching logs: contexts=%d, namespaces=%d, pods=%d",
@@ -577,7 +550,7 @@ class Fetcher(BaseFetcher):
             parser = parse(request.query)
             query_ast = parser.root
 
-        all_rows = []
+        rows = []
         for entry in log_entries:
             row = Row(
                 source=request.source,
@@ -619,9 +592,21 @@ class Fetcher(BaseFetcher):
                         flyql_error_logged = True
                     continue
                 if matched:
-                    all_rows.append(row)
+                    rows.append(row)
             else:
-                all_rows.append(row)
+                rows.append(row)
+        return rows, None
+
+    @classmethod
+    def fetch_data_and_graph(cls, request, tz):
+        from telescope.fetchers.utils import generate_graph_from_rows
+        from telescope.fetchers.response import DataAndGraphDataResponse
+
+        all_rows, error = cls._collect_rows(request, tz)
+        if error:
+            return DataAndGraphDataResponse(
+                rows=[], graph_timestamps=[], graph_data={}, graph_total=0, error=error
+            )
 
         group_by_field = request.group_by[0] if request.group_by else None
         use_severity_grouping = not group_by_field
@@ -642,3 +627,13 @@ class Fetcher(BaseFetcher):
             graph_data=graph_data,
             graph_total=graph_total,
         )
+
+    @classmethod
+    def fetch_chart_data(cls, request):
+        plan = ChartPlan(request)
+        rows_request = copy.copy(request)
+        rows_request.time_from, rows_request.time_to = plan.time_from, plan.query_to
+        rows, error = cls._collect_rows(rows_request, UTC_ZONE)
+        if error:
+            raise ValueError(error)
+        return plan.count_rows(rows, lambda row: row_group_value(row, plan.group_by))

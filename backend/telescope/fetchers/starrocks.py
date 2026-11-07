@@ -10,7 +10,7 @@ import mysql.connector
 from flyql import parse, ParserError, FlyqlError
 from flyql.generators.starrocks import Column, to_sql_where
 
-from telescope.constants import UTC_ZONE
+from telescope.constants import UTC_ZONE, CHART_QUERY_TIMEOUT_SECONDS
 from telescope.columns import ParsedColumn
 from telescope.flyql_errors import format_flyql_error
 from telescope.flyql_registry import transformer_registry
@@ -19,18 +19,31 @@ from telescope.models import Source, SourceColumn
 from telescope.fetchers.request import (
     DataRequest,
     GraphDataRequest,
+    ChartDataRequest,
 )
 from telescope.fetchers.response import (
     AutocompleteResponse,
     DataResponse,
     GraphDataResponse,
+    ChartDataResponse,
 )
 from telescope.fetchers.fetcher import BaseFetcher
+from telescope.fetchers.chart import ChartPlan, agg_expression, quote_column
 from telescope.fetchers.models import Row
 
 from telescope.utils import convert_to_base_sr, get_telescope_column
 
 logger = logging.getLogger("telescope.fetchers.starrocks")
+
+CHART_AGGS = {
+    "count": "count(*)",
+    "sum": "sum({c})",
+    "avg": "avg({c})",
+    "min": "min({c})",
+    "max": "max({c})",
+    "quantile": "percentile_approx({c}, {l})",
+    "uniq": "approx_count_distinct({c})",
+}
 
 
 SSL_CERTS_PARAMS = {
@@ -68,6 +81,40 @@ def build_time_clause(time_column, date_column, time_from, time_to):
     if date_column:
         date_clause = f"`{date_column}` BETWEEN date(to_datetime_ntz({time_from}, 3)) and date(to_datetime_ntz({time_to}, 3))  AND "
     return f"{date_clause}`{time_column}` BETWEEN to_datetime_ntz({time_from}, 3) and to_datetime_ntz({time_to}, 3)"
+
+
+def build_group_by_value(group_by: ParsedColumn) -> str:
+    # If the name is the root name, ignore the presence of dots as we
+    # should assume the intent is to group by the identified column rather
+    # than a nested field.
+    if "." in group_by.name and group_by.root_name != group_by.name:
+        # Use the csv module to split respecting quotes
+        spl = list(csv.reader([group_by.name], delimiter=".", quotechar="'"))[0]
+        if group_by.is_map():
+            map_keys = "][".join(escape_param(x) for x in spl[1:])
+            return f"{group_by.root_name}[{map_keys}]"
+        elif group_by.is_array():
+            array_index = int(".".join(spl[1]))
+            return f"{group_by.root_name}[{array_index}]"
+        elif group_by.is_json():
+            json_path = spl[1:]
+            # Starrocks documents that you double quote any json path elements
+            # that contain dots. Let's just do it unconditionally.
+            json_path = [f'"{x}"' for x in json_path]
+            json_path_str = "->".join([escape_param(x) for x in json_path])
+            return f"cast(`{group_by.root_name}`->{json_path_str} as string)"
+        elif group_by.jsonstring:
+            json_path = spl[1:]
+            # Starrocks documents that you double quote any json path elements
+            # that contain dots. Let's just do it unconditionally.
+            json_path = [f'"{x}"' for x in json_path]
+            json_path_str = "->".join([escape_param(x) for x in json_path])
+            return (
+                f"cast(parse_json(`{group_by.root_name}`)->{json_path_str} as string)"
+            )
+        else:
+            raise ValueError
+    return f"`{group_by.root_name}`"
 
 
 class StarrocksConnect:
@@ -299,42 +346,8 @@ class Fetcher(BaseFetcher):
 
         raw_where_clause = request.raw_query or "true"
 
-        group_by_value = ""
         group_by = request.group_by[0] if request.group_by else None
-        if group_by:
-            assert isinstance(group_by, ParsedColumn)
-            # If the name is the root name, ignore the presence of dots as we
-            # should assume the intent is to group by the identified column rather
-            # than a nested field.
-            if "." in group_by.name and group_by.root_name != group_by.name:
-                # Use the csv module to split respecting quotes
-                spl = list(csv.reader([group_by.name], delimiter=".", quotechar="'"))[0]
-                if group_by.is_map():
-                    map_key = "']['".join(spl[1:])
-                    group_by_value = f"{group_by.root_name}['{map_key}']"
-                elif group_by.is_array():
-                    array_index = int(".".join(spl[1]))
-                    group_by_value = f"{group_by.root_name}[{array_index}]"
-                elif group_by.is_json():
-                    json_path = spl[1:]
-                    # Starrocks documents that you double quote any json path elements
-                    # that contain dots. Let's just do it unconditionally.
-                    json_path = [f'"{x}"' for x in json_path]
-                    json_path_str = "->".join([escape_param(x) for x in json_path])
-                    group_by_value = (
-                        f"cast(`{group_by.root_name}`->{json_path_str} as string)"
-                    )
-                elif group_by.jsonstring:
-                    json_path = spl[1:]
-                    # Starrocks documents that you double quote any json path elements
-                    # that contain dots. Let's just do it unconditionally.
-                    json_path = [f'"{x}"' for x in json_path]
-                    json_path_str = "->".join([escape_param(x) for x in json_path])
-                    group_by_value = f"cast(parse_json(`{group_by.root_name}`)->{json_path_str} as string)"
-                else:
-                    raise ValueError
-            else:
-                group_by_value = f"`{group_by.root_name}`"
+        group_by_value = build_group_by_value(group_by) if group_by else ""
 
         total = 0
         time_clause = build_time_clause(
@@ -511,3 +524,90 @@ class Fetcher(BaseFetcher):
                     )
                 )
         return DataResponse(rows=rows)
+
+    @classmethod
+    def fetch_chart_data(cls, request: ChartDataRequest) -> ChartDataResponse:
+        source = request.source
+        plan = ChartPlan(request)
+        if request.query:
+            parser = parse(request.query)
+            assert parser.root
+            filter_clause = to_sql_where(
+                parser.root,
+                columns=flyql_starrocks_columns(source._columns),
+                registry=transformer_registry(),
+            )
+        else:
+            filter_clause = "true"
+        raw_where_clause = request.raw_query or "true"
+        time_clause = build_time_clause(
+            source.time_column, source.date_column, plan.time_from, plan.query_to
+        )
+        where = f"{time_clause} AND ({filter_clause}) AND ({raw_where_clause})"
+        from_db_table = (
+            f"{source.data['catalog']}.{source.data['database']}.{source.data['table']}"
+        )
+        hint_vars = f"query_timeout={CHART_QUERY_TIMEOUT_SECONDS}"
+        if source.data.get("settings"):
+            hint_vars += f", {source.data['settings']}"
+        select = f"SELECT /*+ SET_VAR({hint_vars}) */"
+        aggs = ", ".join(
+            f"{agg_expression(CHART_AGGS, source, item)} AS `__telescope_v{i}`"
+            for i, item in enumerate(request.series)
+        )
+        group = ""
+        if plan.group_by:
+            group = f"ifnull(cast({build_group_by_value(plan.group_by)} as string), '')"
+
+        assert source.conn
+        with StarrocksConnect(source.conn.data) as c:
+
+            def run(sql):
+                cur = c.client.cursor()
+                cur.execute(sql)
+                return cur.fetchall()
+
+            if plan.kind == "number" or (plan.kind == "table" and not group):
+                rows = run(f"{select} {aggs} FROM {from_db_table} WHERE {where}")
+                return plan.number(rows) if plan.kind == "number" else plan.table(rows)
+            if plan.kind == "table":
+                return plan.table(
+                    run(
+                        f"{select} {group} AS `__telescope_g`, {aggs} FROM {from_db_table} WHERE {where}"
+                        f" GROUP BY `__telescope_g` ORDER BY `__telescope_v0` DESC, `__telescope_g`"
+                        f" LIMIT {plan.limit + 1}"
+                    )
+                )
+
+            time_column = quote_column(source, source.time_column)
+            time_type = convert_to_base_sr(
+                source._columns[source.time_column].type.lower()
+            )
+            if time_type in ["timestamp", "uint64", "int64"]:
+                time_column = f"to_datetime_ntz({time_column}, 3)"
+            step = plan.step_ms // 1000
+            bucket = f"floor(unix_timestamp({time_column}) / {step}) * {plan.step_ms}"
+            if not group:
+                return plan.timeseries(
+                    run(
+                        f"{select} {bucket} AS `__telescope_t`, {aggs} FROM {from_db_table} WHERE {where}"
+                        f" GROUP BY `__telescope_t` ORDER BY `__telescope_t`"
+                    )
+                )
+            groups, truncated = plan.top_groups(
+                run(
+                    f"{select} {group} AS `__telescope_g` FROM {from_db_table} WHERE {where}"
+                    f" GROUP BY `__telescope_g` ORDER BY count(*) DESC, `__telescope_g`"
+                    f" LIMIT {plan.limit + 1}"
+                )
+            )
+            if not groups:
+                return plan.timeseries([], groups, truncated)
+            # Values are escaped like the driver does; its %(name)s pass would also hit user literals.
+            group_list = ", ".join(escape_param(str(g)) for g in groups)
+            rows = run(
+                f"{select} {bucket} AS `__telescope_t`, {group} AS `__telescope_g`, {aggs}"
+                f" FROM {from_db_table} WHERE {where} AND {group} IN ({group_list})"
+                f" GROUP BY `__telescope_t`, `__telescope_g` ORDER BY `__telescope_t`"
+            )
+            return plan.timeseries(rows, groups, truncated)

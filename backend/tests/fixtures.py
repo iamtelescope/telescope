@@ -2,7 +2,7 @@ import pytest
 
 from django.contrib.auth.models import User
 
-from telescope.models import Source, SavedView, Connection
+from telescope.models import Source, SavedView, Connection, Dashboard
 from telescope.services.source import SourceService
 from telescope.services.connection import ConnectionService
 
@@ -14,6 +14,7 @@ from tests.data import (
     get_docker_connection_data,
     get_clickhouse_connection_data,
     get_kubernetes_connection_data,
+    get_dashboard_data,
 )
 
 
@@ -197,3 +198,16 @@ def kubernetes_source(kubernetes_connection):
 def kubernetes_connection():
     data = get_kubernetes_connection_data()
     return Connection.objects.create(**data)
+
+
+@pytest.fixture
+def dashboard(test_user, clickhouse_source):
+    return Dashboard.objects.create(
+        slug="test-dashboard-abc123",
+        name="Test Dashboard",
+        description="test dashboard",
+        owner=test_user,
+        updated_by=test_user,
+        shared=False,
+        data=get_dashboard_data(clickhouse_source.slug),
+    )

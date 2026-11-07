@@ -6,6 +6,7 @@ import telescope.views.rbac.views as rbac
 import telescope.views.source.views as source
 import telescope.views.connection.views as connection
 import telescope.views.auth.views as auth
+import telescope.views.dashboard.views as dashboard
 
 import telescope.api.source.views as source_api
 import telescope.api.connection.views as connection_api
@@ -75,6 +76,7 @@ urlpatterns = [
     ),
     path("ui/v1/sources/<slug:slug>/data", source.SourceDataView.as_view()),
     path("ui/v1/sources/<slug:slug>/graphData", source.SourceGraphDataView.as_view()),
+    path("ui/v1/sources/<slug:slug>/chartData", source.SourceChartDataView.as_view()),
     path(
         "ui/v1/sources/<slug:slug>/dataAndGraph",
         source.SourceDataAndGraphDataView.as_view(),
@@ -101,6 +103,8 @@ urlpatterns = [
     path("ui/v1/sources/<slug:slug>/grantRole", source.SourceGrantRoleView.as_view()),
     path("ui/v1/sources/<slug:slug>/revokeRole", source.SourceRevokeRoleView.as_view()),
     path("ui/v1/sources/<slug:slug>", source.SourceView.as_view()),
+    path("ui/v1/dashboards", dashboard.DashboardView.as_view()),
+    path("ui/v1/dashboards/<slug:slug>", dashboard.DashboardView.as_view()),
     path("liveness", index.liveness, name="liveness"),
     path("readiness", index.readiness, name="readiness"),
     re_path("^api.*$", stub_api.ApiStubView.as_view()),

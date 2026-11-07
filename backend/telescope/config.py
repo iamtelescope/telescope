@@ -51,6 +51,9 @@ SCHEMA = {
             "max_saved_views_per_user": {
                 "type": "integer",
             },
+            "max_dashboards_per_user": {
+                "type": "integer",
+            },
         },
         "django": {
             "type": "object",
@@ -180,6 +183,7 @@ def get_default_config():
         },
         "limits": {
             "max_saved_views_per_user": 0,
+            "max_dashboards_per_user": 0,
         },
         "auth": {
             "providers": {

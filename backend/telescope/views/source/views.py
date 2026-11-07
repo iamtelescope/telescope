@@ -18,10 +18,12 @@ from telescope.fetchers.request import (
     DataRequest,
     GraphDataRequest,
     DataAndGraphDataRequest,
+    ChartDataRequest,
 )
 from telescope.rbac import permissions
 from telescope.response import UIResponse
 from telescope.models import Source, SavedView, Connection
+from telescope.serializers.dashboard import SourceChartDataRequestSerializer
 from telescope.serializers.source import (
     SourceRoleSerializer,
     ClickhouseConnectionSerializer,
@@ -497,6 +499,61 @@ class SourceGraphDataView(APIView):
                 "data": graph_data_response.data,
                 "total": graph_data_response.total,
             }
+        return Response(response.as_dict())
+
+
+class SourceChartDataView(APIView):
+    @method_decorator(login_required)
+    def post(self, request, slug):
+        response = UIResponse()
+
+        try:
+            source = rbac_manager.get_source(
+                user=request.user,
+                source_slug=slug,
+                required_permissions=[permissions.Source.USE.value],
+                fetch_connection=True,
+            )
+        except Source.DoesNotExist:
+            response.mark_failed("Source not found or access denied")
+            response.data = {"code": "no_access"}
+            return Response(response.as_dict())
+
+        serializer = SourceChartDataRequestSerializer(
+            data=request.data, context={"source": source, "user": request.user}
+        )
+        if not serializer.is_valid():
+            response.mark_invalid(serializer.errors)
+            return Response(response.as_dict())
+
+        queries = [
+            serializer.validated_data.get(name) for name in ["query", "dashboard_query"]
+        ]
+        queries = [q for q in queries if q]
+        query = (
+            queries[0] if len(queries) == 1 else " and ".join(f"({q})" for q in queries)
+        )
+
+        try:
+            fetcher = get_fetchers()[source.kind]
+            chart_request = ChartDataRequest(
+                source=source,
+                query=query,
+                raw_query=serializer.validated_data.get("raw_query") or "",
+                time_from=serializer.validated_data["from"],
+                time_to=serializer.validated_data["to"],
+                context_columns=serializer.validated_data.get("context_columns") or {},
+                display=serializer.validated_data["display"],
+                series=serializer.validated_data["series"],
+                group_by=serializer.validated_data["group_by"],
+                granularity=serializer.validated_data["granularity"],
+                limit=serializer.validated_data["limit"],
+            )
+            response.data = fetcher.fetch_chart_data(chart_request).as_dict()
+        except Exception as err:
+            logger.exception("chart data failed: %s", err)
+            response.mark_failed(str(err))
+            response.data = {"code": "query_failed"}
         return Response(response.as_dict())
 
 

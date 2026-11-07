@@ -71,3 +71,47 @@ class DataAndGraphDataResponse:
         self.graph_total = graph_total
         self.error = error
         self.message = message
+
+
+class ChartDataResponse:
+    def __init__(
+        self,
+        kind: str,
+        time_from: int,
+        time_to: int,
+        granularity: Optional[str] = None,
+        step_ms: Optional[int] = None,
+        timestamps: Optional[List[int]] = None,
+        series: Optional[List[Dict]] = None,
+        value=None,
+        columns: Optional[List[Dict]] = None,
+        rows: Optional[List[Dict]] = None,
+        truncated: bool = False,
+    ):
+        self.kind = kind
+        self.time_from = time_from
+        self.time_to = time_to
+        self.granularity = granularity
+        self.step_ms = step_ms
+        self.timestamps = timestamps or []
+        self.series = series or []
+        self.value = value
+        self.columns = columns or []
+        self.rows = rows or []
+        self.truncated = truncated
+
+    def as_dict(self) -> Dict:
+        data = {"kind": self.kind, "from": self.time_from, "to": self.time_to}
+        if self.kind == "timeseries":
+            data.update(
+                granularity=self.granularity,
+                step_ms=self.step_ms,
+                timestamps=self.timestamps,
+                series=self.series,
+                truncated=self.truncated,
+            )
+        elif self.kind == "number":
+            data["value"] = self.value
+        else:
+            data.update(columns=self.columns, rows=self.rows, truncated=self.truncated)
+        return data
