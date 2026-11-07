@@ -933,6 +933,7 @@ const problem = computed(() => {
     const shown = chart.value.series.filter((s) => !s.hidden).length
     if (singleSeries.value && chart.value.series.length > 1 && shown !== 1)
         return `${chart.value.display} shows exactly 1 series: hide the others`
+    if (!shown) return 'Show at least 1 series'
     if (chart.value.series.every((s) => s.agg === 'formula')) return 'A formula needs at least one query series'
     if (groupRequired.value && !chart.value.group_by) return groupByError.value
     return limitError.value

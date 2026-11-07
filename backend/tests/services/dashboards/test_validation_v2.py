@@ -107,6 +107,16 @@ def test_chart_v2_valid(root_user, clickhouse_source, chart):
             "series",
             "pie needs exactly 1 series shown",
         ),
+        (
+            {"series": [{"agg": "count", "hidden": True}]},
+            "series",
+            "at least 1 series must be shown",
+        ),
+        (
+            {"display": "table", "series": [{**s, "hidden": True} for s in RATIO]},
+            "series",
+            "at least 1 series must be shown",
+        ),
         ({"display": "table", "compare": True}, "compare", "previous period"),
         ({"sparkline": True}, "sparkline", "only number"),
         (

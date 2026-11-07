@@ -149,10 +149,11 @@ def chart_shape_errors(attrs: dict) -> dict:
     errors = {}
     display = attrs["display"]
     series = attrs["series"]
-    if display in SINGLE_SERIES_DISPLAYS:
-        visible = [s for s in series if not s.get("hidden")]
-        if len(series) > 1 and len(visible) != 1:
-            errors["series"] = [f"{display} needs exactly 1 series shown"]
+    visible = [s for s in series if not s.get("hidden")]
+    if display in SINGLE_SERIES_DISPLAYS and len(series) > 1 and len(visible) != 1:
+        errors["series"] = [f"{display} needs exactly 1 series shown"]
+    elif not visible:
+        errors["series"] = ["at least 1 series must be shown"]
     if all(s["agg"] == "formula" for s in series):
         errors["series"] = ["a formula needs at least one query series"]
     if display == "number" and attrs.get("group_by"):

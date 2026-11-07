@@ -173,7 +173,8 @@ def resolve(user: User, data: Dict) -> AlertQuery:
             "to": "1",
             "context_columns": fields["context_columns"],
             "display": display,
-            "series": [fields["series"]],
+            # An alert may watch a tile's hidden formula operand; hiding means nothing here.
+            "series": [{k: v for k, v in fields["series"].items() if k != "hidden"}],
             "group_by": fields["group_by"],
             "limit": GROUP_LIMIT if fields["group_by"] else 1,
             "params": fields.get("params") or {},
