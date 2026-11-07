@@ -46,3 +46,7 @@ SOFTWARE.
   `packages/app/src/DBSearchPage.tsx` (interval polling, skipped while the tab is hidden or a query runs) (MIT, above).
 - `ui/src/utils/context.js` and `ui/src/components/explorer/results/tabs/ContextTab.vue` adapt the context ranges, quick filters
   and match presets of HyperDX `packages/app/src/components/ContextSidePanel.tsx` and `ContextFilterPills.tsx` (MIT, above).
+- `backend/telescope/fetchers/facets.py` (sampled value reads capped by `max_rows_to_read`, the 3e6 default) is adapted from
+  HyperDX `packages/common-utils/src/core/metadata.ts`, and `ui/src/components/explorer/FacetSidebar.vue` with
+  `ui/src/components/explorer/facets/FacetGroup.vue` (include/exclude, "show more") from
+  `packages/app/src/components/DBSearchPageFilters.tsx` (MIT, above).
