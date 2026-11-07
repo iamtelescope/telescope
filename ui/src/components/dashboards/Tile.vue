@@ -141,6 +141,7 @@ import ChartView from '@/components/dashboards/ChartView.vue'
 import TileMenuExtras from '@/components/dashboards/TileMenuExtras.vue'
 import { useChartData } from '@/composables/dashboards/useDashboardService'
 import { buildDrilldownRoute } from '@/utils/drilldown'
+import { boundForExplorer } from '@/utils/dashboards'
 
 const props = defineProps(['tile', 'range', 'timeZone', 'editing', 'canEdit', 'queue', 'refreshTick'])
 const emit = defineEmits(['edit', 'duplicate', 'delete', 'rangeSelected'])
@@ -175,12 +176,21 @@ const reload = () => {
         group_by: c.group_by || '',
         granularity: c.granularity || 'auto',
         limit: c.limit ?? 10,
+        params: props.range.params || {},
     })
 }
 
-watch(() => [JSON.stringify(props.tile.chart), props.range.from, props.range.to, props.range.query], reload, {
-    immediate: true,
-})
+watch(
+    () => [
+        JSON.stringify(props.tile.chart),
+        props.range.from,
+        props.range.to,
+        props.range.query,
+        JSON.stringify(props.range.params),
+    ],
+    reload,
+    { immediate: true },
+)
 
 watch(
     () => props.refreshTick,
@@ -192,7 +202,8 @@ watch(
 onBeforeUnmount(abort)
 
 const openExplorer = (group) => {
-    router.push(buildDrilldownRoute(props.tile.chart, props.range, group, props.timeZone))
+    const { chart, range } = boundForExplorer(props.tile.chart, props.range)
+    router.push(buildDrilldownRoute(chart, range, group, props.timeZone))
 }
 
 const onRowClick = (group) => {

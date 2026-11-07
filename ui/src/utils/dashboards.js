@@ -1,3 +1,5 @@
+import { Parameter, parse as parseFlyql } from 'flyql'
+
 import { localTimeZone } from '@/utils/datetimeranges'
 
 export const TIMESERIES_DISPLAYS = ['line', 'stacked_area', 'stacked_bar']
@@ -43,6 +45,8 @@ export const emptyDashboardData = () => ({
     time: { from: 'now-1h', to: 'now', time_zone: localTimeZone },
     query: '',
     refresh: 'off',
+    version: DASHBOARD_DATA_VERSION,
+    variables: [],
     tiles: [],
 })
 
@@ -99,3 +103,146 @@ export const formatValue = (value, format) => {
     }
     return num(value)
 }
+
+export const DASHBOARD_DATA_VERSION = 2
+export const VARIABLE_TYPES = [
+    { value: 'values', label: 'Column values' },
+    { value: 'static', label: 'Static list' },
+    { value: 'text', label: 'Text' },
+]
+export const VARIABLE_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/
+export const VARIABLE_URL_PREFIX = 'var-'
+
+// v1 dashboards had no version and no variables; the server upgrades them the same way.
+export const upgradeDashboardData = (data) => {
+    if (!data || (data.version ?? 1) !== 1) return data
+    return { ...data, version: DASHBOARD_DATA_VERSION, variables: data.variables || [] }
+}
+
+const asList = (value) => (Array.isArray(value) ? value : value === undefined || value === null ? [] : [value])
+
+export const isEmptyValue = (value) => asList(value).filter((v) => v !== '').length === 0
+
+// Current value of each variable: the URL `var-<name>` wins over the saved default.
+export const variableValues = (variables, routeQuery) => {
+    const values = {}
+    for (const v of variables || []) {
+        const key = VARIABLE_URL_PREFIX + v.name
+        const raw = key in (routeQuery || {}) ? asList(routeQuery[key]) : asList(v.default)
+        const list = raw.filter((x) => x !== '' && x !== null)
+        values[v.name] = v.multi ? list : (list[0] ?? '')
+    }
+    return values
+}
+
+export const variableRouteQuery = (variable, value) => {
+    const list = asList(value).filter((x) => x !== '')
+    return { [VARIABLE_URL_PREFIX + variable.name]: list.length ? (variable.multi ? list : list[0]) : '' }
+}
+
+// chartData `params`: a required variable left empty is omitted, so the server reports it.
+export const variableParams = (variables, values) => {
+    const params = {}
+    for (const v of variables || []) {
+        const value = values[v.name]
+        if (isEmptyValue(value)) {
+            if (!v.required) params[v.name] = v.multi ? [] : ''
+        } else {
+            params[v.name] = value
+        }
+    }
+    return params
+}
+
+export const missingRequired = (variables, values) =>
+    (variables || []).filter((v) => v.required && isEmptyValue(values[v.name])).map((v) => v.name)
+
+const flyqlLiteral = (value) => {
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+    return `'${String(value).replace(/'/g, "\\'")}'`
+}
+
+const paramValues = (param, params) => {
+    if (param.positional || !(param.name in params)) return null
+    return asList(params[param.name]).filter((v) => v !== null && v !== '')
+}
+
+// The JS parser's IN-list ranges exclude a string's quotes; widen them back.
+const quotedRange = (text, range) => {
+    const quote = text[range.start - 1]
+    const quoted = (quote === "'" || quote === '"') && text[range.end] === quote
+    return quoted ? [range.start - 1, range.end + 1] : [range.start, range.end]
+}
+
+// Mirrors backend bind_query; returns null when a value is missing, so callers keep the raw query.
+const bindExpression = (text, expr, params) => {
+    const start = expr.key.range.start
+    const edits = []
+    if (expr.value instanceof Parameter) {
+        const values = paramValues(expr.value, params)
+        if (values === null) throw new Error('unbound')
+        if (!values.length) return undefined
+        const literals = values.map(flyqlLiteral)
+        if (literals.length === 1) {
+            edits.push([expr.valueRange.start, expr.valueRange.end, literals[0]])
+        } else if (expr.operator === '=' || expr.operator === '!=') {
+            const op = expr.operator === '=' ? 'in' : 'not in'
+            edits.push([expr.operatorRange.start, expr.valueRange.end, `${op} [${literals.join(', ')}]`])
+        } else {
+            throw new Error('multi')
+        }
+    } else if (expr.values && expr.values.some((v) => v instanceof Parameter)) {
+        const items = []
+        expr.values.forEach((value, i) => {
+            if (value instanceof Parameter) {
+                const values = paramValues(value, params)
+                if (values === null) throw new Error('unbound')
+                items.push(...values.map(flyqlLiteral))
+            } else {
+                items.push(text.slice(...quotedRange(text, expr.valueRanges[i])))
+            }
+        })
+        if (!items.length) return undefined
+        const first = quotedRange(text, expr.valueRanges[0])
+        const last = quotedRange(text, expr.valueRanges[expr.valueRanges.length - 1])
+        edits.push([first[0], last[1], items.join(', ')])
+    }
+    let result = text.slice(start, expr.range.end)
+    for (const [s, e, replacement] of edits.sort((a, b) => b[0] - a[0])) {
+        result = result.slice(0, s - start) + replacement + result.slice(e - start)
+    }
+    return result
+}
+
+const bindNode = (text, node, params) => {
+    let body
+    if (node.expression) {
+        body = bindExpression(text, node.expression, params)
+    } else {
+        const parts = [node.left, node.right]
+            .filter(Boolean)
+            .map((child) => bindNode(text, child, params))
+            .filter((part) => part !== undefined)
+        if (!parts.length) return undefined
+        body = parts.length === 1 ? parts[0] : `(${parts[0]} ${node.boolOperator} ${parts[1]})`
+    }
+    if (body === undefined) return undefined
+    return node.negated ? `not ${body}` : body
+}
+
+// FlyQL text with `$name` values substituted, for the explorer drill-down.
+export const bindFlyql = (query, params) => {
+    if (!query || !query.includes('$')) return query
+    try {
+        const root = parseFlyql(query).root
+        return bindNode(query, root, params || {}) ?? ''
+    } catch {
+        return query
+    }
+}
+
+// Tile chart and range with variables substituted, for the explorer, which has no variables.
+export const boundForExplorer = (chart, range) => ({
+    chart: { ...chart, query: bindFlyql(chart.query || '', range.params) },
+    range: { ...range, query: bindFlyql(range.query || '', range.params) },
+})

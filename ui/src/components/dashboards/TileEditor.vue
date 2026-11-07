@@ -688,6 +688,7 @@ const runPreview = () => {
         group_by: c.group_by,
         granularity: c.granularity,
         limit: c.limit,
+        params: props.range.params || {},
     })
 }
 
