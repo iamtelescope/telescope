@@ -72,6 +72,11 @@ SOFTWARE.
 - `backend/telescope/query_attribution.py` (`log_comment` keys, the character allowlist and length cap) is adapted from HyperDX
   `packages/common-utils/src/clickhouse/attribution.ts`, and `backend/telescope_api2/views.py` (resource shapes, list pagination)
   follows `packages/api/src/routers/external-api/v2/*` (MIT, above).
+- `backend/telescope_otel/metrics_sql.py` (per-series `lagInFrame` sum deltas with clamped resets, histogram bucket deltas and
+  linearly interpolated quantiles, the metric name catalog) is adapted from HyperDX `packages/common-utils/src/core/renderChartConfig.ts`
+  (`translateMetricChartConfig`), `packages/common-utils/src/core/histogram.ts` and `packages/app/src/hooks/useMetricCatalog.ts`;
+  `ui/src/features/metrics/MetricsExplorer.vue` and `ui/src/components/dashboards/metrics/*` follow
+  `packages/app/src/components/MetricExplorer/*`, `MetricNameSelect.tsx` and `MetricAttributeHelperPanel.tsx` (MIT, above).
 
 ## Drain3
 

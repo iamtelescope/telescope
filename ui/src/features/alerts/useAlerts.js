@@ -45,6 +45,7 @@ const fmt = (v) =>
 export const describeSeries = (s) => {
     if (!s || !s.agg) return ''
     if (s.agg === 'count') return 'count()'
+    if (s.agg === 'metric') return `${s.metric?.agg}(${s.metric?.name})`
     if (s.agg === 'quantile') return `p${Math.round(s.level * 100)}(${s.column})`
     return `${s.agg}(${s.column})`
 }

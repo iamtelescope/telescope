@@ -153,8 +153,17 @@
                                         data-testid="series-agg"
                                         @change="onAggChange(s)"
                                     />
+                                    <MetricNamePicker
+                                        v-if="s.agg === 'metric'"
+                                        :source="chart.source"
+                                        :range="props.range"
+                                        :modelValue="s.metric"
+                                        :invalid="!!seriesErrors[idx]"
+                                        class="flex-1 min-w-0"
+                                        @update:modelValue="(m) => setMetric(s, m)"
+                                    />
                                     <InputText
-                                        v-if="s.agg === 'formula'"
+                                        v-else-if="s.agg === 'formula'"
                                         v-model="s.formula"
                                         size="small"
                                         class="flex-1 min-w-0 font-mono"
@@ -233,10 +242,21 @@
                                     />
                                 </div>
                                 <div class="flex items-center gap-1">
+                                    <Select
+                                        v-if="s.agg === 'metric'"
+                                        v-model="s.metric.agg"
+                                        :options="metricAggOptions(s.metric.type)"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        size="small"
+                                        class="w-28 shrink-0"
+                                        data-testid="metric-agg"
+                                    />
                                     <InputText
                                         v-model="s.alias"
                                         size="small"
-                                        class="w-40 shrink-0"
+                                        :class="s.agg === 'metric' ? 'w-28' : 'w-40'"
+                                        class="shrink-0"
                                         :placeholder="`Alias: ${seriesLabel(s)}`"
                                         maxlength="64"
                                         aria-label="Alias"
@@ -244,7 +264,18 @@
                                         @keydown.enter="runPreview"
                                     />
                                     <InputText
-                                        v-if="s.agg !== 'formula' && !countOnly"
+                                        v-if="s.agg === 'metric'"
+                                        v-model="s.metric.attrs_filter"
+                                        size="small"
+                                        class="flex-1 min-w-0 font-mono"
+                                        placeholder="Only points where… e.g. Attributes.'http.route' = '/'"
+                                        maxlength="10000"
+                                        aria-label="Attribute filter"
+                                        data-testid="metric-attrs-filter"
+                                        @keydown.enter="runPreview"
+                                    />
+                                    <InputText
+                                        v-else-if="s.agg !== 'formula' && !countOnly"
                                         v-model="s.where"
                                         size="small"
                                         class="flex-1 min-w-0 font-mono"
@@ -603,6 +634,15 @@ import { ChartArea, ChartBarBig, ChartColumnStacked, ChartLine, ChartPie, Hash, 
 import ErrorText from '@/components/common/ErrorText.vue'
 import ChartView from '@/components/dashboards/ChartView.vue'
 import ContextColumns from '@/components/explorer/controls/ContextColumns.vue'
+import MetricNamePicker from '@/components/dashboards/metrics/MetricNamePicker.vue'
+import {
+    METRIC_AGGS,
+    METRIC_AGG_LABELS,
+    defaultMetricAgg,
+    isMetricsSource,
+    metricLabel,
+    useMetricAttributes,
+} from '@/components/dashboards/metrics/metrics'
 import QueryEditor from '@/components/explorer/controls/QueryEditor.vue'
 import RawQueryEditor from '@/components/explorer/controls/RawQueryEditor.vue'
 import { useChartData } from '@/composables/dashboards/useDashboardService'
@@ -668,6 +708,8 @@ const isNew = computed(() => !props.tile?.id)
 const chart = computed(() => form.value.chart)
 const source = computed(() => (props.sources || []).find((s) => s.slug === chart.value.source) || null)
 const countOnly = computed(() => !!source.value && countOnlyKind(source.value.kind))
+const metrics = computed(() => isMetricsSource(source.value))
+const metricAttributes = useMetricAttributes()
 const maxSeries = MAX_SERIES
 const singleSeries = computed(() => SINGLE_SERIES_DISPLAYS.includes(chart.value.display))
 const groupRequired = computed(() => ['bar', 'pie'].includes(chart.value.display))
@@ -773,11 +815,34 @@ const loadContextColumns = async () => {
 
 const AGG_LABELS = { last_value: 'last value', quantile: 'percentile' }
 const aggOptions = computed(() =>
-    [...AGGS, 'formula'].map((a) => ({
+    [...(metrics.value ? ['metric'] : []), ...AGGS, 'formula'].map((a) => ({
         value: a,
         label: AGG_LABELS[a] || a,
         disabled: countOnly.value && a !== 'count',
     })),
+)
+const metricAggOptions = (type) =>
+    (METRIC_AGGS[type] || []).map((a) => ({ value: a, label: METRIC_AGG_LABELS[a] || a }))
+
+const emptyMetric = () => ({ name: '', type: 'gauge', agg: 'avg' })
+const setMetric = (s, { name, type }) => {
+    const agg = METRIC_AGGS[type].includes(s.metric.agg) ? s.metric.agg : defaultMetricAgg(type)
+    s.metric = { ...s.metric, name, type, agg }
+}
+const firstMetric = computed(() => form.value?.chart.series.find((s) => s.agg === 'metric' && s.metric?.name)?.metric)
+watch(
+    () => [
+        form.value?.chart.source,
+        firstMetric.value?.name,
+        firstMetric.value?.type,
+        props.range?.from,
+        props.range?.to,
+    ],
+    () => {
+        const m = firstMetric.value
+        if (m && metrics.value)
+            metricAttributes.load(chart.value.source, { ...props.range, name: m.name, type: m.type })
+    },
 )
 
 const columnOptions = (agg) => {
@@ -805,6 +870,7 @@ const defaultColumn = (agg) => {
 
 const seriesLabel = (s) => {
     if (s.agg === 'count') return 'count()'
+    if (s.agg === 'metric') return metricLabel(s.metric)
     if (s.agg === 'formula') return s.formula || 'formula'
     const column = s.column || '…'
     if (s.agg === 'quantile') return `p${Math.round((s.level ?? 0.95) * 100)}(${column})`
@@ -822,6 +888,9 @@ const queryExample = computed(() => {
 
 // Same option logic as GraphSettings, driven by the chosen source.
 const groupByOptions = computed(() => {
+    // Metric charts group by the chosen metric's attribute keys.
+    if (metrics.value && firstMetric.value)
+        return [{ name: 'ServiceName' }, ...metricAttributes.data.value.map((k) => ({ name: k.path }))]
     let result = []
     for (const [key, value] of Object.entries(source.value?.columns || {})) {
         if (value.group_by) {
@@ -855,6 +924,16 @@ watch(
 )
 
 const onAggChange = (s) => {
+    if (s.agg === 'metric') {
+        s.metric = s.metric || { ...(firstMetric.value || emptyMetric()) }
+        delete s.attrs_filter
+        delete s.column
+        delete s.level
+        delete s.where
+        delete s.formula
+        return
+    }
+    delete s.metric
     if (s.agg === 'count' || s.agg === 'formula') delete s.column
     else if (!s.column || !columnOptions(s.agg).includes(s.column)) s.column = defaultColumn(s.agg)
     if (s.agg === 'quantile') s.level = s.level ?? 0.95
@@ -866,7 +945,7 @@ const onAggChange = (s) => {
 }
 
 const addSeries = () => {
-    const s = countOnly.value ? { agg: 'count' } : { agg: 'avg' }
+    const s = countOnly.value ? { agg: 'count' } : { agg: metrics.value ? 'metric' : 'avg' }
     onAggChange(s)
     chart.value.series.push(s)
 }
@@ -876,6 +955,11 @@ const onSourceChange = () => {
     chart.value.group_by = ''
     groupBys.value = ['']
     if (countOnly.value) chart.value.series = chart.value.series.map(() => ({ agg: 'count' }))
+    if (metrics.value)
+        chart.value.series = chart.value.series.map((s) =>
+            s.agg === 'formula' ? s : { agg: 'metric', metric: emptyMetric() },
+        )
+    else chart.value.series.forEach((s) => s.agg === 'metric' && (s.agg = 'count'))
     chart.value.series.forEach(onAggChange)
     loadContextColumns()
 }
@@ -906,6 +990,7 @@ const seriesErrors = computed(() =>
     (form.value && source.value ? chart.value.series : []).map((s, idx) => {
         if (countOnly.value && s.agg !== 'count') return `${s.agg} is not supported for ${source.value.kind}`
         if (s.agg === 'formula') return s.formula?.trim() ? serverSeriesError(idx) : 'Type a formula'
+        if (s.agg === 'metric') return s.metric?.name ? serverSeriesError(idx) : 'Choose a metric'
         if (s.agg !== 'count' && !s.column) return `Choose a column for ${s.agg}`
         return serverSeriesError(idx)
     }),
@@ -949,7 +1034,11 @@ const cleanChart = () => {
         display: c.display,
         series: c.series.map((s) => {
             const item = { agg: s.agg }
-            if (s.agg === 'formula') item.formula = (s.formula || '').trim()
+            if (s.agg === 'metric') {
+                const { name, type, agg, attrs_filter } = s.metric
+                item.metric = { name, type, agg }
+                if (attrs_filter?.trim()) item.metric.attrs_filter = attrs_filter.trim()
+            } else if (s.agg === 'formula') item.formula = (s.formula || '').trim()
             else if (s.agg !== 'count') item.column = s.column
             if (s.agg === 'quantile') item.level = s.level
             if (s.alias) item.alias = s.alias
