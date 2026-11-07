@@ -12,6 +12,8 @@ import { availableTimeZones, localTimeZone } from '@/utils/datetimeranges'
 import { LIVE_INTERVALS } from '@/utils/explorerPaging'
 
 const DEFAULT_LIVE_INTERVAL = 5
+const RESULTS_MODES = ['rows', 'patterns', 'deltas']
+const resultsModeOf = (mode) => (RESULTS_MODES.includes(mode) ? mode : 'rows')
 
 export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const toast = useToast()
@@ -75,7 +77,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _limit.value = 50
         _contextColumns.value = {}
         _view.value = viewParam
-        _resultsMode.value = (route.query.mode ?? viewParam?.data?.mode) === 'patterns' ? 'patterns' : 'rows'
+        _resultsMode.value = resultsModeOf(route.query.mode ?? viewParam?.data?.mode)
 
         if (!availableTimeZones.includes(_timeZone.value)) _timeZone.value = localTimeZone
 
@@ -260,7 +262,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setGraphGroupBy(value.data.graph_group_by)
         setShowGraph(value.data.show_graph)
         setContextColumns(value.data.context_columns)
-        _resultsMode.value = value.data.mode === 'patterns' ? 'patterns' : 'rows'
+        _resultsMode.value = resultsModeOf(value.data.mode)
 
         // Some old views might not have this
         if (value.data.timeZone) setTimeZone(value.data.timeZone)

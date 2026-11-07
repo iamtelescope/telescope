@@ -137,7 +137,7 @@ def test_tile_fits_right_edge(root_user, clickhouse_source):
             "series",
             "source has no column nope",
         ),
-        ({"display": "heatmap"}, "display", None),
+        ({"display": "scatter"}, "display", None),
         ({"granularity": "7m"}, "granularity", None),
         ({"limit": 51}, "limit", "must be between 1 and 50"),
         ({"limit": 0}, "limit", None),

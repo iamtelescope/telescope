@@ -56,7 +56,7 @@
                 </div>
                 <div class="flex flex-col gap-1">
                     <label class="font-medium">Display</label>
-                    <div class="grid grid-cols-8 gap-1" role="radiogroup" data-testid="tile-display">
+                    <div class="grid grid-cols-9 gap-1" role="radiogroup" data-testid="tile-display">
                         <button
                             v-for="d in DISPLAY_BUTTONS"
                             :key="d.value"
@@ -193,6 +193,7 @@
                                         class="w-24 shrink-0"
                                     />
                                     <label
+                                        v-if="!isHeatmap"
                                         class="series-color relative shrink-0 w-6 h-6 rounded border border-surface-300 dark:border-surface-600 cursor-pointer"
                                         :style="{ background: s.color || 'transparent' }"
                                         v-tooltip.top="s.color ? 'Series color' : 'Automatic color'"
@@ -218,6 +219,7 @@
                                         @click="delete s.color"
                                     />
                                     <Button
+                                        v-if="!isHeatmap"
                                         :icon="s.hidden ? 'pi pi-eye-slash' : 'pi pi-eye'"
                                         text
                                         size="small"
@@ -253,6 +255,7 @@
                                         data-testid="metric-agg"
                                     />
                                     <InputText
+                                        v-if="!isHeatmap"
                                         v-model="s.alias"
                                         size="small"
                                         :class="s.agg === 'metric' ? 'w-28' : 'w-40'"
@@ -336,7 +339,7 @@
                                         size="small"
                                         class="flex-1 min-w-0"
                                         :disabled="!usesGroupBy"
-                                        :placeholder="usesGroupBy ? 'None' : 'Not used by Number'"
+                                        :placeholder="usesGroupBy ? 'None' : `Not used by ${displayLabel}`"
                                         :invalid="!!groupByError"
                                         data-testid="tile-group-by"
                                         @change="(e) => onGroupByChange(idx, e)"
@@ -383,14 +386,16 @@
 
                         <div class="grid grid-cols-3 gap-3">
                             <div class="flex flex-col gap-1">
-                                <label class="font-medium" :class="{ 'opacity-50': !timeseries }">Granularity</label>
+                                <label class="font-medium" :class="{ 'opacity-50': !timeseries && !isHeatmap }">
+                                    Granularity
+                                </label>
                                 <Select
                                     v-model="chart.granularity"
                                     :options="granularityOptions"
                                     optionLabel="label"
                                     optionValue="value"
                                     size="small"
-                                    :disabled="!timeseries"
+                                    :disabled="!timeseries && !isHeatmap"
                                 />
                             </div>
                             <div class="flex flex-col gap-1">
@@ -629,7 +634,17 @@ import {
     useConfirm,
 } from 'primevue'
 import { useDebounceFn } from '@vueuse/core'
-import { ChartArea, ChartBarBig, ChartColumnStacked, ChartLine, ChartPie, Hash, Sheet, Type } from 'lucide-vue-next'
+import {
+    ChartArea,
+    ChartBarBig,
+    ChartColumnStacked,
+    ChartLine,
+    ChartPie,
+    Grid3x3,
+    Hash,
+    Sheet,
+    Type,
+} from 'lucide-vue-next'
 
 import ErrorText from '@/components/common/ErrorText.vue'
 import ChartView from '@/components/dashboards/ChartView.vue'
@@ -646,6 +661,7 @@ import {
 import QueryEditor from '@/components/explorer/controls/QueryEditor.vue'
 import RawQueryEditor from '@/components/explorer/controls/RawQueryEditor.vue'
 import { useChartData } from '@/composables/dashboards/useDashboardService'
+import { durationUnit } from '@/components/dashboards/charts/heatmap.js'
 import { SourceService } from '@/sdk/services/source'
 import {
     AGGS,
@@ -675,6 +691,7 @@ const ICONS = {
     table: Sheet,
     bar: ChartBarBig,
     pie: ChartPie,
+    heatmap: Grid3x3,
     text: Type,
 }
 const UNIT_LABELS = {
@@ -688,7 +705,12 @@ const UNIT_LABELS = {
     percent: 'percent',
 }
 const unitOptions = NUMBER_UNITS.map((u) => ({ value: u, label: UNIT_LABELS[u] || u }))
-const DISPLAY_BUTTONS = DISPLAYS.map((d) => ({ ...d, icon: ICONS[d.value] }))
+// The heatmap sits before Text; it draws one numeric column over time on ClickHouse sources.
+const DISPLAY_BUTTONS = [
+    ...DISPLAYS.filter((d) => d.value !== 'text'),
+    { value: 'heatmap', label: 'Heatmap' },
+    ...DISPLAYS.filter((d) => d.value === 'text'),
+].map((d) => ({ ...d, icon: ICONS[d.value] }))
 
 const sourceSrv = new SourceService()
 const preview = useChartData()
@@ -710,7 +732,9 @@ const source = computed(() => (props.sources || []).find((s) => s.slug === chart
 const countOnly = computed(() => !!source.value && countOnlyKind(source.value.kind))
 const metrics = computed(() => isMetricsSource(source.value))
 const metricAttributes = useMetricAttributes()
-const maxSeries = MAX_SERIES
+const isHeatmap = computed(() => chart.value.display === 'heatmap')
+const maxSeries = computed(() => (isHeatmap.value ? 1 : MAX_SERIES))
+const displayLabel = computed(() => DISPLAY_BUTTONS.find((d) => d.value === chart.value.display)?.label || '')
 const singleSeries = computed(() => SINGLE_SERIES_DISPLAYS.includes(chart.value.display))
 const groupRequired = computed(() => ['bar', 'pie'].includes(chart.value.display))
 const maxGroupBy = computed(() => (countOnly.value ? 1 : MAX_GROUP_BY))
@@ -722,8 +746,8 @@ const sectionOptions = computed(() => [
     ...(props.sections || []).map((s) => ({ value: s.id, label: s.title || 'Untitled section' })),
 ])
 const timeseries = computed(() => isTimeseries(chart.value.display))
-const hasUnit = computed(() => hasNumberFormat.value || timeseries.value)
-const usesGroupBy = computed(() => chart.value.display !== 'number')
+const hasUnit = computed(() => hasNumberFormat.value || timeseries.value || isHeatmap.value)
+const usesGroupBy = computed(() => !['number', 'heatmap'].includes(chart.value.display))
 const usesLimit = computed(() => usesGroupBy.value && !!chart.value.group_by)
 const granularityOptions = GRANULARITIES.map((g) => ({ value: g, label: g === 'auto' ? 'Auto' : g }))
 const rangeLabel = computed(() => (props.range ? `${props.range.from} → ${props.range.to}` : ''))
@@ -815,7 +839,7 @@ const loadContextColumns = async () => {
 
 const AGG_LABELS = { last_value: 'last value', quantile: 'percentile' }
 const aggOptions = computed(() =>
-    [...(metrics.value ? ['metric'] : []), ...AGGS, 'formula'].map((a) => ({
+    (isHeatmap.value ? ['heatmap'] : [...(metrics.value ? ['metric'] : []), ...AGGS, 'formula']).map((a) => ({
         value: a,
         label: AGG_LABELS[a] || a,
         disabled: countOnly.value && a !== 'count',
@@ -865,11 +889,14 @@ const defaultColumn = (agg) => {
     const options = columnOptions(agg)
     const columns = source.value?.columns || {}
     if (agg === 'uniq') return options.find((c) => columns[c].group_by) || options[0]
+    const duration = source.value?.otelRole?.('duration')
+    if (agg === 'heatmap' && options.includes(duration)) return duration
     return options.find((c) => /duration|latency|elapsed|bytes|size/i.test(c)) || options[0]
 }
 
 const seriesLabel = (s) => {
     if (s.agg === 'count') return 'count()'
+    if (s.agg === 'heatmap') return `heatmap(${s.column || '…'})`
     if (s.agg === 'metric') return metricLabel(s.metric)
     if (s.agg === 'formula') return s.formula || 'formula'
     const column = s.column || '…'
@@ -954,8 +981,9 @@ const onSourceChange = () => {
     chart.value.context_columns = {}
     chart.value.group_by = ''
     groupBys.value = ['']
-    if (countOnly.value) chart.value.series = chart.value.series.map(() => ({ agg: 'count' }))
-    if (metrics.value)
+    if (isHeatmap.value) chart.value.series = [{ agg: 'heatmap' }]
+    else if (countOnly.value) chart.value.series = chart.value.series.map(() => ({ agg: 'count' }))
+    else if (metrics.value)
         chart.value.series = chart.value.series.map((s) =>
             s.agg === 'formula' ? s : { agg: 'metric', metric: emptyMetric() },
         )
@@ -966,7 +994,19 @@ const onSourceChange = () => {
 
 const setDisplay = (display) => {
     const c = chart.value
+    const wasHeatmap = c.display === 'heatmap'
     c.display = display
+    if (display === 'heatmap') {
+        c.series = [{ agg: 'heatmap' }]
+        onAggChange(c.series[0])
+        const unit = durationUnit(source.value, c.series[0].column)
+        if (unit && numberFormat.value.unit === 'number') numberFormat.value.unit = unit
+        c.group_by = ''
+        groupBys.value = ['']
+    } else if (wasHeatmap) {
+        c.series = [{ agg: metrics.value ? 'metric' : 'count' }]
+        onAggChange(c.series[0])
+    }
     // A single-value display keeps the first series, unless hidden operands feed a formula.
     if (singleSeries.value && c.series.length > 1 && !c.series.some((s) => s.hidden)) c.series = c.series.slice(0, 1)
     if (c.display === 'number') {
@@ -1013,6 +1053,7 @@ const limitError = computed(() => {
 const problem = computed(() => {
     if (!form.value || chart.value.display === 'text') return null
     if (sourceError.value && !source.value) return sourceError.value
+    if (isHeatmap.value && source.value.kind !== 'clickhouse') return 'Heatmaps need a ClickHouse source'
     const series = seriesErrors.value.find((e, idx) => e && !serverSeriesError(idx))
     if (series) return series
     const shown = chart.value.series.filter((s) => !s.hidden).length

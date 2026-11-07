@@ -12,6 +12,7 @@ from telescope.constants import (
     CHART_MAX_TS_LIMIT,
     DASHBOARD_MAX_DATA_BYTES,
     DASHBOARD_MAX_TILES,
+    SOURCE_KIND_CLICKHOUSE,
     SOURCE_KIND_DOCKER,
     SOURCE_KIND_KUBERNETES,
 )
@@ -19,6 +20,7 @@ from telescope.fetchers.chart import (
     CHART_AGGS,
     GRANULARITIES,
     GROUPED_DISPLAYS,
+    HEATMAP_DISPLAY,
     MAX_GROUP_BY,
     QUANTILE_LEVELS,
     QUERY_DISPLAYS,
@@ -125,6 +127,10 @@ def chart_series_errors(source: Source, series: List[dict]) -> dict:
         metric_error = metric_series_error(source, series, item)
         if metric_error:
             errors[i] = metric_error
+        elif agg == "heatmap" and source.kind != SOURCE_KIND_CLICKHOUSE:
+            errors[i] = {
+                "agg": [f"heatmaps are not supported for {source.kind} sources"]
+            }
         elif source.kind in COUNT_ONLY_KINDS and agg != "count":
             errors[i] = {
                 "agg": [f"aggregation {agg} is not supported for {source.kind} sources"]
@@ -173,6 +179,10 @@ def chart_shape_errors(attrs: dict) -> dict:
     display = attrs["display"]
     series = attrs["series"]
     visible = [s for s in series if not s.get("hidden")]
+    if display == HEATMAP_DISPLAY:
+        return heatmap_shape_errors(attrs)
+    if any(s["agg"] == "heatmap" for s in series):
+        return {"series": ["a heatmap series only draws a heatmap tile"]}
     if display in SINGLE_SERIES_DISPLAYS and len(series) > 1 and len(visible) != 1:
         errors["series"] = [f"{display} needs exactly 1 series shown"]
     elif not visible:
@@ -194,6 +204,20 @@ def chart_shape_errors(attrs: dict) -> dict:
     )
     if not 1 <= attrs.get("limit", DEFAULT_CHART_LIMIT) <= max_limit:
         errors["limit"] = [f"must be between 1 and {max_limit}"]
+    return errors
+
+
+def heatmap_shape_errors(attrs: dict) -> dict:
+    """A heatmap draws exactly one heatmap series: the numeric column on its y axis."""
+    errors = {}
+    series = attrs["series"]
+    if len(series) != 1 or series[0]["agg"] != "heatmap" or series[0].get("hidden"):
+        errors["series"] = ["heatmap needs exactly 1 shown heatmap series"]
+    if attrs.get("group_by"):
+        errors["group_by"] = ["heatmap does not support group by"]
+    for key in ("compare", "sparkline"):
+        if attrs.get(key):
+            errors[key] = [f"heatmap does not support {key}"]
     return errors
 
 
@@ -263,6 +287,12 @@ class ChartSeriesSerializer(StrictSerializer):
         return attrs
 
 
+class TileSeriesSerializer(ChartSeriesSerializer):
+    """A chart series, which may also be the one series of a heatmap; alerts keep ChartSeriesSerializer."""
+
+    agg = serializers.ChoiceField(choices=CHART_AGGS + ["heatmap"])
+
+
 class NumberFormatSerializer(StrictSerializer):
     unit = serializers.ChoiceField(choices=NUMBER_UNITS)
     decimals = serializers.IntegerField(min_value=0, max_value=6)
@@ -291,7 +321,7 @@ class QueryChartSerializer(StrictSerializer):
     source = serializers.CharField(max_length=64)
     display = serializers.ChoiceField(choices=QUERY_DISPLAYS)
     series = serializers.ListField(
-        child=ChartSeriesSerializer(), min_length=1, max_length=CHART_MAX_SERIES
+        child=TileSeriesSerializer(), min_length=1, max_length=CHART_MAX_SERIES
     )
     query = serializers.CharField(required=False, allow_blank=True, default="")
     raw_query = serializers.CharField(required=False, allow_blank=True, default="")
@@ -699,7 +729,7 @@ class SourceChartDataRequestSerializer(SourceDataRequestSerializer):
     )
     display = serializers.ChoiceField(choices=QUERY_DISPLAYS)
     series = serializers.ListField(
-        child=ChartSeriesSerializer(), min_length=1, max_length=CHART_MAX_SERIES
+        child=TileSeriesSerializer(), min_length=1, max_length=CHART_MAX_SERIES
     )
     group_by = serializers.CharField(allow_blank=True, required=False, default="")
     granularity = serializers.ChoiceField(
@@ -778,7 +808,7 @@ class SourceChartDataRequestSerializer(SourceDataRequestSerializer):
         errors.update(chart_shape_errors(attrs))
         if attrs["from"] >= attrs["to"]:
             errors["to"] = ["must be after from"]
-        elif attrs["display"] in TIMESERIES_DISPLAYS:
+        elif attrs["display"] in TIMESERIES_DISPLAYS + [HEATMAP_DISPLAY]:
             error = chart_range_error(attrs["from"], attrs["to"], attrs["granularity"])
             if error:
                 errors["to"] = [error]

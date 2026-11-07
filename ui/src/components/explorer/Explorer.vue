@@ -48,7 +48,7 @@
                     @mouseleave="liveTail.hovering.value = false"
                 >
                     <SelectButton
-                        v-if="patternsAvailable(source)"
+                        v-if="resultsModes.length > 1"
                         v-model="resultsMode"
                         :options="resultsModes"
                         optionLabel="label"
@@ -64,6 +64,13 @@
                         :searchSeq="searchSeq"
                         :timeZone="displayTimeZone"
                         @searchRequest="onPatternFilter"
+                    />
+                    <DeltasView
+                        v-else-if="resultsMode === 'deltas' && deltasAvailable(source)"
+                        :source="source"
+                        :searchSeq="searchSeq"
+                        :timeZone="displayTimeZone"
+                        @searchRequest="controlsRef.handleSearch()"
                     />
                     <template v-else>
                         <Skeleton v-if="loading && rows === null" width="100%" height="400px"></Skeleton>
@@ -167,6 +174,7 @@ import Histogramm from '@/components/explorer/results/Histogramm.vue'
 import LimitMessage from '@/components/explorer/controls/LimitMessage.vue'
 import FacetSidebar from '@/components/explorer/FacetSidebar.vue'
 import PatternsView, { available as patternsAvailable } from '@/components/explorer/results/PatternsView.vue'
+import DeltasView, { available as deltasAvailable } from '@/components/explorer/results/DeltasView.vue'
 import { validateFlyqlInputs } from '@/sdk/flyql-validator'
 import { localTimeZone } from '@/utils/datetimeranges'
 import { SourceService } from '@/sdk/services/source'
@@ -188,11 +196,12 @@ const resultsMode = computed({
     get: () => sourceControlsStore.resultsMode,
     set: (value) => (sourceControlsStore.resultsMode = value),
 })
-const resultsModes = [
-    { label: 'Rows', value: 'rows' },
-    { label: 'Patterns', value: 'patterns' },
-]
 const props = defineProps(['source', 'savedView', 'contextColumnsData'])
+const resultsModes = computed(() => [
+    { label: 'Rows', value: 'rows' },
+    ...(patternsAvailable(props.source) ? [{ label: 'Patterns', value: 'patterns' }] : []),
+    ...(deltasAvailable(props.source) ? [{ label: 'Deltas', value: 'deltas' }] : []),
+])
 
 // Determine query mode
 const useCombinedMode = computed(() => props.source?.queryMode === 'combined')
