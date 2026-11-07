@@ -161,7 +161,11 @@ const groups = computed(() => {
         return { id, column, key, kind, title: facetPath(column, key), values: values || [], more: more.has(id) }
     }
     const result = []
-    const placed = new Set()
+    // Keys of a map column that is not shown are pinned: they go first, with the pinned columns.
+    for (const [column, keys] of Object.entries(mapKeys.value)) {
+        if (columnIds.value.includes(column)) continue
+        for (const key of keys) result.push(group(column, key, 'value', data.value.facets[`${column}.${key}`]))
+    }
     for (const column of columnIds.value) {
         if (isMapType(props.source.columns[column]?.type)) {
             result.push(group(column, null, 'keys', data.value.map_keys[column]))
@@ -170,12 +174,7 @@ const groups = computed(() => {
         }
         for (const key of mapKeys.value[column] || []) {
             result.push(group(column, key, 'value', data.value.facets[`${column}.${key}`]))
-            placed.add(column)
         }
-    }
-    for (const [column, keys] of Object.entries(mapKeys.value)) {
-        if (placed.has(column)) continue
-        for (const key of keys) result.push(group(column, key, 'value', data.value.facets[`${column}.${key}`]))
     }
     return result
 })

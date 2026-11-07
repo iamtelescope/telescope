@@ -743,6 +743,7 @@ import RawQueryEditor from '@/components/explorer/controls/RawQueryEditor.vue'
 import RawSqlFields from '@/features/rawsql/RawSqlFields.vue'
 import { RAW_SQL_EXAMPLE, rawSqlBody, useTileData } from '@/features/rawsql/service.js'
 import { durationUnit } from '@/components/dashboards/charts/heatmap.js'
+import { getDateTimeString } from '@/utils/datetimeranges'
 import { SourceService } from '@/sdk/services/source'
 import {
     AGGS,
@@ -845,7 +846,9 @@ const hasUnit = computed(() => hasNumberFormat.value || timeseries.value || isHe
 const usesGroupBy = computed(() => !['number', 'heatmap'].includes(chart.value.display))
 const usesLimit = computed(() => usesGroupBy.value && !!chart.value.group_by)
 const granularityOptions = GRANULARITIES.map((g) => ({ value: g, label: g === 'auto' ? 'Auto' : g }))
-const rangeLabel = computed(() => (props.range ? `${props.range.from} → ${props.range.to}` : ''))
+// Absolute ends arrive as epoch milliseconds.
+const rangeEnd = (v) => (/^\d+$/.test(String(v)) ? getDateTimeString(Number(v), props.timeZone || 'UTC') : v)
+const rangeLabel = computed(() => (props.range ? `${rangeEnd(props.range.from)} → ${rangeEnd(props.range.to)}` : ''))
 
 const defaultChart = () => ({
     source: props.sources?.[0]?.slug || '',
