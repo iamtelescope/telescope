@@ -582,11 +582,13 @@ const contextText = computed(() =>
         .map(([k, v]) => `${k}=${[].concat(v).join('|')}`)
         .join(', '),
 )
-const groupOptions = computed(() =>
-    Object.entries(source.value?.columns || {})
+// A multi-column group by (e.g. from a chart) is kept as one more option, so the Select shows it.
+const groupOptions = computed(() => {
+    const names = Object.entries(source.value?.columns || {})
         .filter(([, col]) => col.group_by !== false)
-        .map(([name]) => name),
-)
+        .map(([name]) => name)
+    return form.group_by && !names.includes(form.group_by) ? [form.group_by, ...names] : names
+})
 const queryTiles = computed(() => (dashboard.value?.data?.tiles || []).filter((t) => t.chart?.display !== 'text'))
 const tileOptions = computed(() =>
     queryTiles.value.map((t) => ({ id: t.id, label: t.title || `${t.chart.source} (${t.id})` })),
