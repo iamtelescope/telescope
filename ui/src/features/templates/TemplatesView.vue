@@ -96,6 +96,7 @@
                     :showClear="r.optional"
                     size="small"
                     :data-testid="`template-role-${r.name}`"
+                    @change="onPick(r.name)"
                 />
                 <small class="text-surface-500">{{ roleHint(r) }}</small>
             </div>
@@ -144,6 +145,7 @@ const current = ref(null)
 const name = ref('')
 const shared = ref(false)
 const picks = reactive({})
+const touched = new Set()
 const saving = ref(false)
 const problem = ref('')
 
@@ -169,8 +171,22 @@ const open = (t) => {
     shared.value = false
     problem.value = ''
     for (const key of Object.keys(picks)) delete picks[key]
+    touched.clear()
     for (const r of t.roles) picks[r.name] = r.default
     visible.value = true
+}
+
+// Roles the user has not picked follow the earlier picks as the server default does: the linked source, else the first.
+const onPick = (name) => {
+    touched.add(name)
+    const roles = current.value.roles
+    roles.forEach((r, i) => {
+        if (i <= roles.findIndex((p) => p.name === name) || touched.has(r.name)) return
+        const linked = roles
+            .slice(0, i)
+            .map((p) => p.candidates.find((c) => c.slug === picks[p.name])?.links?.[r.signal])
+        picks[r.name] = (r.candidates.find((c) => linked.includes(c.slug)) || r.candidates[0])?.slug ?? null
+    })
 }
 
 const canCreate = computed(

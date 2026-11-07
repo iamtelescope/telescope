@@ -166,12 +166,17 @@ def test_list_offers_candidates_and_linked_default(root_user, otel, system):
     assert result["result"] is True
     by_slug = {t["slug"]: t for t in result["data"]}
     roles = {r["name"]: r for r in by_slug["services"]["roles"]}
-    assert roles["traces"]["candidates"] == [{"slug": "traces", "name": "traces"}]
+    # Links let the dialog re-derive the logs default when the traces pick changes.
+    assert roles["traces"]["candidates"] == [
+        {"slug": "traces", "name": "traces", "links": {"logs": "logs"}}
+    ]
     assert roles["traces"]["default"] == "traces"
     assert roles["logs"]["default"] == "logs"
     assert roles["logs"]["optional"] is True
     ch = {r["name"]: r for r in by_slug["clickhouse"]["roles"]}
-    assert ch["parts"]["candidates"] == [{"slug": "ch-parts", "name": "ch-parts"}]
+    assert ch["parts"]["candidates"] == [
+        {"slug": "ch-parts", "name": "ch-parts", "links": {}}
+    ]
     assert ch["parts"]["table"] == "system.parts"
 
 
@@ -374,3 +379,9 @@ def test_provisioning_needs_edit_on_a_provisioned_dashboard(
         provision([str(path)], test_user)[0][2] == "error: user cannot edit dashboard p"
     )
     assert Dashboard.objects.get(slug="p").name == "P"
+
+
+def test_provisioning_refuses_a_slug_the_ui_routes_over(root_user, tmp_path):
+    path = write(tmp_path / "templates.json", {"name": "T", "data": {"version": 3}})
+    assert provision([str(path)], root_user)[0][2] == "error: invalid slug templates"
+    assert not Dashboard.objects.exists()

@@ -28,6 +28,8 @@ from telescope.serializers.dashboard import (
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 PLACEHOLDER_RE = re.compile(r"\{\{([a-z_]+)(?:\.([a-z_]+))?\}\}")
 SLUG_RE = re.compile(r"^[-a-zA-Z0-9_]{1,262}$")
+# Static UI routes under /dashboards/ that a dashboard slug would never be reachable behind.
+RESERVED_SLUGS = {"templates"}
 # duration_precision -> number format unit and the divisor that turns a duration into ms.
 DURATION_UNITS = {9: "duration_ns", 6: "duration_us", 3: "duration_ms", 0: "duration_s"}
 MS_DIVISORS = {9: "1000000", 6: "1000", 3: "1", 0: "0.001"}
@@ -154,7 +156,14 @@ def role_candidates(user, template: dict) -> List[dict]:
                 "name": name,
                 **spec,
                 "optional": bool(spec.get("optional")),
-                "candidates": [{"slug": s.slug, "name": s.name} for s in matching],
+                "candidates": [
+                    {
+                        "slug": s.slug,
+                        "name": s.name,
+                        "links": (s.data.get("otel") or {}).get("links") or {},
+                    }
+                    for s in matching
+                ],
                 "default": default.slug if default else None,
             }
         )
@@ -192,7 +201,7 @@ def provision_file(path: Path, user) -> tuple:
     if not isinstance(item, dict):
         raise TemplateError("file is not a JSON object")
     slug = item.get("slug") or path.stem
-    if not SLUG_RE.match(slug):
+    if not SLUG_RE.match(slug) or slug in RESERVED_SLUGS:
         raise TemplateError(f"invalid slug {slug}")
     template = get_template(item["template"]) if "template" in item else {}
     payload = {
