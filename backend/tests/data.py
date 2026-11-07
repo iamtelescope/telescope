@@ -518,3 +518,37 @@ def get_kubernetes_connection_data():
             "kubeconfig_is_local": False,
         },
     }
+
+
+def get_dashboard_data(source_slug="clickhouse"):
+    return {
+        "time": {"from": "now-1h", "to": "now", "time_zone": "UTC"},
+        "query": "",
+        "refresh": "off",
+        "tiles": [
+            {
+                "id": "t1",
+                "x": 0,
+                "y": 0,
+                "w": 12,
+                "h": 8,
+                "title": "Rows by host",
+                "chart": {
+                    "source": source_slug,
+                    "display": "stacked_bar",
+                    "series": [{"agg": "count"}],
+                    "group_by": "hostname",
+                    "limit": 10,
+                },
+            },
+            {
+                "id": "note1",
+                "x": 12,
+                "y": 0,
+                "w": 12,
+                "h": 4,
+                "title": "Notes",
+                "chart": {"display": "text", "text": "Runbook"},
+            },
+        ],
+    }
