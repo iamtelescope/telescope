@@ -50,6 +50,12 @@
         @rangeSelected="(range) => emit('rangeSelected', range)"
     />
     <NumberChart v-else-if="data.kind === 'number'" :data="data" :chart="chart" />
+    <PieChart
+        v-else-if="data.kind === 'table' && chart.display === 'pie'"
+        :data="data"
+        :chart="chart"
+        @rowClick="(group) => emit('rowClick', group)"
+    />
     <BarChart
         v-else-if="data.kind === 'table' && chart.display === 'bar'"
         :data="data"
@@ -73,6 +79,7 @@ import TimeSeriesChart from '@/components/dashboards/charts/TimeSeriesChart.vue'
 import NumberChart from '@/components/dashboards/charts/NumberChart.vue'
 import TableChart from '@/components/dashboards/charts/TableChart.vue'
 import BarChart from '@/components/dashboards/charts/BarChart.vue'
+import PieChart from '@/components/dashboards/charts/PieChart.vue'
 import TextTile from '@/components/dashboards/charts/TextTile.vue'
 import { isTimeseries } from '@/utils/dashboards.js'
 

@@ -19,6 +19,14 @@
                 {{ tile.title || 'Untitled' }}
             </div>
             <i
+                v-if="tile.description"
+                class="pi pi-info-circle shrink-0 ml-1 text-surface-400"
+                style="font-size: 0.8rem"
+                v-tooltip.top="tile.description"
+                :aria-label="tile.description"
+                data-testid="tile-description"
+            ></i>
+            <i
                 v-if="loading"
                 class="pi pi-spin pi-spinner shrink-0 ml-1 text-surface-400"
                 style="font-size: 0.75rem"
@@ -177,6 +185,8 @@ const reload = () => {
         granularity: c.granularity || 'auto',
         limit: c.limit ?? 10,
         params: props.range.params || {},
+        ...(c.compare ? { compare: true } : {}),
+        ...(c.sparkline ? { sparkline: true } : {}),
     })
 }
 

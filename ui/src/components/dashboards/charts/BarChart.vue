@@ -7,7 +7,7 @@
                 class="bar-row flex items-center gap-3 px-1 rounded"
                 :class="{ 'cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800': clickable }"
                 :title="`${groupLabel(row.group)}: ${exactNumber(row.value)}`"
-                @click="emit('rowClick', row.group)"
+                @click="emit('rowClick', row.groups || row.group)"
             >
                 <div
                     class="w-[30%] max-w-56 shrink-0 truncate text-sm"
@@ -21,8 +21,9 @@
                 </div>
                 <div class="bar-track flex-1 min-w-0 h-full flex items-center">
                     <div
-                        class="bar-fill rounded-r bg-[#2a78d6] dark:bg-[#3987e5]"
-                        :style="{ width: `${row.percent}%` }"
+                        class="bar-fill rounded-r"
+                        :class="{ 'bg-[#2a78d6] dark:bg-[#3987e5]': !row.color }"
+                        :style="{ width: `${row.percent}%`, ...(row.color ? { background: row.color } : {}) }"
                     ></div>
                 </div>
                 <div class="w-20 shrink-0 text-right text-sm tabular-nums text-surface-700 dark:text-surface-200">
@@ -38,18 +39,29 @@
 import { computed } from 'vue'
 
 import TruncatedHint from '@/components/dashboards/charts/TruncatedHint.vue'
-import { seriesUnit, groupLabel, formatNumber, exactNumber } from '@/components/dashboards/charts/format.js'
+import { seriesUnit, groupLabel, formatTileValue, exactNumber } from '@/components/dashboards/charts/format.js'
+import { ruleColor, visibleIndex } from '@/utils/dashboards.js'
 
 const props = defineProps(['data', 'chart'])
 const emit = defineEmits(['rowClick'])
 
 const clickable = computed(() => !!props.chart.group_by)
 const isEmptyGroup = (group) => group === '__none__' || group === ''
-const unit = computed(() => seriesUnit(props.chart.series?.[0], props.chart.number_format))
-const format = (v) => formatNumber(v, unit.value, { compact: true })
+const index = computed(() => visibleIndex(props.chart.series))
+const unit = computed(() => seriesUnit(props.chart.series?.[index.value], props.chart.number_format))
+const format = (v) => formatTileValue(v, unit.value, props.chart.number_format, { compact: true })
 
 const rows = computed(() => {
-    const items = props.data.rows.map((row) => ({ group: row.group, value: row.values[0] ?? 0 }))
+    const color = props.chart.series?.[index.value]?.color
+    const items = props.data.rows.map((row) => {
+        const value = row.values[index.value] ?? 0
+        return {
+            group: row.group,
+            groups: row.groups,
+            value,
+            color: ruleColor(props.chart.color_rules, value) || color,
+        }
+    })
     items.sort((a, b) => b.value - a.value)
     const max = Math.max(0, ...items.map((i) => i.value))
     // A minimum width keeps tiny non-zero values visible.
