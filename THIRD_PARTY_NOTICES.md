@@ -69,6 +69,9 @@ SOFTWARE.
   are adapted from HyperDX `packages/common-utils/src/drain/mine-patterns.ts` and `packages/app/src/hooks/usePatterns.tsx`, and
   `ui/src/components/explorer/patterns/PatternTable.vue` with `PatternDrawer.vue` from `packages/app/src/components/PatternTable.tsx`
   and `PatternSidePanel.tsx` (MIT, above).
+- `backend/telescope/query_attribution.py` (`log_comment` keys, the character allowlist and length cap) is adapted from HyperDX
+  `packages/common-utils/src/clickhouse/attribution.ts`, and `backend/telescope_api2/views.py` (resource shapes, list pagination)
+  follows `packages/api/src/routers/external-api/v2/*` (MIT, above).
 
 ## Drain3
 

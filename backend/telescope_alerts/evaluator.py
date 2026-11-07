@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from telescope.fetchers import get_fetchers
 from telescope.fetchers.chart import ZERO_FILL_AGGS
+from telescope.query_attribution import for_alert
 
 from telescope_alerts import channels, templating
 from telescope_alerts.definition import AlertDefinitionError, alert_data, resolve
@@ -281,6 +282,7 @@ def apply_window(
     return True
 
 
+@for_alert
 def evaluate_alert(alert, at_ms: Optional[int] = None, renew=None) -> int:
     """Evaluates the due windows as the owner; `renew` keeps the lease and False stops."""
     at_ms = now_ms() if at_ms is None else at_ms

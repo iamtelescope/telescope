@@ -14,6 +14,7 @@ from telescope.constants import UTC_ZONE, CHART_QUERY_TIMEOUT_SECONDS
 from telescope.flyql_errors import format_flyql_error
 from telescope.flyql_registry import transformer_registry
 
+from telescope import query_attribution
 from telescope.models import SourceColumn
 
 from telescope.fetchers.request import (
@@ -85,7 +86,11 @@ ESCAPE_CHARS_MAP = {
 
 
 def _client_query(client, sql, **kw):
-    # Every ClickHouse query goes through here; the hook for query attribution.
+    # Every ClickHouse query goes through here and is tagged with its log_comment.
+    query_attribution.record(sql)
+    settings = query_attribution.query_settings(kw.get("settings"))
+    if settings is not None:
+        kw["settings"] = settings
     return client.query(sql, **kw)
 
 
