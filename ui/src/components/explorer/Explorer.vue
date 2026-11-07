@@ -472,7 +472,9 @@ onMounted(() => {
         () => sourceControlsStore.liveInterval,
         () => router.replace({ path: route.path, query: sourceControlsStore.routeQuery }),
     )
-    watch(resultsMode, () => router.replace({ path: route.path, query: sourceControlsStore.routeQuery }))
+    watch([resultsMode, () => sourceControlsStore.deltas], () =>
+        router.replace({ path: route.path, query: sourceControlsStore.routeQuery }),
+    )
 })
 
 const onPatternFilter = () => {

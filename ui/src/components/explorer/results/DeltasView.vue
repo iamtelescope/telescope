@@ -166,7 +166,9 @@ const emit = defineEmits(['searchRequest'])
 const store = useSourceControlsStore()
 const isDark = useDark()
 const columns = computed(() => numericColumns(props.source))
-const column = ref(defaultColumn(props.source))
+// A selection from the URL or a saved view, applied once its heatmap has loaded.
+let restore = store.deltas?.outlier && columns.value.includes(store.deltas.column) ? store.deltas : null
+const column = ref(restore ? restore.column : defaultColumn(props.source))
 const sample = ref(5000)
 const sampleOptions = [1000, 5000, 20000].map((value) => ({ label: value.toLocaleString(), value }))
 const heatmap = ref(null)
@@ -207,6 +209,7 @@ const loadHeatmap = async () => {
     const signal = heatmapController.signal
     selection.value = null
     deltas.value = null
+    if (!restore) store.deltas = null
     loading.value = true
     const now = Date.now()
     const params = buildRequest(store, column.value)
@@ -216,6 +219,11 @@ const loadHeatmap = async () => {
     loading.value = false
     heatmap.value = response.result ? response.data : null
     error.value = response.result ? null : errorText(response)
+    if (restore && heatmap.value) {
+        selection.value = restore.outlier
+        restore = null
+        loadDeltas()
+    }
 }
 
 const loadDeltas = async () => {
@@ -234,6 +242,7 @@ const loadDeltas = async () => {
 
 const onSelect = (sel) => {
     selection.value = sel
+    store.deltas = { column: column.value, outlier: sel }
     showHidden.value = false
     loadDeltas()
 }
@@ -241,6 +250,7 @@ const onSelect = (sel) => {
 const clearSelection = () => {
     if (deltasController) deltasController.abort()
     selection.value = null
+    store.deltas = null
     deltas.value = null
     deltasLoading.value = false
 }

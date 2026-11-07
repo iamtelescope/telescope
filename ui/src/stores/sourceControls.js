@@ -14,6 +14,14 @@ import { LIVE_INTERVALS } from '@/utils/explorerPaging'
 const DEFAULT_LIVE_INTERVAL = 5
 const RESULTS_MODES = ['rows', 'patterns', 'deltas']
 const resultsModeOf = (mode) => (RESULTS_MODES.includes(mode) ? mode : 'rows')
+// The deltas outlier selection {column, outlier}, kept as JSON in ?deltas= ('' clears a saved view's).
+const parseDeltas = (value) => {
+    try {
+        return value ? JSON.parse(value) : null
+    } catch {
+        return null
+    }
+}
 
 export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const toast = useToast()
@@ -37,6 +45,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const _contextColumns = ref(null)
     const _view = ref(null)
     const _resultsMode = ref('rows')
+    const _deltas = ref(null)
 
     function $reset() {
         _columns.value = null
@@ -54,6 +63,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _contextColumns.value = null
         _view.value = null
         _resultsMode.value = 'rows'
+        _deltas.value = null
     }
 
     function init(source, viewParam) {
@@ -78,6 +88,8 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _contextColumns.value = {}
         _view.value = viewParam
         _resultsMode.value = resultsModeOf(route.query.mode ?? viewParam?.data?.mode)
+        _deltas.value =
+            route.query.deltas !== undefined ? parseDeltas(route.query.deltas) : (viewParam?.data?.deltas ?? null)
 
         if (!availableTimeZones.includes(_timeZone.value)) _timeZone.value = localTimeZone
 
@@ -188,6 +200,9 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             }
         }
 
+        if (JSON.stringify(_deltas.value) !== JSON.stringify(view.value?.data.deltas ?? null))
+            params.deltas = _deltas.value ? JSON.stringify(_deltas.value) : ''
+
         for (const [key, value] of Object.entries(contextColumns.value)) {
             if (!view.value || JSON.stringify(value) !== JSON.stringify(view.value.data.context_columns?.[key]))
                 params[`ctx_${key}`] = value
@@ -244,6 +259,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
             show_graph: showGraph.value,
             context_columns: contextColumns.value,
             mode: _resultsMode.value,
+            deltas: _deltas.value,
         }
     })
 
@@ -263,6 +279,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setShowGraph(value.data.show_graph)
         setContextColumns(value.data.context_columns)
         _resultsMode.value = resultsModeOf(value.data.mode)
+        _deltas.value = value.data.deltas ?? null
 
         // Some old views might not have this
         if (value.data.timeZone) setTimeZone(value.data.timeZone)
@@ -372,6 +389,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         to,
         view,
         resultsMode: _resultsMode,
+        deltas: _deltas,
         timeZone,
         limit,
         columns,
