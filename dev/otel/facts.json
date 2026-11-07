@@ -1,0 +1,201 @@
+{
+  "seed": 42,
+  "start": "2026-01-01T00:00:00.000000000Z",
+  "end": "2026-01-02T00:00:00.000000000Z",
+  "trace_id": "c03eb049677a5735978e1c1190fd75a6",
+  "services": [
+    "frontend",
+    "checkout",
+    "payment",
+    "cart",
+    "ad",
+    "postgres"
+  ],
+  "rows": {
+    "otel_logs": 385417,
+    "otel_traces": 301953,
+    "otel_metrics_gauge": 152640,
+    "otel_metrics_sum": 15840,
+    "otel_metrics_histogram": 15840,
+    "otel_metrics_exponential_histogram": 0,
+    "otel_metrics_summary": 0
+  },
+  "traces": 40000,
+  "logs_with_trace_id": 269792,
+  "content_sha256": {
+    "otel_logs": "540a9230b1b4e7b61ff381d3af896ff4312f08de612351bf7f09523aa928c048",
+    "otel_traces": "384bff983343862db58054486ef16340139c912000f9211bd5ab599628d6f8e5",
+    "otel_metrics_gauge": "459c34465c3c964cef8621141af30699ec63018b7192b3bc24640105886de265",
+    "otel_metrics_sum": "0fe0fcb9defd661c3ca5c08005d54037e0b4b164cabd1db53931a4bc2d348fbc",
+    "otel_metrics_histogram": "9c5ff547c181666c53ab97c4f22fc7244593385c94dd8d84efb3a52207f0cccb"
+  },
+  "call_graph": [
+    [
+      "cart",
+      "postgres"
+    ],
+    [
+      "checkout",
+      "cart"
+    ],
+    [
+      "checkout",
+      "payment"
+    ],
+    [
+      "checkout",
+      "postgres"
+    ],
+    [
+      "frontend",
+      "ad"
+    ],
+    [
+      "frontend",
+      "cart"
+    ],
+    [
+      "frontend",
+      "checkout"
+    ]
+  ],
+  "error_spike": {
+    "service": "payment",
+    "query": "ServiceName='payment' and SeverityText='ERROR'",
+    "from": "2026-01-01T12:00:00.000000000Z",
+    "to": "2026-01-01T12:10:00.000000000Z",
+    "factor": 20,
+    "charge_error_ratio": [
+      0.02,
+      0.4
+    ],
+    "error_logs_per_5m_spike": [
+      109,
+      108
+    ],
+    "error_logs_per_5m_max_outside": 9
+  },
+  "slow_endpoint": {
+    "service": "frontend",
+    "span_name": "POST /api/checkout",
+    "p95_ms": 1796.5,
+    "others_p95_ms": 118.6
+  },
+  "deploy": {
+    "service": "checkout",
+    "from_version": "1.4.0",
+    "to_version": "1.5.0",
+    "at": "2026-01-01T16:00:00.000000000Z"
+  },
+  "restarting_pod": {
+    "pod": "cart-qldjx5nj2-tq2sg",
+    "service": "cart",
+    "namespace": "shop",
+    "node": "k8s-node-3",
+    "every_minutes": 30,
+    "restarts": 47,
+    "cpu_utilization": 0.95
+  },
+  "cart_patterns": {
+    "service": "cart",
+    "count": 7,
+    "templates": [
+      {
+        "template": "cart service started <*> port=8080",
+        "rows": 51
+      },
+      {
+        "template": "loaded cart for user <*> <*>",
+        "rows": 26047
+      },
+      {
+        "template": "added item <*> <*> to cart <*>",
+        "rows": 5869
+      },
+      {
+        "template": "cache miss for cart <*> fetching from database",
+        "rows": 11601
+      },
+      {
+        "template": "slow query detected on cart_items took <*> <*> threshold=200ms",
+        "rows": 387
+      },
+      {
+        "template": "cache evicted <*> entries",
+        "rows": 5760
+      },
+      {
+        "template": "failed to reserve inventory for cart <*> retry <*> of 3",
+        "rows": 118
+      }
+    ]
+  },
+  "big_trace": {
+    "trace_id": "c03eb049677a5735978e1c1190fd75a6",
+    "spans": 57,
+    "services": [
+      "cart",
+      "checkout",
+      "frontend",
+      "payment",
+      "postgres"
+    ],
+    "error_spans": 4,
+    "start": "2026-01-01T09:17:00.000000000Z",
+    "end": "2026-01-01T09:17:02.400000000Z"
+  },
+  "counter_reset": {
+    "metric": "http.server.requests",
+    "service": "frontend",
+    "at": "2026-01-01T06:00:00.000000000Z"
+  },
+  "connection_refused": {
+    "service": "checkout",
+    "text": "connection refused",
+    "rows": 25,
+    "from": "2026-01-01T20:00:00.000000000Z",
+    "to": "2026-01-01T20:02:01.000000000Z"
+  },
+  "exception_log": {
+    "service": "payment",
+    "trace_id": "48be0a02058c9faade57bb5d79a01b67",
+    "span_id": "26c3e5617552d4e3",
+    "timestamp": "2026-01-01T12:00:33.082000000Z"
+  },
+  "k8s": {
+    "cluster": "prod-eu-1",
+    "nodes": [
+      "k8s-node-1",
+      "k8s-node-2",
+      "k8s-node-3"
+    ],
+    "namespaces": [
+      "ads",
+      "data",
+      "payments",
+      "shop"
+    ],
+    "pods": [
+      "frontend-2fb6lkkg6-f46wd",
+      "frontend-2fb6lkkg6-djkvz",
+      "frontend-2fb6lkkg6-25wrk",
+      "frontend-2fb6lkkg6-b78h5",
+      "checkout-j7nfdqfpp-zl8c6",
+      "checkout-j7nfdqfpp-qdwm9",
+      "checkout-j7nfdqfpp-pxj5d",
+      "checkout-j7nfdqfpp-mdkfq",
+      "payment-phppj4l54-2dz2h",
+      "payment-phppj4l54-sql25",
+      "payment-phppj4l54-977ck",
+      "cart-qldjx5nj2-tq2sg",
+      "cart-qldjx5nj2-wwl6x",
+      "cart-qldjx5nj2-pkgvt",
+      "cart-qldjx5nj2-fg2h8",
+      "ad-qqzsvlwb4-6f4w7",
+      "ad-qqzsvlwb4-fmrhs",
+      "ad-qqzsvlwb4-6lv7h",
+      "postgres-0",
+      "postgres-1"
+    ]
+  }
+}
