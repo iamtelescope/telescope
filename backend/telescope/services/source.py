@@ -134,10 +134,11 @@ class SourceSavedViewService:
             source = Source.objects.get(slug=self.slug)
             saved_view = SavedView.objects.get(source=source, slug=slug)
 
-            scope = scope_serializer.validated_data["scope"]
+            # Both the stored and the requested scope must allow the change.
+            scopes = {saved_view.scope, scope_serializer.validated_data["scope"]}
 
             required_permissions = [permissions.Source.READ.value]
-            if scope == VIEW_SCOPE_SOURCE:
+            if VIEW_SCOPE_SOURCE in scopes:
                 required_permissions = [permissions.Source.EDIT.value]
             self.rbac_manager.require_source_permissions(
                 user=user,
@@ -145,7 +146,7 @@ class SourceSavedViewService:
                 required_permissions=required_permissions,
             )
 
-            if scope == VIEW_SCOPE_PERSONAL:
+            if VIEW_SCOPE_PERSONAL in scopes:
                 self.rbac_manager.require_saved_view_ownership(user, saved_view)
 
             serializer = UpdateSourceSavedViewSerializer(data=data)

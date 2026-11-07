@@ -4,7 +4,7 @@ import pytest
 from django.urls import get_resolver
 from rest_framework.test import APIClient
 
-from telescope.models import Dashboard
+from telescope.models import Dashboard, SavedView
 from telescope.rbac.manager import RBACManager
 from telescope.rbac.roles import SourceRole
 from tests.data import get_dashboard_data
@@ -46,6 +46,25 @@ def test_deactivated_user_token_is_refused(root_user, ch_source):
         403,
     )
     assert not Dashboard.objects.filter(name="x").exists()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("shared", [False, True])
+def test_editor_cannot_take_over_another_users_personal_view(
+    personal_saved_view, hacker_user, docker_source, shared
+):
+    personal_saved_view.shared = shared
+    personal_saved_view.save()
+    rbac_manager.grant_source_role(
+        docker_source, SourceRole.EDITOR.value, user=hacker_user
+    )
+    body = {"scope": "source", "name": "pwned", "description": "", "shared": True}
+    body["data"] = personal_saved_view.data
+    url = f"/api/v1/saved-views/{docker_source.slug}/{personal_saved_view.slug}"
+    response = token_client(hacker_user).patch(url, body, format="json")
+    assert response.status_code == 403
+    view = SavedView.objects.get(pk=personal_saved_view.pk)
+    assert (view.name, view.scope) == ("Test View Personal", "personal")
 
 
 @pytest.mark.django_db
