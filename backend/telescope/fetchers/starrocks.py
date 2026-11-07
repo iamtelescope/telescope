@@ -586,7 +586,9 @@ class Fetcher(BaseFetcher):
             if time_type in ["timestamp", "uint64", "int64"]:
                 time_column = f"to_datetime_ntz({time_column}, 3)"
             step = plan.step_ms // 1000
-            bucket = f"floor(unix_timestamp({time_column}) / {step}) * {plan.step_ms}"
+            # seconds_diff ignores the session time_zone, so buckets stay UTC like the filter.
+            epoch = f"seconds_diff({time_column}, '1970-01-01 00:00:00')"
+            bucket = f"floor({epoch} / {step}) * {plan.step_ms}"
             if not group:
                 return plan.timeseries(
                     run(

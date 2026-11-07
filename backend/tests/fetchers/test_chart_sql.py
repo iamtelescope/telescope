@@ -279,11 +279,23 @@ def test_starrocks_timeseries_top_n(sr_cursor):
     assert rank_sql.endswith("ORDER BY count(*) DESC, `__telescope_g` LIMIT 6")
     assert sql.startswith(
         "SELECT /*+ SET_VAR(query_timeout=30) */"
-        " floor(unix_timestamp(`ts`) / 60) * 60000 AS `__telescope_t`"
+        " floor(seconds_diff(`ts`, '1970-01-01 00:00:00') / 60) * 60000 AS `__telescope_t`"
     )
     assert f"AND {group} IN ('it\\'s', 'web') GROUP BY" in sql
     assert result["truncated"] is False
     assert result["series"][0]["name"] == "it's"
+
+
+def test_starrocks_int_time_column_buckets_in_utc(sr_cursor):
+    sr_cursor.fetchall.return_value = []
+    source = make_source("starrocks", "bigint")
+    starrocks.Fetcher.fetch_chart_data(make_request(source))
+    (sql,) = sr_sqls(sr_cursor)
+    assert "unix_timestamp" not in sql
+    assert (
+        "floor(seconds_diff(to_datetime_ntz(`ts`, 3), '1970-01-01 00:00:00') / 60)"
+        in sql
+    )
 
 
 def test_starrocks_group_by_value():
