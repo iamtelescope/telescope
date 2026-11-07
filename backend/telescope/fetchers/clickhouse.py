@@ -31,7 +31,12 @@ from telescope.fetchers.response import (
     ChartDataResponse,
 )
 from telescope.fetchers.fetcher import BaseFetcher
-from telescope.fetchers.chart import ChartPlan, agg_expression, quote_column
+from telescope.fetchers.chart import (
+    ChartPlan,
+    agg_expression,
+    quote_column,
+    with_formulas,
+)
 from telescope.fetchers.models import Row
 from telescope.fetchers.search import body_column, next_cursor
 
@@ -47,6 +52,18 @@ CHART_AGGS = {
     "max": "maxOrNull({c})",
     "quantile": "quantileOrNull({l})({c})",
     "uniq": "uniq({c})",
+    "last_value": "argMaxOrNull({c}, {t})",
+    "any": "anyOrNull({c})",
+    # With a per-series condition (the If combinator).
+    "count_if": "countIf({w})",
+    "sum_if": "sumIf({c}, {w})",
+    "avg_if": "avgOrNullIf({c}, {w})",
+    "min_if": "minOrNullIf({c}, {w})",
+    "max_if": "maxOrNullIf({c}, {w})",
+    "quantile_if": "quantileOrNullIf({l})({c}, {w})",
+    "uniq_if": "uniqIf({c}, {w})",
+    "last_value_if": "argMaxOrNullIf({c}, {t}, {w})",
+    "any_if": "anyOrNullIf({c}, {w})",
 }
 
 
@@ -705,17 +722,23 @@ class Fetcher(BaseFetcher):
 
     @classmethod
     def fetch_chart_data(cls, request: ChartDataRequest) -> ChartDataResponse:
+        return with_formulas(request, cls._fetch_chart_sql)
+
+    @classmethod
+    def _flyql_sql(cls, source, query: str) -> str:
+        if not query:
+            return "true"
+        return to_sql_where(
+            parse(query).root,
+            columns=flyql_clickhouse_columns(source._columns),
+            registry=transformer_registry(),
+        )
+
+    @classmethod
+    def _fetch_chart_sql(cls, request: ChartDataRequest) -> ChartDataResponse:
         source = request.source
         plan = ChartPlan(request)
-        if request.query:
-            parser = parse(request.query)
-            filter_clause = to_sql_where(
-                parser.root,
-                columns=flyql_clickhouse_columns(source._columns),
-                registry=transformer_registry(),
-            )
-        else:
-            filter_clause = "true"
+        filter_clause = cls._flyql_sql(source, request.query)
         raw_where_clause = request.raw_query or "true"
         time_clause = build_time_clause(
             source.time_column, source.date_column, plan.time_from, plan.query_to
@@ -726,12 +749,19 @@ class Fetcher(BaseFetcher):
         if source.data.get("settings"):
             settings_clause = f" SETTINGS {source.data['settings']}"
         aggs = ", ".join(
-            f"{agg_expression(CHART_AGGS, source, item)} AS `__telescope_v{i}`"
+            f"{agg_expression(CHART_AGGS, source, item, cls._series_where(source, item))}"
+            f" AS `__telescope_v{i}`"
             for i, item in enumerate(request.series)
         )
-        group = ""
-        if plan.group_by:
-            group = f"ifNull(toString({build_group_by_value(plan.group_by)}), '')"
+        exprs = [
+            f"ifNull(toString({build_group_by_value(g)}), '')" for g in plan.group_bys
+        ]
+        if len(exprs) == 1:
+            aliases = ["`__telescope_g`"]
+        else:
+            aliases = [f"`__telescope_g{i}`" for i in range(len(exprs))]
+        group = ", ".join(f"{e} AS {a}" for e, a in zip(exprs, aliases))
+        group_aliases = ", ".join(aliases)
 
         assert source.conn
         with ClickhouseConnect(source.conn.data) as c:
@@ -750,8 +780,8 @@ class Fetcher(BaseFetcher):
             if plan.kind == "table":
                 return plan.table(
                     run(
-                        f"SELECT {group} AS `__telescope_g`, {aggs} FROM {from_db_table} WHERE {where}"
-                        f" GROUP BY `__telescope_g` ORDER BY `__telescope_v0` DESC, `__telescope_g`"
+                        f"SELECT {group}, {aggs} FROM {from_db_table} WHERE {where}"
+                        f" GROUP BY {group_aliases} ORDER BY `__telescope_v0` DESC, {group_aliases}"
                         f" LIMIT {plan.limit + 1}"
                     )
                 )
@@ -773,17 +803,32 @@ class Fetcher(BaseFetcher):
                 )
             groups, truncated = plan.top_groups(
                 run(
-                    f"SELECT {group} AS `__telescope_g` FROM {from_db_table} WHERE {where}"
-                    f" GROUP BY `__telescope_g` ORDER BY count() DESC, `__telescope_g`"
+                    f"SELECT {group} FROM {from_db_table} WHERE {where}"
+                    f" GROUP BY {group_aliases} ORDER BY count() DESC, {group_aliases}"
                     f" LIMIT {plan.limit + 1}"
                 )
             )
             if not groups:
                 return plan.timeseries([], groups, truncated)
+            if len(exprs) == 1:
+                restrict = f"{exprs[0]} IN {{groups:Array(String)}}"
+            else:
+                types = ", ".join(["String"] * len(exprs))
+                restrict = (
+                    f"tuple({', '.join(exprs)}) IN {{groups:Array(Tuple({types}))}}"
+                )
             rows = run(
-                f"SELECT {bucket} AS `__telescope_t`, {group} AS `__telescope_g`, {aggs}"
-                f" FROM {from_db_table} WHERE {where} AND {group} IN {{groups:Array(String)}}"
-                f" GROUP BY `__telescope_t`, `__telescope_g` ORDER BY `__telescope_t`",
+                f"SELECT {bucket} AS `__telescope_t`, {group}, {aggs}"
+                f" FROM {from_db_table} WHERE {where} AND {restrict}"
+                f" GROUP BY `__telescope_t`, {group_aliases} ORDER BY `__telescope_t`",
                 {"groups": groups},
             )
             return plan.timeseries(rows, groups, truncated)
+
+    @classmethod
+    def _series_where(cls, source, series) -> Optional[str]:
+        return (
+            f"({cls._flyql_sql(source, series['where'])})"
+            if series.get("where")
+            else None
+        )

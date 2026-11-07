@@ -24,6 +24,7 @@ from telescope.rbac import permissions
 from telescope.response import UIResponse
 from telescope.models import Source, SavedView, Connection
 from telescope.serializers.dashboard import SourceChartDataRequestSerializer
+from telescope.fetchers.chart import fetch_chart
 from telescope.serializers.source import (
     SourceRoleSerializer,
     ClickhouseConnectionSerializer,
@@ -556,7 +557,12 @@ class SourceChartDataView(APIView):
                 granularity=serializer.validated_data["granularity"],
                 limit=serializer.validated_data["limit"],
             )
-            response.data = fetcher.fetch_chart_data(chart_request).as_dict()
+            response.data = fetch_chart(
+                fetcher,
+                chart_request,
+                compare=serializer.validated_data["compare"],
+                sparkline=serializer.validated_data["sparkline"],
+            ).as_dict()
         except Exception as err:
             logger.exception("chart data failed: %s", err)
             response.mark_failed(str(err))

@@ -247,7 +247,7 @@ def test_dashboard_with_variables_round_trips(root_user, clickhouse_source):
         "multi": False,
         "required": False,
     }
-    assert created["data"]["data"]["version"] == 2
+    assert created["data"]["data"]["version"] == 3
 
 
 @pytest.mark.django_db
@@ -310,21 +310,26 @@ def test_v1_dashboard_loads_unchanged(root_user, dashboard):
     assert "version" not in dashboard.data
     got = client_for(root_user).get(f"/ui/v1/dashboards/{dashboard.slug}").json()
     data = got["data"]["data"]
-    assert data == {**v1, "version": 2, "variables": []}
+    assert data == {**v1, "version": 3, "variables": [], "sections": []}
     assert Dashboard.objects.get(pk=dashboard.pk).data == v1
 
 
 @pytest.mark.django_db
-def test_v1_data_is_accepted_and_stored_as_v2(root_user, clickhouse_source):
+def test_v1_data_is_accepted_and_stored_as_v3(root_user, clickhouse_source):
     created = create(root_user, get_dashboard_data(clickhouse_source.slug))
     assert created["result"] is True
     stored = Dashboard.objects.get(slug=created["data"]["slug"]).data
-    assert (stored["version"], stored["variables"]) == (2, [])
+    assert (stored["version"], stored["variables"], stored["sections"]) == (3, [], [])
 
 
-def test_upgrade_leaves_v2_alone():
-    data = {"version": 2, "variables": [{"name": "x", "type": "text"}]}
+def test_upgrade_leaves_v3_alone():
+    data = {"version": 3, "variables": [], "sections": []}
     assert upgrade_dashboard_data(data) is data
     v1 = {"tiles": []}
-    assert upgrade_dashboard_data(v1) == {"tiles": [], "version": 2, "variables": []}
+    assert upgrade_dashboard_data(v1) == {
+        "tiles": [],
+        "version": 3,
+        "variables": [],
+        "sections": [],
+    }
     assert v1 == {"tiles": []}

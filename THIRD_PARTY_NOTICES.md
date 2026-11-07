@@ -54,3 +54,6 @@ SOFTWARE.
   `packages/common-utils/src/variables.ts` (an empty selection is a no-op) and `types.ts` `DashboardFilterSchema` (MIT, above); no code is copied.
 - `backend/telescope_otel/detect.py` (OTel schema detection) and the role list in `backend/telescope_otel/roles.py` are adapted from
   HyperDX `packages/app/src/source.ts` (`inferTableSourceConfig`) and `packages/api/src/models/source.ts` (MIT, above).
+- `backend/telescope/fetchers/chart.py` (`parse_formula`, `eval_formula`: the arithmetic grammar, depth and length limits, a missing
+  operand as 0 and a zero divisor as null) is adapted from HyperDX `packages/common-utils/src/core/formula.ts`, and the per-series
+  `If` combinator in `backend/telescope/fetchers/clickhouse.py` follows `packages/common-utils/src/core/renderChartConfig.ts` (MIT, above).
