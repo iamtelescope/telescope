@@ -77,3 +77,16 @@ data:
         django.utils.autoreload: {{ index .Values.config.logging.levels "django.utils.autoreload" | quote }}
         telescope: {{ .Values.config.logging.levels.telescope | quote }}
         all: {{ .Values.config.logging.levels.all | quote }}
+    alerts:
+      enabled: {{ .Values.config.alerts.enabled }}
+      tick_seconds: {{ .Values.config.alerts.tick_seconds }}
+      allow_private_webhook_targets: {{ .Values.config.alerts.allow_private_webhook_targets }}
+      public_url: {{ .Values.config.alerts.public_url | quote }}
+      email:
+        host: {{ .Values.config.alerts.email.host | quote }}
+        port: {{ .Values.config.alerts.email.port }}
+        username: {{ .Values.config.alerts.email.username | quote }}
+        password: !env ALERTS_SMTP_PASSWORD
+        use_tls: {{ .Values.config.alerts.email.use_tls }}
+        use_ssl: {{ .Values.config.alerts.email.use_ssl }}
+        from_email: {{ .Values.config.alerts.email.from_email | quote }}

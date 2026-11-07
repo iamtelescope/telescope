@@ -70,6 +70,22 @@ config:
     show_docs_url: true
     show_github_url: false
     base_url: ""
+  # Alerts; the scheduler Deployment below evaluates them.
+  alerts:
+    enabled: true
+    tick_seconds: 15
+    # Webhook, Slack and PagerDuty targets on private or loopback addresses are refused unless true.
+    allow_private_webhook_targets: false
+    # Public Telescope URL for links in notifications, e.g. https://telescope.example.com
+    public_url: ""
+    # SMTP for the email channel; the password comes from the ALERTS_SMTP_PASSWORD secret key.
+    email:
+      host: ""
+      port: 587
+      username: ""
+      use_tls: true
+      use_ssl: false
+      from_email: "telescope@localhost"
   logging:
     format: "default"
     levels:
@@ -79,6 +95,20 @@ config:
       "django.utils.autoreload": "INFO"
       telescope: "INFO"
       all: "INFO"
+
+# Alert scheduler: one pod running `manage.py telescope_scheduler`.
+# A DB lease lets only one replica evaluate, so more replicas only add failover.
+# It must share the web pods' database: PostgreSQL, or SQLite with persistence enabled.
+scheduler:
+  enabled: true
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 192Mi
 
 # Database configuration
 database:
@@ -129,6 +159,7 @@ djangoCollectstatic: 1
 # - GITHUB_SECRET: Required only when config.auth.providers.github.enabled=true
 # - OKTA_SECRET: Required only when config.auth.providers.okta.enabled=true
 # - DATABASE_PASSWORD: Required only when database.type="postgresql"
+# - ALERTS_SMTP_PASSWORD: Optional, SMTP password for the email alert channel
 #
 # To use a custom secret name:
 #   secretName: "my-custom-secrets"
