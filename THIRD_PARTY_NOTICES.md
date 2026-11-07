@@ -103,6 +103,8 @@ SOFTWARE.
   `backend/telescope_mcp/MCP.md` follows `MCP.md` (MIT, above).
 - `ui/src/features/charts/ChartExplorer.vue` and `config.js` (a standalone chart page whose whole chart config lives in one
   JSON `config` URL param, saved to a dashboard or an alert) are adapted from HyperDX `packages/app/src/DBChartPage.tsx` (MIT, above).
+- `backend/telescope_prefs/models.py` and `services.py` (per-user favorites unique on user and resource, pinned facets
+  as one row per source) follow HyperDX `packages/api/src/models/favorite.ts` and `models/pinnedFilter.ts` (MIT, above).
 
 ## Drain3
 
