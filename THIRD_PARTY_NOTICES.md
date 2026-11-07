@@ -44,3 +44,5 @@ SOFTWARE.
   `packages/app/src/components/AlertPreviewChart.tsx` (MIT, above).
 - `ui/src/composables/useLiveTail.js` adapts the live-tail timer of HyperDX `useLiveUpdate` in
   `packages/app/src/DBSearchPage.tsx` (interval polling, skipped while the tab is hidden or a query runs) (MIT, above).
+- `ui/src/utils/context.js` and `ui/src/components/explorer/results/tabs/ContextTab.vue` adapt the context ranges, quick filters
+  and match presets of HyperDX `packages/app/src/components/ContextSidePanel.tsx` and `ContextFilterPills.tsx` (MIT, above).
