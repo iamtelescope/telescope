@@ -1,7 +1,9 @@
-"""The Drain log template miner with Drain3's default settings, without persistence or an LRU.
+"""The Drain log template miner with Drain3's default settings and an LRU cap on clusters.
 
 Ported from IBM Drain3 `drain3/drain.py` (MIT), as HyperDX `common-utils/src/drain/drain.ts` does.
 """
+
+from collections import OrderedDict
 
 PARAM = "<*>"
 
@@ -32,19 +34,21 @@ def _has_digit(token):
 
 
 class Drain:
-    def __init__(self, depth=4, sim_th=0.4, max_children=100):
+    def __init__(self, depth=4, sim_th=0.4, max_children=100, max_clusters=None):
         self.max_node_depth = depth - 2
         self.sim_th = sim_th
         self.max_children = max_children
+        self.max_clusters = max_clusters
         self.root = Node()
-        self.clusters = {}
+        self.clusters = OrderedDict()
+        self.counter = 0
 
     def _tree_search(self, tokens):
         node = self.root.children.get(str(len(tokens)))
         if node is None:
             return None
         if not tokens:
-            return self.clusters[node.cluster_ids[0]]
+            return self.clusters.get(node.cluster_ids[0])
         depth = 1
         for token in tokens:
             if depth >= self.max_node_depth or depth == len(tokens):
@@ -58,7 +62,9 @@ class Drain:
     def _fast_match(self, cluster_ids, tokens):
         best, best_sim, best_params = None, -1, -1
         for cluster_id in cluster_ids:
-            cluster = self.clusters[cluster_id]
+            cluster = self.clusters.get(cluster_id)
+            if cluster is None:
+                continue
             same = params = 0
             for t1, t2 in zip(cluster.tokens, tokens):
                 if t1 == PARAM:
@@ -79,7 +85,9 @@ class Drain:
         depth = 1
         for token in tokens:
             if depth >= self.max_node_depth or depth >= len(tokens):
-                node.cluster_ids.append(cluster.id)
+                # Drop ids the LRU evicted, as Drain3 does.
+                ids = [i for i in node.cluster_ids if i in self.clusters]
+                node.cluster_ids = ids + [cluster.id]
                 return
             children = node.children
             if token in children:
@@ -104,10 +112,14 @@ class Drain:
         tokens = text.strip().split()
         cluster = self._tree_search(tokens)
         if cluster is None:
-            cluster = Cluster(len(self.clusters) + 1, tokens)
+            self.counter += 1
+            cluster = Cluster(self.counter, tokens)
             self.clusters[cluster.id] = cluster
+            if self.max_clusters and len(self.clusters) > self.max_clusters:
+                self.clusters.popitem(last=False)
             self._add_to_tree(cluster)
             return cluster
+        self.clusters.move_to_end(cluster.id)
         cluster.tokens = tuple(
             PARAM if t1 != t2 else t1 for t1, t2 in zip(cluster.tokens, tokens)
         )

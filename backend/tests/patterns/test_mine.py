@@ -6,7 +6,7 @@ from flyql.matcher import Evaluator, Record
 
 from telescope.flyql_registry import transformer_registry
 from telescope.models import Source, SourceColumn
-from telescope.patterns import fetch
+from telescope.patterns import fetch, mine
 from telescope.patterns.drain import Drain
 from telescope.patterns.fetch import PatternRequest
 from telescope.patterns.masking import normalize
@@ -56,6 +56,66 @@ def test_drain_keeps_dissimilar_messages_apart():
 def test_normalize_strips_ansi_and_whitespace():
     assert normalize("\x1b[31mERROR\x1b[0m  disk\n full ") == "ERROR disk full"
     assert normalize(None) == ""
+
+
+def unique_words(n):
+    # Lowercase, digit-free tokens: nothing masks or parametrizes them.
+    return [
+        "".join(chr(97 + (i // 26**k) % 26) for k in range(4)) + "q" for i in range(n)
+    ]
+
+
+def test_drain_lru_caps_clusters_and_leaf_lists():
+    drain = Drain(max_clusters=50)
+    for word in unique_words(500):
+        drain.add(word)
+    assert len(drain.clusters) == 50
+    leaf = drain.root.children["1"]
+    assert len(leaf.cluster_ids) <= 51
+    assert drain.add(unique_words(500)[-1]).size == 2
+
+
+def test_mining_compares_each_message_with_a_bounded_cluster_list(monkeypatch):
+    seen = []
+    fast_match = Drain._fast_match
+
+    def counting(self, cluster_ids, tokens):
+        seen.append(len(cluster_ids))
+        return fast_match(self, cluster_ids, tokens)
+
+    monkeypatch.setattr(Drain, "_fast_match", counting)
+    rows = [(T0, f"start {w}") for w in unique_words(3 * mine.MAX_CLUSTERS)]
+    mine_patterns(rows, len(rows), T0, T0 + HOUR, "Body")
+    assert max(seen) <= mine.MAX_CLUSTERS + 1
+
+
+def test_evicted_and_recreated_templates_report_once(monkeypatch):
+    monkeypatch.setattr(mine, "MAX_CLUSTERS", 2)
+    rows = [(T0, "disk full"), (T0, "aaa bbb ccc"), (T0, "ddd eee fff")]
+    rows += [(T0, "disk full")] * 2
+    counts = {
+        p["pattern"]: p["count"]
+        for p in mine_patterns(rows, 5, T0, T0 + HOUR, "Body")["patterns"]
+    }
+    assert counts == {"disk full": 3, "aaa bbb ccc": 1, "ddd eee fff": 1}
+
+
+def test_hex_ids_are_masked_and_filters_still_match():
+    assert normalize(
+        "id 0b6e7f2a-1c3d-4e5f-8a9b-0c1d2e3f4a5b trace 4bf92f3577b34da6"
+    ) == ("id <HEX> trace <HEX>")
+    assert normalize("deadbeefcafe took 12345678 ms") == "deadbeefcafe took <HEX> ms"
+    rows = [(T0, f"request id={i:08x}-0000-4000-8000-{i:012x} ok") for i in range(50)]
+    rows += [(T0, f"span={i:016x} done") for i in range(50)]
+    result = mine_patterns(rows, len(rows), T0, T0 + HOUR, "Body")
+    assert len(result["patterns"]) == 2
+    evaluator = Evaluator(registry=transformer_registry())
+    for pattern in result["patterns"]:
+        root = parse(pattern["filter"]).root
+        matched = [
+            b for _, b in rows if evaluator.evaluate(root, Record(data={"Body": b}))
+        ]
+        assert len(matched) == pattern["count"] == 50, pattern["filter"]
 
 
 def test_cart_templates_mine_into_seven_patterns():
