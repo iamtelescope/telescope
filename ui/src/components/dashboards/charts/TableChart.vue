@@ -60,7 +60,8 @@ const emit = defineEmits(['rowClick'])
 const clickable = computed(() => !!props.chart.group_by)
 const isEmptyGroup = (group) => group === '__none__' || group === ''
 
-const groupColumn = computed(() => props.data.columns.find((c) => c.kind === 'group'))
+// An ungrouped table still gets a nameless group column with one empty group; it is not shown.
+const groupColumn = computed(() => props.data.columns.find((c) => c.kind === 'group' && c.name))
 const valueColumns = computed(() => {
     const defs = props.chart.series || []
     const format = props.chart.number_format
