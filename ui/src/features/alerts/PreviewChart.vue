@@ -1,5 +1,11 @@
 <template>
-    <div ref="wrapper" class="h-64" data-testid="alert-preview-chart">
+    <div
+        ref="wrapper"
+        class="h-64"
+        data-testid="alert-preview-chart"
+        :data-first="data.windows[0]"
+        :data-last="data.windows[data.windows.length - 1]"
+    >
         <YagrChart v-if="settings" :settings="settings" :theme="theme" height="100%" />
     </div>
     <div class="flex flex-wrap gap-4 mt-2 text-xs text-surface-500">

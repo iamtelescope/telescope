@@ -382,15 +382,22 @@ const byWindow = computed(() => {
     }
     return map
 })
-const timeline = computed(() => {
+// Every scheduled window in the range, so the timeline and the chart span all of it.
+const grid = computed(() => {
     const { from, to } = range.value
     const s = step.value
-    const segments = []
     const a = alert.value
     const origin = a.schedule_start_at
         ? DateTime.fromISO(a.schedule_start_at).toMillis()
         : a.schedule_offset_minutes * 60_000
-    for (let t = origin + Math.ceil((from - origin) / s) * s; t < to; t += s) {
+    const windows = []
+    for (let t = origin + Math.ceil((from - origin) / s) * s; t < to; t += s) windows.push(t)
+    return windows
+})
+const timeline = computed(() => {
+    const s = step.value
+    const segments = []
+    for (const t of grid.value) {
         const states = byWindow.value.get(t)
         const state = states ? windowState(states) : ''
         const last = segments[segments.length - 1]
@@ -402,7 +409,7 @@ const timeline = computed(() => {
     return segments
 })
 const chartData = computed(() => {
-    const windows = [...byWindow.value.keys()].sort((a, b) => a - b)
+    const windows = [...new Set([...grid.value, ...byWindow.value.keys()])].sort((a, b) => a - b)
     const index = new Map(windows.map((t, i) => [t, i]))
     const groups = new Map()
     for (const r of rows.value) {
