@@ -12,9 +12,14 @@ from tests.data import get_dashboard_data
 rbac_manager = RBACManager()
 
 
-def validate(data, user, old_sources=()):
+def validate(data, user, old_sources=(), old_raw_queries=()):
     serializer = DashboardDataSerializer(
-        data=data, context={"user": user, "old_sources": set(old_sources)}
+        data=data,
+        context={
+            "user": user,
+            "old_sources": set(old_sources),
+            "old_raw_queries": set(old_raw_queries),
+        },
     )
     serializer.is_valid()
     return serializer
@@ -325,3 +330,42 @@ def test_old_source_not_rechecked(test_user, clickhouse_source):
 )
 def test_is_numeric_column_type(kind, column_type, expected):
     assert is_numeric_column_type(kind, column_type) is expected
+
+
+@pytest.mark.django_db
+def test_raw_query_needs_raw_query_permission(test_user, clickhouse_source):
+    rbac_manager.grant_source_role(
+        clickhouse_source, SourceRole.USER.value, user=test_user
+    )
+    data = chart_data(raw_query="1 = 1")
+    assert chart_errors(validate(data, test_user)) == {
+        "raw_query": ["Insufficient permissions to use source raw queries"]
+    }
+    stored = {("t1", "clickhouse", "1 = 1")}
+    assert validate(data, test_user, old_raw_queries=stored).is_valid()
+    changed = chart_data(raw_query="2 = 2")
+    assert not validate(changed, test_user, old_raw_queries=stored).is_valid()
+
+    rbac_manager.grant_source_role(
+        clickhouse_source, SourceRole.RAW_QUERY_USER.value, user=test_user
+    )
+    assert validate(changed, test_user).is_valid()
+
+
+@pytest.mark.django_db
+def test_raw_query_on_lost_source_must_be_unchanged(test_user, clickhouse_source):
+    data = chart_data(raw_query="1 = 1")
+    stored = {("t1", "clickhouse", "1 = 1")}
+    old = ["clickhouse"]
+    assert validate(data, test_user, old, stored).is_valid()
+    assert chart_errors(validate(chart_data(raw_query="2 = 2"), test_user, old)) == {
+        "raw_query": ["Insufficient permissions to use source raw queries"]
+    }
+
+
+@pytest.mark.django_db
+def test_raw_query_needs_source_support(root_user, docker_source):
+    serializer = validate(chart_data("docker", raw_query="1 = 1"), root_user)
+    assert chart_errors(serializer)["raw_query"] == [
+        "This source does not support raw queries"
+    ]

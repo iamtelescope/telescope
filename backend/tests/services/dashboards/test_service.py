@@ -225,3 +225,22 @@ def test_owner_deleted(root_user, test_user, dashboard):
     result = service.get(root_user, dashboard.slug)
     assert result["owner"] is None
     assert result["updated_by"] is None
+
+
+@pytest.mark.django_db
+def test_update_keeps_stored_raw_query(test_user, clickhouse_source, dashboard):
+    rbac_manager.grant_source_role(
+        clickhouse_source, SourceRole.USER.value, user=test_user
+    )
+    dashboard.data["tiles"][0]["chart"]["raw_query"] = "1 = 1"
+    dashboard.save()
+    data = dashboard.data
+    data["tiles"][0]["x"] = 1
+    result = service.update(test_user, dashboard.slug, payload(dashboard, data=data))
+    assert result["data"]["tiles"][0]["chart"]["raw_query"] == "1 = 1"
+
+    dashboard.refresh_from_db()
+    data["tiles"][0]["chart"]["raw_query"] = "2 = 2"
+    with pytest.raises(SerializerValidationError) as err:
+        service.update(test_user, dashboard.slug, payload(dashboard, data=data))
+    assert "raw_query" in str(err.value.serializer.errors)

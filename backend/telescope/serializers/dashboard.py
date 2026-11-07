@@ -27,7 +27,11 @@ from telescope.fetchers.chart import (
 from telescope.models import Dashboard, Source
 from telescope.rbac import permissions
 from telescope.rbac.manager import RBACManager
-from telescope.serializers.source import UserSerializer, SourceDataRequestSerializer
+from telescope.serializers.source import (
+    SerializeErrorMsg,
+    UserSerializer,
+    SourceDataRequestSerializer,
+)
 from telescope.utils import parse_time
 
 rbac_manager = RBACManager()
@@ -214,7 +218,8 @@ class DashboardTimeSerializer(StrictSerializer):
 
 
 class DashboardDataSerializer(StrictSerializer):
-    """Context: `user` saving it and `old_sources`, the slugs already stored."""
+    """Context: `user` saving it, `old_sources`, the slugs already stored, and
+    `old_raw_queries`, the stored (tile id, source, raw_query) triples."""
 
     time = DashboardTimeSerializer()
     query = serializers.CharField(allow_blank=True, max_length=10000)
@@ -242,6 +247,25 @@ class DashboardDataSerializer(StrictSerializer):
         except Source.DoesNotExist:
             return None
 
+    def _raw_query_error(self, tile, source):
+        chart = tile["chart"]
+        old = self.context.get("old_raw_queries", set())
+        if not chart["raw_query"] or (
+            (tile["id"], chart["source"], chart["raw_query"]) in old
+        ):
+            return None
+        if source is None:
+            return SerializeErrorMsg.RAW_QUERIES_PERMISSIONS
+        if not source.support_raw_query:
+            return SerializeErrorMsg.RAW_QUERIES_NOT_SUPPORTED
+        if not rbac_manager.user_has_source_permissions(
+            self.context["user"],
+            source_slug=source.slug,
+            required_permissions=[permissions.Source.RAW_QUERY.value],
+        ):
+            return SerializeErrorMsg.RAW_QUERIES_PERMISSIONS
+        return None
+
     def validate(self, attrs):
         seen = set()
         for tile in attrs["tiles"]:
@@ -262,12 +286,17 @@ class DashboardDataSerializer(StrictSerializer):
             if slug not in sources:
                 sources[slug] = self._get_source(slug)
             source = sources[slug]
+            raw_query_error = self._raw_query_error(tile, source)
             if source is None:
                 # Tiles already on the dashboard keep a source the saver lost.
                 if slug not in old_sources:
                     tile_errors[i] = {"chart": {"source": [f"source {slug} not found"]}}
+                elif raw_query_error:
+                    tile_errors[i] = {"chart": {"raw_query": [raw_query_error]}}
                 continue
             chart_errors = {}
+            if raw_query_error:
+                chart_errors["raw_query"] = [raw_query_error]
             series_errors = chart_series_errors(source, chart["series"])
             if series_errors:
                 chart_errors["series"] = series_errors
@@ -280,6 +309,14 @@ class DashboardDataSerializer(StrictSerializer):
         if tile_errors:
             raise serializers.ValidationError({"tiles": tile_errors})
         return attrs
+
+
+def dashboard_raw_queries(data) -> set:
+    return {
+        (tile.get("id"), tile["chart"].get("source"), tile["chart"].get("raw_query"))
+        for tile in (data or {}).get("tiles", [])
+        if isinstance(tile.get("chart"), dict) and tile["chart"].get("raw_query")
+    }
 
 
 def dashboard_sources(data) -> set:

@@ -15,6 +15,7 @@ from telescope.serializers.dashboard import (
     DashboardListSerializer,
     NewDashboardSerializer,
     UpdateDashboardSerializer,
+    dashboard_raw_queries,
     dashboard_sources,
 )
 from telescope.services.exceptions import SerializerValidationError
@@ -91,6 +92,7 @@ class DashboardService:
                 context={
                     "user": user,
                     "old_sources": dashboard_sources(dashboard.data),
+                    "old_raw_queries": dashboard_raw_queries(dashboard.data),
                     "version": dashboard.version,
                 },
             )
