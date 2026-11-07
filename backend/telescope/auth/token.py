@@ -27,5 +27,7 @@ class TokenAuth(BaseAuthentication):
                 api_token = APIToken.objects.select_related("user").get(token=token)
             except APIToken.DoesNotExist:
                 raise AuthenticationFailed("Permission denied")
+            if not api_token.user.is_active:
+                raise AuthenticationFailed("Permission denied")
 
             return api_token.user, None

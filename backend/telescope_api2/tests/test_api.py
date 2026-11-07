@@ -34,6 +34,21 @@ def test_token_required(root_user):
 
 
 @pytest.mark.django_db
+def test_deactivated_user_token_is_refused(root_user, ch_source):
+    client = token_client(root_user)
+    assert client.get("/api/v1/dashboards").status_code == 200
+    root_user.is_active = False
+    root_user.save()
+    assert client.get("/api/v1/dashboards").status_code in (401, 403)
+    body = {"name": "x", "description": "", "data": get_dashboard_data()}
+    assert client.post("/api/v1/dashboards", body, format="json").status_code in (
+        401,
+        403,
+    )
+    assert not Dashboard.objects.filter(name="x").exists()
+
+
+@pytest.mark.django_db
 def test_dashboard_crud_and_codes(test_user, ch_source):
     rbac_manager.grant_source_role(ch_source, SourceRole.USER.value, user=test_user)
     client = token_client(test_user)
