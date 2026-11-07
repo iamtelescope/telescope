@@ -170,6 +170,7 @@ def test_chart_data_raw_query_permission(test_user, clickhouse_source):
     "changes, field",
     [
         ({"to": str(T0)}, "to"),
+        ({"from": "0", "to": "100000000000000"}, "to"),
         ({"display": "text"}, "display"),
         ({"display": "number", "group_by": "hostname"}, "group_by"),
         ({"series": []}, "series"),
@@ -188,7 +189,7 @@ def test_chart_data_validation(root_user, clickhouse_source, changes, field):
     )
     assert result["validation"]["result"] is False
     assert field in result["validation"]["fields"], result["validation"]
-    if field == "to":
+    if changes.get("to") == str(T0):
         assert result["validation"]["fields"]["to"] == ["must be after from"]
 
 

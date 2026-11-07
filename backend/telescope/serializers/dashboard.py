@@ -20,6 +20,8 @@ from telescope.fetchers.chart import (
     QUANTILE_LEVELS,
     QUERY_DISPLAYS,
     TABLE_DISPLAYS,
+    TIMESERIES_DISPLAYS,
+    chart_range_error,
     is_numeric_column_type,
 )
 from telescope.models import Dashboard, Source
@@ -380,6 +382,10 @@ class SourceChartDataRequestSerializer(SourceDataRequestSerializer):
         errors = chart_shape_errors(attrs)
         if attrs["from"] >= attrs["to"]:
             errors["to"] = ["must be after from"]
+        elif attrs["display"] in TIMESERIES_DISPLAYS:
+            error = chart_range_error(attrs["from"], attrs["to"], attrs["granularity"])
+            if error:
+                errors["to"] = [error]
         if errors:
             raise serializers.ValidationError(errors)
         return attrs

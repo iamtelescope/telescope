@@ -89,6 +89,15 @@ def pick_granularity(
     return granularity, GRANULARITY_SECONDS[granularity] * 1000
 
 
+def chart_range_error(time_from: int, time_to: int, granularity: str = "auto"):
+    _, step_ms = pick_granularity(time_from, time_to, granularity)
+    if _bucket_count(time_from, time_to, step_ms) > CHART_MAX_POINTS:
+        return (
+            f"time range is too long for a time chart, at most {CHART_MAX_POINTS} days"
+        )
+    return None
+
+
 def align_range(time_from: int, time_to: int, step_ms: int) -> Tuple[int, int]:
     return (time_from // step_ms) * step_ms, -(-time_to // step_ms) * step_ms
 
@@ -151,6 +160,11 @@ class ChartPlan:
         self.query_to = request.time_to
         if request.display in TIMESERIES_DISPLAYS:
             self.kind = "timeseries"
+            error = chart_range_error(
+                request.time_from, request.time_to, request.granularity
+            )
+            if error:
+                raise ValueError(error)
             self.granularity, self.step_ms = pick_granularity(
                 request.time_from, request.time_to, request.granularity
             )

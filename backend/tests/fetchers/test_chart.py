@@ -6,6 +6,7 @@ import pytest
 from telescope.fetchers.chart import (
     ChartPlan,
     align_range,
+    chart_range_error,
     pick_granularity,
     series_label,
 )
@@ -68,6 +69,16 @@ def test_explicit_granularity_coarsened(granularity, range_ms, expected):
     if name != "1d":
         aligned_from, aligned_to = align_range(T0, T0 + range_ms, step_ms)
         assert (aligned_to - aligned_from) // step_ms <= 300
+
+
+def test_range_longer_than_max_points_rejected():
+    assert chart_range_error(T0, T0 + 299 * DAY) is None
+    assert "at most 300 days" in chart_range_error(T0, T0 + 400 * DAY, "1d")
+    assert chart_range_error(0, 10**14) is not None
+    with pytest.raises(ValueError, match="too long"):
+        ChartPlan(make_request(time_from=0, time_to=10**14))
+    for display in ["number", "table", "bar"]:
+        ChartPlan(make_request(display, time_from=0, time_to=10**14))
 
 
 def test_align_range():
