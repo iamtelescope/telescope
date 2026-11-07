@@ -9,6 +9,9 @@ import { BoolOperator as FlyQLBoolOperator } from 'flyql'
 import { parseColumnNames } from '@/sdk/flyql'
 import { getBooleanFromString } from '@/utils/utils'
 import { availableTimeZones, localTimeZone } from '@/utils/datetimeranges'
+import { LIVE_INTERVALS } from '@/utils/explorerPaging'
+
+const DEFAULT_LIVE_INTERVAL = 5
 
 export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const toast = useToast()
@@ -18,6 +21,9 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
     const _columns = ref(null)
     const _query = ref(null)
     const _rawQuery = ref(null)
+    const _text = ref(null)
+    const _live = ref(false)
+    const _liveInterval = ref(DEFAULT_LIVE_INTERVAL)
 
     const _from = ref(null)
     const _to = ref(null)
@@ -33,6 +39,9 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _columns.value = null
         _query.value = null
         _rawQuery.value = null
+        _text.value = null
+        _live.value = false
+        _liveInterval.value = DEFAULT_LIVE_INTERVAL
         _from.value = null
         _to.value = null
         _timeZone.value = null
@@ -52,6 +61,10 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _columns.value = route.query.columns ?? viewParam?.data?.columns ?? source.defaultChosenColumns.join(', ')
         _query.value = route.query.query ?? viewParam?.data?.query ?? ''
         _rawQuery.value = route.query.raw_query ?? ''
+        _text.value = route.query.text ?? viewParam?.data?.text ?? ''
+        _live.value = route.query.live === '1'
+        const interval = parseInt(route.query.live_interval)
+        _liveInterval.value = LIVE_INTERVALS.includes(interval) ? interval : DEFAULT_LIVE_INTERVAL
         _from.value = tryToMillis(route.query.from ?? viewParam?.data?.from ?? 'now-5m')
         _to.value = tryToMillis(route.query.to ?? viewParam?.data?.to ?? 'now')
         _timeZone.value = route.query.timeZone ?? viewParam?.data?.timeZone ?? localTimeZone
@@ -124,6 +137,10 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         return _timeZone.value
     })
 
+    const text = computed(() => _text.value)
+    const live = computed(() => _live.value)
+    const liveInterval = computed(() => _liveInterval.value)
+
     const limit = computed(() => {
         return _limit.value
     })
@@ -153,6 +170,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
         if (query.value) params.query = query.value
         if (rawQuery.value) params.raw_query = rawQuery.value
+        if (text.value) params.text = text.value
 
         if (view.value) {
             params.view = _view.value.slug
@@ -167,6 +185,10 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         for (const [key, value] of Object.entries(contextColumns.value)) {
             if (!view.value || JSON.stringify(value) !== JSON.stringify(view.value.data.context_columns?.[key]))
                 params[`ctx_${key}`] = value
+        }
+        if (live.value) {
+            params.live = '1'
+            if (liveInterval.value !== DEFAULT_LIVE_INTERVAL) params.live_interval = liveInterval.value
         }
 
         return params
@@ -183,6 +205,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
         if (query.value) params.query = query.value
         if (rawQuery.value) params.raw_query = rawQuery.value
+        if (text.value) params.text = text.value
 
         return params
     })
@@ -197,6 +220,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
         if (query.value) params.query = query.value
         if (rawQuery.value) params.raw_query = rawQuery.value
+        if (text.value) params.text = text.value
 
         return params
     })
@@ -205,6 +229,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         return {
             columns: columns.value,
             query: query.value,
+            text: text.value,
             from: from.value,
             to: to.value,
             timeZone: timeZone.value,
@@ -223,6 +248,7 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         _view.value = value
         setFields(value.data.columns)
         setQuery(value.data.query)
+        setText(value.data.text ?? '')
         setFrom(value.data.from)
         setTo(value.data.to)
         setLimit(value.data.limit)
@@ -250,6 +276,18 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
 
     function setRawQuery(value) {
         _rawQuery.value = value
+    }
+
+    function setText(value) {
+        _text.value = value
+    }
+
+    function setLive(value) {
+        _live.value = !!value
+    }
+
+    function setLiveInterval(value) {
+        _liveInterval.value = value
     }
 
     function setLimit(value) {
@@ -311,6 +349,9 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setFields,
         setQuery,
         setRawQuery,
+        setText,
+        setLive,
+        setLiveInterval,
         addQueryExpression,
         setLimit,
         setFrom,
@@ -327,6 +368,9 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         columns,
         query,
         rawQuery,
+        text,
+        live,
+        liveInterval,
         parsedColumns,
         graphGroupBy,
         routeQuery,

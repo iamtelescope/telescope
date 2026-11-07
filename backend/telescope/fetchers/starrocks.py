@@ -4,6 +4,7 @@ import logging
 import tempfile
 from typing import Any, Dict, Optional
 import zoneinfo
+from datetime import datetime
 
 import mysql.connector
 
@@ -30,6 +31,7 @@ from telescope.fetchers.response import (
 from telescope.fetchers.fetcher import BaseFetcher
 from telescope.fetchers.chart import ChartPlan, agg_expression, quote_column
 from telescope.fetchers.models import Row
+from telescope.fetchers.search import body_column, next_cursor
 
 from telescope.utils import convert_to_base_sr, get_telescope_column
 
@@ -160,6 +162,25 @@ class StarrocksConnect:
                 self.temp_dir.cleanup()
         except Exception as err:
             logger.exception("error while tempdir cleanup (ignoring): %s", err)
+
+
+def starrocks_cursor_time(value) -> str:
+    """A row time as a literal StarRocks compares back to the time column exactly."""
+    if isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d %H:%M:%S.%f")
+    return str(value)
+
+
+def starrocks_row_hash(source: Source) -> str:
+    """Orders rows sharing a timestamp by a hash of their scalar columns."""
+    parts = [
+        f"CAST(`{name}` AS STRING)"
+        for name in sorted(source._columns.keys())
+        if not source._columns[name]
+        .type.lower()
+        .startswith(("array", "map", "struct", "json", "bitmap", "hll"))
+    ]
+    return f"murmur_hash3_32(concat_ws('|', {', '.join(parts)}))"
 
 
 def flyql_starrocks_columns(source_columns: Dict[str, SourceColumn]):
@@ -463,67 +484,95 @@ class Fetcher(BaseFetcher):
         request: DataRequest,
         tz: Optional[zoneinfo.ZoneInfo] = None,
     ):
+        source = request.source
         if request.query:
             parser = parse(request.query)
             assert parser.root
             filter_clause = to_sql_where(
                 parser.root,
-                columns=flyql_starrocks_columns(request.source._columns),
+                columns=flyql_starrocks_columns(source._columns),
                 registry=transformer_registry(),
             )
         else:
             filter_clause = "true"
 
-        order_by_clause = f"ORDER BY `{request.source.time_column}` DESC"
         raw_where_clause = request.raw_query or "true"
+        where = [filter_clause, raw_where_clause]
+        if request.text:
+            column = body_column(source)
+            if not column:
+                raise ValueError("source has no body column for text search")
+            # mysql.connector interpolates client side, so the text is an escaped literal.
+            where.append(
+                f"instr(lower(CAST(`{column}` AS STRING)), lower({escape_param(request.text)})) > 0"
+            )
+
+        time_column = f"`{source.time_column}`"
+        if source.uniq_column:
+            tiebreak = f"CAST(`{source.uniq_column}` AS STRING)"
+        else:
+            tiebreak = starrocks_row_hash(source)
+        offset = 0
+        if request.before:
+            bound = escape_param(str(request.before["time"]))
+            if source.uniq_column:
+                uniq = escape_param(str(request.before["uniq"]))
+                where.append(
+                    f"({time_column} < {bound} OR ({time_column} = {bound} AND {tiebreak} < {uniq}))"
+                )
+            else:
+                where.append(f"{time_column} <= {bound}")
+                offset = int(request.before.get("skip") or 0)
+        order_by_clause = f"ORDER BY {time_column} DESC, {tiebreak} DESC"
 
         time_clause = build_time_clause(
-            request.source.time_column,
-            request.source.date_column,
+            source.time_column,
+            source.date_column,
             request.time_from,
             request.time_to,
         )
-        from_db_table = f"{request.source.data['catalog']}.{request.source.data['database']}.{request.source.data['table']}"
+        where_clause = " AND ".join([time_clause] + where)
+        from_db_table = (
+            f"{source.data['catalog']}.{source.data['database']}.{source.data['table']}"
+        )
 
-        columns_names = sorted(request.source._columns.keys())
-        columns_to_select = []
-        for column in columns_names:
-            # TODO: Understand what timezone handling is required
-            # if column == request.source.time_column:
-            #     time_column_type = convert_to_base_sr(
-            #         request.source._columns[request.source.time_column].type.lower()
-            #     )
-            #     if time_column_type in ["datetime", "datetime64"]:
-            #         columns_to_select.append(f"toTimeZone({column}, 'UTC')")
-            #     elif time_column_type in ["timestamp", "uint64", "int64"]:
-            #         columns_to_select.append(f"toTimeZone(toDateTime({column}), 'UTC')")
-            # else:
-            columns_to_select.append(f"`{column}`")
+        columns_names = sorted(source._columns.keys())
+        columns_to_select = [f"`{column}`" for column in columns_names]
+        columns_to_select.append(tiebreak if source.uniq_column else "NULL")
         columns_to_select = ", ".join(columns_to_select)
 
         query_hints = ""
-        if request.source.data.get("settings"):
-            query_hints = f"/*+ SET_VAR({request.source.data['settings']}) */"
+        if source.data.get("settings"):
+            query_hints = f"/*+ SET_VAR({source.data['settings']}) */"
 
-        select_query = f"SELECT {query_hints} uuid_numeric(),{columns_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}"
+        limit_clause = f"LIMIT {request.limit}"
+        if offset:
+            limit_clause += f" OFFSET {offset}"
+        select_query = f"SELECT {query_hints} uuid_numeric(),{columns_to_select} FROM {from_db_table} WHERE {where_clause} {order_by_clause} {limit_clause}"
 
         rows = []
+        keys = []
 
-        assert request.source.conn
-        with StarrocksConnect(request.source.conn.data) as c:
-            selected_columns = [request.source._record_pseudo_id_column] + columns_names
+        assert source.conn
+        with StarrocksConnect(source.conn.data) as c:
+            selected_columns = [source._record_pseudo_id_column] + columns_names
+            time_index = 1 + columns_names.index(source.time_column)
             cur = c.client.cursor()
             cur.execute(select_query)
             for item in cur.fetchall():
+                keys.append((starrocks_cursor_time(item[time_index]), item[-1]))
                 rows.append(
                     Row(
-                        source=request.source,
+                        source=source,
                         selected_columns=selected_columns,
-                        values=item,
+                        values=item[:-1],
                         tz=tz or UTC_ZONE,
                     )
                 )
-        return DataResponse(rows=rows)
+        return DataResponse(
+            rows=rows,
+            cursor=next_cursor(source, keys, request.limit, request.before),
+        )
 
     @classmethod
     def fetch_chart_data(cls, request: ChartDataRequest) -> ChartDataResponse:

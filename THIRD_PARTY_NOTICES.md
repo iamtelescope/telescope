@@ -42,3 +42,5 @@ SOFTWARE.
   `packages/common-utils/src/types.ts` `AlertThresholdType` and `ALERT_INTERVAL_TO_MINUTES` (MIT, above).
 - `ui/src/features/alerts/PreviewChart.vue` (threshold shading) is adapted from HyperDX
   `packages/app/src/components/AlertPreviewChart.tsx` (MIT, above).
+- `ui/src/composables/useLiveTail.js` adapts the live-tail timer of HyperDX `useLiveUpdate` in
+  `packages/app/src/DBSearchPage.tsx` (interval polling, skipped while the tab is hidden or a query runs) (MIT, above).

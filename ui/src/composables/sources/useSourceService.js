@@ -63,6 +63,7 @@ const useGetSourceData = () => {
     const rows = ref(null)
     const columns = ref(null)
     const message = ref(null)
+    const cursor = ref(null)
     const error = ref(null)
     const loading = ref(null)
     const validation = ref(null)
@@ -77,13 +78,14 @@ const useGetSourceData = () => {
                 rows.value = response.data.rows
                 columns.value = response.data.columns
                 message.value = response.data.message
+                cursor.value = response.data.cursor ?? null
             }
             error.value = response.errors.join(', ')
             validation.value = response.validation
         }
         loading.value = false
     }
-    return { rows, columns, message, error, loading, validation, load, controller }
+    return { rows, columns, message, cursor, error, loading, validation, load, controller }
 }
 
 const useGetSourceGraphData = () => {

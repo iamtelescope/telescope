@@ -37,10 +37,12 @@ class DataResponse:
         rows: List[Row],
         error: Optional[str] = None,
         message: Optional[str] = None,
+        cursor: Optional[Dict] = None,
     ):
         self.rows = rows
         self.error = error
         self.message = message
+        self.cursor = cursor
 
 
 class GraphDataResponse:

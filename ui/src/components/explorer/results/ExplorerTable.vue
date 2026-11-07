@@ -87,6 +87,7 @@ import Row from '@/components/explorer/results/Row.vue'
 
 import { getColor } from '@/utils/colors.js'
 import { applyColumnPipeline } from '@/utils/flyql-registries.js'
+import { columnValue } from '@/utils/explorerPaging.js'
 import { DateTime } from 'luxon'
 
 const props = defineProps(['source', 'rows', 'columns', 'timeZone'])
@@ -143,13 +144,7 @@ const getRowColor = (row) => {
 }
 
 const renderCell = (column, data) => {
-    let raw
-    if (column.is_segmented) {
-        raw = extractSegment(column, data)
-    } else {
-        raw = data[column.root_name]
-    }
-    return applyColumnPipeline(column, raw)
+    return applyColumnPipeline(column, columnValue(column, data))
 }
 
 const getRowValueLength = (column, data) => {
@@ -158,37 +153,5 @@ const getRowValueLength = (column, data) => {
         return JSON.stringify(value).length
     }
     return String(value).length
-}
-
-const extractSegment = (column, data) => {
-    // Walk flyql's parsed segments — they're already unquoted and split,
-    // so a path like `labels.'app.kubernetes.io/component'` arrives as
-    // ['labels', 'app.kubernetes.io/component'] and a literal-dot key
-    // matches directly without the quote-stripping/prefix-peeling that
-    // `column.name` would require.
-    let segments = column.segments
-    if (!segments || segments.length === 0) {
-        // Fallback for older payloads that don't carry segments — split
-        // by dot, ignoring quote handling. Top-level dotted column names
-        // are still resolved via root_name elsewhere.
-        segments = column.name ? column.name.split('.') : []
-    }
-    let cur = data
-    for (let i = 0; i < segments.length; i++) {
-        if (cur === null || typeof cur !== 'object') return undefined
-        const seg = segments[i]
-        if (!(seg in cur)) {
-            // Tolerant lookup: the column might be a dotted top-level
-            // name (e.g. `container.id`) that lives flat in `data`. Try
-            // re-joining the remaining segments with dots.
-            if (i === 0) {
-                const rejoined = segments.join('.')
-                if (rejoined in cur) return cur[rejoined]
-            }
-            return undefined
-        }
-        cur = cur[seg]
-    }
-    return cur
 }
 </script>

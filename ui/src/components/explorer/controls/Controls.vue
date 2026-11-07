@@ -32,9 +32,12 @@
                     severity="primary"
                     label="Download"
                     size="small"
-                    @click="handleDownload"
+                    @click="(event) => downloadMenu.toggle(event)"
                     :disabled="loading"
+                    aria-haspopup="true"
+                    data-testid="explorer-download-btn"
                 />
+                <Menu ref="downloadMenu" :model="downloadItems" :popup="true" data-testid="explorer-download-menu" />
                 <FloatLabel variant="on">
                     <Select
                         v-model="limit"
@@ -51,6 +54,30 @@
                     :from="sourceControlsStore.from"
                     :to="sourceControlsStore.to"
                     :timeZone="sourceControlsStore.timeZone"
+                />
+                <Button
+                    label="Live"
+                    :icon="sourceControlsStore.live ? 'pi pi-pause' : 'pi pi-play'"
+                    :severity="sourceControlsStore.live ? 'success' : 'secondary'"
+                    :text="!sourceControlsStore.live"
+                    size="small"
+                    class="mr-2"
+                    :aria-pressed="sourceControlsStore.live ? 'true' : 'false'"
+                    @click="onLiveChange(!sourceControlsStore.live)"
+                    v-tooltip.bottom="sourceControlsStore.live ? 'Stop live tail' : 'Start live tail'"
+                    data-testid="explorer-live-btn"
+                />
+                <Select
+                    v-if="sourceControlsStore.live"
+                    :modelValue="sourceControlsStore.liveInterval"
+                    @update:modelValue="sourceControlsStore.setLiveInterval"
+                    :options="liveIntervals"
+                    optionLabel="label"
+                    optionValue="value"
+                    size="small"
+                    class="mr-2"
+                    aria-label="Live refresh interval"
+                    data-testid="explorer-live-interval"
                 />
                 <QuerySettings
                     :source="source"
@@ -101,6 +128,21 @@
                     @submit="handleSearch"
                 />
             </div>
+            <div v-if="textColumn" class="mb-2" data-testid="explorer-text-search">
+                <IconField>
+                    <InputIcon class="pi pi-search" />
+                    <InputText
+                        :modelValue="sourceControlsStore.text"
+                        @update:modelValue="sourceControlsStore.setText"
+                        @keydown.enter="handleSearch"
+                        :placeholder="`Search text in ${textColumn} (case-insensitive)`"
+                        :aria-label="`Search text in ${textColumn}`"
+                        size="small"
+                        fluid
+                        data-testid="explorer-text-search-input"
+                    />
+                </IconField>
+            </div>
             <div class="mb-2" data-testid="explorer-flyql-editor">
                 <QueryEditor
                     id="flyql_editor"
@@ -133,9 +175,20 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 
-import { Button, Select, Toolbar, FloatLabel, IftaLabel, ToggleButton } from 'primevue'
+import {
+    Button,
+    Select,
+    Toolbar,
+    FloatLabel,
+    IftaLabel,
+    ToggleButton,
+    Menu,
+    InputText,
+    IconField,
+    InputIcon,
+} from 'primevue'
 
 import DatetimePicker from '@/components/explorer/controls/DatetimePicker.vue'
 import GraphSettings from '@/components/explorer/controls/GraphSettings.vue'
@@ -148,6 +201,7 @@ import SavedViews from '@/components/explorer/controls/saved_views/SavedViews.vu
 import AddToDashboard from '@/components/dashboards/AddToDashboard.vue'
 import ControlsExtras from '@/components/explorer/controls/ControlsExtras.vue'
 import { getLimits } from '@/utils/limits.js'
+import { bodyColumn, LIVE_INTERVALS } from '@/utils/explorerPaging.js'
 
 import { useSourceControlsStore } from '@/stores/sourceControls'
 
@@ -163,6 +217,17 @@ const showRawQueryEditor = ref(sourceControlsStore.rawQuery ? true : false)
 const storedRawQuery = ref('')
 const limit = ref(sourceControlsStore.limit)
 const limits = ref(getLimits(sourceControlsStore.limit))
+const downloadMenu = ref(null)
+const downloadItems = [
+    { label: 'JSON', icon: 'pi pi-code', command: () => emit('download', 'json') },
+    { label: 'CSV (visible columns)', icon: 'pi pi-file', command: () => emit('download', 'csv') },
+]
+const liveIntervals = LIVE_INTERVALS.map((value) => ({ label: `Every ${value}s`, value }))
+const textColumn = computed(() => bodyColumn(props.source))
+
+const onLiveChange = (value) => {
+    sourceControlsStore.setLive(value)
+}
 
 const onRangeSelect = (params) => {
     sourceControlsStore.setFrom(params.from)
@@ -212,10 +277,6 @@ const handleSearch = () => {
     } else {
         emit('searchRequest')
     }
-}
-
-const handleDownload = () => {
-    emit('download')
 }
 
 const handleShareURL = () => {

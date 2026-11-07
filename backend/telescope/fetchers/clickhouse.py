@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 import tempfile
 from typing import Dict, Optional
@@ -32,6 +33,7 @@ from telescope.fetchers.response import (
 from telescope.fetchers.fetcher import BaseFetcher
 from telescope.fetchers.chart import ChartPlan, agg_expression, quote_column
 from telescope.fetchers.models import Row
+from telescope.fetchers.search import body_column, next_cursor
 
 from telescope.utils import convert_to_base_ch, get_telescope_column
 
@@ -102,6 +104,55 @@ def build_group_by_value(group_by) -> str:
         else:
             raise ValueError
     return f"toString({group_by.root_name})"
+
+
+# Per time column type: the Int64 cursor value of a row, and the column-typed bound for a cursor parameter.
+CURSOR_EXPRESSIONS = {
+    "datetime64": ("toUnixTimestamp64Nano({c})", "fromUnixTimestamp64Nano({p})"),
+    "datetime": ("toInt64(toUnixTimestamp({c}))", "toDateTime({p})"),
+    "int64": ("toInt64({c})", "{p}"),
+}
+
+STRING_TYPE_RE = re.compile(
+    r"((lowcardinality|nullable)\()*(string|fixedstring\(\d+\))\)*"
+)
+UNHASHABLE_TYPES = ("json", "object", "dynamic", "variant")
+
+
+def cursor_ms(time_column_type: str, value: int) -> Optional[int]:
+    """The cursor as an inclusive upper time bound in ms, when the column type allows it."""
+    if time_column_type == "datetime64":
+        return -(-value // 1_000_000)
+    if time_column_type == "datetime":
+        return value * 1000
+    return None
+
+
+def row_tiebreak(source) -> str:
+    """Orders rows sharing a timestamp: the uniq column, else a hash of the whole row."""
+    if source.uniq_column:
+        return f"toString(`{source.uniq_column}`)"
+    parts = []
+    for name in sorted(source._columns.keys()):
+        if any(t in source._columns[name].type.lower() for t in UNHASHABLE_TYPES):
+            parts.append(f"toString(`{name}`)")
+        else:
+            parts.append(f"`{name}`")
+    return f"cityHash64({', '.join(parts)})"
+
+
+def text_clause(source, text: str, params: dict) -> Optional[str]:
+    """Case-insensitive substring match of bare text on the body column, bound as a parameter."""
+    if not text:
+        return None
+    column = body_column(source)
+    if not column:
+        raise ValueError("source has no body column for text search")
+    params["telescope_text"] = text
+    expr = f"`{column}`"
+    if not STRING_TYPE_RE.fullmatch(source._columns[column].type.lower()):
+        expr = f"toString({expr})"
+    return f"positionCaseInsensitiveUTF8({expr}, {{telescope_text:String}}) > 0"
 
 
 class ClickhouseConnect:
@@ -433,6 +484,10 @@ class Fetcher(BaseFetcher):
             filter_clause = "true"
 
         raw_where_clause = request.raw_query or "true"
+        params = {}
+        text = text_clause(request.source, request.text, params)
+        if text:
+            raw_where_clause = f"({raw_where_clause}) AND {text}"
 
         group_by = request.group_by[0] if request.group_by else None
         group_by_value = build_group_by_value(group_by) if group_by else ""
@@ -500,7 +555,9 @@ class Fetcher(BaseFetcher):
             if request.source.data.get("settings"):
                 stat_sql += f" SETTINGS {request.source.data['settings']}"
 
-            for item in _client_query(c.client, stat_sql).result_rows:
+            for item in _client_query(
+                c.client, stat_sql, parameters=params or None
+            ).result_rows:
                 if group_by_value:
                     ts, count, groupper = item
                     if not groupper:
@@ -543,36 +600,66 @@ class Fetcher(BaseFetcher):
         request: DataRequest,
         tz: Optional[zoneinfo.ZoneInfo] = None,
     ):
+        source = request.source
         if request.query:
             parser = parse(request.query)
             filter_clause = to_sql_where(
                 parser.root,
-                columns=flyql_clickhouse_columns(request.source._columns),
+                columns=flyql_clickhouse_columns(source._columns),
                 registry=transformer_registry(),
             )
         else:
             filter_clause = "true"
 
-        order_by_clause = f"ORDER BY `{request.source.time_column}` DESC"
         raw_where_clause = request.raw_query or "true"
+        params = {}
+        where = [filter_clause, raw_where_clause]
+        text = text_clause(source, request.text, params)
+        if text:
+            where.append(text)
+
+        time_column = f"`{source.time_column}`"
+        time_column_type = convert_to_base_ch(
+            source._columns[source.time_column].type.lower()
+        )
+        cursor_value, cursor_bound = CURSOR_EXPRESSIONS.get(
+            time_column_type, CURSOR_EXPRESSIONS["int64"]
+        )
+        cursor_value = cursor_value.format(c=time_column)
+        tiebreak = row_tiebreak(source)
+        offset = 0
+        time_to = request.time_to
+        if request.before:
+            params["telescope_before_time"] = int(request.before["time"])
+            bound = cursor_bound.format(p="{telescope_before_time:Int64}")
+            if source.uniq_column:
+                params["telescope_before_uniq"] = str(request.before["uniq"])
+                where.append(
+                    f"({time_column} < {bound} OR ({time_column} = {bound}"
+                    f" AND {tiebreak} < {{telescope_before_uniq:String}}))"
+                )
+            else:
+                where.append(f"{time_column} <= {bound}")
+                offset = int(request.before.get("skip") or 0)
+            # Narrow the scanned range so partition and primary key pruning apply.
+            before_ms = cursor_ms(time_column_type, params["telescope_before_time"])
+            if before_ms is not None:
+                time_to = max(request.time_from, min(time_to, before_ms))
 
         time_clause = build_time_clause(
-            request.source.time_column,
-            request.source.date_column,
+            source.time_column,
+            source.date_column,
             request.time_from,
-            request.time_to,
+            time_to,
         )
-        from_db_table = (
-            f"{request.source.data['database']}.{request.source.data['table']}"
-        )
+        where_clause = " AND ".join([time_clause] + where)
+        order_by_clause = f"ORDER BY {time_column} DESC, {tiebreak} DESC"
+        from_db_table = f"{source.data['database']}.{source.data['table']}"
 
-        columns_names = sorted(request.source._columns.keys())
+        columns_names = sorted(source._columns.keys())
         columns_to_select = []
         for column in columns_names:
-            if column == request.source.time_column:
-                time_column_type = convert_to_base_ch(
-                    request.source._columns[request.source.time_column].type.lower()
-                )
+            if column == source.time_column:
                 if time_column_type in ["datetime", "datetime64"]:
                     columns_to_select.append(f"toTimeZone(`{column}`, 'UTC')")
                 elif time_column_type in ["timestamp", "uint64", "int64"]:
@@ -581,29 +668,40 @@ class Fetcher(BaseFetcher):
                     )
             else:
                 columns_to_select.append(f"`{column}`")
+        columns_to_select.append(cursor_value)
+        columns_to_select.append(tiebreak if source.uniq_column else "NULL")
         columns_to_select = ", ".join(columns_to_select)
 
         settings_clause = ""
-        if request.source.data.get("settings"):
-            settings_clause = f" SETTINGS {request.source.data['settings']}"
+        if source.data.get("settings"):
+            settings_clause = f" SETTINGS {source.data['settings']}"
 
-        select_query = f"SELECT generateUUIDv4(),{columns_to_select} FROM {from_db_table} WHERE {time_clause} AND {filter_clause} AND {raw_where_clause} {order_by_clause} LIMIT {request.limit}{settings_clause}"
+        limit_clause = f"LIMIT {request.limit}"
+        if offset:
+            limit_clause += f" OFFSET {offset}"
+        select_query = f"SELECT generateUUIDv4(),{columns_to_select} FROM {from_db_table} WHERE {where_clause} {order_by_clause} {limit_clause}{settings_clause}"
 
         rows = []
+        keys = []
 
-        assert request.source.conn
-        with ClickhouseConnect(request.source.conn.data) as c:
-            selected_columns = [request.source._record_pseudo_id_column] + columns_names
-            for item in _client_query(c.client, select_query).result_rows:
+        assert source.conn
+        with ClickhouseConnect(source.conn.data) as c:
+            selected_columns = [source._record_pseudo_id_column] + columns_names
+            result = _client_query(c.client, select_query, parameters=params or None)
+            for item in result.result_rows:
+                keys.append((item[-2], item[-1]))
                 rows.append(
                     Row(
-                        source=request.source,
+                        source=source,
                         selected_columns=selected_columns,
-                        values=item,
+                        values=item[:-2],
                         tz=tz or UTC_ZONE,
                     )
                 )
-        return DataResponse(rows=rows)
+        return DataResponse(
+            rows=rows,
+            cursor=next_cursor(source, keys, request.limit, request.before),
+        )
 
     @classmethod
     def fetch_chart_data(cls, request: ChartDataRequest) -> ChartDataResponse:

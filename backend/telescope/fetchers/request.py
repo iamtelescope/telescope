@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 from telescope.models import Source
 from flyql.columns import ParsedColumn
 
@@ -29,6 +29,8 @@ class DataRequest:
         time_to: int,
         limit: int,
         context_columns: Dict,
+        before: Optional[Dict] = None,
+        text: str = "",
     ):
         self.source = source
         self.query = query
@@ -37,6 +39,9 @@ class DataRequest:
         self.time_to = time_to
         self.limit = limit
         self.context_columns = context_columns
+        # Keyset cursor {time, uniq} or {time, skip}: only rows after it in time DESC order.
+        self.before = before
+        self.text = text
 
 
 class GraphDataRequest:
@@ -49,6 +54,7 @@ class GraphDataRequest:
         time_to: int,
         group_by: List[ParsedColumn],
         context_columns: Dict,
+        text: str = "",
     ):
         self.source = source
         self.query = query
@@ -57,6 +63,7 @@ class GraphDataRequest:
         self.time_to = time_to
         self.group_by = group_by
         self.context_columns = context_columns
+        self.text = text
 
 
 class DataAndGraphDataRequest:
