@@ -113,15 +113,16 @@ const selected = ref(null)
 
 watch([traceId, around], () => load(slug, traceId.value, around.value), { immediate: true })
 
-// The span the page was opened for (e.g. from a log row) stays marked.
-const highlightSpanId = route.query.span || null
+// The span the page was opened for (e.g. from a log row or a span link) stays marked.
+const highlightSpanId = ref(route.query.span || null)
+watch(traceId, () => (highlightSpanId.value = route.query.span || null))
 const selectedSpan = computed(() =>
     trace.value?.spans && selected.value !== null ? trace.value.spans[selected.value] : null,
 )
 
 // Select the span from ?span= once the trace arrives.
 watch(trace, (t) => {
-    const index = t?.spans?.findIndex((s) => s.id === highlightSpanId) ?? -1
+    const index = t?.spans?.findIndex((s) => s.id === highlightSpanId.value) ?? -1
     selected.value = index >= 0 ? index : null
 })
 

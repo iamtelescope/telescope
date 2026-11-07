@@ -189,6 +189,7 @@
                     <span
                         class="absolute top-1.5 text-xs font-mono whitespace-nowrap text-neutral-600 dark:text-neutral-400"
                         :style="labelStyle(span)"
+                        data-testid="span-duration"
                         >{{ formatDuration(span.duration_ns) }}</span
                     >
                 </div>
@@ -261,10 +262,11 @@ const barStyle = (span) => ({
     backgroundColor: span.synthetic ? undefined : barColor(span),
 })
 const segmentStyle = ([from, to]) => ({ left: `${pct(from)}%`, width: `max(${width(to - from)}%, 1px)` })
-// After the bar, else before it, else inside it when the bar fills the view.
+// Hidden when the bar ends before the view; else after the bar, before it, or inside it.
 const labelStyle = (span) => {
     const start = pct(span.offset_ns)
     const end = pct(span.offset_ns + span.duration_ns)
+    if (end < 0) return { display: 'none' }
     if (end <= 85) return { left: `calc(${Math.max(end, 0)}% + 4px)` }
     if (start >= 15) return { right: `calc(${100 - start}% + 4px)` }
     return { left: `calc(${Math.max(start, 0)}% + 4px)`, color: 'white' }
