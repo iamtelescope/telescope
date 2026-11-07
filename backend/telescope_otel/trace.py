@@ -221,11 +221,14 @@ def critical_path(ordered):
         if node["parent"] is not None:
             kids_of.setdefault(node["parent"], []).append(node)
     end = lambda n: n["offset_ns"] + n["duration_ns"]
-    stack = [(n, end(n)) for n in ordered if n["parent"] is None]
+    # One walk from the real root that ends last, so orphan groups get no second path.
+    roots = [n for n in ordered if n["parent"] is None]
+    roots = [n for n in roots if not n.get("synthetic")] or roots
+    stack = [(max(roots, key=end), None)] if roots else []
     while stack:
         node, limit = stack.pop()
         start = node["offset_ns"]
-        cursor = min(limit, end(node))
+        cursor = end(node) if limit is None else min(limit, end(node))
         for kid in sorted(kids_of.get(node["index"], []), key=end, reverse=True):
             if cursor <= start:
                 break

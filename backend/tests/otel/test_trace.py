@@ -113,6 +113,21 @@ def test_critical_path_follows_the_last_finishing_child():
     }
 
 
+def test_critical_path_skips_orphan_groups():
+    # o hangs off missing p and runs inside r..c, which already covers 0..110.
+    ordered = build_tree(
+        [span("r", "", 0, 100), span("c", "r", 50, 60), span("o", "p", 10, 10)]
+    )
+    crit = {s["id"]: s["critical"] for s in ordered}
+    assert crit == {"r": [[0, 50]], "c": [[50, 100]], "p": [], "o": []}
+
+
+def test_critical_path_without_a_real_root_uses_the_last_ending_group():
+    ordered = build_tree([span("a", "x", 0, 10), span("b", "y", 20, 10)])
+    crit = {s["id"]: s["critical"] for s in ordered if not s["synthetic"]}
+    assert crit == {"a": [], "b": [[20, 30]]}
+
+
 def test_error_status_rules():
     assert is_error_status("Error") and is_error_status("ERROR")
     assert is_error_status("STATUS_CODE_ERROR")
