@@ -703,7 +703,11 @@ const init = async () => {
             raw_query: q.raw_query || '',
             context_columns: parseContext(q.context_columns),
             group_by: q.group_by || null,
+            agg: q.agg || 'count',
+            column: q.column || null,
+            level: Number(q.level) || 0.95,
         })
+        if (q.title) form.name = q.title
     }
 }
 init()

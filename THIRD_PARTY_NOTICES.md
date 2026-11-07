@@ -101,6 +101,8 @@ SOFTWARE.
   405 on GET/DELETE, the tool set, the read/write behaviour hints and the 50k-character response trim) are adapted from HyperDX
   `packages/api/src/mcp/app.ts`, `mcp/tools/annotations.ts`, `mcp/tools/*` and `utils/trimToolResponse.ts`;
   `backend/telescope_mcp/MCP.md` follows `MCP.md` (MIT, above).
+- `ui/src/features/charts/ChartExplorer.vue` and `config.js` (a standalone chart page whose whole chart config lives in one
+  JSON `config` URL param, saved to a dashboard or an alert) are adapted from HyperDX `packages/app/src/DBChartPage.tsx` (MIT, above).
 
 ## Drain3
 
