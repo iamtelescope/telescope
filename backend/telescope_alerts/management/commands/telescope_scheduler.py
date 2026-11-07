@@ -6,9 +6,10 @@ import uuid
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
+from django.db import DatabaseError
 
 from telescope.utils import parse_time
-from telescope_alerts.scheduler import release_lease, tick
+from telescope_alerts.scheduler import logger, release_lease, tick
 
 
 def _stop(signum, frame):
@@ -40,7 +41,10 @@ class Command(BaseCommand):
             if error:
                 raise CommandError(f"--now: {error}")
         if options["once"] or at_ms is not None:
-            written = tick(holder, lease_seconds, at_ms)
+            try:
+                written = tick(holder, lease_seconds, at_ms)
+            except DatabaseError as err:
+                raise CommandError(f"database error (is it migrated?): {err}")
             self.stdout.write(
                 "lease held by another scheduler"
                 if written < 0
@@ -54,7 +58,10 @@ class Command(BaseCommand):
             while True:
                 started = time.monotonic()
                 if config.get("enabled", True):
-                    tick(holder, lease_seconds)
+                    try:
+                        tick(holder, lease_seconds)
+                    except DatabaseError:
+                        logger.exception("scheduler tick failed")
                 time.sleep(max(1.0, tick_seconds - (time.monotonic() - started)))
         except KeyboardInterrupt:
             pass

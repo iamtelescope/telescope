@@ -27,3 +27,31 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 
+
+{{/*
+The alert scheduler container: its own Deployment, or a sidecar of the web pod on SQLite.
+*/}}
+{{- define "telescope.schedulerContainer" -}}
+- name: scheduler
+  image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+  imagePullPolicy: {{ .Values.image.pullPolicy }}
+  args: ["scheduler"]
+  env:
+    - name: TELESCOPE_CONFIG_FILE
+      value: "/etc/telescope/config.yaml"
+  envFrom:
+    - secretRef:
+        name: {{ .Values.secretName }}
+  volumeMounts:
+    - name: config
+      mountPath: /etc/telescope
+      readOnly: true
+    {{- if eq .Values.database.type "sqlite" }}
+    - name: sqlite-data
+      mountPath: /app/data
+    {{- end }}
+  resources:
+    {{- toYaml .Values.scheduler.resources | nindent 4 }}
+  securityContext:
+    allowPrivilegeEscalation: false
+{{- end }}

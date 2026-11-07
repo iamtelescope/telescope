@@ -14,6 +14,7 @@ from telescope_alerts.channels.net import DeliveryError
 MASK = "****"
 MAX_HEADERS = 20
 MAX_RECIPIENTS = 20
+RETYPE_SECRET = "enter the secret again: it is not kept when the URL changes"
 
 __all__ = ["DeliveryError", "send", "clean_config", "mask_config", "alerts_config"]
 
@@ -59,10 +60,12 @@ def mask_config(kind: str, config: dict) -> dict:
 
 
 def _unmask(kind: str, config: dict, old: dict) -> dict:
-    """Masked values sent back unchanged keep the stored secret."""
+    """Masked values sent back unchanged keep the stored secret, only while the URL is unchanged."""
     config = dict(config)
     if old.get("url") and config.get("url") == mask_url(old["url"]):
         config["url"] = old["url"]
+    if (config.get("url") or "") != (old.get("url") or ""):
+        return config
     if kind == "webhook":
         old_headers = old.get("headers") or {}
         config["headers"] = {
@@ -107,6 +110,8 @@ def clean_config(kind: str, config, old: dict = None):
                 headers = {}
             elif len(headers) > MAX_HEADERS:
                 errors["headers"] = [f"at most {MAX_HEADERS} headers"]
+            elif MASK in headers.values():
+                errors["headers"] = [RETYPE_SECRET]
             body = config.get("body") or ""
             if not isinstance(body, str):
                 errors["body"] = ["must be a string"]
@@ -124,6 +129,8 @@ def clean_config(kind: str, config, old: dict = None):
         key = config.get("routing_key") or ""
         if not isinstance(key, str) or not key.strip():
             errors["routing_key"] = ["This field is required."]
+        elif key == MASK:
+            errors["routing_key"] = [RETYPE_SECRET]
         elif len(key) > 64:
             errors["routing_key"] = ["at most 64 characters"]
         severity = config.get("severity") or "error"

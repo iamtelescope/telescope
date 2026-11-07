@@ -158,7 +158,11 @@ def _overall_state(states) -> str:
     return STATE_INSUFFICIENT_DATA
 
 
-def notify(alert, message):
+class Superseded(Exception):
+    """Another evaluator (or an interval change) moved last_evaluated_window first."""
+
+
+def notify(alert, message, renew=None):
     """Sends to every channel; returns (errors, number delivered)."""
     errors, sent = [], 0
     for channel in alert.channels.all():
@@ -168,10 +172,14 @@ def notify(alert, message):
         except Exception as err:
             logger.warning("alert %s: channel %s failed: %s", alert.pk, channel.pk, err)
             errors.append(f"{channel.name}: {err}")
+        if renew:
+            renew()
     return errors, sent
 
 
-def apply_window(alert, aq, window_start: int, values, public_url="") -> bool:
+def apply_window(
+    alert, aq, window_start: int, values, public_url="", renew=None
+) -> bool:
     """Writes the window's history and sends transitions; False if another evaluator wrote it."""
     window_end = window_start + alert.interval_ms
     states = _window_states(alert, aq, window_start, dict(values))
@@ -202,21 +210,22 @@ def apply_window(alert, aq, window_start: int, values, public_url="") -> bool:
             ).delete()
             for row in rows:
                 row.save(force_insert=True)
-            alert.firing_groups = sorted(firing)
-            alert.state = _overall_state(states)
-            alert.last_error = ""
-            alert.last_evaluated_window = window_start
-            alert.last_evaluated_at = timezone.now()
-            alert.save(
-                update_fields=[
-                    "firing_groups",
-                    "state",
-                    "last_error",
-                    "last_evaluated_window",
-                    "last_evaluated_at",
-                ]
-            )
-    except IntegrityError:
+            fields = {
+                "firing_groups": sorted(firing),
+                "state": _overall_state(states),
+                "last_error": "",
+                "last_evaluated_window": window_start,
+                "last_evaluated_at": timezone.now(),
+            }
+            # Compare-and-set, so two evaluators with disjoint groups cannot both write.
+            updated = Alert.objects.filter(
+                pk=alert.pk, last_evaluated_window=alert.last_evaluated_window
+            ).update(**fields)
+            if not updated:
+                raise Superseded()
+            for name, value in fields.items():
+                setattr(alert, name, value)
+    except (IntegrityError, Superseded):
         logger.info("alert %s window %s already evaluated", alert.pk, window_start)
         return False
 
@@ -233,7 +242,7 @@ def apply_window(alert, aq, window_start: int, values, public_url="") -> bool:
             aq.source_query,
             public_url,
         )
-        row_errors, sent = notify(alert, message)
+        row_errors, sent = notify(alert, message, renew)
         errors += row_errors
         update = {"error": "; ".join(row_errors)[:2000]}
         if sent:
@@ -245,8 +254,8 @@ def apply_window(alert, aq, window_start: int, values, public_url="") -> bool:
     return True
 
 
-def evaluate_alert(alert, at_ms: Optional[int] = None) -> int:
-    """Evaluates the alert's due windows as its owner; returns how many were written."""
+def evaluate_alert(alert, at_ms: Optional[int] = None, renew=None) -> int:
+    """Evaluates the due windows as the owner; `renew` keeps the lease and False stops."""
     at_ms = now_ms() if at_ms is None else at_ms
     windows = due_windows(alert, at_ms)
     if not windows:
@@ -262,13 +271,15 @@ def evaluate_alert(alert, at_ms: Optional[int] = None) -> int:
         alert.source_slug = aq.source.slug
     written = 0
     for window_start in windows:
+        if renew and not renew():
+            return written
         try:
             values = query_window(aq, window_start, window_start + alert.interval_ms)
         except Exception as err:
             logger.warning("alert %s window %s: %s", alert.pk, window_start, err)
             _set_error(alert, window_start, f"query failed: {err}")
             return written
-        if not apply_window(alert, aq, window_start, values, public_url):
+        if not apply_window(alert, aq, window_start, values, public_url, renew):
             alert.refresh_from_db()
             return written
         written += 1

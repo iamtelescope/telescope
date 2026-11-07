@@ -84,6 +84,9 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 2
             timeoutSeconds: 3
+        {{- if and .Values.scheduler.enabled (eq .Values.database.type "sqlite") }}
+        {{- include "telescope.schedulerContainer" . | nindent 8 }}
+        {{- end }}
       volumes:
         - name: config
           configMap:

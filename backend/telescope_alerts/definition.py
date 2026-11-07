@@ -17,6 +17,7 @@ rbac_manager = RBACManager()
 SOURCE_NOT_FOUND = "source not found"
 DASHBOARD_NOT_FOUND = "dashboard not found"
 TILE_NOT_FOUND = "tile not found"
+OWNER_INACTIVE = "the owner's account is deactivated"
 GROUP_LIMIT = 100
 
 
@@ -105,6 +106,20 @@ def _combine(queries: List[str]) -> str:
     return " and ".join(f"({q})" for q in queries)
 
 
+def variable_params(variables) -> Dict:
+    """Variables at their saved defaults, bound like ui/src/utils/dashboards.js variableParams()."""
+    params = {}
+    for v in variables or []:
+        default = v.get("default")
+        items = default if isinstance(default, list) else [default]
+        values = [x for x in items if x is not None and x != ""]
+        if values:
+            params[v["name"]] = values if v.get("multi") else values[0]
+        elif not v.get("required"):
+            params[v["name"]] = [] if v.get("multi") else ""
+    return params
+
+
 def definition_fields(user: User, data: Dict) -> Dict:
     """Search alerts use their own fields; tile alerts read them from the live tile."""
     if data["kind"] != KIND_TILE:
@@ -131,11 +146,14 @@ def definition_fields(user: User, data: Dict) -> Dict:
         "context_columns": chart.get("context_columns") or {},
         "group_by": chart.get("group_by") or "",
         "series": series[index],
+        "params": variable_params((dashboard.data or {}).get("variables")),
     }
 
 
 def resolve(user: User, data: Dict) -> AlertQuery:
     """Re-checks Source.USE (and RAW_QUERY through the chart serializer) for `user`."""
+    if not user.is_active:
+        raise AlertDefinitionError(OWNER_INACTIVE)
     fields = definition_fields(user, data)
     try:
         source = rbac_manager.get_source(
@@ -158,6 +176,7 @@ def resolve(user: User, data: Dict) -> AlertQuery:
             "series": [fields["series"]],
             "group_by": fields["group_by"],
             "limit": GROUP_LIMIT if fields["group_by"] else 1,
+            "params": fields.get("params") or {},
         },
         context={"source": source, "user": user},
     )

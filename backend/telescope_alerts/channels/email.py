@@ -27,7 +27,8 @@ def text(message: dict) -> str:
 
 def send(config: dict, message: dict, smtp: dict):
     send_mail(
-        subject=message["title"][:250],
+        # Group keys come from log data; a line break in a header is refused by Django.
+        subject=" ".join(message["title"].split())[:250],
         message=text(message),
         from_email=smtp.get("from_email") or None,
         recipient_list=config["recipients"],

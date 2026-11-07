@@ -3,7 +3,7 @@
 import logging
 from datetime import timedelta
 
-from django.db import DatabaseError, IntegrityError, close_old_connections, transaction
+from django.db import IntegrityError, close_old_connections, transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -16,7 +16,8 @@ LEASE_NAME = "alerts"
 
 
 def acquire_lease(holder: str, seconds: int) -> bool:
-    """Takes or renews the lease; plain UPDATE/INSERT so it works on SQLite, Postgres and MySQL."""
+    """Takes or renews the lease; plain UPDATE/INSERT so it works on SQLite, Postgres and MySQL.
+    Only a lost insert race means "held elsewhere"; other database errors propagate."""
     now = timezone.now()
     expires = now + timedelta(seconds=seconds)
     try:
@@ -33,7 +34,7 @@ def acquire_lease(holder: str, seconds: int) -> bool:
                 name=LEASE_NAME, holder=holder, expires_at=expires
             )
         return True
-    except (IntegrityError, DatabaseError) as err:
+    except IntegrityError as err:
         logger.debug("lease not acquired by %s: %s", holder, err)
         return False
 
@@ -53,15 +54,23 @@ def tick(holder: str, lease_seconds: int, at_ms=None) -> int:
         .order_by("pk")
         .values_list("pk", flat=True)
     )
-    for pk in ids:
-        if not acquire_lease(holder, lease_seconds):
+    lost = []
+
+    def renew() -> bool:
+        # Renewed before every window and after every delivery, since one alert can outlast the lease.
+        if not lost and not acquire_lease(holder, lease_seconds):
             logger.warning("scheduler %s lost the lease", holder)
+            lost.append(True)
+        return not lost
+
+    for pk in ids:
+        if not renew():
             return written
         alert = Alert.objects.select_related("owner", "dashboard").filter(pk=pk).first()
         if alert is None:
             continue
         try:
-            written += evaluate_alert(alert, at_ms)
+            written += evaluate_alert(alert, at_ms, renew)
         except Exception:
             logger.exception("alert %s evaluation crashed", pk)
     return written

@@ -259,3 +259,176 @@ def test_failed_channel_is_recorded(
     alert.refresh_from_db()
     assert alert.state == "ALERT" and "notification failed" in alert.last_error
     assert json.loads(good.requests[0]["body"])["status"] == "firing"
+
+
+@pytest.mark.django_db
+def test_patch_during_tick_keeps_scheduler_state(
+    root_user, clickhouse_source, fake_values, receiver, alerts_config, monkeypatch
+):
+    from telescope_alerts.services import AlertService
+
+    alert = make_alert(root_user, clickhouse_source)
+    alert.channels.add(webhook(receiver))
+    fake_values[T0] = {"": 60.0}
+    original = AlertService._validate
+
+    def tick_between_read_and_save(self, user, data):
+        assert evaluate_alert(Alert.objects.get(pk=alert.pk), T0 + 5 * MIN) == 1
+        return original(self, user, data)
+
+    monkeypatch.setattr(AlertService, "_validate", tick_between_read_and_save)
+    data = {
+        "name": "renamed",
+        "kind": "search",
+        "source": clickhouse_source.slug,
+        "series": {"agg": "count"},
+        "interval": "5m",
+        "threshold_type": "above",
+        "threshold": 50,
+        "channels": [alert.channels.get().pk],
+    }
+    AlertService().update(root_user, alert.pk, data)
+    alert.refresh_from_db()
+    assert alert.name == "renamed"
+    assert alert.last_evaluated_window == T0
+    assert (alert.state, alert.firing_groups) == ("ALERT", [""])
+    fake_values[T0 + 5 * MIN] = {"": 1.0}
+    assert evaluate_alert(alert, T0 + 10 * MIN) == 1
+    assert [b["status"] for b in receiver.json()] == ["firing", "resolved"]
+
+
+@pytest.mark.django_db
+def test_superseded_window_with_disjoint_groups_writes_nothing(
+    root_user, clickhouse_source, fake_values, receiver, alerts_config
+):
+    alert = make_alert(root_user, clickhouse_source, group_by="hostname")
+    alert.channels.add(webhook(receiver))
+    stale = Alert.objects.get(pk=alert.pk)
+    # Another evaluator already wrote window T0 with a different group set.
+    AlertHistory.objects.create(
+        alert=alert, group_key="b", window_start=T0, window_end=T0 + 5 * MIN, state="OK"
+    )
+    Alert.objects.filter(pk=alert.pk).update(last_evaluated_window=T0)
+    fake_values[T0] = {"a": 99.0}
+    assert evaluate_alert(stale, T0 + 5 * MIN) == 0
+    assert history(alert) == [(T0, "b", "OK", None)]
+    assert receiver.requests == []
+    alert.refresh_from_db()
+    assert alert.firing_groups == []
+
+
+@pytest.mark.django_db
+def test_deactivated_owner_is_error(
+    root_user, clickhouse_source, fake_values, receiver, alerts_config
+):
+    alert = make_alert(root_user, clickhouse_source)
+    alert.channels.add(webhook(receiver))
+    root_user.is_active = False
+    root_user.save()
+    fake_values[T0] = {"": 99.0}
+    alert = Alert.objects.select_related("owner").get(pk=alert.pk)
+    assert evaluate_alert(alert, T0 + 5 * MIN) == 0
+    assert receiver.requests == []
+    alert.refresh_from_db()
+    assert alert.state == "ERROR" and "deactivated" in alert.last_error
+
+
+@pytest.mark.django_db
+def test_lease_renewed_during_delivery_and_lost_lease_stops(
+    root_user, clickhouse_source, fake_values, monkeypatch
+):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from telescope_alerts import channels
+    from telescope_alerts.models import SchedulerLease
+    from telescope_alerts.scheduler import acquire_lease, tick
+
+    alert = make_alert(root_user, clickhouse_source)
+    alert.channels.add(
+        AlertChannel.objects.create(kind="webhook", name="h", config={"url": "x"})
+    )
+    fake_values[T0] = {"": 99.0}
+
+    def slow_send(channel, message):
+        # The delivery outlasts the lease: it has expired when the send returns.
+        SchedulerLease.objects.update(expires_at=timezone.now() - timedelta(seconds=1))
+
+    monkeypatch.setattr(channels, "send", slow_send)
+    assert tick("a", 60, T0 + 5 * MIN) == 1
+    assert not acquire_lease("b", 60)  # renewed after the delivery
+
+    fake_values[T0 + 5 * MIN] = {"": 1.0}
+    fake_values[T0 + 10 * MIN] = {"": 99.0}
+
+    def stolen(channel, message):
+        SchedulerLease.objects.update(
+            holder="b", expires_at=timezone.now() + timedelta(seconds=60)
+        )
+
+    monkeypatch.setattr(channels, "send", stolen)
+    # Window T0+5m resolves and delivers; the lease is gone, so T0+10m is left to "b".
+    assert tick("a", 60, T0 + 15 * MIN) == 1
+    alert.refresh_from_db()
+    assert alert.last_evaluated_window == T0 + 5 * MIN
+
+
+@pytest.mark.django_db
+def test_lease_database_error_is_not_hidden(monkeypatch):
+    from django.db import OperationalError
+
+    from telescope_alerts import scheduler
+
+    def broken(**kwargs):
+        raise OperationalError("no such table: telescope_alerts_schedulerlease")
+
+    monkeypatch.setattr(scheduler.SchedulerLease.objects, "filter", broken)
+    with pytest.raises(OperationalError):
+        scheduler.acquire_lease("a", 60)
+
+
+@pytest.mark.django_db
+def test_tile_alert_binds_dashboard_variable_defaults(root_user, clickhouse_source):
+    from telescope.models import Dashboard
+    from telescope_alerts.definition import AlertDefinitionError, resolve
+
+    def dashboard(variables, query="hostname=$host"):
+        tile = {
+            "id": "t1",
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 8,
+            "title": "t",
+            "chart": {
+                "source": clickhouse_source.slug,
+                "display": "number",
+                "series": [{"agg": "count"}],
+                "query": query,
+            },
+        }
+        data = {
+            "version": 2,
+            "time": {"from": "now-1h", "to": "now", "time_zone": "UTC"},
+            "query": "level in [$lvl]",
+            "refresh": "off",
+            "variables": variables,
+            "tiles": [tile],
+        }
+        return Dashboard.objects.create(
+            slug=f"d{Dashboard.objects.count()}", name="d", owner=root_user, data=data
+        )
+
+    def query(dash):
+        data = {"kind": "tile", "dashboard": dash, "tile_id": "t1", "series_index": 0}
+        return resolve(root_user, data).query
+
+    lvl = {"name": "lvl", "type": "static", "options": ["ERROR", "WARN"], "multi": True}
+    host = {"name": "host", "type": "text"}
+    assert query(dashboard([host, {**lvl, "default": ["ERROR", "WARN"]}])) == (
+        "level in ['ERROR', 'WARN']"
+    )
+    assert query(dashboard([{**host, "default": "web-1"}, lvl])) == "hostname='web-1'"
+    with pytest.raises(AlertDefinitionError, match=r"no value for \$host"):
+        query(dashboard([{**host, "required": True}, lvl]))

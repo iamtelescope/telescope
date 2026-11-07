@@ -135,9 +135,13 @@ class AlertService:
         with transaction.atomic():
             interval = alert.interval
             self._apply(alert, attrs)
+            # Only the user's fields: the scheduler may have moved its own columns since _get.
+            fields = DEFINITION_FIELDS + SETTINGS_FIELDS
+            fields += ["source_slug", "series", "updated_at"]
             if alert.interval != interval:
                 alert.last_evaluated_window = None
-            alert.save()
+                fields.append("last_evaluated_window")
+            alert.save(update_fields=fields)
             alert.channels.set(attrs["channels"])
         return self.get(user, alert.pk)
 

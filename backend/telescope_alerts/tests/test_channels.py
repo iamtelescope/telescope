@@ -1,4 +1,5 @@
 import json
+import socket
 from datetime import timedelta
 
 import pytest
@@ -191,3 +192,61 @@ def test_masked_secret_not_resent():
     config, errors = clean_config("pagerduty", masked, stored)
     assert errors == {} and config["routing_key"] == "secret-key"
     assert AlertChannel.objects.count() == 0
+
+
+def test_connection_pinned_to_checked_address(receiver, monkeypatch):
+    """A second DNS answer (rebinding) is never used: delivery dials the checked IP."""
+    port = receiver.server.server_address[1]
+    lookups = []
+    real = socket.getaddrinfo
+
+    def fake_getaddrinfo(host, *args, **kwargs):
+        lookups.append(host)
+        if host != "rebind.example":
+            return real(host, *args, **kwargs)
+        ip = "127.0.0.1" if len(lookups) == 1 else "10.255.255.1"
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (ip, port))]
+
+    monkeypatch.setattr(socket, "getaddrinfo", fake_getaddrinfo)
+    monkeypatch.setattr(net, "_is_public", lambda addr: str(addr) == "127.0.0.1")
+    net.post(f"http://rebind.example:{port}/hook?a=1", {"x": 1}, {}, False)
+    assert lookups == ["rebind.example", "127.0.0.1"]
+    assert receiver.requests[0]["path"] == "/hook?a=1"
+    assert receiver.requests[0]["headers"]["Host"] == f"rebind.example:{port}"
+
+
+def test_env_proxy_not_used(receiver, monkeypatch):
+    monkeypatch.setenv("HTTP_PROXY", "http://10.255.255.1:3128")
+    monkeypatch.setenv("http_proxy", "http://10.255.255.1:3128")
+    net.post(receiver.url, {"x": 1}, {}, allow_private=True)
+    assert len(receiver.requests) == 1
+
+
+@pytest.mark.parametrize(
+    "kind,old",
+    [
+        (
+            "webhook",
+            {"url": "https://hooks.example.com/a", "headers": {"A": "s3cret"}},
+        ),
+        ("pagerduty", {"routing_key": "R" * 32, "severity": "error"}),
+    ],
+)
+def test_masked_secret_not_kept_for_new_url(kind, old, alerts_config):
+    from telescope_alerts.channels import RETYPE_SECRET, clean_config, mask_config
+
+    back = mask_config(kind, old)
+    config, errors = clean_config(kind, back, old)
+    assert errors == {} and "****" not in json.dumps(config)
+    back["url"] = "https://8.8.8.8/attacker"
+    config, errors = clean_config(kind, back, old)
+    field = "headers" if kind == "webhook" else "routing_key"
+    assert errors[field] == [RETYPE_SECRET]
+    assert "s3cret" not in json.dumps(config) and "R" * 32 not in json.dumps(config)
+
+
+def test_email_subject_with_line_break_in_group(settings):
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    email.send({"recipients": ["oncall@example.com"]}, message(group="a\r\nb\nc"), {})
+    subject = mail.outbox[0].subject
+    assert "\n" not in subject and "\r" not in subject and "a b c" in subject

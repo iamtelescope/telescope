@@ -70,7 +70,7 @@ config:
     show_docs_url: true
     show_github_url: false
     base_url: ""
-  # Alerts; the scheduler Deployment below evaluates them.
+  # Alerts; the scheduler below evaluates them.
   alerts:
     enabled: true
     tick_seconds: 15
@@ -98,7 +98,7 @@ config:
 
 # Alert scheduler: one pod running `manage.py telescope_scheduler`.
 # A DB lease lets only one replica evaluate, so more replicas only add failover.
-# It must share the web pods' database: PostgreSQL, or SQLite with persistence enabled.
+# On SQLite it runs as a sidecar in each web pod instead, sharing that pod's database file.
 scheduler:
   enabled: true
   replicas: 1

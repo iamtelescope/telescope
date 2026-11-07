@@ -1,4 +1,5 @@
-{{- if .Values.scheduler.enabled }}
+{{- /* On SQLite the scheduler runs as a sidecar of the web pod, which holds the migrated file. */}}
+{{- if and .Values.scheduler.enabled (ne .Values.database.type "sqlite") }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -28,40 +29,10 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
-        - name: scheduler
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          args: ["scheduler"]
-          env:
-            - name: TELESCOPE_CONFIG_FILE
-              value: "/etc/telescope/config.yaml"
-          envFrom:
-            - secretRef:
-                name: {{ .Values.secretName }}
-          volumeMounts:
-            - name: config
-              mountPath: /etc/telescope
-              readOnly: true
-            {{- if eq .Values.database.type "sqlite" }}
-            - name: sqlite-data
-              mountPath: /app/data
-            {{- end }}
-          resources:
-            {{- toYaml .Values.scheduler.resources | nindent 12 }}
-          securityContext:
-            allowPrivilegeEscalation: false
+        {{- include "telescope.schedulerContainer" . | nindent 8 }}
       terminationGracePeriodSeconds: 30
       volumes:
         - name: config
           configMap:
             name: {{ include "telescope.fullname" . }}-config
-        {{- if eq .Values.database.type "sqlite" }}
-        - name: sqlite-data
-          {{- if .Values.database.sqlite.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ include "telescope.fullname" . }}-sqlite
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
-        {{- end }}
 {{- end }}
