@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib.parse import quote
 
 import pytest
 from django.utils import timezone
@@ -333,3 +334,17 @@ def test_timestamps_are_iso_8601(root_user, clickhouse_source):
     ]:
         assert "T" in value and datetime.fromisoformat(value).tzinfo is not None
     assert datetime.fromisoformat(got["last_evaluated_at"]) == now
+
+
+@pytest.mark.django_db
+def test_list_search_matches_the_dashboard_name(
+    root_user, clickhouse_source, dashboard
+):
+    client = client_for(root_user)
+    body = {"name": "Tile", "kind": "tile", "dashboard": dashboard.slug}
+    body.update(tile_id="t1", interval="1m", threshold_type="above", threshold=10)
+    assert call(client, "post", "ui/v1/alerts", body)["result"]
+    call(client, "post", "ui/v1/alerts", search_alert(name="Other"))
+    q = quote(dashboard.name.upper())
+    page = call(client, "get", f"ui/v1/alerts?page=1&q={q}")["data"]
+    assert [a["name"] for a in page["items"]] == ["Tile"]

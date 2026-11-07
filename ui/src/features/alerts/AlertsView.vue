@@ -178,6 +178,7 @@
                                     <SilenceButton v-if="data.can_edit" :alert="data" compact @changed="replace" />
                                     <ToggleSwitch
                                         v-if="data.can_edit"
+                                        :key="`${data.id}:${toggleResets}`"
                                         :modelValue="data.state !== 'DISABLED'"
                                         v-tooltip.top="data.state === 'DISABLED' ? 'Enable' : 'Disable'"
                                         :data-testid="`alert-enabled-${data.id}`"
@@ -195,7 +196,7 @@
 
 <script setup>
 // Server-side pages with a tags filter, as HyperDX AlertsPage.tsx (MIT); silence and enable per row.
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { DateTime } from 'luxon'
 import {
@@ -236,6 +237,7 @@ const error = ref('')
 const search = ref('')
 const tags = ref([])
 const page = ref(1)
+const toggleResets = ref(0)
 const filtering = computed(() => !!search.value.trim() || tags.value.length > 0)
 
 let seq = 0
@@ -265,6 +267,7 @@ watch(search, () => {
     clearTimeout(searchTimer)
     searchTimer = setTimeout(() => (page.value === 1 ? load() : (page.value = 1)), 300)
 })
+onBeforeUnmount(() => clearTimeout(searchTimer))
 watch(tags, () => (page.value === 1 ? load() : (page.value = 1)))
 watch(page, load)
 
@@ -274,7 +277,9 @@ const replace = (updated) => {
 const setEnabled = async (alert, enabled) => {
     const response = await srv.setEnabled(alert.id, enabled)
     response.sendToast(toast)
+    // A failed request re-mounts the switch, which flipped itself before emitting.
     if (response.result) replace(response.data)
+    else toggleResets.value++
 }
 const relative = (iso) => DateTime.fromISO(iso).toRelative()
 </script>

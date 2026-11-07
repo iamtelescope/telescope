@@ -419,10 +419,13 @@ const chartData = computed(() => {
     }
 })
 
+let historySeq = 0
 const loadHistory = async () => {
     if (!alert.value) return
+    const mine = ++historySeq
     historyLoading.value = true
     const response = await srv.history(alertId.value, range.value)
+    if (mine !== historySeq) return
     historyLoading.value = false
     rows.value = response.result ? response.data : []
 }

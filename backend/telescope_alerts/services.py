@@ -88,6 +88,12 @@ def can_manage_channels(user: User) -> bool:
     )
 
 
+def search_fields(alert: Alert):
+    """What the alerts list search box matches: name, source, dashboard name and tags."""
+    dashboard = alert.dashboard.name if alert.dashboard else ""
+    return [alert.name, alert.source_slug, dashboard, *(alert.tags or [])]
+
+
 class AlertService:
     def _queryset(self):
         return Alert.objects.select_related(
@@ -130,7 +136,7 @@ class AlertService:
         return [a for a in queryset if self._visible(user, a, usable)]
 
     def list(self, user: User, params=None):
-        """A plain list without `page`; with it, one page filtered by tags (all of), state and name.
+        """A plain list without `page`; with it, one page filtered by tags (all of), state and search text.
         Both narrow to one dashboard's tile alerts with `dashboard`."""
         params = params or {}
         queryset = self._queryset().order_by("name", "pk")
@@ -144,13 +150,13 @@ class AlertService:
         all_tags = sorted({t for a in alerts for t in a.tags or []})
         tags = [t for t in (params.get("tags") or "").split(",") if t]
         states = [t for t in (params.get("state") or "").split(",") if t]
-        name = (params.get("q") or "").strip().lower()
+        text = (params.get("q") or "").strip().lower()
         alerts = [
             a
             for a in alerts
             if all(t in (a.tags or []) for t in tags)
             and (not states or a.state in states)
-            and name in a.name.lower()
+            and (not text or any(text in v.lower() for v in search_fields(a)))
         ]
         page = max(1, as_int(params.get("page"), 1))
         size = min(MAX_PAGE_SIZE, max(1, as_int(params.get("page_size"), 25)))

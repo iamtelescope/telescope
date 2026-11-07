@@ -209,6 +209,11 @@ def test_paginated_list_with_tags(root_user, clickhouse_source):
     page = call(client, "get", "ui/v1/alerts?page=1&q=A6&state=OK")["data"]
     assert [a["name"] for a in page["items"]] == ["a6"]
     assert call(client, "get", "ui/v1/alerts?page=9")["data"]["items"] == []
+    # The search box also matches the source slug and tags, as the old client filter did.
+    slug = clickhouse_source.slug.upper()
+    assert call(client, "get", f"ui/v1/alerts?page=1&q={slug}")["data"]["total"] == 7
+    page = call(client, "get", "ui/v1/alerts?page=1&q=DB")["data"]
+    assert [a["name"] for a in page["items"]] == ["a1", "a3", "a5"]
 
 
 @pytest.mark.django_db
