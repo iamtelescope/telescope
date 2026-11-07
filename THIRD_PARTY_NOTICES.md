@@ -77,6 +77,10 @@ SOFTWARE.
   (`translateMetricChartConfig`), `packages/common-utils/src/core/histogram.ts` and `packages/app/src/hooks/useMetricCatalog.ts`;
   `ui/src/features/metrics/MetricsExplorer.vue` and `ui/src/components/dashboards/metrics/*` follow
   `packages/app/src/components/MetricExplorer/*`, `MetricNameSelect.tsx` and `MetricAttributeHelperPanel.tsx` (MIT, above).
+- `backend/telescope_otel/service_map.py` (the client/server span join, `cityHash64(TraceId) % N` sampling, the GROUPING SETS node
+  and edge rows) is adapted from HyperDX `packages/app/src/hooks/useServiceMap.tsx`, and `ui/src/features/service-map/utils.js`
+  and `ServiceMapGraph.vue` (colour ramps, error-rate buckets, node sizes, rate formatting) from
+  `packages/app/src/components/ServiceMap/utils.ts`, `ServiceMapNode.tsx` and `ServiceMapEdge.tsx` (MIT, above).
 
 ## Drain3
 

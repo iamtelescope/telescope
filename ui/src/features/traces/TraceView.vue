@@ -70,6 +70,12 @@
                         />
                     </div>
                 </div>
+                <TraceServiceMap
+                    :slug="slug"
+                    :traceId="traceId"
+                    :startMs="trace.start_ms"
+                    :durationNs="trace.duration_ns"
+                />
                 <TraceLogs
                     v-if="source && source.otelLink('logs')"
                     :slug="slug"
@@ -97,6 +103,7 @@ import { useGetSource } from '@/composables/sources/useSourceService'
 import { useTrace } from '@/features/traces/service.js'
 import { ERROR_COLOR, formatDuration, serviceColors } from '@/features/traces/trace.js'
 import SpanDetail from '@/features/traces/SpanDetail.vue'
+import TraceServiceMap from '@/features/service-map/TraceServiceMap.vue'
 import TraceLogs from '@/features/traces/TraceLogs.vue'
 import TraceWaterfall from '@/features/traces/TraceWaterfall.vue'
 
