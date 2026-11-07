@@ -123,7 +123,7 @@
                                         optionValue="value"
                                         optionDisabled="disabled"
                                         size="small"
-                                        class="w-28 shrink-0"
+                                        class="w-32 shrink-0"
                                         @change="onAggChange(s)"
                                     />
                                     <Select
@@ -141,16 +141,7 @@
                                         v-model="s.level"
                                         :options="QUANTILE_LEVELS"
                                         size="small"
-                                        class="w-20 shrink-0"
-                                    />
-                                    <InputText
-                                        v-model="s.alias"
-                                        size="small"
-                                        class="w-36 shrink-0"
-                                        :placeholder="seriesLabel(s)"
-                                        maxlength="64"
-                                        v-tooltip.top="'Alias'"
-                                        @keydown.enter="runPreview"
+                                        class="w-24 shrink-0"
                                     />
                                     <Button
                                         icon="pi pi-times"
@@ -163,6 +154,14 @@
                                         @click="chart.series.splice(idx, 1)"
                                     />
                                 </div>
+                                <InputText
+                                    v-model="s.alias"
+                                    size="small"
+                                    :placeholder="`Alias: ${seriesLabel(s)}`"
+                                    maxlength="64"
+                                    aria-label="Alias"
+                                    @keydown.enter="runPreview"
+                                />
                                 <ErrorText v-if="seriesErrors[idx]" :text="seriesErrors[idx]" class="text-sm" />
                             </div>
                             <ErrorText v-if="serverError('series')" :text="serverError('series')" class="text-sm" />
