@@ -22,14 +22,19 @@
                 :row="row"
                 :timeZone="timeZone"
             />
-            <Tabs value="0">
+            <Tabs :value="overviewAvailable(source, row) ? 'overview' : '0'">
                 <TabList>
+                    <Tab v-if="overviewAvailable(source, row)" value="overview">OVERVIEW</Tab>
                     <Tab value="0">FLATTENED</Tab>
                     <Tab value="1">JSON</Tab>
                     <Tab v-if="contextAvailable(source, row)" value="context">CONTEXT</Tab>
                     <Tab v-if="traceAvailable(source, row)" value="trace">TRACE</Tab>
+                    <Tab v-if="infraAvailable(source, row)" value="infra">INFRASTRUCTURE</Tab>
                 </TabList>
                 <TabPanels :pt="{ root: { className: 'p-0' } }">
+                    <TabPanel v-if="overviewAvailable(source, row)" value="overview">
+                        <OverviewTab :source="source" :row="row" :timeZone="timeZone" />
+                    </TabPanel>
                     <TabPanel value="0">
                         <DataTable :value="flattenRow" :row-hover="true" removableSort>
                             <Column field="path" header="PATH" sortable class="font-medium text-nowrap">
@@ -96,6 +101,9 @@
                     <TabPanel v-if="traceAvailable(source, row)" value="trace">
                         <TraceTab :source="source" :row="row" :timeZone="timeZone" />
                     </TabPanel>
+                    <TabPanel v-if="infraAvailable(source, row)" value="infra">
+                        <InfraTab :source="source" :row="row" :timeZone="timeZone" />
+                    </TabPanel>
                 </TabPanels>
             </Tabs>
         </div>
@@ -120,6 +128,8 @@ import Tag from 'primevue/tag'
 import { DateTime } from 'luxon'
 import ContextTab, { available as contextAvailable } from '@/components/explorer/results/tabs/ContextTab.vue'
 import TraceTab, { available as traceAvailable } from '@/components/explorer/results/tabs/TraceTab.vue'
+import OverviewTab, { available as overviewAvailable } from '@/components/explorer/results/sections/OverviewTab.vue'
+import InfraTab, { available as infraAvailable } from '@/components/explorer/results/sections/InfraTab.vue'
 import DetailsExtras, {
     available as detailsExtrasAvailable,
 } from '@/components/explorer/results/tabs/DetailsExtras.vue'

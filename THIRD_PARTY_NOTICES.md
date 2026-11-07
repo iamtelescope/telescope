@@ -72,6 +72,10 @@ SOFTWARE.
 - `backend/telescope/query_attribution.py` (`log_comment` keys, the character allowlist and length cap) is adapted from HyperDX
   `packages/common-utils/src/clickhouse/attribution.ts`, and `backend/telescope_api2/views.py` (resource shapes, list pagination)
   follows `packages/api/src/routers/external-api/v2/*` (MIT, above).
+- `ui/src/components/explorer/results/sections/rowpanel.js` and the row panel sections next to it (top-level attributes,
+  exception from attributes or span events, HTTP headers and bodies, span events, pod/node infrastructure correlations and
+  their time ranges) are adapted from HyperDX `packages/app/src/components/DBRowOverviewPanel.tsx`, `ExceptionSubpanel.tsx`,
+  `HttpMessageSections.tsx`, `SpanEventsSubpanel.tsx`, `DBInfraPanel.tsx` and `infraCorrelations.ts` (MIT, above).
 
 ## Drain3
 

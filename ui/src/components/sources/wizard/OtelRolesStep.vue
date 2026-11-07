@@ -265,6 +265,8 @@ const emitValue = () => {
                       metricKinds.map((k) => k.key),
                   )
                 : null,
+        // Keep the row panel's highlighted keys (P3.4), which this step does not edit.
+        ...(initial.highlighted ? { highlighted: initial.highlighted } : {}),
     }
     emit('update:modelValue', lastEmitted)
 }
