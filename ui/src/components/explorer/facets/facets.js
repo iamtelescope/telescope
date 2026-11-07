@@ -98,7 +98,9 @@ export function saveCollapsed(value) {
 }
 
 // Facet ids: `col` for a column (or a Map column's keys) and `col.key` for a Map key's values.
-export function splitFacetId(id) {
+// A dotted column name (e.g. Nested `Links.TraceId`) is a column, not a Map key.
+export function splitFacetId(id, columns = {}) {
+    if (id in columns) return { column: id, key: null }
     const dot = id.indexOf('.')
     return dot < 0 ? { column: id, key: null } : { column: id.slice(0, dot), key: id.slice(dot + 1) }
 }

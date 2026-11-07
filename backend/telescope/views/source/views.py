@@ -398,6 +398,9 @@ class SourceDataView(APIView):
                     "rows": [row.as_dict() for row in data_response.rows],
                     "message": data_response.message,
                     "cursor": data_response.cursor,
+                    # The range as resolved on the server, so later pages reuse its 'now'.
+                    "time_from": serializer.validated_data["from"],
+                    "time_to": serializer.validated_data["to"],
                 }
         return Response(response.as_dict())
 

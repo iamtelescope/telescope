@@ -123,6 +123,7 @@
         <div
             v-if="sourceControlsStore.live && liveTail.paused.value"
             class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 shadow-lg pl-4 pr-2 py-1 text-sm"
+            :class="{ 'pointer-events-none': !liveTail.scrolled.value }"
             role="status"
             data-testid="explorer-live-paused"
         >
@@ -198,6 +199,7 @@ const {
     columns: separateColumns,
     message: separateMessage,
     cursor: separateCursor,
+    range: separateRange,
     error: separateError,
     loading: separateLoading,
     validation: separateValidation,
@@ -390,7 +392,9 @@ const showLoadMore = computed(
 const onLoadMore = async () => {
     const seq = loadMoreSeq
     loadingMore.value = true
-    const response = await srv.getData(props.source.slug, { ...searchParams.value, before: separateCursor.value })
+    // The first page's range as the server resolved it: the browser clock may be skewed.
+    const params = { ...searchParams.value, ...(separateRange.value || {}), before: separateCursor.value }
+    const response = await srv.getData(props.source.slug, params)
     if (seq !== loadMoreSeq) return
     loadingMore.value = false
     if (response.result) {
@@ -405,7 +409,7 @@ const onLoadMore = async () => {
 const liveTick = async () => {
     const shown = rows.value || []
     if (loading.value || !searchParams.value) return
-    const boundary = shown.length ? shown[0].time.unixtime : searchParams.value.from
+    const boundary = shown.length ? shown[0].time.unixtime : (separateRange.value?.from ?? searchParams.value.from)
     const params = { ...searchParams.value, from: boundary, to: 'now' }
     const seq = loadMoreSeq
     let response

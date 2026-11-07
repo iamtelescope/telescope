@@ -122,6 +122,15 @@
                                             data-testid="alert-query"
                                         />
                                     </Field>
+                                    <Field
+                                        v-if="contextText"
+                                        label="Context columns"
+                                        hint="Kept from the search this alert was made from"
+                                    >
+                                        <span class="font-mono text-sm break-all" data-testid="alert-context-columns">
+                                            {{ contextText }}
+                                        </span>
+                                    </Field>
                                     <Field v-if="source?.supportRawQuery" label="Raw SQL WHERE" for="alert_raw">
                                         <InputText
                                             id="alert_raw"
@@ -499,6 +508,7 @@ const form = reactive({
     source: '',
     query: '',
     raw_query: '',
+    context_columns: {},
     group_by: null,
     agg: 'count',
     column: null,
@@ -522,10 +532,16 @@ const source = computed(() => (sources.value || []).find((s) => s.slug === form.
 const aggOptions = computed(() =>
     AGGS.map((a) => ({ value: a, label: a, disabled: countOnlyKind(source.value?.kind) && a !== 'count' })),
 )
-const columnOptions = computed(() =>
-    Object.entries(source.value?.columns || {})
+const columnOptions = computed(() => {
+    if (!source.value) return form.column ? [form.column] : []
+    return Object.entries(source.value.columns || {})
         .filter(([, col]) => form.agg === 'uniq' || isNumericType(col.type))
-        .map(([name]) => name),
+        .map(([name]) => name)
+})
+const contextText = computed(() =>
+    Object.entries(form.context_columns || {})
+        .map(([k, v]) => `${k}=${[].concat(v).join('|')}`)
+        .join(', '),
 )
 const groupOptions = computed(() =>
     Object.entries(source.value?.columns || {})
@@ -572,6 +588,7 @@ const payload = () => {
             source: form.source,
             query: form.query,
             raw_query: source.value?.supportRawQuery ? form.raw_query : '',
+            context_columns: form.context_columns || {},
             group_by: form.group_by || '',
             series: series(),
         })
@@ -588,6 +605,7 @@ const fill = (a) => {
         source: a.kind === 'search' ? a.source : '',
         query: a.query,
         raw_query: a.raw_query,
+        context_columns: a.context_columns || {},
         group_by: a.group_by || null,
         agg: a.series?.agg || 'count',
         column: a.series?.column || null,
@@ -618,6 +636,15 @@ const loadAlert = async () => {
     loading.value = false
 }
 
+const parseContext = (text) => {
+    try {
+        const value = JSON.parse(text || '{}')
+        return value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+    } catch {
+        return {}
+    }
+}
+
 const init = async () => {
     srv.channels().then((r) => (channels.value = r.data || []))
     dashboardSrv.getDashboards().then((r) => (dashboards.value = r.data || []))
@@ -631,6 +658,7 @@ const init = async () => {
             source: q.source,
             query: q.query || '',
             raw_query: q.raw_query || '',
+            context_columns: parseContext(q.context_columns),
             group_by: q.group_by || null,
         })
     }
@@ -650,10 +678,11 @@ watch(
     },
     { immediate: true },
 )
+// Until the sources load, or when the viewer cannot see the source, the stored column is kept.
 watch(
-    () => [form.agg, form.source],
+    () => [form.agg, source.value],
     () => {
-        if (form.agg !== 'count' && !columnOptions.value.includes(form.column))
+        if (form.agg !== 'count' && source.value && !columnOptions.value.includes(form.column))
             form.column = columnOptions.value[0] || null
     },
 )

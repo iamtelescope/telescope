@@ -1,5 +1,6 @@
 """P1.2 request fields on /data and /graphData: validation, pass-through and the returned cursor."""
 
+import time
 from unittest.mock import patch
 
 import pytest
@@ -141,3 +142,17 @@ def test_graph_data_passes_text(client, clickhouse_source):
         )
     assert response["result"] is True, response
     assert fetch.call_args[0][0].text == "x"
+
+
+@pytest.mark.django_db
+def test_data_returns_the_server_resolved_range(client, clickhouse_source):
+    with patch("telescope.fetchers.clickhouse.Fetcher.fetch_data") as fetch:
+        fetch.return_value = DataResponse(rows=[])
+        relative = body(**{"from": "now-5m", "to": "now"})
+        response = post(client, clickhouse_source.slug, "data", relative)
+    assert response["result"] is True, response
+    data = response["data"]
+    request = fetch.call_args[0][0]
+    assert (data["time_from"], data["time_to"]) == (request.time_from, request.time_to)
+    assert abs(data["time_to"] - time.time() * 1000) < 5000
+    assert 299000 < data["time_to"] - data["time_from"] <= 300000

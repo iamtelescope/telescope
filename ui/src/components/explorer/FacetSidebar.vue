@@ -118,7 +118,7 @@ const defaults = computed(() => defaultFacetColumns(props.source))
 
 // Pinned columns first, then the defaults; pinned Map keys go to map_keys.
 const columnIds = computed(() => {
-    const ids = pinned.value.filter((id) => splitFacetId(id).key === null && id in props.source.columns)
+    const ids = pinned.value.filter((id) => id in props.source.columns)
     for (const name of defaults.value) if (!ids.includes(name)) ids.push(name)
     return ids
 })
@@ -131,7 +131,7 @@ const mapKeys = computed(() => {
         if (!result[column].includes(key)) result[column].push(key)
     }
     for (const id of pinned.value) {
-        const { column, key } = splitFacetId(id)
+        const { column, key } = splitFacetId(id, props.source.columns)
         if (key !== null) add(column, key)
     }
     for (const [column, keys] of Object.entries(expandedKeys.value)) for (const key of keys) add(column, key)
