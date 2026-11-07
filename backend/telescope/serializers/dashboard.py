@@ -36,7 +36,9 @@ from telescope.fetchers.chart import (
     is_numeric_column_type,
     parse_formula,
 )
+from telescope.fetchers.search import body_column
 from telescope.models import Dashboard, Source
+from telescope.patterns.fetch import KINDS as PATTERN_KINDS
 from telescope.rbac import permissions
 from telescope.rbac.manager import RBACManager
 from telescope.serializers.source import (
@@ -78,6 +80,9 @@ DASHBOARD_MAX_VARIABLES = 20
 VARIABLE_MAX_OPTIONS = 1000
 VARIABLE_MAX_VALUES = 100
 VARIABLE_MAX_VALUE_LENGTH = 1000
+LOG_TILE_DISPLAYS = ["search", "patterns"]
+SEARCH_TILE_MAX_LIMIT = 500
+PATTERNS_MAX_SAMPLE = 100_000
 
 
 def upgrade_dashboard_data(data):
@@ -345,12 +350,68 @@ class QueryChartSerializer(StrictSerializer):
         return attrs
 
 
+class LogTileChartSerializer(StrictSerializer):
+    """Fields shared by the search (log rows) and patterns tiles."""
+
+    source = serializers.CharField(max_length=64)
+    query = serializers.CharField(required=False, allow_blank=True, default="")
+    raw_query = serializers.CharField(required=False, allow_blank=True, default="")
+    context_columns = serializers.DictField(required=False, default=dict)
+
+
+class SearchChartSerializer(LogTileChartSerializer):
+    display = serializers.ChoiceField(choices=["search"])
+    # Explorer column list; empty means the source's default columns.
+    columns = serializers.CharField(
+        required=False, allow_blank=True, default="", max_length=10000
+    )
+    limit = serializers.IntegerField(
+        required=False, default=50, min_value=1, max_value=SEARCH_TILE_MAX_LIMIT
+    )
+
+
+class PatternsChartSerializer(LogTileChartSerializer):
+    display = serializers.ChoiceField(choices=["patterns"])
+    # Empty means the source's body column.
+    column = serializers.CharField(
+        required=False, allow_blank=True, default="", max_length=255
+    )
+    sample = serializers.IntegerField(
+        required=False, default=10_000, min_value=1, max_value=PATTERNS_MAX_SAMPLE
+    )
+
+
+def log_tile_errors(source: Source, chart: dict) -> dict:
+    if chart["display"] == "search":
+        if not chart["columns"]:
+            return {}
+        try:
+            parse_columns(source, chart["columns"])
+        except (ColumnsParserError, FlyqlError) as err:
+            return {"columns": [getattr(err, "message", str(err))]}
+        return {}
+    if source.kind not in PATTERN_KINDS:
+        return {"display": [f"patterns are not supported for {source.kind} sources"]}
+    column = chart["column"] or body_column(source)
+    if not column:
+        return {"column": ["source has no body column, choose a column"]}
+    if column not in source._columns:
+        return {"column": [f"source has no column {column}"]}
+    return {}
+
+
 class ChartField(serializers.Field):
+    SERIALIZERS = {
+        "text": TextChartSerializer,
+        "search": SearchChartSerializer,
+        "patterns": PatternsChartSerializer,
+    }
+
     def to_internal_value(self, data):
         if not isinstance(data, dict):
             raise serializers.ValidationError("Expected an object")
-        if data.get("display") == "text":
-            serializer = TextChartSerializer(data=data)
+        if data.get("display") in self.SERIALIZERS:
+            serializer = self.SERIALIZERS[data["display"]](data=data)
         else:
             serializer = QueryChartSerializer(data=data)
         if not serializer.is_valid():
@@ -577,6 +638,11 @@ class DashboardDataSerializer(StrictSerializer):
             chart_errors = {}
             if raw_query_error:
                 chart_errors["raw_query"] = [raw_query_error]
+            if chart["display"] in LOG_TILE_DISPLAYS:
+                chart_errors.update(log_tile_errors(source, chart))
+                if chart_errors:
+                    tile_errors[i] = {"chart": chart_errors}
+                continue
             series_errors = chart_series_errors(source, chart["series"])
             if series_errors:
                 chart_errors["series"] = series_errors

@@ -504,7 +504,7 @@ import {
 } from '@/features/alerts/useAlerts.js'
 import { useGetSources } from '@/composables/sources/useSourceService'
 import { DashboardService } from '@/sdk/services/dashboard'
-import { AGGS, QUANTILE_LEVELS, countOnlyKind, isNumericType } from '@/utils/dashboards'
+import { AGGS, QUANTILE_LEVELS, countOnlyKind, isLogTile, isNumericType } from '@/utils/dashboards'
 
 const Field = (props, { slots }) =>
     h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
@@ -589,7 +589,9 @@ const groupOptions = computed(() => {
         .map(([name]) => name)
     return form.group_by && !names.includes(form.group_by) ? [form.group_by, ...names] : names
 })
-const queryTiles = computed(() => (dashboard.value?.data?.tiles || []).filter((t) => t.chart?.display !== 'text'))
+const queryTiles = computed(() =>
+    (dashboard.value?.data?.tiles || []).filter((t) => t.chart?.display !== 'text' && !isLogTile(t.chart?.display)),
+)
 const tileOptions = computed(() =>
     queryTiles.value.map((t) => ({ id: t.id, label: t.title || `${t.chart.source} (${t.id})` })),
 )

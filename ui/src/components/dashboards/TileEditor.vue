@@ -56,7 +56,7 @@
                 </div>
                 <div class="flex flex-col gap-1">
                     <label class="font-medium">Display</label>
-                    <div class="grid grid-cols-9 gap-1" role="radiogroup" data-testid="tile-display">
+                    <div class="grid grid-cols-6 gap-1" role="radiogroup" data-testid="tile-display">
                         <button
                             v-for="d in DISPLAY_BUTTONS"
                             :key="d.value"
@@ -119,7 +119,7 @@
                     </div>
 
                     <template v-if="source">
-                        <div class="flex flex-col gap-1">
+                        <div v-if="!logTile" class="flex flex-col gap-1">
                             <div class="flex items-center justify-between">
                                 <label class="font-medium">Series</label>
                                 <Button
@@ -323,138 +323,199 @@
                             <ErrorText v-if="serverError('query')" :text="serverError('query')" class="text-sm" />
                         </div>
 
-                        <div class="grid grid-cols-[1fr_auto] gap-3">
+                        <div v-if="chart.display === 'search'" class="grid grid-cols-[1fr_auto] gap-3">
                             <div class="flex flex-col gap-1 min-w-0">
-                                <label class="font-medium" :class="{ 'opacity-50': !usesGroupBy }">
-                                    Group by
-                                    <span v-if="!groupRequired" class="font-normal text-surface-500">(optional)</span>
+                                <label for="tile_columns" class="font-medium">
+                                    Columns <span class="font-normal text-surface-500">(optional)</span>
                                 </label>
-                                <div v-for="(g, idx) in groupBys" :key="idx" class="flex items-center gap-1">
-                                    <Select
-                                        :modelValue="g ? { name: g } : null"
-                                        :options="groupByOptions"
-                                        optionLabel="name"
-                                        editable
-                                        :showClear="!!g && usesGroupBy"
-                                        size="small"
-                                        class="flex-1 min-w-0"
-                                        :disabled="!usesGroupBy"
-                                        :placeholder="usesGroupBy ? 'None' : `Not used by ${displayLabel}`"
-                                        :invalid="!!groupByError"
-                                        data-testid="tile-group-by"
-                                        @change="(e) => onGroupByChange(idx, e)"
-                                    />
-                                    <Button
-                                        v-if="idx > 0"
-                                        icon="pi pi-times"
-                                        text
-                                        size="small"
-                                        severity="secondary"
-                                        aria-label="Remove group by column"
-                                        @click="groupBys.splice(idx, 1)"
-                                    />
-                                </div>
-                                <Button
-                                    v-if="usesGroupBy && groupBys.length < maxGroupBy && groupBys[0]"
-                                    icon="pi pi-plus"
-                                    label="Group by column"
-                                    text
+                                <InputText
+                                    id="tile_columns"
+                                    v-model="chart.columns"
                                     size="small"
-                                    class="self-start py-0"
-                                    data-testid="tile-add-group-by"
-                                    @click="groupBys.push('')"
+                                    class="font-mono"
+                                    maxlength="10000"
+                                    :placeholder="defaultColumns"
+                                    data-testid="tile-columns"
+                                    @keydown.enter="runPreview"
                                 />
-                                <ErrorText v-if="groupByError" :text="groupByError" class="text-sm" />
                             </div>
                             <div class="flex flex-col gap-1">
-                                <label class="font-medium" :class="{ 'opacity-50': !usesLimit }">Top groups</label>
+                                <label class="font-medium">Rows per page</label>
                                 <InputNumber
                                     v-model="chart.limit"
                                     :min="1"
-                                    :max="maxLimit(chart.display)"
+                                    :max="SEARCH_TILE_MAX_LIMIT"
                                     size="small"
                                     inputClass="w-16"
                                     showButtons
-                                    :disabled="!usesLimit"
-                                    :invalid="!!limitError"
-                                    v-tooltip.top="`Groups to keep, 1..${maxLimit(chart.display)}`"
+                                    data-testid="tile-page-size"
                                     @keydown.enter="runPreview"
                                 />
                             </div>
                         </div>
-                        <ErrorText v-if="limitError" :text="limitError" class="text-sm -mt-3" />
-
-                        <div class="grid grid-cols-3 gap-3">
+                        <div v-else-if="chart.display === 'patterns'" class="grid grid-cols-[1fr_auto] gap-3">
+                            <div class="flex flex-col gap-1 min-w-0">
+                                <label class="font-medium">Pattern column</label>
+                                <Select
+                                    v-model="chart.column"
+                                    :options="patternColumns(source)"
+                                    filter
+                                    showClear
+                                    size="small"
+                                    :placeholder="bodyColumn(source) || 'Choose a column'"
+                                    data-testid="tile-pattern-column"
+                                />
+                            </div>
                             <div class="flex flex-col gap-1">
-                                <label class="font-medium" :class="{ 'opacity-50': !timeseries && !isHeatmap }">
-                                    Granularity
+                                <label class="font-medium">Sample</label>
+                                <Select
+                                    v-model="chart.sample"
+                                    :options="sampleOptions"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    size="small"
+                                    data-testid="tile-pattern-sample"
+                                />
+                            </div>
+                        </div>
+                        <template v-else>
+                            <div class="grid grid-cols-[1fr_auto] gap-3">
+                                <div class="flex flex-col gap-1 min-w-0">
+                                    <label class="font-medium" :class="{ 'opacity-50': !usesGroupBy }">
+                                        Group by
+                                        <span v-if="!groupRequired" class="font-normal text-surface-500"
+                                            >(optional)</span
+                                        >
+                                    </label>
+                                    <div v-for="(g, idx) in groupBys" :key="idx" class="flex items-center gap-1">
+                                        <Select
+                                            :modelValue="g ? { name: g } : null"
+                                            :options="groupByOptions"
+                                            optionLabel="name"
+                                            editable
+                                            :showClear="!!g && usesGroupBy"
+                                            size="small"
+                                            class="flex-1 min-w-0"
+                                            :disabled="!usesGroupBy"
+                                            :placeholder="usesGroupBy ? 'None' : `Not used by ${displayLabel}`"
+                                            :invalid="!!groupByError"
+                                            data-testid="tile-group-by"
+                                            @change="(e) => onGroupByChange(idx, e)"
+                                        />
+                                        <Button
+                                            v-if="idx > 0"
+                                            icon="pi pi-times"
+                                            text
+                                            size="small"
+                                            severity="secondary"
+                                            aria-label="Remove group by column"
+                                            @click="groupBys.splice(idx, 1)"
+                                        />
+                                    </div>
+                                    <Button
+                                        v-if="usesGroupBy && groupBys.length < maxGroupBy && groupBys[0]"
+                                        icon="pi pi-plus"
+                                        label="Group by column"
+                                        text
+                                        size="small"
+                                        class="self-start py-0"
+                                        data-testid="tile-add-group-by"
+                                        @click="groupBys.push('')"
+                                    />
+                                    <ErrorText v-if="groupByError" :text="groupByError" class="text-sm" />
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="font-medium" :class="{ 'opacity-50': !usesLimit }">Top groups</label>
+                                    <InputNumber
+                                        v-model="chart.limit"
+                                        :min="1"
+                                        :max="maxLimit(chart.display)"
+                                        size="small"
+                                        inputClass="w-16"
+                                        showButtons
+                                        :disabled="!usesLimit"
+                                        :invalid="!!limitError"
+                                        v-tooltip.top="`Groups to keep, 1..${maxLimit(chart.display)}`"
+                                        @keydown.enter="runPreview"
+                                    />
+                                </div>
+                            </div>
+                            <ErrorText v-if="limitError" :text="limitError" class="text-sm -mt-3" />
+
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="flex flex-col gap-1">
+                                    <label class="font-medium" :class="{ 'opacity-50': !timeseries && !isHeatmap }">
+                                        Granularity
+                                    </label>
+                                    <Select
+                                        v-model="chart.granularity"
+                                        :options="granularityOptions"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        size="small"
+                                        :disabled="!timeseries && !isHeatmap"
+                                    />
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="font-medium" :class="{ 'opacity-50': !hasUnit }">Unit</label>
+                                    <Select
+                                        v-model="numberFormat.unit"
+                                        :options="unitOptions"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        size="small"
+                                        :disabled="!hasUnit"
+                                        data-testid="tile-unit"
+                                    />
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="font-medium" :class="{ 'opacity-50': !hasNumberFormat }"
+                                        >Decimals</label
+                                    >
+                                    <InputNumber
+                                        v-model="numberFormat.decimals"
+                                        :min="0"
+                                        :max="6"
+                                        size="small"
+                                        fluid
+                                        showButtons
+                                        :disabled="!hasNumberFormat"
+                                    />
+                                </div>
+                            </div>
+                            <div v-if="hasUnit" class="grid grid-cols-3 gap-3 -mt-2">
+                                <InputText
+                                    v-model="numberFormat.prefix"
+                                    size="small"
+                                    maxlength="16"
+                                    placeholder="Prefix, e.g. $"
+                                    aria-label="Prefix"
+                                />
+                                <InputText
+                                    v-model="numberFormat.suffix"
+                                    size="small"
+                                    maxlength="16"
+                                    placeholder="Suffix, e.g. req/s"
+                                    aria-label="Suffix"
+                                    data-testid="tile-suffix"
+                                />
+                                <label class="flex items-center gap-2 text-sm">
+                                    <Checkbox v-model="numberFormat.compact" binary inputId="tile_compact" />
+                                    <span>Compact (1.2K)</span>
                                 </label>
-                                <Select
-                                    v-model="chart.granularity"
-                                    :options="granularityOptions"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    size="small"
-                                    :disabled="!timeseries && !isHeatmap"
-                                />
                             </div>
-                            <div class="flex flex-col gap-1">
-                                <label class="font-medium" :class="{ 'opacity-50': !hasUnit }">Unit</label>
-                                <Select
-                                    v-model="numberFormat.unit"
-                                    :options="unitOptions"
-                                    optionLabel="label"
-                                    optionValue="value"
-                                    size="small"
-                                    :disabled="!hasUnit"
-                                    data-testid="tile-unit"
-                                />
-                            </div>
-                            <div class="flex flex-col gap-1">
-                                <label class="font-medium" :class="{ 'opacity-50': !hasNumberFormat }">Decimals</label>
-                                <InputNumber
-                                    v-model="numberFormat.decimals"
-                                    :min="0"
-                                    :max="6"
-                                    size="small"
-                                    fluid
-                                    showButtons
-                                    :disabled="!hasNumberFormat"
-                                />
-                            </div>
-                        </div>
-                        <div v-if="hasUnit" class="grid grid-cols-3 gap-3 -mt-2">
-                            <InputText
-                                v-model="numberFormat.prefix"
-                                size="small"
-                                maxlength="16"
-                                placeholder="Prefix, e.g. $"
-                                aria-label="Prefix"
-                            />
-                            <InputText
-                                v-model="numberFormat.suffix"
-                                size="small"
-                                maxlength="16"
-                                placeholder="Suffix, e.g. req/s"
-                                aria-label="Suffix"
-                                data-testid="tile-suffix"
-                            />
-                            <label class="flex items-center gap-2 text-sm">
-                                <Checkbox v-model="numberFormat.compact" binary inputId="tile_compact" />
-                                <span>Compact (1.2K)</span>
-                            </label>
-                        </div>
 
-                        <div v-if="timeseries || chart.display === 'number'" class="flex flex-wrap gap-x-5 gap-y-2">
-                            <label class="flex items-center gap-2 text-sm">
-                                <Checkbox v-model="chart.compare" binary data-testid="tile-compare" />
-                                <span>Compare to the previous period</span>
-                            </label>
-                            <label v-if="chart.display === 'number'" class="flex items-center gap-2 text-sm">
-                                <Checkbox v-model="chart.sparkline" binary data-testid="tile-sparkline" />
-                                <span>Sparkline</span>
-                            </label>
-                        </div>
+                            <div v-if="timeseries || chart.display === 'number'" class="flex flex-wrap gap-x-5 gap-y-2">
+                                <label class="flex items-center gap-2 text-sm">
+                                    <Checkbox v-model="chart.compare" binary data-testid="tile-compare" />
+                                    <span>Compare to the previous period</span>
+                                </label>
+                                <label v-if="chart.display === 'number'" class="flex items-center gap-2 text-sm">
+                                    <Checkbox v-model="chart.sparkline" binary data-testid="tile-sparkline" />
+                                    <span>Sparkline</span>
+                                </label>
+                            </div>
+                        </template>
 
                         <div v-if="hasColorRules" class="flex flex-col gap-1">
                             <div class="flex items-center justify-between">
@@ -581,8 +642,14 @@
                     <div class="h-full flex flex-col">
                         <div v-if="form.title" class="font-medium mb-2 truncate">{{ form.title }}</div>
                         <div class="flex-1 min-h-0">
+                            <LogTileView
+                                v-if="previewChart && !problem && isLogTile(previewChart.display)"
+                                :chart="previewChart"
+                                :range="range"
+                                :timeZone="timeZone"
+                            />
                             <ChartView
-                                v-if="chart.display === 'text' || (previewChart && !problem)"
+                                v-else-if="chart.display === 'text' || (previewChart && !problem)"
                                 :chart="chart.display === 'text' ? chart : previewChart"
                                 :data="preview.data.value"
                                 :loading="preview.loading.value"
@@ -642,12 +709,18 @@ import {
     ChartPie,
     Grid3x3,
     Hash,
+    ScrollText,
+    Shapes,
     Sheet,
     Type,
 } from 'lucide-vue-next'
 
 import ErrorText from '@/components/common/ErrorText.vue'
 import ChartView from '@/components/dashboards/ChartView.vue'
+import LogTileView from '@/components/dashboards/charts/LogTileView.vue'
+import { PATTERN_SAMPLES } from '@/components/dashboards/charts/logTiles'
+import { PATTERN_KINDS, patternColumns } from '@/components/explorer/patterns/patterns'
+import { bodyColumn } from '@/utils/explorerPaging'
 import ContextColumns from '@/components/explorer/controls/ContextColumns.vue'
 import MetricNamePicker from '@/components/dashboards/metrics/MetricNamePicker.vue'
 import {
@@ -672,8 +745,10 @@ import {
     MAX_SERIES,
     NUMBER_UNITS,
     QUANTILE_LEVELS,
+    SEARCH_TILE_MAX_LIMIT,
     SINGLE_SERIES_DISPLAYS,
     countOnlyKind,
+    isLogTile,
     isNumericType,
     isTimeseries,
     maxLimit,
@@ -691,6 +766,8 @@ const ICONS = {
     table: Sheet,
     bar: ChartBarBig,
     pie: ChartPie,
+    search: ScrollText,
+    patterns: Shapes,
     heatmap: Grid3x3,
     text: Type,
 }
@@ -733,6 +810,12 @@ const countOnly = computed(() => !!source.value && countOnlyKind(source.value.ki
 const metrics = computed(() => isMetricsSource(source.value))
 const metricAttributes = useMetricAttributes()
 const isHeatmap = computed(() => chart.value.display === 'heatmap')
+const logTile = computed(() => isLogTile(chart.value.display))
+const sampleOptions = PATTERN_SAMPLES.map((value) => ({ label: value.toLocaleString(), value }))
+const defaultColumns = computed(() => {
+    const columns = source.value?.defaultChosenColumns || []
+    return `Default: ${Array.isArray(columns) ? columns.join(', ') : columns}`
+})
 const maxSeries = computed(() => (isHeatmap.value ? 1 : MAX_SERIES))
 const displayLabel = computed(() => DISPLAY_BUTTONS.find((d) => d.value === chart.value.display)?.label || '')
 const singleSeries = computed(() => SINGLE_SERIES_DISPLAYS.includes(chart.value.display))
@@ -762,6 +845,9 @@ const defaultChart = () => ({
     group_by: '',
     granularity: 'auto',
     limit: 10,
+    columns: '',
+    column: '',
+    sample: 10000,
 })
 
 const state = () => JSON.stringify([form.value, numberFormat.value, groupBys.value, colorRules.value])
@@ -1004,6 +1090,7 @@ watch([form, heatmapUnit], ([f, unit], [oldForm, old]) => {
 const setDisplay = (display) => {
     const c = chart.value
     const wasHeatmap = c.display === 'heatmap'
+    if ((display === 'search') !== (c.display === 'search')) c.limit = display === 'search' ? 50 : 10
     c.display = display
     if (display === 'heatmap') {
         c.series = [{ agg: 'heatmap' }]
@@ -1060,6 +1147,13 @@ const limitError = computed(() => {
 const problem = computed(() => {
     if (!form.value || chart.value.display === 'text') return null
     if (sourceError.value && !source.value) return sourceError.value
+    if (chart.value.display === 'patterns' && !PATTERN_KINDS.includes(source.value.kind))
+        return `Patterns are not supported for ${source.value.kind} sources`
+    if (chart.value.display === 'patterns' && !chart.value.column && !bodyColumn(source.value))
+        return 'Choose a pattern column'
+    if (chart.value.display === 'search' && !(chart.value.limit >= 1 && chart.value.limit <= SEARCH_TILE_MAX_LIMIT))
+        return `Rows per page must be 1..${SEARCH_TILE_MAX_LIMIT}`
+    if (logTile.value) return null
     if (isHeatmap.value && source.value.kind !== 'clickhouse') return 'Heatmaps need a ClickHouse source'
     const series = seriesErrors.value.find((e, idx) => e && !serverSeriesError(idx))
     if (series) return series
@@ -1077,6 +1171,17 @@ const canPreview = computed(() => !!form.value && chart.value.display !== 'text'
 const cleanChart = () => {
     const c = chart.value
     if (c.display === 'text') return { display: 'text', text: c.text || '' }
+    if (isLogTile(c.display)) {
+        const result = {
+            source: c.source,
+            display: c.display,
+            query: c.query || '',
+            raw_query: c.raw_query || '',
+            context_columns: c.context_columns || {},
+        }
+        if (c.display === 'search') return { ...result, columns: (c.columns || '').trim(), limit: c.limit }
+        return { ...result, column: c.column || '', sample: c.sample || 10000 }
+    }
     const result = {
         source: c.source,
         display: c.display,
@@ -1141,6 +1246,7 @@ const runPreview = () => {
     if (!canPreview.value) return
     const c = cleanChart()
     previewChart.value = c
+    if (isLogTile(c.display)) return
     preview.load(c.source, {
         from: props.range.from,
         to: props.range.to,

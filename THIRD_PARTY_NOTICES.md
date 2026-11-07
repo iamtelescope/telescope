@@ -103,6 +103,8 @@ SOFTWARE.
   `backend/telescope_mcp/MCP.md` follows `MCP.md` (MIT, above).
 - `ui/src/features/charts/ChartExplorer.vue` and `config.js` (a standalone chart page whose whole chart config lives in one
   JSON `config` URL param, saved to a dashboard or an alert) are adapted from HyperDX `packages/app/src/DBChartPage.tsx` (MIT, above).
+- `ui/src/components/dashboards/charts/LogTileView.vue` (search and event-pattern tiles: the source's default columns,
+  newest rows first, the row side panel) follows HyperDX `packages/app/src/DBDashboardPage.tsx` (MIT, above).
 
 ## Drain3
 
