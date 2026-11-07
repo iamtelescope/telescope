@@ -35,3 +35,4 @@ npx @modelcontextprotocol/inspector --cli https://telescope.example.com/api/mcp 
 Responses over 50,000 characters lose items from their largest list and carry a `trimmed` note
 (`field`, `returned`, `total`); a trimmed search drops its `cursor`. Queries are tagged
 `{"surface":"mcp"}` in `system.query_log.log_comment`, and calls share the API v2 rate limit.
+A JSON-RPC batch (protocol 2025-03-26) takes at most 20 messages, each counted against that limit.
