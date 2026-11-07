@@ -12,8 +12,14 @@ export const DISPLAYS = [
     { value: 'table', label: 'Table' },
     { value: 'bar', label: 'Top N' },
     { value: 'pie', label: 'Pie' },
+    { value: 'search', label: 'Logs' },
+    { value: 'patterns', label: 'Patterns' },
     { value: 'text', label: 'Text' },
 ]
+// Tiles that list log rows or event patterns instead of aggregating series.
+export const LOG_TILE_DISPLAYS = ['search', 'patterns']
+export const isLogTile = (display) => LOG_TILE_DISPLAYS.includes(display)
+export const SEARCH_TILE_MAX_LIMIT = 500
 
 // Query aggregations; tile series may also be a 'formula' over them.
 export const AGGS = ['count', 'sum', 'avg', 'min', 'max', 'quantile', 'uniq', 'last_value', 'any']
@@ -97,8 +103,10 @@ export const newTileId = (tiles) => {
     return id
 }
 
-export const defaultTileSize = (display) =>
-    display === 'number' || display === 'text' ? { w: 6, h: 4 } : { w: 12, h: 8 }
+export const defaultTileSize = (display) => {
+    if (isLogTile(display)) return { w: 24, h: 10 }
+    return display === 'number' || display === 'text' ? { w: 6, h: 4 } : { w: 12, h: 8 }
+}
 
 export const GRID_COLUMNS = 24
 

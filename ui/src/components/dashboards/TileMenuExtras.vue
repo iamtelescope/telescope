@@ -25,6 +25,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { registerTileChart } from '@/composables/useMarkers.js'
 import { AlertService } from '@/features/alerts/service.js'
 import { STATE_LABEL } from '@/features/alerts/useAlerts.js'
+import { LOG_TILE_DISPLAYS } from '@/utils/dashboards.js'
 
 const props = defineProps(['tile', 'range', 'timeZone'])
 const route = useRoute()
@@ -58,7 +59,8 @@ const firing = computed(() => alerts.value.some((a) => a.state === 'ALERT'))
 
 const items = computed(() => {
     const dashboard = route.params.dashboardSlug
-    if (!dashboard || !props.tile?.chart || ['text', 'sql'].includes(props.tile.chart.display)) return []
+    if (!dashboard || !props.tile?.chart || ['text', 'sql', ...LOG_TILE_DISPLAYS].includes(props.tile.chart.display))
+        return []
     return [
         {
             label: 'Create alert',

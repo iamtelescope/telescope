@@ -60,7 +60,14 @@
                         </span>
                     </div>
                     <div class="flex-1 min-h-0">
+                        <LogTileView
+                            v-if="isLogTile(config.chart.display)"
+                            :chart="config.chart"
+                            :range="range"
+                            :timeZone="timeZone"
+                        />
                         <ChartView
+                            v-else
                             :chart="config.chart"
                             :data="data.data.value"
                             :loading="data.loading.value"
@@ -105,11 +112,13 @@ import DataView from '@/components/common/DataView.vue'
 import ListHeader from '@/components/common/ListHeader.vue'
 import AddToDashboard from '@/components/dashboards/AddToDashboard.vue'
 import ChartView from '@/components/dashboards/ChartView.vue'
+import LogTileView from '@/components/dashboards/charts/LogTileView.vue'
 import TileEditor from '@/components/dashboards/TileEditor.vue'
 import DatetimePicker from '@/components/explorer/controls/DatetimePicker.vue'
 import { useChartData } from '@/composables/dashboards/useDashboardService'
 import { useGetSources } from '@/composables/sources/useSourceService'
 import { availableTimeZones } from '@/utils/datetimeranges'
+import { isLogTile } from '@/utils/dashboards'
 import { alertQuery, alertSeries, parseConfig, serializeConfig } from '@/features/charts/config.js'
 
 // Adapted from HyperDX DBChartPage: one chart, its config in the URL, saved to a dashboard or an alert.
@@ -146,7 +155,7 @@ watch(
     () => JSON.stringify([config.value?.chart, range.value.from, range.value.to]),
     () => {
         const c = config.value?.chart
-        if (!c || c.display === 'text') return data.abort()
+        if (!c || c.display === 'text' || isLogTile(c.display)) return data.abort()
         data.load(c.source, {
             from: range.value.from,
             to: range.value.to,

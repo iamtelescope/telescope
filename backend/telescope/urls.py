@@ -109,6 +109,7 @@ urlpatterns = [
     path("", include("telescope.urls_facets")),
     path("", include("telescope.urls_patterns")),
     path("", include("telescope.urls_deltas")),
+    path("", include("telescope.urls_tiles")),
     path("", include("telescope_alerts.urls")),
     path("", include("telescope_otel.urls")),
     path("", include("telescope_otel.urls_trace")),

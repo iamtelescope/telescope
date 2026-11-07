@@ -27,7 +27,7 @@
                 data-testid="tile-description"
             ></i>
             <i
-                v-if="loading"
+                v-if="loading || logLoading"
                 class="pi pi-spin pi-spinner shrink-0 ml-1 text-surface-400"
                 style="font-size: 0.75rem"
                 v-tooltip.top="'Loading'"
@@ -103,7 +103,18 @@
             <TileMenuExtras ref="menuExtras" :tile="tile" :range="range" :timeZone="timeZone" />
         </div>
         <div class="flex-1 min-h-0 px-3 pb-2">
+            <LogTileView
+                v-if="isLog"
+                :chart="tile.chart"
+                :range="range"
+                :timeZone="timeZone"
+                :queue="queue"
+                :refreshTick="refreshTick"
+                :attribution="attribution()"
+                @loading="(v) => (logLoading = v)"
+            />
             <ChartView
+                v-else
                 :chart="tile.chart"
                 :data="data"
                 :loading="loading"
@@ -124,8 +135,15 @@
             :breakpoints="{ '575px': '98vw' }"
         >
             <div class="h-[70vh]">
+                <LogTileView
+                    v-if="fullscreen && isLog"
+                    :chart="tile.chart"
+                    :range="range"
+                    :timeZone="timeZone"
+                    :attribution="attribution()"
+                />
                 <ChartView
-                    v-if="fullscreen"
+                    v-else-if="fullscreen"
                     :chart="tile.chart"
                     :data="data"
                     :loading="loading"
@@ -149,11 +167,13 @@ import { Button, Menu, Dialog } from 'primevue'
 import { GripVertical } from 'lucide-vue-next'
 
 import ChartView from '@/components/dashboards/ChartView.vue'
+import LogTileView from '@/components/dashboards/charts/LogTileView.vue'
+import { logTileExplorerRoute } from '@/components/dashboards/charts/logTiles'
 import TileMenuExtras from '@/components/dashboards/TileMenuExtras.vue'
 import { rawSqlBody, useTileData } from '@/features/rawsql/service.js'
 import { registerTileRequest } from '@/composables/useMarkers.js'
 import { buildDrilldownRoute } from '@/utils/drilldown'
-import { boundForExplorer } from '@/utils/dashboards'
+import { boundForExplorer, isLogTile } from '@/utils/dashboards'
 
 const props = defineProps([
     'tile',
@@ -175,13 +195,17 @@ const menuOpen = ref(false)
 const titleEl = ref()
 const titleTruncated = ref(false)
 const fullscreen = ref(false)
-const { data, loading, error, code, validation, load, abort } = useTileData(props.queue, () => ({
+const attribution = () => ({
     dashboard: router.currentRoute.value.params.dashboardSlug || '',
     tile: props.tile.id,
-}))
+})
+const { data, loading, error, code, validation, load, abort } = useTileData(props.queue, attribution)
 
 const isText = computed(() => props.tile.chart.display === 'text')
 const isSql = computed(() => props.tile.chart.display === 'sql')
+// Log rows and patterns tiles load themselves, with paging.
+const isLog = computed(() => isLogTile(props.tile.chart.display))
+const logLoading = ref(false)
 
 const checkTruncated = () => {
     titleTruncated.value = titleEl.value.scrollWidth > titleEl.value.clientWidth
@@ -209,7 +233,7 @@ const requestBody = () => {
 }
 
 const reload = () => {
-    if (isText.value) return
+    if (isText.value || isLog.value) return
     if (isSql.value) return load(props.tile.chart.connection, rawSqlBody(props.tile.chart, props.range), 'sql')
     const { source, ...body } = requestBody()
     load(source, body)
@@ -243,6 +267,7 @@ watch(
 onBeforeUnmount(abort)
 
 const openExplorer = (group) => {
+    if (isLog.value) return router.push(logTileExplorerRoute(props.tile.chart, props.range, props.timeZone))
     const { chart, range } = boundForExplorer(props.tile.chart, props.range)
     router.push(buildDrilldownRoute(chart, range, group, props.timeZone))
 }

@@ -106,6 +106,8 @@ SOFTWARE.
 - `backend/telescope_rawsql/macros.py` (`$__timeFilter`, `$__fromTime`, `$__toTime`, `$__interval_s` and the other raw SQL
   macros, expanded to `{startDateMilliseconds:Int64}`-style query parameters) is ported from HyperDX
   `packages/common-utils/src/macros.ts` and `rawSqlParams.ts` (MIT, above).
+- `ui/src/components/dashboards/charts/LogTileView.vue` (search and event-pattern tiles: the source's default columns,
+  newest rows first, the row side panel) follows HyperDX `packages/app/src/DBDashboardPage.tsx` (MIT, above).
 
 ## Drain3
 
