@@ -68,6 +68,7 @@
                 :options="addable"
                 placeholder="Add a facet"
                 filter
+                :disabled="!pinsLoaded"
                 :modelValue="null"
                 @update:modelValue="addFacet"
                 data-testid="facet-add"
@@ -114,13 +115,19 @@ const error = ref(null)
 const loading = ref(false)
 let controller = null
 
-// Facet loads wait for the pins, which come from the server.
+// Facet loads wait for the pins, which come from the server; pin changes wait for them too.
+const pinsLoaded = ref(false)
 let pinsReady = null
-const fetchPins = () =>
-    (pinsReady = loadPinned(user.value, props.source).then((value) => {
+const fetchPins = () => {
+    pinsLoaded.value = false
+    return (pinsReady = loadPinned(user.value, props.source).then((value) => {
         pinned.value = value
+        pinsLoaded.value = true
     }))
+}
 fetchPins()
+// Saves go one at a time, so the server keeps the newest list.
+let saving = Promise.resolve()
 
 const defaults = computed(() => defaultFacetColumns(props.source))
 
@@ -211,8 +218,15 @@ const addFilter = (facet, item, operator) => {
 }
 
 const togglePin = (id) => {
-    pinned.value = pinned.value.includes(id) ? pinned.value.filter((p) => p !== id) : [...pinned.value, id]
-    savePinned(props.source, pinned.value)
+    if (!pinsLoaded.value) return
+    const next = pinned.value.includes(id) ? pinned.value.filter((p) => p !== id) : [...pinned.value, id]
+    pinned.value = next
+    saving = saving.then(async () => {
+        const response = await savePinned(props.source, next)
+        if (response.result && response.validation?.result !== false) return
+        error.value = `Pinned facets not saved: ${response.errors.join(', ') || 'invalid list'}`
+        await fetchPins()
+    })
 }
 
 const toggleKey = (column, key) => {

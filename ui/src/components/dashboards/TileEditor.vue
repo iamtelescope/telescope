@@ -1108,7 +1108,8 @@ const setDisplay = (display) => {
         c.connection = c.connection ?? null
         return
     }
-    const wasHeatmap = c.display === 'heatmap'
+    // The series, not the display: an SQL display in between keeps the heatmap series.
+    const wasHeatmap = c.series?.[0]?.agg === 'heatmap'
     c.display = display
     if (display === 'heatmap') {
         c.series = [{ agg: 'heatmap' }]

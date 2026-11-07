@@ -13,6 +13,7 @@
                 v-for="(col, idx) in data.columns"
                 :key="idx"
                 :field="`c${idx}`"
+                :sortField="integer(col) ? (row) => sortKey(row[`c${idx}`]) : `c${idx}`"
                 :header="col.name"
                 sortable
                 :headerClass="numeric(col) ? 'text-right' : ''"
@@ -39,6 +40,9 @@ const props = defineProps(['data'])
 
 const NUMERIC_RE = /^(Nullable\()?(U?Int\d+|Float\d+|Decimal)/
 const numeric = (col) => NUMERIC_RE.test(col.type)
+const integer = (col) => /^(Nullable\()?U?Int\d+/.test(col.type)
+// Integers beyond 2^53 arrive as strings to keep their digits; BigInt keeps their order.
+const sortKey = (v) => (typeof v === 'string' ? BigInt(v) : v)
 const show = (v) => (typeof v === 'object' ? JSON.stringify(v) : String(v))
 const rows = computed(() => props.data.rows.map((row) => Object.fromEntries(row.map((v, idx) => [`c${idx}`, v]))))
 </script>

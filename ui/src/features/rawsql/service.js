@@ -10,7 +10,12 @@ const request = async (url, method, body, signal) => {
         if (method === 'POST') headers['X-CSRFToken'] = getCSRFToken()
         const r = await fetch(url, { method, headers, signal, body: body && JSON.stringify(body) })
         if (!r.ok && r.status !== 403) throw Error(`failed to fetch ${r.url}. ${r.status}: ${r.statusText}`)
-        const data = await r.json()
+        // A CSRF failure or an expired session answers with an HTML page.
+        const data = await r.json().catch(() => {
+            throw Error(
+                `Invalid JSON response from ${r.url} (${r.status}). Your session may have expired: reload the page.`,
+            )
+        })
         Object.assign(response, {
             result: data.result,
             data: data.data,

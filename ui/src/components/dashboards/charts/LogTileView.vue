@@ -46,6 +46,7 @@
                     text
                     size="small"
                     :loading="loadingMore"
+                    :disabled="loading"
                     data-testid="log-tile-load-more"
                     @click="loadMore"
                 />
@@ -122,7 +123,9 @@ const apply = (response) => {
 }
 
 const load = async () => {
+    // A reload drops an in-flight Load more, whose rows would follow the old first page.
     controller?.abort()
+    loadingMore.value = false
     const current = new AbortController()
     controller = current
     loading.value = true
@@ -146,7 +149,8 @@ const load = async () => {
 }
 
 const loadMore = async () => {
-    const current = controller || new AbortController()
+    if (loading.value) return
+    const current = new AbortController()
     controller = current
     loadingMore.value = true
     const body = logTileBody(props.chart, { ...props.range, ...(resolved || {}) }, cursor.value)

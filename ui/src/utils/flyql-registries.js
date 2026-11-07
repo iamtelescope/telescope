@@ -443,7 +443,7 @@ class HighlightRenderer extends Renderer {
         let v = value
         if (typeof v === 'object') v = JSON.stringify(v)
         const lang = args[0] || detectLang(v)
-        if (!lang) return v
+        if (!lang) return he.encode(String(v))
         return hljs.highlight(String(v), { language: lang }).value
     }
 }
