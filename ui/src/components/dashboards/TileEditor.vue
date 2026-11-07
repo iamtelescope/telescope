@@ -247,12 +247,12 @@
                                 />
                             </div>
                             <div class="flex flex-col gap-1">
-                                <label class="font-medium" :class="{ 'opacity-50': !hasNumberFormat }">Unit</label>
+                                <label class="font-medium" :class="{ 'opacity-50': !hasUnit }">Unit</label>
                                 <Select
                                     v-model="numberFormat.unit"
                                     :options="NUMBER_UNITS"
                                     size="small"
-                                    :disabled="!hasNumberFormat"
+                                    :disabled="!hasUnit"
                                 />
                             </div>
                             <div class="flex flex-col gap-1">
@@ -431,6 +431,7 @@ const countOnly = computed(() => !!source.value && countOnlyKind(source.value.ki
 const maxSeries = computed(() => (['number', 'bar'].includes(chart.value.display) ? 1 : MAX_SERIES))
 const hasNumberFormat = computed(() => ['number', 'table', 'bar'].includes(chart.value.display))
 const timeseries = computed(() => isTimeseries(chart.value.display))
+const hasUnit = computed(() => hasNumberFormat.value || timeseries.value)
 const usesGroupBy = computed(() => chart.value.display !== 'number')
 const usesLimit = computed(() => usesGroupBy.value && !!chart.value.group_by)
 const granularityOptions = GRANULARITIES.map((g) => ({ value: g, label: g === 'auto' ? 'Auto' : g }))
@@ -659,7 +660,7 @@ const cleanChart = () => {
         granularity: c.granularity || 'auto',
         limit: c.limit,
     }
-    if (hasNumberFormat.value) result.number_format = { ...numberFormat.value }
+    if (hasUnit.value) result.number_format = { ...numberFormat.value }
     return result
 }
 
