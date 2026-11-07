@@ -32,3 +32,5 @@ SOFTWARE.
 
 - `dev/otel/schema/compat_logs.sql`, `compat_traces.sql`, `compat_metrics.sql` and `k8s_logs.sql` are adapted from HyperDX
   `docker/otel-collector/schema/seed/00002_otel_logs_compat.sql`, `00005_otel_traces_compat.sql` and `00003_otel_metrics.sql` (MIT, above).
+- `ui/src/utils/context.js` and `ui/src/components/explorer/results/tabs/ContextTab.vue` adapt the context ranges, quick filters
+  and match presets of HyperDX `packages/app/src/components/ContextSidePanel.tsx` and `ContextFilterPills.tsx` (MIT, above).
