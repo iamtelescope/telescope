@@ -97,6 +97,10 @@ SOFTWARE.
   `packages/app/src/dashboardTemplates/*-runtime*.json`; `services.json`, `kubernetes.json` and `clickhouse.json` follow the
   queries of `ServicesDashboardPage/{HttpTab,DatabaseTab,ErrorsTab}.tsx`, `KubernetesDashboardPage.tsx` and `ClickhousePage.tsx`;
   `backend/telescope_otel/provision.py` follows `packages/api/src/tasks/provisionDashboards/index.ts` (MIT, above).
+- `backend/telescope_mcp/views.py` and `backend/telescope_mcp/tools.py` (the stateless streamable HTTP transport with
+  405 on GET/DELETE, the tool set, the read/write behaviour hints and the 50k-character response trim) are adapted from HyperDX
+  `packages/api/src/mcp/app.ts`, `mcp/tools/annotations.ts`, `mcp/tools/*` and `utils/trimToolResponse.ts`;
+  `backend/telescope_mcp/MCP.md` follows `MCP.md` (MIT, above).
 
 ## Drain3
 

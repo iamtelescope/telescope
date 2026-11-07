@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "telescope_alerts",
     "telescope_otel",
     "telescope_api2",
+    "telescope_mcp",
 ]
 
 if CONFIG["auth"]["providers"]["github"]["enabled"]:
