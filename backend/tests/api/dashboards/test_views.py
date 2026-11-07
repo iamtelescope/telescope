@@ -116,7 +116,14 @@ def test_shared_dashboard_tile_needs_source_use(hacker_user, dashboard):
     client = client_for(hacker_user)
     got = client.get(f"/ui/v1/dashboards/{dashboard.slug}").json()
     assert got["data"]["permissions"] == ["read"]
-    chart = got["data"]["data"]["tiles"][0]["chart"]
+    tiles = got["data"]["data"]["tiles"]
+    assert tiles[0]["title"] == "Rows by host"
+    assert tiles[0]["chart"] == {
+        "display": "text",
+        "text": "You have no access to the source of this tile.",
+    }
+    assert tiles[1]["chart"] == {"display": "text", "text": "Runbook"}
+    chart = dashboard.data["tiles"][0]["chart"]
 
     with patch("telescope.views.source.views.get_fetchers") as get_fetchers:
         result = client.post(

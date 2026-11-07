@@ -244,3 +244,13 @@ def test_update_keeps_stored_raw_query(test_user, clickhouse_source, dashboard):
     with pytest.raises(SerializerValidationError) as err:
         service.update(test_user, dashboard.slug, payload(dashboard, data=data))
     assert "raw_query" in str(err.value.serializer.errors)
+
+
+@pytest.mark.django_db
+def test_reader_sees_tiles_of_usable_sources(hacker_user, clickhouse_source, dashboard):
+    share(dashboard)
+    rbac_manager.grant_source_role(
+        clickhouse_source, SourceRole.USER.value, user=hacker_user
+    )
+    result = service.get(hacker_user, dashboard.slug)
+    assert result["data"]["tiles"][0]["chart"]["source"] == clickhouse_source.slug

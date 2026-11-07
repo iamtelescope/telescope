@@ -22,6 +22,7 @@ from telescope.services.exceptions import SerializerValidationError
 from telescope.services.helpers import check_user_hit_create_dashboards_limit
 
 DASHBOARD_NOT_FOUND = "Dashboard not found"
+NO_SOURCE_ACCESS_TEXT = "You have no access to the source of this tile."
 
 
 class DashboardService:
@@ -52,10 +53,26 @@ class DashboardService:
             dashboards = self.rbac_manager.get_dashboards(user)
             return DashboardListSerializer(dashboards, many=True).data
 
+    def _hide_foreign_tiles(self, user: User, data: Dict[str, Any]):
+        # Readers only see tile definitions for sources they can use.
+        usable = {
+            s.slug
+            for s in self.rbac_manager.get_sources(
+                user, required_permissions=[permissions.Source.USE.value]
+            )
+        }
+        for tile in data["data"].get("tiles", []):
+            source = tile["chart"].get("source")
+            if source is not None and source not in usable:
+                tile["chart"] = {"display": "text", "text": NO_SOURCE_ACCESS_TEXT}
+
     def get(self, user: User, slug: str):
         with transaction.atomic():
             dashboard = self._get(user, slug, permissions.Dashboard.READ.value)
-            return DashboardSerializer(dashboard).data
+            data = DashboardSerializer(dashboard).data
+            if permissions.Dashboard.EDIT.value not in dashboard.permissions:
+                self._hide_foreign_tiles(user, data)
+            return data
 
     def create(self, user: User, data: Dict[str, Any]):
         with transaction.atomic():
