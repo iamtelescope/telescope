@@ -6,7 +6,7 @@ export default [
         label: 'Alerts',
         to: '/alerts',
         icon: Bell,
-        routeNames: ['alerts', 'alertNew', 'alert', 'alertChannels'],
+        routeNames: ['alerts', 'alertNew', 'alert', 'alertDetail', 'alertChannels'],
         testid: 'nav-alerts',
     },
 ]

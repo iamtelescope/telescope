@@ -10,8 +10,9 @@
             />threshold</span
         >
         <span
-            ><span class="inline-block w-3 h-3 align-middle mr-1 rounded-sm" :style="{ background: FIRING }" />would
-            fire</span
+            ><span class="inline-block w-3 h-3 align-middle mr-1 rounded-sm" :style="{ background: FIRING }" />{{
+                bandLabel || 'would fire'
+            }}</span
         >
     </div>
 </template>
@@ -28,7 +29,7 @@ import { localTimeZone } from '@/utils/datetimeranges'
 import { isRange } from '@/features/alerts/useAlerts.js'
 
 // Threshold shading adapted from HyperDX components/AlertPreviewChart.tsx (MIT).
-const props = defineProps(['data', 'alert'])
+const props = defineProps(['data', 'alert', 'bandLabel'])
 
 const THRESHOLD = 'rgba(234, 88, 12, 0.9)'
 const FIRING = 'rgba(239, 68, 68, 0.18)'

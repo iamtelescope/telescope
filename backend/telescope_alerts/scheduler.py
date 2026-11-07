@@ -67,7 +67,7 @@ def tick(holder: str, lease_seconds: int, at_ms=None) -> int:
         if not renew():
             return written
         alert = Alert.objects.select_related("owner", "dashboard").filter(pk=pk).first()
-        if alert is None:
+        if alert is None or alert.state == STATE_DISABLED:
             continue
         try:
             written += evaluate_alert(alert, at_ms, renew)

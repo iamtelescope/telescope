@@ -54,3 +54,7 @@ SOFTWARE.
   `packages/common-utils/src/variables.ts` (an empty selection is a no-op) and `types.ts` `DashboardFilterSchema` (MIT, above); no code is copied.
 - `backend/telescope_otel/detect.py` (OTel schema detection) and the role list in `backend/telescope_otel/roles.py` are adapted from
   HyperDX `packages/app/src/source.ts` (`inferTableSourceConfig`) and `packages/api/src/models/source.ts` (MIT, above).
+- `backend/telescope_alerts/services.py` (silence, evaluations paging, firing-transition markers) and the schedule
+  offset/start in `backend/telescope_alerts/evaluator.py` are adapted from HyperDX `packages/api/src/routers/api/alerts.ts`
+  and `packages/api/src/tasks/checkAlerts/index.ts` (`getScheduledWindowStart`); `ui/src/features/alerts/AlertDetail.vue`,
+  `AlertsView.vue` and `SilenceButton.vue` from `packages/app/src/AlertDetailPage.tsx` and `AlertsPage.tsx` (MIT, above).
