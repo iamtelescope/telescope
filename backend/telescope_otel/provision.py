@@ -2,7 +2,8 @@
 
 A template binds each of its roles to a source: `{{role}}` becomes the source slug and
 `{{role.name}}` the column the source maps to OTel role `name`. Tiles of unbound roles are dropped.
-Provisioning upserts by slug, as HyperDX packages/api/src/tasks/provisionDashboards/index.ts does by name.
+Provisioning upserts by slug, as HyperDX packages/api/src/tasks/provisionDashboards/index.ts does by name,
+and like it never touches a dashboard it did not create.
 """
 
 import copy
@@ -14,6 +15,7 @@ from typing import Dict, List
 from django.db import transaction
 
 from telescope.models import Dashboard, Source
+from telescope_otel.models import ProvisionedDashboard
 from telescope.rbac import permissions
 from telescope.rbac.manager import RBACManager
 from telescope.serializers.dashboard import (
@@ -201,6 +203,14 @@ def provision_file(path: Path, user) -> tuple:
     }
     with transaction.atomic():
         existing = Dashboard.objects.select_for_update().filter(slug=slug).first()
+        if existing is not None:
+            if not ProvisionedDashboard.objects.filter(dashboard=existing).exists():
+                raise TemplateError(
+                    f"slug {slug} is taken by a dashboard not provisioned"
+                )
+            perms = rbac_manager.calculate_dashboard_permissions(user, existing)
+            if permissions.Dashboard.EDIT.value not in perms:
+                raise TemplateError(f"user cannot edit dashboard {slug}")
         serializer = NewDashboardSerializer(
             data=payload,
             context={
@@ -215,7 +225,10 @@ def provision_file(path: Path, user) -> tuple:
             raise TemplateError(json.dumps(serializer.errors))
         fields = dict(serializer.validated_data)
         if existing is None:
-            Dashboard.objects.create(slug=slug, owner=user, updated_by=user, **fields)
+            dashboard = Dashboard.objects.create(
+                slug=slug, owner=user, updated_by=user, **fields
+            )
+            ProvisionedDashboard.objects.create(dashboard=dashboard)
             return slug, "created"
         if all(getattr(existing, k) == v for k, v in fields.items()):
             return slug, "unchanged"

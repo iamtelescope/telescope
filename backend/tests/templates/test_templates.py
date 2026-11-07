@@ -333,3 +333,44 @@ def test_command_upserts_and_fails_on_errors(root_user, otel, tmp_path, capsys):
         call_command("telescope_provision_dashboards", str(tmp_path))
     with pytest.raises(CommandError, match="user not found"):
         call_command("telescope_provision_dashboards", str(tmp_path), username="nobody")
+
+
+def test_provisioning_never_touches_a_user_dashboard(root_user, test_user, tmp_path):
+    data = {
+        "version": 3,
+        "time": {"from": "now-1h", "to": "now"},
+        "query": "",
+        "refresh": "off",
+        "variables": [],
+        "sections": [],
+        "tiles": [],
+    }
+    Dashboard.objects.create(
+        slug="mine", name="Mine", owner=root_user, shared=False, data=data
+    )
+    path = write(tmp_path / "mine.json", {"name": "Provisioned", "data": data})
+    for user in (test_user, root_user):
+        assert provision([str(path)], user)[0][2].startswith("error: slug mine")
+    mine = Dashboard.objects.get(slug="mine")
+    assert (mine.name, mine.shared, mine.version) == ("Mine", False, 1)
+
+
+def test_provisioning_needs_edit_on_a_provisioned_dashboard(
+    root_user, test_user, tmp_path
+):
+    data = {
+        "version": 3,
+        "time": {"from": "now-1h", "to": "now"},
+        "query": "",
+        "refresh": "off",
+        "variables": [],
+        "sections": [],
+        "tiles": [],
+    }
+    path = write(tmp_path / "p.json", {"name": "P", "data": data})
+    assert provision([str(path)], root_user)[0][2] == "created"
+    write(path, {"name": "Changed", "data": data})
+    assert (
+        provision([str(path)], test_user)[0][2] == "error: user cannot edit dashboard p"
+    )
+    assert Dashboard.objects.get(slug="p").name == "P"
