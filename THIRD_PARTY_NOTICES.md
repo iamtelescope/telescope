@@ -54,3 +54,7 @@ SOFTWARE.
   `packages/common-utils/src/variables.ts` (an empty selection is a no-op) and `types.ts` `DashboardFilterSchema` (MIT, above); no code is copied.
 - `backend/telescope_otel/detect.py` (OTel schema detection) and the role list in `backend/telescope_otel/roles.py` are adapted from
   HyperDX `packages/app/src/source.ts` (`inferTableSourceConfig`) and `packages/api/src/models/source.ts` (MIT, above).
+- `backend/telescope_otel/trace.py` (span tree build, the `Error`/`STATUS_CODE_ERROR` rule, the span cap with a truncated flag) and
+  `ui/src/features/traces/TraceWaterfall.vue` (service palette without red/green, collapse) are adapted from HyperDX
+  `packages/app/src/components/DBTraceWaterfallChart.tsx`, `traceWaterfallLimits.ts` and `packages/common-utils/src/core/spanPredicates.ts`;
+  `ui/src/features/traces/SpanDetail.vue` follows `SpanEventsSubpanel.tsx` and `SpanLinksSubpanel.tsx` (MIT, above).
