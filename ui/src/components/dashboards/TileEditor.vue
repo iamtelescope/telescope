@@ -992,6 +992,15 @@ const onSourceChange = () => {
     loadContextColumns()
 }
 
+// The heatmap's own duration unit follows its source and column, and goes with the display,
+// unless the user picked another unit; a freshly opened tile keeps the unit it has.
+const heatmapUnit = computed(() =>
+    form.value && isHeatmap.value ? durationUnit(source.value, chart.value.series[0]?.column) : null,
+)
+watch([form, heatmapUnit], ([f, unit], [oldForm, old]) => {
+    if (f === oldForm && numberFormat.value.unit === (old || 'number')) numberFormat.value.unit = unit || 'number'
+})
+
 const setDisplay = (display) => {
     const c = chart.value
     const wasHeatmap = c.display === 'heatmap'
@@ -999,8 +1008,6 @@ const setDisplay = (display) => {
     if (display === 'heatmap') {
         c.series = [{ agg: 'heatmap' }]
         onAggChange(c.series[0])
-        const unit = durationUnit(source.value, c.series[0].column)
-        if (unit && numberFormat.value.unit === 'number') numberFormat.value.unit = unit
         c.group_by = ''
         groupBys.value = ['']
     } else if (wasHeatmap) {
