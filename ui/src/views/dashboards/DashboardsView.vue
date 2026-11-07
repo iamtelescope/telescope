@@ -18,6 +18,16 @@
                         class="mr-2"
                         @click="openImport"
                     />
+                    <Button
+                        size="small"
+                        severity="secondary"
+                        outlined
+                        icon="pi pi-th-large"
+                        label="From template"
+                        class="mr-2"
+                        data-testid="dashboards-from-template"
+                        @click="router.push({ name: 'dashboardTemplates' })"
+                    />
                     <Button size="small" severity="primary" icon="pi pi-plus" label="New" @click="openNew" />
                 </template>
             </ListHeader>

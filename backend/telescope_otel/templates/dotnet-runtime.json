@@ -1,0 +1,391 @@
+{
+  "slug": "dotnet-runtime",
+  "name": ".NET Runtime Metrics",
+  "description": "Garbage collection, heap fragmentation, exception, thread pool, and CPU metrics for .NET v9+ applications with the OpenTelemetry.Instrumentation.Runtime package",
+  "tags": [
+    "OTel",
+    "Metrics",
+    "Runtime"
+  ],
+  "roles": {
+    "metrics": {
+      "label": "Metrics",
+      "signal": "metrics"
+    }
+  },
+  "dashboard": {
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "query": "",
+    "refresh": "off",
+    "variables": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "values",
+        "source": "{{metrics}}",
+        "column": "{{metrics.service}}",
+        "multi": true
+      }
+    ],
+    "sections": [],
+    "tiles": [
+      {
+        "id": "6d4b7e",
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "GC Heap Size",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "dotnet.gc.last_collection.heap.size",
+                "type": "sum",
+                "agg": "avg"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "07f54d",
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "Exceptions",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "dotnet.exceptions",
+                "type": "sum",
+                "agg": "increase"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "number",
+            "decimals": 0
+          }
+        }
+      },
+      {
+        "id": "c9bc67",
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "GC Pause (s)",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "dotnet.gc.pause.time",
+                "type": "sum",
+                "agg": "increase"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "number",
+            "decimals": 3
+          }
+        }
+      },
+      {
+        "id": "334016",
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "ThreadPool Items",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "dotnet.thread_pool.work_item.count",
+                "type": "sum",
+                "agg": "increase"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "number",
+            "decimals": 0
+          }
+        }
+      },
+      {
+        "id": "98e92c",
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 7,
+        "title": "GC Collections by Generation",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "stacked_bar",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "dotnet.gc.collections",
+                "type": "sum",
+                "agg": "increase"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "{{metrics.attrs}}.'gc.heap.generation'",
+          "granularity": "auto",
+          "limit": 10
+        }
+      },
+      {
+        "id": "f6c44a",
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 7,
+        "title": "GC Pause Time (s)",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "dotnet.gc.pause.time",
+                "type": "sum",
+                "agg": "increase"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "number",
+            "decimals": 3
+          }
+        }
+      },
+      {
+        "id": "e54085",
+        "x": 0,
+        "y": 11,
+        "w": 12,
+        "h": 7,
+        "title": "Last Collection Heap Size (by gen)",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "dotnet.gc.last_collection.heap.size",
+                "type": "sum",
+                "agg": "avg"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "{{metrics.attrs}}.'gc.heap.generation'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "34979f",
+        "x": 12,
+        "y": 11,
+        "w": 12,
+        "h": 7,
+        "title": "Heap Fragmentation (by gen)",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "dotnet.gc.last_collection.heap.fragmentation.size",
+                "type": "sum",
+                "agg": "avg"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "{{metrics.attrs}}.'gc.heap.generation'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "6649b7",
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 7,
+        "title": "Exception Rate",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "dotnet.exceptions",
+                "type": "sum",
+                "agg": "increase"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10
+        }
+      },
+      {
+        "id": "3a8add",
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 7,
+        "title": "Allocation Rate",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "dotnet.gc.heap.total_allocated",
+                "type": "sum",
+                "agg": "increase"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "fdfdc8",
+        "x": 0,
+        "y": 25,
+        "w": 12,
+        "h": 7,
+        "title": "CPU Cores Used",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "dotnet.process.cpu.time",
+                "type": "sum",
+                "agg": "rate"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10
+        }
+      },
+      {
+        "id": "ebe6dc",
+        "x": 12,
+        "y": 25,
+        "w": 12,
+        "h": 7,
+        "title": "ThreadPool Throughput & Lock Contention",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "dotnet.thread_pool.work_item.count",
+                "type": "sum",
+                "agg": "increase"
+              },
+              "alias": "work items"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "dotnet.monitor.lock_contentions",
+                "type": "sum",
+                "agg": "increase"
+              },
+              "alias": "contentions"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10
+        }
+      }
+    ]
+  }
+}

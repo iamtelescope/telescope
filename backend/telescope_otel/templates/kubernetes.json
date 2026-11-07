@@ -1,0 +1,540 @@
+{
+  "slug": "kubernetes",
+  "name": "Kubernetes",
+  "description": "Pod, node and namespace CPU, memory and restarts from the OpenTelemetry Kubernetes receivers, with pod logs.",
+  "tags": [
+    "OTel",
+    "Metrics",
+    "Kubernetes"
+  ],
+  "roles": {
+    "metrics": {
+      "label": "Metrics",
+      "signal": "metrics"
+    },
+    "logs": {
+      "label": "Logs",
+      "signal": "logs",
+      "optional": true
+    }
+  },
+  "dashboard": {
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "query": "",
+    "refresh": "off",
+    "variables": [
+      {
+        "name": "namespace",
+        "label": "Namespace",
+        "type": "text"
+      },
+      {
+        "name": "pod",
+        "label": "Pod",
+        "type": "text"
+      },
+      {
+        "name": "node",
+        "label": "Node",
+        "type": "text"
+      }
+    ],
+    "sections": [
+      {
+        "id": "pods",
+        "title": "Pods"
+      },
+      {
+        "id": "nodes",
+        "title": "Nodes"
+      },
+      {
+        "id": "namespaces",
+        "title": "Namespaces"
+      },
+      {
+        "id": "logs",
+        "title": "Logs"
+      }
+    ],
+    "tiles": [
+      {
+        "id": "pods",
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 10,
+        "title": "Pods",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "table",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.container.restarts",
+                "type": "gauge",
+                "agg": "last"
+              },
+              "alias": "restarts"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.pod.phase",
+                "type": "gauge",
+                "agg": "last"
+              },
+              "alias": "phase"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.pod.cpu.utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "cpu (cores)"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.pod.memory.usage",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "mem",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "mem / 1048576",
+              "alias": "memory (MiB)"
+            }
+          ],
+          "query": "{{metrics.resource_attrs}}.'k8s.namespace.name' = $namespace and {{metrics.resource_attrs}}.'k8s.pod.name' = $pod and {{metrics.resource_attrs}}.'k8s.node.name' = $node",
+          "group_by": "{{metrics.resource_attrs}}.'k8s.pod.name', {{metrics.resource_attrs}}.'k8s.namespace.name', {{metrics.resource_attrs}}.'k8s.node.name'",
+          "granularity": "auto",
+          "limit": 50
+        },
+        "section": "pods",
+        "description": "Phase: 1 pending, 2 running, 3 succeeded, 4 failed, 5 unknown."
+      },
+      {
+        "id": "pod-cpu",
+        "x": 0,
+        "y": 10,
+        "w": 12,
+        "h": 8,
+        "title": "Pod CPU utilization",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.pod.cpu.utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "v",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "v * 100",
+              "alias": "cpu %"
+            }
+          ],
+          "query": "{{metrics.resource_attrs}}.'k8s.namespace.name' = $namespace and {{metrics.resource_attrs}}.'k8s.pod.name' = $pod and {{metrics.resource_attrs}}.'k8s.node.name' = $node",
+          "group_by": "{{metrics.resource_attrs}}.'k8s.pod.name'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 1
+          }
+        },
+        "section": "pods"
+      },
+      {
+        "id": "pod-memory",
+        "x": 12,
+        "y": 10,
+        "w": 12,
+        "h": 8,
+        "title": "Pod memory usage",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.pod.memory.usage",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "memory"
+            }
+          ],
+          "query": "{{metrics.resource_attrs}}.'k8s.namespace.name' = $namespace and {{metrics.resource_attrs}}.'k8s.pod.name' = $pod and {{metrics.resource_attrs}}.'k8s.node.name' = $node",
+          "group_by": "{{metrics.resource_attrs}}.'k8s.pod.name'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        },
+        "section": "pods"
+      },
+      {
+        "id": "pod-cpu-limit",
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 8,
+        "title": "Pod CPU of limit",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.pod.cpu_limit_utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "v",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "v * 100",
+              "alias": "cpu of limit %"
+            }
+          ],
+          "query": "{{metrics.resource_attrs}}.'k8s.namespace.name' = $namespace and {{metrics.resource_attrs}}.'k8s.pod.name' = $pod and {{metrics.resource_attrs}}.'k8s.node.name' = $node",
+          "group_by": "{{metrics.resource_attrs}}.'k8s.pod.name'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 1
+          }
+        },
+        "section": "pods"
+      },
+      {
+        "id": "pod-memory-limit",
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 8,
+        "title": "Pod memory of limit",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.pod.memory_limit_utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "v",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "v * 100",
+              "alias": "memory of limit %"
+            }
+          ],
+          "query": "{{metrics.resource_attrs}}.'k8s.namespace.name' = $namespace and {{metrics.resource_attrs}}.'k8s.pod.name' = $pod and {{metrics.resource_attrs}}.'k8s.node.name' = $node",
+          "group_by": "{{metrics.resource_attrs}}.'k8s.pod.name'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 1
+          }
+        },
+        "section": "pods"
+      },
+      {
+        "id": "restarts",
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 8,
+        "title": "Container restarts",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.container.restarts",
+                "type": "gauge",
+                "agg": "max"
+              },
+              "alias": "restarts"
+            }
+          ],
+          "query": "{{metrics.resource_attrs}}.'k8s.namespace.name' = $namespace and {{metrics.resource_attrs}}.'k8s.pod.name' = $pod and {{metrics.resource_attrs}}.'k8s.node.name' = $node",
+          "group_by": "{{metrics.resource_attrs}}.'k8s.pod.name'",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "pods"
+      },
+      {
+        "id": "node-cpu",
+        "x": 0,
+        "y": 34,
+        "w": 12,
+        "h": 8,
+        "title": "Node CPU utilization",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.node.cpu.utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "v",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "v * 100",
+              "alias": "cpu %"
+            }
+          ],
+          "query": "{{metrics.resource_attrs}}.'k8s.namespace.name' = $namespace and {{metrics.resource_attrs}}.'k8s.pod.name' = $pod and {{metrics.resource_attrs}}.'k8s.node.name' = $node",
+          "group_by": "{{metrics.resource_attrs}}.'k8s.node.name'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 1
+          }
+        },
+        "section": "nodes"
+      },
+      {
+        "id": "node-memory",
+        "x": 12,
+        "y": 34,
+        "w": 12,
+        "h": 8,
+        "title": "Node memory usage",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.node.memory.usage",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "memory"
+            }
+          ],
+          "query": "{{metrics.resource_attrs}}.'k8s.namespace.name' = $namespace and {{metrics.resource_attrs}}.'k8s.pod.name' = $pod and {{metrics.resource_attrs}}.'k8s.node.name' = $node",
+          "group_by": "{{metrics.resource_attrs}}.'k8s.node.name'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        },
+        "section": "nodes"
+      },
+      {
+        "id": "ns-cpu",
+        "x": 0,
+        "y": 42,
+        "w": 12,
+        "h": 8,
+        "title": "Namespace CPU utilization (pod average)",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.pod.cpu.utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "v",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "v * 100",
+              "alias": "cpu %"
+            }
+          ],
+          "query": "{{metrics.resource_attrs}}.'k8s.namespace.name' = $namespace and {{metrics.resource_attrs}}.'k8s.pod.name' = $pod and {{metrics.resource_attrs}}.'k8s.node.name' = $node",
+          "group_by": "{{metrics.resource_attrs}}.'k8s.namespace.name'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 1
+          }
+        },
+        "section": "namespaces"
+      },
+      {
+        "id": "ns-memory",
+        "x": 12,
+        "y": 42,
+        "w": 12,
+        "h": 8,
+        "title": "Namespace memory usage (pod average)",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.pod.memory.usage",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "memory"
+            }
+          ],
+          "query": "{{metrics.resource_attrs}}.'k8s.namespace.name' = $namespace and {{metrics.resource_attrs}}.'k8s.pod.name' = $pod and {{metrics.resource_attrs}}.'k8s.node.name' = $node",
+          "group_by": "{{metrics.resource_attrs}}.'k8s.namespace.name'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        },
+        "section": "namespaces"
+      },
+      {
+        "id": "ns-table",
+        "x": 0,
+        "y": 50,
+        "w": 24,
+        "h": 8,
+        "title": "Namespaces",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "table",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.pod.cpu.utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "cpu (cores)"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.pod.memory.usage",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "mem",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "mem / 1048576",
+              "alias": "memory (MiB)"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "k8s.container.restarts",
+                "type": "gauge",
+                "agg": "max"
+              },
+              "alias": "restarts (max)"
+            }
+          ],
+          "query": "{{metrics.resource_attrs}}.'k8s.namespace.name' = $namespace and {{metrics.resource_attrs}}.'k8s.pod.name' = $pod and {{metrics.resource_attrs}}.'k8s.node.name' = $node",
+          "group_by": "{{metrics.resource_attrs}}.'k8s.namespace.name'",
+          "granularity": "auto",
+          "limit": 50
+        },
+        "section": "namespaces"
+      },
+      {
+        "id": "log-volume",
+        "x": 0,
+        "y": 58,
+        "w": 12,
+        "h": 8,
+        "title": "Log volume by pod",
+        "chart": {
+          "source": "{{logs}}",
+          "display": "stacked_bar",
+          "series": [
+            {
+              "agg": "count",
+              "alias": "logs"
+            }
+          ],
+          "query": "{{logs.resource_attrs}}.'k8s.namespace.name' = $namespace and {{logs.resource_attrs}}.'k8s.pod.name' = $pod and {{logs.resource_attrs}}.'k8s.node.name' = $node",
+          "group_by": "{{logs.resource_attrs}}.'k8s.pod.name'",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "logs"
+      },
+      {
+        "id": "error-logs",
+        "x": 12,
+        "y": 58,
+        "w": 12,
+        "h": 8,
+        "title": "Warning and error logs by pod",
+        "chart": {
+          "source": "{{logs}}",
+          "display": "stacked_bar",
+          "series": [
+            {
+              "agg": "count",
+              "alias": "logs"
+            }
+          ],
+          "query": "{{logs.resource_attrs}}.'k8s.namespace.name' = $namespace and {{logs.resource_attrs}}.'k8s.pod.name' = $pod and {{logs.resource_attrs}}.'k8s.node.name' = $node and {{logs.severity_text}} in ['WARN', 'WARNING', 'ERROR', 'FATAL', 'Warning', 'Error']",
+          "group_by": "{{logs.resource_attrs}}.'k8s.pod.name'",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "logs"
+      }
+    ]
+  }
+}

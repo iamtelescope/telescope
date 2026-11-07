@@ -89,6 +89,10 @@ SOFTWARE.
   exception from attributes or span events, HTTP headers and bodies, span events, pod/node infrastructure correlations and
   their time ranges) are adapted from HyperDX `packages/app/src/components/DBRowOverviewPanel.tsx`, `ExceptionSubpanel.tsx`,
   `HttpMessageSections.tsx`, `SpanEventsSubpanel.tsx`, `DBInfraPanel.tsx` and `infraCorrelations.ts` (MIT, above).
+- `backend/telescope_otel/templates/{jvm,go,nodejs,python,dotnet}-runtime.json` are ported from HyperDX
+  `packages/app/src/dashboardTemplates/*-runtime*.json`; `services.json`, `kubernetes.json` and `clickhouse.json` follow the
+  queries of `ServicesDashboardPage/{HttpTab,DatabaseTab,ErrorsTab}.tsx`, `KubernetesDashboardPage.tsx` and `ClickhousePage.tsx`;
+  `backend/telescope_otel/provision.py` follows `packages/api/src/tasks/provisionDashboards/index.ts` (MIT, above).
 
 ## Drain3
 

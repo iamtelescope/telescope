@@ -1,0 +1,402 @@
+{
+  "slug": "go-runtime",
+  "name": "Go Runtime Metrics",
+  "description": "Memory usage, allocations, GC targets, CPU utilization, and goroutine metrics for Go applications with the OTel Runtime (v0.62+) and Host Metrics instrumentations",
+  "tags": [
+    "OTel",
+    "Metrics",
+    "Runtime"
+  ],
+  "roles": {
+    "metrics": {
+      "label": "Metrics",
+      "signal": "metrics"
+    }
+  },
+  "dashboard": {
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "query": "",
+    "refresh": "off",
+    "variables": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "values",
+        "source": "{{metrics}}",
+        "column": "{{metrics.service}}",
+        "multi": true
+      }
+    ],
+    "sections": [],
+    "tiles": [
+      {
+        "id": "109853",
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "Memory Used",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "go.memory.used",
+                "type": "sum",
+                "agg": "avg"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "e6a3df",
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "Alloc Rate",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "go.memory.allocated",
+                "type": "sum",
+                "agg": "increase"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "40f62f",
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "GC Heap Target",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "go.memory.gc.goal",
+                "type": "sum",
+                "agg": "avg"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "2029f0",
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "CPU Utilization",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "process.cpu.utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "v",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "v * 100",
+              "alias": "value"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "bbde66",
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 7,
+        "title": "Memory: Used vs Limit vs GC Target",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "go.memory.used",
+                "type": "sum",
+                "agg": "avg"
+              },
+              "alias": "used"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "go.memory.limit",
+                "type": "sum",
+                "agg": "avg"
+              },
+              "alias": "limit"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "go.memory.gc.goal",
+                "type": "sum",
+                "agg": "avg"
+              },
+              "alias": "gc target"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "deb616",
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 7,
+        "title": "Memory Allocated (rate)",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "go.memory.allocated",
+                "type": "sum",
+                "agg": "increase"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "432607",
+        "x": 0,
+        "y": 11,
+        "w": 12,
+        "h": 7,
+        "title": "CPU Utilization",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "process.cpu.utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "v",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "v * 100",
+              "alias": "value"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "08224d",
+        "x": 12,
+        "y": 11,
+        "w": 12,
+        "h": 7,
+        "title": "CPU Cores Used",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "process.cpu.time",
+                "type": "sum",
+                "agg": "rate"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10
+        }
+      },
+      {
+        "id": "fae8d7",
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 7,
+        "title": "Object Allocations",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "go.memory.allocations",
+                "type": "sum",
+                "agg": "increase"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "number",
+            "decimals": 0
+          }
+        }
+      },
+      {
+        "id": "545a68",
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 7,
+        "title": "Memory Used by Type",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "go.memory.used",
+                "type": "sum",
+                "agg": "avg"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "{{metrics.attrs}}.'go.memory.type'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "c0fc04",
+        "x": 0,
+        "y": 25,
+        "w": 12,
+        "h": 7,
+        "title": "GC Target (%) & GOMAXPROCS",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "go.config.gogc",
+                "type": "sum",
+                "agg": "avg"
+              },
+              "alias": "GC target %"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "go.processor.limit",
+                "type": "sum",
+                "agg": "avg"
+              },
+              "alias": "GOMAXPROCS"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10
+        }
+      }
+    ]
+  }
+}
