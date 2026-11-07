@@ -274,8 +274,8 @@ def test_v1_and_v2_dashboards_serve_the_same_chart_data(
         assert old == new
         body = {k: v for k, v in new["chart"].items() if k != "source"}
         result = chart(root_user, traces, window, **body)
-        # The v1 wire shape: no v2 keys appear for a v1 tile (SQL is pinned by the golden test).
-        assert set(result) == keys[result["kind"]]
+        # The v1 wire shape: no v2 keys appear for a v1 tile; `debug` is the RAW_QUERY user's SQL.
+        assert set(result) - {"debug"} == keys[result["kind"]]
         for item in result.get("series", []) + result.get("rows", []):
             assert set(item) <= {"name", "group", "series_index", "values"}
 
