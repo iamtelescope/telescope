@@ -18,8 +18,10 @@ class DashboardService {
     deleteDashboard = async (slug) => {
         return await http.Delete(`ui/v1/dashboards/${slug}`)
     }
-    getChartData = async (sourceSlug, params, signal) => {
-        return await http.Post(`ui/v1/sources/${sourceSlug}/chartData`, params, signal)
+    // `attribution` ({dashboard, tile}) tags the ClickHouse queries in system.query_log.
+    getChartData = async (sourceSlug, params, signal, attribution) => {
+        const qs = attribution ? `?${new URLSearchParams(attribution)}` : ''
+        return await http.Post(`ui/v1/sources/${sourceSlug}/chartData${qs}`, params, signal)
     }
 }
 

@@ -58,7 +58,8 @@ const useSaveDashboard = () => {
 }
 
 // Chart data for one tile; `queue` (optional) limits requests in flight per dashboard.
-const useChartData = (queue) => {
+// `attribution` (optional) returns {dashboard, tile} to tag its ClickHouse queries.
+const useChartData = (queue, attribution) => {
     const data = ref(null)
     const loading = ref(false)
     const error = ref(null)
@@ -77,7 +78,7 @@ const useChartData = (queue) => {
         const current = new AbortController()
         controller = current
         loading.value = true
-        const call = () => srv.getChartData(sourceSlug, params, current.signal)
+        const call = () => srv.getChartData(sourceSlug, params, current.signal, attribution?.())
         const response = queue ? await queue(call, current.signal) : await call()
         if (current.signal.aborted || !response) return
         data.value = response.result ? response.data : null

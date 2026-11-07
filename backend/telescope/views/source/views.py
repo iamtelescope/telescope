@@ -22,6 +22,7 @@ from telescope.fetchers.request import (
 )
 from telescope.rbac import permissions
 from telescope.response import UIResponse
+from telescope.query_attribution import debug_sql
 from telescope.models import Source, SavedView, Connection
 from telescope.serializers.dashboard import SourceChartDataRequestSerializer
 from telescope.serializers.source import (
@@ -402,6 +403,8 @@ class SourceDataView(APIView):
                     "time_from": serializer.validated_data["from"],
                     "time_to": serializer.validated_data["to"],
                 }
+                if debug := debug_sql(request.user, slug):
+                    response.data["debug"] = debug
         return Response(response.as_dict())
 
 
@@ -557,6 +560,8 @@ class SourceChartDataView(APIView):
                 limit=serializer.validated_data["limit"],
             )
             response.data = fetcher.fetch_chart_data(chart_request).as_dict()
+            if debug := debug_sql(request.user, slug):
+                response.data["debug"] = debug
         except Exception as err:
             logger.exception("chart data failed: %s", err)
             response.mark_failed(str(err))

@@ -153,7 +153,10 @@ const menuOpen = ref(false)
 const titleEl = ref()
 const titleTruncated = ref(false)
 const fullscreen = ref(false)
-const { data, loading, error, code, validation, load, abort } = useChartData(props.queue)
+const { data, loading, error, code, validation, load, abort } = useChartData(props.queue, () => ({
+    dashboard: router.currentRoute.value.params.dashboardSlug || '',
+    tile: props.tile.id,
+}))
 
 const isText = computed(() => props.tile.chart.display === 'text')
 

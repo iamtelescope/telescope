@@ -54,3 +54,6 @@ SOFTWARE.
   `packages/common-utils/src/variables.ts` (an empty selection is a no-op) and `types.ts` `DashboardFilterSchema` (MIT, above); no code is copied.
 - `backend/telescope_otel/detect.py` (OTel schema detection) and the role list in `backend/telescope_otel/roles.py` are adapted from
   HyperDX `packages/app/src/source.ts` (`inferTableSourceConfig`) and `packages/api/src/models/source.ts` (MIT, above).
+- `backend/telescope/query_attribution.py` (`log_comment` keys, the character allowlist and length cap) is adapted from HyperDX
+  `packages/common-utils/src/clickhouse/attribution.ts`, and `backend/telescope_api2/views.py` (resource shapes, list pagination)
+  follows `packages/api/src/routers/external-api/v2/*` (MIT, above).
