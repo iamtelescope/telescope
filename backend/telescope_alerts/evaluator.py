@@ -17,6 +17,7 @@ from telescope_alerts.definition import AlertDefinitionError, alert_data, resolv
 from telescope_alerts.models import (
     INTERVAL_MINUTES,
     STATE_ALERT,
+    STATE_DISABLED,
     STATE_ERROR,
     STATE_INSUFFICIENT_DATA,
     STATE_OK,
@@ -60,20 +61,33 @@ def now_ms() -> int:
     return int(time.time() * 1000)
 
 
-def latest_window_start(interval: str, at_ms: int) -> int:
-    """Start of the last complete window before `at_ms`; windows are aligned to the epoch (UTC)."""
+def latest_window_start(interval: str, at_ms: int, origin: int = 0) -> int:
+    """Start of the last complete window before `at_ms`; windows are aligned to `origin` (ms)."""
     step = INTERVAL_MINUTES[interval] * 60_000
-    return at_ms // step * step - step
+    return origin + (at_ms - origin) // step * step - step
 
 
 def due_windows(alert, at_ms: int) -> List[int]:
+    """Schedule offset and start follow HyperDX getScheduledWindowStart."""
     step = alert.interval_ms
-    latest = latest_window_start(alert.interval, at_ms)
+    latest = latest_window_start(alert.interval, at_ms, alert.window_origin)
     if alert.last_evaluated_window is None:
         first = latest
     else:
         first = alert.last_evaluated_window + step
+    if alert.start_ms is not None:
+        first = max(first, alert.start_ms)
     return list(range(first, latest + 1, step))[-MAX_BACKFILL_WINDOWS:]
+
+
+def is_silenced(alert) -> bool:
+    """Read fresh, so a silence set during a long tick holds the next delivery."""
+    until = (
+        Alert.objects.filter(pk=alert.pk)
+        .values_list("silenced_until", flat=True)
+        .first()
+    )
+    return until is not None and until > timezone.now()
 
 
 def _number(value) -> Optional[float]:
@@ -106,10 +120,15 @@ def _set_error(alert, window_start: int, message: str):
                 "error": message[:2000],
             },
         )
-        alert.state = STATE_ERROR
-        alert.last_error = message
-        alert.last_evaluated_at = timezone.now()
-        alert.save(update_fields=["state", "last_error", "last_evaluated_at"])
+        fields = {
+            "state": STATE_ERROR,
+            "last_error": message,
+            "last_evaluated_at": timezone.now(),
+        }
+        # A disable that landed during the query wins.
+        Alert.objects.filter(pk=alert.pk).exclude(state=STATE_DISABLED).update(**fields)
+        for name, value in fields.items():
+            setattr(alert, name, value)
 
 
 def _window_states(alert, aq, window_start, values) -> Dict[str, tuple]:
@@ -159,7 +178,7 @@ def _overall_state(states) -> str:
 
 
 class Superseded(Exception):
-    """Another evaluator (or an interval change) moved last_evaluated_window first."""
+    """Another evaluator, a schedule change or a disable moved the alert first."""
 
 
 def notify(alert, message, renew=None):
@@ -184,6 +203,8 @@ def apply_window(
     window_end = window_start + alert.interval_ms
     states = _window_states(alert, aq, window_start, dict(values))
     firing = set(alert.firing_groups)
+    # While silenced the firing set is frozen, so held transitions are sent once it ends.
+    silenced = is_silenced(alert)
     transitions = []
     rows = []
     for group, (state, value) in states.items():
@@ -197,6 +218,8 @@ def apply_window(
                 value=value,
             )
         )
+        if silenced:
+            continue
         if state == STATE_ALERT and group not in firing:
             firing.add(group)
             transitions.append(rows[-1])
@@ -218,9 +241,13 @@ def apply_window(
                 "last_evaluated_at": timezone.now(),
             }
             # Compare-and-set, so two evaluators with disjoint groups cannot both write.
-            updated = Alert.objects.filter(
-                pk=alert.pk, last_evaluated_window=alert.last_evaluated_window
-            ).update(**fields)
+            updated = (
+                Alert.objects.filter(
+                    pk=alert.pk, last_evaluated_window=alert.last_evaluated_window
+                )
+                .exclude(state=STATE_DISABLED)
+                .update(**fields)
+            )
             if not updated:
                 raise Superseded()
             for name, value in fields.items():

@@ -19,4 +19,9 @@ export default [
         name: 'alert',
         component: () => import('@/features/alerts/AlertEditor.vue'),
     },
+    {
+        path: '/alerts/:alertId(\\d+)/history',
+        name: 'alertDetail',
+        component: () => import('@/features/alerts/AlertDetail.vue'),
+    },
 ]

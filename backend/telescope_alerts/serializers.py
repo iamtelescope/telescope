@@ -1,5 +1,6 @@
 import math
 
+from django.utils import timezone
 from rest_framework import serializers
 
 from telescope.constants import CHART_MAX_SERIES
@@ -74,6 +75,12 @@ class AlertInputSerializer(StrictSerializer):
         default=list,
         max_length=MAX_CHANNELS_PER_ALERT,
     )
+    schedule_offset_minutes = serializers.IntegerField(
+        min_value=0, max_value=1439, required=False, default=0
+    )
+    schedule_start_at = serializers.DateTimeField(
+        required=False, allow_null=True, default=None
+    )
 
     def validate_channels(self, value):
         value = list(dict.fromkeys(value))
@@ -109,6 +116,10 @@ class AlertInputSerializer(StrictSerializer):
             attrs["threshold_max"] = None
         if attrs["of_windows"] < attrs["consecutive_windows"]:
             errors["of_windows"] = ["must be at least consecutive_windows"]
+        if attrs["schedule_offset_minutes"] >= INTERVAL_MINUTES[attrs["interval"]]:
+            errors["schedule_offset_minutes"] = ["must be less than the interval"]
+        elif attrs["schedule_offset_minutes"] and attrs["schedule_start_at"]:
+            errors["schedule_offset_minutes"] = ["set either an offset or a start"]
         if errors:
             raise serializers.ValidationError(errors)
         try:
@@ -118,6 +129,27 @@ class AlertInputSerializer(StrictSerializer):
                 err.errors or {"non_field_errors": [err.message]}
             )
         return attrs
+
+
+class SilenceInputSerializer(StrictSerializer):
+    until = serializers.DateTimeField()
+
+    def validate_until(self, value):
+        if value <= timezone.now():
+            raise serializers.ValidationError("must be in the future")
+        return value
+
+
+class SavedViewMetaInputSerializer(StrictSerializer):
+    tags = serializers.ListField(
+        child=serializers.CharField(max_length=64, allow_blank=True),
+        required=False,
+        max_length=MAX_TAGS,
+    )
+    favorite = serializers.BooleanField(required=False)
+
+    def validate_tags(self, value):
+        return list(dict.fromkeys(t for t in value if t))
 
 
 class ChannelInputSerializer(StrictSerializer):
@@ -157,6 +189,16 @@ def channel_dict(channel, with_config: bool):
     return data
 
 
+def silenced_dict(alert):
+    if alert.silenced_until is None or alert.silenced_until <= timezone.now():
+        return None
+    return {
+        "until": iso(alert.silenced_until),
+        "at": iso(alert.silenced_at),
+        "by": user_dict(alert.silenced_by),
+    }
+
+
 def alert_dict(alert, can_edit: bool):
     dashboard = None
     if alert.dashboard_id:
@@ -186,6 +228,9 @@ def alert_dict(alert, can_edit: bool):
         "note": alert.note,
         "tags": alert.tags,
         "channels": [c.pk for c in alert.channels.all()],
+        "schedule_offset_minutes": alert.schedule_offset_minutes,
+        "schedule_start_at": iso(alert.schedule_start_at),
+        "silenced": silenced_dict(alert),
         "owner": user_dict(alert.owner),
         "last_evaluated_window": alert.last_evaluated_window,
         "last_evaluated_at": iso(alert.last_evaluated_at),

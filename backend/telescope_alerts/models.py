@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 
-from telescope.models import Dashboard
+from telescope.models import Dashboard, SavedView
 
 KIND_SEARCH = "search"
 KIND_TILE = "tile"
@@ -99,12 +99,34 @@ class Alert(models.Model):
     # Start (ms) of the last window evaluated without error.
     last_evaluated_window = models.BigIntegerField(null=True, blank=True)
     last_evaluated_at = models.DateTimeField(null=True, blank=True)
+    # Windows start at schedule_start_at when set, else at the epoch plus the offset.
+    schedule_offset_minutes = models.PositiveSmallIntegerField(default=0)
+    schedule_start_at = models.DateTimeField(null=True, blank=True)
+    # History is still written while silenced; only notifications are held.
+    silenced_until = models.DateTimeField(null=True, blank=True)
+    silenced_at = models.DateTimeField(null=True, blank=True)
+    silenced_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     @property
     def interval_ms(self) -> int:
         return INTERVAL_MINUTES[self.interval] * 60_000
+
+    @property
+    def start_ms(self):
+        if self.schedule_start_at is None:
+            return None
+        return int(self.schedule_start_at.timestamp() * 1000)
+
+    @property
+    def window_origin(self) -> int:
+        """A timestamp (ms) on which every window boundary falls."""
+        if self.start_ms is not None:
+            return self.start_ms
+        return self.schedule_offset_minutes * 60_000
 
     def __str__(self):
         return f"alert {self.pk} {self.name}"
@@ -135,3 +157,24 @@ class SchedulerLease(models.Model):
     name = models.CharField(max_length=64, primary_key=True)
     holder = models.CharField(max_length=128)
     expires_at = models.DateTimeField()
+
+
+class SavedViewTags(models.Model):
+    """Tags of a telescope.SavedView, kept here so core migrations stay untouched."""
+
+    view = models.OneToOneField(
+        SavedView, on_delete=models.CASCADE, primary_key=True, related_name="+"
+    )
+    tags = models.JSONField(default=list)
+
+
+class SavedViewFavorite(models.Model):
+    view = models.ForeignKey(SavedView, on_delete=models.CASCADE, related_name="+")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="+")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["view", "user"], name="telescope_alerts_favorite_unique"
+            )
+        ]

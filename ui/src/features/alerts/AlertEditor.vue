@@ -30,6 +30,17 @@
                 </template>
                 <template #actions>
                     <Button
+                        v-if="stored"
+                        size="small"
+                        severity="secondary"
+                        outlined
+                        icon="pi pi-chart-line"
+                        label="History"
+                        class="mr-2"
+                        data-testid="alert-open-detail"
+                        @click="router.push({ name: 'alertDetail', params: { alertId: stored.id } })"
+                    />
+                    <Button
                         v-if="stored && canEdit"
                         size="small"
                         severity="danger"
@@ -308,6 +319,31 @@
                                         aria-label="Out of windows"
                                     />
                                 </div>
+                                <div class="flex flex-wrap items-center gap-2 text-sm">
+                                    <span>Windows start</span>
+                                    <InputNumber
+                                        v-model="form.schedule_offset_minutes"
+                                        :min="0"
+                                        :max="1439"
+                                        :disabled="!!form.schedule_start_at"
+                                        size="small"
+                                        inputClass="w-16"
+                                        aria-label="Schedule offset in minutes"
+                                        data-testid="alert-schedule-offset"
+                                    />
+                                    <span>minutes past the interval, or from</span>
+                                    <DatePicker
+                                        v-model="form.schedule_start_at"
+                                        showTime
+                                        hourFormat="24"
+                                        showButtonBar
+                                        size="small"
+                                        placeholder="any time"
+                                        inputClass="w-40"
+                                        aria-label="Schedule start"
+                                        data-testid="alert-schedule-start"
+                                    />
+                                </div>
                                 <Field label="Notify" for="alert_channels">
                                     <MultiSelect
                                         inputId="alert_channels"
@@ -436,6 +472,7 @@ import {
     Column,
     ConfirmDialog,
     DataTable,
+    DatePicker,
     InputNumber,
     InputText,
     MultiSelect,
@@ -525,6 +562,8 @@ const form = reactive({
     channels: [],
     note: '',
     tags: '',
+    schedule_offset_minutes: 0,
+    schedule_start_at: null,
 })
 
 const canEdit = computed(() => isNew.value || !!stored.value?.can_edit)
@@ -577,6 +616,8 @@ const payload = () => {
         consecutive_windows: form.consecutive_windows || 1,
         of_windows: Math.max(form.of_windows || 1, form.consecutive_windows || 1),
         channels: form.channels,
+        schedule_offset_minutes: form.schedule_start_at ? 0 : form.schedule_offset_minutes || 0,
+        schedule_start_at: form.schedule_start_at ? form.schedule_start_at.toISOString() : null,
         note: form.note,
         tags: form.tags
             .split(',')
@@ -620,6 +661,8 @@ const fill = (a) => {
         consecutive_windows: a.consecutive_windows,
         of_windows: a.of_windows,
         channels: a.channels,
+        schedule_offset_minutes: a.schedule_offset_minutes || 0,
+        schedule_start_at: a.schedule_start_at ? new Date(a.schedule_start_at) : null,
         note: a.note,
         tags: (a.tags || []).join(', '),
     })
