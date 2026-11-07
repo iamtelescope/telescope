@@ -62,14 +62,18 @@ class Selection:
 
 
 def log_edges(low: Optional[float], high: Optional[float]) -> List[float]:
-    """Bucket edges 10^(k/n) covering [low, high]; values below the first edge count in bucket 0."""
-    if low is None or high is None or low <= 0:
+    """Bucket edges 10^(k/n) covering [low, high]; values below the first edge count in bucket 0.
+
+    At most HEATMAP_MAX_ROWS rows up to 1e308; past that the low end is cut off into bucket 0.
+    """
+    if low is None or high is None or not 0 < low < math.inf or not high < math.inf:
         return [1.0, 10.0]
     high = max(high, low)
     for n in BUCKETS_PER_DECADE:
-        k_lo = math.floor(math.log10(low) * n)
-        k_hi = max(math.ceil(math.log10(high) * n), k_lo + 1)
+        k_hi = min(math.ceil(math.log10(high) * n), 308 * n)
+        k_lo = min(math.floor(math.log10(low) * n), k_hi - 1)
         if k_hi - k_lo <= HEATMAP_MAX_ROWS or n == 1:
+            k_lo = max(k_lo, k_hi - HEATMAP_MAX_ROWS)
             return [10 ** (k / n) for k in range(k_lo, k_hi + 1)]
 
 
@@ -92,9 +96,11 @@ def _time_sql(source) -> str:
 
 
 def _where(selection: Selection, params: Dict) -> str:
+    """The selection's rows with a finite value; NULL, NaN and Inf have no place on a log axis."""
     from telescope.patterns.fetch import clickhouse_where
 
-    return clickhouse_where(selection, params)
+    value = quote_column(selection.source, selection.column)
+    return f"({clickhouse_where(selection, params)}) AND isFinite(toFloat64({value}))"
 
 
 def _table(source) -> str:
@@ -342,11 +348,16 @@ def fetch_deltas(selection: Selection, outlier: Dict, sample: int) -> Dict:
     params = {}
     where = _where(selection, params)
     value = quote_column(source, selection.column)
-    inside = (
-        f"({value} >= {float(outlier['y_min'])!r} AND {value} <= {float(outlier['y_max'])!r}"
-        f" AND {_time_sql(source)} >= {int(outlier['t_min'])}"
-        f" AND {_time_sql(source)} <= {int(outlier['t_max'])})"
-    )
+    bounds = [
+        f"{_time_sql(source)} >= {int(outlier['t_min'])}",
+        f"{_time_sql(source)} <= {int(outlier['t_max'])}",
+    ]
+    # As in heatmap cells: y_max is exclusive, and a missing bound is open.
+    if outlier.get("y_min") is not None:
+        bounds.append(f"{value} >= {float(outlier['y_min'])!r}")
+    if outlier.get("y_max") is not None:
+        bounds.append(f"{value} < {float(outlier['y_max'])!r}")
+    inside = f"({' AND '.join(bounds)})"
     names = list(source._columns)
     select = ", ".join(quote_column(source, n) for n in names)
     order = _sample_order(source)

@@ -27,13 +27,17 @@ rbac_manager = RBACManager()
 
 
 class OutlierSerializer(serializers.Serializer):
-    y_min = serializers.FloatField()
-    y_max = serializers.FloatField()
+    # null is an open bound: the bottom and top heatmap rows hold every value past their edge.
+    y_min = serializers.FloatField(allow_null=True)
+    y_max = serializers.FloatField(allow_null=True)
     t_min = serializers.IntegerField()
     t_max = serializers.IntegerField()
 
     def validate(self, attrs):
-        if attrs["y_min"] > attrs["y_max"]:
+        if (
+            None not in (attrs["y_min"], attrs["y_max"])
+            and attrs["y_min"] > attrs["y_max"]
+        ):
             raise serializers.ValidationError({"y_max": ["must be at least y_min"]})
         if attrs["t_min"] > attrs["t_max"]:
             raise serializers.ValidationError({"t_max": ["must be at least t_min"]})

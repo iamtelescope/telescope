@@ -181,3 +181,11 @@ def test_heatmap_series_needs_a_column_and_is_not_an_alert_series():
     assert not ChartSeriesSerializer(data={"agg": "heatmap", "column": "x"}).is_valid()
     with pytest.raises(ValueError, match="heatmap tile"):
         agg_expression({}, None, {"agg": "heatmap", "column": "x"})
+
+
+def test_log_edges_take_extreme_values():
+    assert log_edges(1.0, float("inf")) == [1.0, 10.0]
+    assert log_edges(float("nan"), 5.0) == [1.0, 10.0]
+    huge = log_edges(5e-324, 1.7e308)
+    assert len(huge) - 1 == 40 and huge[-1] == 1e308
+    assert len(log_edges(1e-300, 1e300)) - 1 == 40

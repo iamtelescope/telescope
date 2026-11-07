@@ -158,6 +158,7 @@ import {
     propertyPath,
 } from '@/components/explorer/deltas/deltas'
 import { useSourceControlsStore } from '@/stores/sourceControls'
+import { resolveTime } from '@/utils/explorerPaging'
 
 const props = defineProps(['source', 'searchSeq', 'timeZone'])
 const emit = defineEmits(['searchRequest'])
@@ -186,6 +187,8 @@ const colors = computed(() => ({
 const visible = computed(() => (deltas.value?.properties || []).filter((p) => !p.hidden))
 const hidden = computed(() => (deltas.value?.properties || []).filter((p) => p.hidden))
 let heatmapController = null
+// The heatmap's request with relative times pinned, so deltas read the rows that were drawn.
+let request = null
 let deltasController = null
 
 const errorText = (response) =>
@@ -205,7 +208,10 @@ const loadHeatmap = async () => {
     selection.value = null
     deltas.value = null
     loading.value = true
-    const response = await fetchHeatmap(props.source.slug, buildRequest(store, column.value), signal)
+    const now = Date.now()
+    const params = buildRequest(store, column.value)
+    request = { ...params, from: resolveTime(params.from, now), to: resolveTime(params.to, now) }
+    const response = await fetchHeatmap(props.source.slug, request, signal)
     if (signal.aborted) return
     loading.value = false
     heatmap.value = response.result ? response.data : null
@@ -218,7 +224,7 @@ const loadDeltas = async () => {
     deltasController = new AbortController()
     const signal = deltasController.signal
     deltasLoading.value = true
-    const body = { ...buildRequest(store, column.value), outlier: selection.value, sample: sample.value }
+    const body = { ...request, outlier: selection.value, sample: sample.value }
     const response = await fetchDeltas(props.source.slug, body, signal)
     if (signal.aborted) return
     deltasLoading.value = false
@@ -245,7 +251,10 @@ const rangeText = computed(() => {
     const s = selection.value
     const fmt = (ms) => DateTime.fromMillis(ms, { zone: props.timeZone || 'local' }).toFormat('MM-dd HH:mm')
     const value = (v) => formatNumber(v, unit.value, { compact: true })
-    return `${column.value} ${value(s.y_min)} – ${value(s.y_max)}, ${fmt(s.t_min)} – ${fmt(s.t_max + 1)}`
+    const low = s.y_min === null ? '' : `≥ ${value(s.y_min)}`
+    const high = s.y_max === null ? '' : `< ${value(s.y_max)}`
+    const range = [low, high].filter(Boolean).join(' and ') || 'any value'
+    return `${column.value} ${range}, ${fmt(s.t_min)} – ${fmt(s.t_max + 1)}`
 })
 
 // Filter or exclude a value; the search runs again and the heatmap reloads.

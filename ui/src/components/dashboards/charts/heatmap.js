@@ -24,28 +24,17 @@ export const valueToPos = (value, edges) => {
     return i + Math.log(value / edges[i]) / Math.log(edges[i + 1] / edges[i])
 }
 
-// The selection snapped outward to whole cells: inclusive ms times, and 0 for the open bottom bucket.
+// The selection snapped outward to whole cells: inclusive ms times, y_max exclusive like a bucket,
+// and null for the open bottom and top rows, which hold every value past their edge.
 export const snapSelection = (data, i0, i1, b0, b1) => {
     const ts = data.timestamps
     const edges = data.y_edges
     return {
         t_min: ts[i0],
         t_max: ts[i1] + data.step_ms - 1,
-        y_min: b0 === 0 ? 0 : edges[b0],
-        y_max: edges[b1 + 1],
+        y_min: b0 === 0 ? null : edges[b0],
+        y_max: b1 === edges.length - 2 ? null : edges[b1 + 1],
     }
-}
-
-// Cells inside a snapped selection, for the "N rows selected" hint.
-export const countInSelection = (data, sel) => {
-    if (!sel) return 0
-    let total = 0
-    for (const [t, b, n] of data.cells) {
-        const ts = data.timestamps[t]
-        const lo = b === 0 ? 0 : data.y_edges[b]
-        if (ts >= sel.t_min && ts <= sel.t_max && lo >= sel.y_min && data.y_edges[b + 1] <= sel.y_max) total += n
-    }
-    return total
 }
 
 const PRECISION_UNITS = { 0: 'duration_s', 3: 'duration_ms', 6: 'duration_us', 9: 'duration_ns' }

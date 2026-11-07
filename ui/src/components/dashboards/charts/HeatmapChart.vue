@@ -157,7 +157,7 @@ const onMove = (e) => {
         left: Math.min(x + 12, size.value.w - 170),
         top: Math.max(0, y - 60),
         time: `${fmtTime(ts, true)} – ${fmtTime(ts + props.data.step_ms, false)}`,
-        range: `${b === 0 ? '≤ ' : `${fmtValue(edges[b])} – `}${fmtValue(edges[b + 1])}`,
+        range: `${b === 0 ? '< ' : `${fmtValue(edges[b])} – `}${fmtValue(edges[b + 1])}`,
         count: cell ? cell[2] : 0,
     }
 }
@@ -205,12 +205,13 @@ const rect = computed(() => {
     const xOf = (ms) => p.x + Math.min(1, Math.max(0, (ms - ts[0]) / span)) * p.w
     const yOf = (v) => p.y + p.h - valueToPos(v, props.data.y_edges) * p.ch
     const left = xOf(s.t_min)
-    const top = yOf(s.y_max)
+    const edges = props.data.y_edges
+    const top = yOf(s.y_max ?? edges[edges.length - 1])
     return {
         left: `${left}px`,
         top: `${top}px`,
         width: `${Math.max(2, xOf(s.t_max + 1) - left)}px`,
-        height: `${Math.max(2, yOf(s.y_min) - top)}px`,
+        height: `${Math.max(2, yOf(s.y_min ?? edges[0]) - top)}px`,
     }
 })
 

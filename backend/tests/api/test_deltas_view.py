@@ -151,3 +151,13 @@ def test_chart_data_heatmap_goes_to_the_heatmap_fetch(test_user, clickhouse_sour
     assert result["validation"]["fields"]["series"] == {
         "0": {"column": ["column message is not numeric"]}
     }
+
+
+@pytest.mark.django_db
+def test_deltas_take_open_y_bounds(test_user, clickhouse_source):
+    client = client_for(test_user, clickhouse_source)
+    open_rows = {**OUTLIER, "y_min": None, "y_max": None}
+    with patch(DELTAS, return_value={}) as fetch:
+        result = post(client, clickhouse_source, "deltas", body(outlier=open_rows))
+    assert result["result"] is True
+    assert fetch.call_args.args[1] == {**open_rows}

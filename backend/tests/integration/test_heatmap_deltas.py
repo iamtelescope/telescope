@@ -1,5 +1,6 @@
 """P4.1 heatmap and event deltas against the planted slow POST /api/checkout band of the P0.2 otel_traces data."""
 
+import uuid
 from datetime import datetime
 from unittest.mock import Mock
 
@@ -119,3 +120,63 @@ def test_deltas_is_stable_for_a_span_id_source(traces, window):
     outlier = {"y_min": SLOW_NS, "y_max": 1e12, "t_min": window[0], "t_max": window[1]}
     first = fetch_deltas(selection, outlier, 500)
     assert first == fetch_deltas(selection, outlier, 500)
+
+
+@pytest.fixture
+def scratch(traces, ch_client):
+    db = f"telescope_test_deltas_{uuid.uuid4().hex[:8]}"
+    ch_client.command(f"CREATE DATABASE {db}")
+    ch_client.command(
+        f"CREATE TABLE {db}.t (Timestamp DateTime64(3), v Nullable(Float64))"
+        " ENGINE = MergeTree ORDER BY Timestamp"
+    )
+    values = (
+        ["0"] * 50
+        + [str(v) for v in (1, 2, 5, 10, 50, 100) for _ in range(100)]
+        + ["-5"] * 20
+        + ["NULL"] * 300
+        + ["nan"] * 10
+        + ["inf"]
+    )
+    rows = ", ".join(
+        f"('2026-01-01 00:00:{i % 60:02d}', {v})" for i, v in enumerate(values)
+    )
+    ch_client.command(f"INSERT INTO {db}.t VALUES {rows}")
+    traces.data = {"database": db, "table": "t", "settings": ""}
+    traces._columns = {
+        name: SourceColumn(name, "", t, False, True, True, True, [])
+        for name, t in [("Timestamp", "DateTime64(3)"), ("v", "Nullable(Float64)")]
+    }
+    yield Selection(traces, ms("2026-01-01T00:00:00"), ms("2026-01-01T01:00:00"), "v")
+    ch_client.command(f"DROP DATABASE {db}")
+
+
+def test_heatmap_skips_null_nan_and_inf(scratch):
+    result = fetch_heatmap(scratch).as_dict()
+    rows = {}
+    for _, b, n in result["cells"]:
+        rows[b] = rows.get(b, 0) + n
+    assert result["total"] == sum(rows.values()) == 670
+    edges = result["y_edges"]
+    assert edges[-2] < 100 <= edges[-1] and rows[len(edges) - 2] == 100
+
+
+def test_deltas_selection_holds_exactly_the_selected_heatmap_rows(scratch):
+    result = fetch_heatmap(scratch).as_dict()
+    edges, top = result["y_edges"], len(result["y_edges"]) - 2
+    rows = {}
+    for _, b, n in result["cells"]:
+        rows[b] = rows.get(b, 0) + n
+    ts = result["timestamps"]
+    for b in range(top + 1):
+        # As heatmap.js snapSelection sends it: open bottom and top rows, exclusive y_max.
+        outlier = {
+            "y_min": None if b == 0 else edges[b],
+            "y_max": None if b == top else edges[b + 1],
+            "t_min": ts[0],
+            "t_max": ts[-1] + result["step_ms"] - 1,
+        }
+        deltas = fetch_deltas(scratch, outlier, 10)
+        assert deltas["outlier"]["total"] == rows.get(b, 0), (b, edges[b])
+        assert deltas["inlier"]["total"] == 670 - rows.get(b, 0)
+    assert rows[0] == 170  # the negatives, zeros and ones
