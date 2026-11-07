@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "telescope_api2",
     "telescope_mcp",
     "telescope_rawsql",
+    "telescope_prefs",
 ]
 
 if CONFIG["auth"]["providers"]["github"]["enabled"]:

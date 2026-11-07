@@ -106,7 +106,24 @@
                         :row-hover="true"
                         data-testid="dashboards-table"
                     >
-                        <Column field="name" header="Name" class="font-medium pl-4" :sortable="true">
+                        <Column field="favorite" class="w-1 pl-2 pr-0" :sortable="true">
+                            <template #header><i class="pi pi-star opacity-60" title="Favorites"></i></template>
+                            <template #body="{ data }">
+                                <Button
+                                    :icon="data.favorite ? 'pi pi-star-fill' : 'pi pi-star'"
+                                    text
+                                    rounded
+                                    size="small"
+                                    :severity="data.favorite ? 'warn' : 'secondary'"
+                                    v-tooltip.top="data.favorite ? 'Remove from favorites' : 'Add to favorites'"
+                                    :aria-label="data.favorite ? 'Remove from favorites' : 'Add to favorites'"
+                                    :aria-pressed="data.favorite"
+                                    :data-testid="`dashboard-favorite-${data.slug}`"
+                                    @click="toggleFavorite(data)"
+                                />
+                            </template>
+                        </Column>
+                        <Column field="name" header="Name" class="font-medium" :sortable="true">
                             <template #body="{ data }">
                                 <router-link
                                     :to="{ name: 'dashboard', params: { dashboardSlug: data.slug } }"
@@ -304,6 +321,7 @@ import { useAuthStore } from '@/stores/auth'
 import { emptyDashboardData } from '@/utils/dashboards'
 import { checkDashboardFile, exportDashboard, fileSourceSlugs, remapSources } from '@/utils/dashboardFile'
 import { fieldErrorsText } from '@/utils/utils'
+import { getFavoriteDashboards, setFavoriteDashboard } from '@/features/prefs/service'
 
 const router = useRouter()
 const toast = useToast()
@@ -319,10 +337,22 @@ const SCOPES = [
     { value: 'all', label: 'All' },
     { value: 'mine', label: 'Mine' },
     { value: 'shared', label: 'Shared' },
+    { value: 'favorites', label: 'Favorites' },
 ]
 const search = ref('')
 const scope = ref('all')
 const busy = ref('')
+
+// Favorites are per user and stored server-side (telescope_prefs).
+const favorites = ref([])
+getFavoriteDashboards().then((response) => {
+    if (response.result) favorites.value = response.data.dashboards
+})
+const toggleFavorite = async (row) => {
+    const response = await setFavoriteDashboard(row.slug, !row.favorite)
+    if (response.result) favorites.value = response.data.dashboards
+    else response.sendToastErrors(toast)
+}
 
 const rows = computed(() =>
     (dashboards.value || []).map((d) => ({
@@ -335,6 +365,7 @@ const rows = computed(() =>
         tilesCount: d.tilesCount,
         updatedAt: d.updatedAt,
         canDelete: d.canDelete(),
+        favorite: favorites.value.includes(d.slug),
     })),
 )
 
@@ -343,6 +374,7 @@ const filteredRows = computed(() => {
     return rows.value.filter((r) => {
         if (scope.value === 'mine' && !r.mine) return false
         if (scope.value === 'shared' && !r.shared) return false
+        if (scope.value === 'favorites' && !r.favorite) return false
         return !text || `${r.name} ${r.description} ${r.ownerName}`.toLowerCase().includes(text)
     })
 })

@@ -107,12 +107,20 @@ const authStore = useAuthStore()
 const user = computed(() => authStore.user?.username)
 
 const collapsed = ref(loadCollapsed())
-const pinned = ref(loadPinned(user.value, props.source))
+const pinned = ref([])
 const expandedKeys = ref({})
 const data = ref(null)
 const error = ref(null)
 const loading = ref(false)
 let controller = null
+
+// Facet loads wait for the pins, which come from the server.
+let pinsReady = null
+const fetchPins = () =>
+    (pinsReady = loadPinned(user.value, props.source).then((value) => {
+        pinned.value = value
+    }))
+fetchPins()
 
 const defaults = computed(() => defaultFacetColumns(props.source))
 
@@ -173,6 +181,7 @@ const addable = computed(() =>
 
 const load = async () => {
     if (collapsed.value) return
+    await pinsReady
     if (controller) controller.abort()
     controller = new AbortController()
     const signal = controller.signal
@@ -203,7 +212,7 @@ const addFilter = (facet, item, operator) => {
 
 const togglePin = (id) => {
     pinned.value = pinned.value.includes(id) ? pinned.value.filter((p) => p !== id) : [...pinned.value, id]
-    savePinned(user.value, props.source, pinned.value)
+    savePinned(props.source, pinned.value)
 }
 
 const toggleKey = (column, key) => {
@@ -235,8 +244,9 @@ watch(
     () => load(),
 )
 
-watch(user, (value) => {
-    pinned.value = loadPinned(value, props.source)
+watch(user, async () => {
+    await fetchPins()
+    if (props.searchSeq > 0) load()
 })
 
 onMounted(() => {

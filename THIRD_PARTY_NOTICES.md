@@ -108,6 +108,8 @@ SOFTWARE.
   `packages/common-utils/src/macros.ts` and `rawSqlParams.ts` (MIT, above).
 - `ui/src/components/dashboards/charts/LogTileView.vue` (search and event-pattern tiles: the source's default columns,
   newest rows first, the row side panel) follows HyperDX `packages/app/src/DBDashboardPage.tsx` (MIT, above).
+- `backend/telescope_prefs/models.py` and `services.py` (per-user favorites unique on user and resource, pinned facets
+  as one row per source) follow HyperDX `packages/api/src/models/favorite.ts` and `models/pinnedFilter.ts` (MIT, above).
 
 ## Drain3
 

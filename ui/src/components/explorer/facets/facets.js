@@ -1,4 +1,5 @@
 import HTTP from '@/utils/http'
+import { getPinnedFacets, setPinnedFacets } from '@/features/prefs/service'
 
 const http = new HTTP()
 
@@ -64,7 +65,7 @@ export function formatValue(value) {
 
 const storageKey = (user, source) => `telescope.facets.pinned.${user || 'anonymous'}.${source.slug}`
 
-export function loadPinned(user, source) {
+function loadLocalPinned(user, source) {
     try {
         const value = JSON.parse(localStorage.getItem(storageKey(user, source)) || '[]')
         return Array.isArray(value) ? value : []
@@ -73,13 +74,26 @@ export function loadPinned(user, source) {
     }
 }
 
-export function savePinned(user, source, pinned) {
+function dropLocalPinned(user, source) {
     try {
-        localStorage.setItem(storageKey(user, source), JSON.stringify(pinned))
+        localStorage.removeItem(storageKey(user, source))
     } catch {
-        // Storage can be unavailable (private mode); pins then last for the page only.
+        // Storage can be unavailable (private mode).
     }
 }
+
+// Pins are stored server-side; pins this browser kept in localStorage are uploaded once, then dropped.
+export async function loadPinned(user, source) {
+    const response = await getPinnedFacets(source.slug)
+    const local = loadLocalPinned(user, source)
+    if (!response.result) return local
+    let facets = response.data.facets
+    if (facets === null && local.length && (await setPinnedFacets(source.slug, local)).result) facets = local
+    if (facets !== null) dropLocalPinned(user, source)
+    return facets || local
+}
+
+export const savePinned = (source, pinned) => setPinnedFacets(source.slug, pinned)
 
 export function loadCollapsed() {
     try {
@@ -93,7 +107,7 @@ export function saveCollapsed(value) {
     try {
         localStorage.setItem('telescope.facets.collapsed', value ? '1' : '0')
     } catch {
-        // See savePinned.
+        // Storage can be unavailable (private mode); the panel state then lasts for the page only.
     }
 }
 
