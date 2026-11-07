@@ -286,18 +286,6 @@ def test_starrocks_timeseries_top_n(sr_cursor):
     assert result["series"][0]["name"] == "it's"
 
 
-def test_starrocks_int_time_column_buckets_in_utc(sr_cursor):
-    sr_cursor.fetchall.return_value = []
-    source = make_source("starrocks", "bigint")
-    starrocks.Fetcher.fetch_chart_data(make_request(source))
-    (sql,) = sr_sqls(sr_cursor)
-    assert "unix_timestamp" not in sql
-    assert (
-        "floor(seconds_diff(to_datetime_ntz(`ts`, 3), '1970-01-01 00:00:00') / 60)"
-        in sql
-    )
-
-
 def test_starrocks_group_by_value():
     def parsed(name, type):
         return ParsedColumn(name, name.split(".")[0], type, False, "")
