@@ -50,6 +50,7 @@ CHART_AGGS = [
     "last_value",
     "any",
     "formula",
+    "metric",
 ]
 QUANTILE_LEVELS = [0.5, 0.75, 0.9, 0.95, 0.99]
 ZERO_FILL_AGGS = {"count", "sum", "uniq"}
@@ -157,6 +158,8 @@ def series_label(series: Dict) -> str:
         return "count()"
     if agg == "formula":
         return series["formula"]
+    if agg == "metric":
+        return f"{series['metric']['agg']}({series['metric']['name']})"
     if agg == "quantile":
         return f"p{round(float(series['level']) * 100)}({series['column']})"
     return f"{agg}({series['column']})"
@@ -545,6 +548,10 @@ def formula_names(series: List[Dict]) -> Dict[str, int]:
 
 def with_formulas(request, run) -> ChartDataResponse:
     """Runs the query series through `run` and adds formula series over the aligned result."""
+    if any(s["agg"] == "metric" for s in request.series):
+        from telescope_otel.metrics_sql import fetch_metric_chart
+
+        run = fetch_metric_chart
     series = request.series
     query_index = [i for i, s in enumerate(series) if s["agg"] != "formula"]
     if len(query_index) == len(series):

@@ -43,6 +43,12 @@ from telescope.serializers.source import (
     SourceDataRequestSerializer,
 )
 from telescope.utils import parse_time
+from telescope_otel.metrics_sql import (
+    ALL_METRIC_AGGS,
+    METRIC_AGGS,
+    METRIC_TYPES,
+    metric_tables,
+)
 
 rbac_manager = RBACManager()
 
@@ -96,13 +102,30 @@ class StrictSerializer(serializers.Serializer):
         return super().to_internal_value(data)
 
 
+def metric_series_error(source: Source, series: List[dict], item: dict):
+    """Metric series need a metrics source, and a chart cannot mix them with column series."""
+    tables = metric_tables(source)
+    if item["agg"] == "metric":
+        kind = item["metric"]["type"]
+        if not tables:
+            return {"metric": ["source is not an OTel metrics source"]}
+        if kind not in tables:
+            return {"metric": {"type": [f"source has no {kind} metric table"]}}
+    elif item["agg"] != "formula" and any(s["agg"] == "metric" for s in series):
+        return {"agg": ["a metric chart takes only metric series and formulas"]}
+    return None
+
+
 def chart_series_errors(source: Source, series: List[dict]) -> dict:
     errors = {}
     names = formula_names(series)
     aliases = [s.get("alias") for s in series if s.get("alias")]
     for i, item in enumerate(series):
         agg, column = item["agg"], item.get("column")
-        if source.kind in COUNT_ONLY_KINDS and agg != "count":
+        metric_error = metric_series_error(source, series, item)
+        if metric_error:
+            errors[i] = metric_error
+        elif source.kind in COUNT_ONLY_KINDS and agg != "count":
             errors[i] = {
                 "agg": [f"aggregation {agg} is not supported for {source.kind} sources"]
             }
@@ -174,8 +197,30 @@ def chart_shape_errors(attrs: dict) -> dict:
     return errors
 
 
+class MetricSeriesSerializer(StrictSerializer):
+    name = serializers.CharField(max_length=255)
+    type = serializers.ChoiceField(choices=METRIC_TYPES)
+    agg = serializers.ChoiceField(choices=ALL_METRIC_AGGS)
+    attrs_filter = serializers.CharField(
+        required=False, allow_blank=True, max_length=10000
+    )
+
+    def validate(self, attrs):
+        if attrs["agg"] not in METRIC_AGGS[attrs["type"]]:
+            raise serializers.ValidationError(
+                {
+                    "agg": [
+                        f"a {attrs['type']} metric takes "
+                        + ", ".join(METRIC_AGGS[attrs["type"]])
+                    ]
+                }
+            )
+        return attrs
+
+
 class ChartSeriesSerializer(StrictSerializer):
     agg = serializers.ChoiceField(choices=CHART_AGGS)
+    metric = MetricSeriesSerializer(required=False)
     column = serializers.CharField(required=False)
     level = serializers.FloatField(required=False)
     alias = serializers.CharField(required=False, allow_blank=True, max_length=64)
@@ -187,7 +232,14 @@ class ChartSeriesSerializer(StrictSerializer):
     def validate(self, attrs):
         errors = {}
         agg = attrs["agg"]
-        if agg in ("count", "formula"):
+        if agg == "metric":
+            if "metric" not in attrs:
+                errors["metric"] = ["This field is required."]
+            if attrs.get("where"):
+                errors["where"] = ["filter a metric series with metric.attrs_filter"]
+        elif "metric" in attrs:
+            errors["metric"] = ["metric is only allowed for agg metric"]
+        if agg in ("count", "formula", "metric"):
             if "column" in attrs:
                 errors["column"] = [f"{agg} does not take a column"]
         elif "column" not in attrs:
@@ -694,6 +746,19 @@ class SourceChartDataRequestSerializer(SourceDataRequestSerializer):
                 errors.setdefault("params", {})[err.name] = [err.message]
             except serializers.ValidationError as err:
                 series_errors[i] = {"where": err.detail}
+        for i, item in enumerate(attrs.get("series") or []):
+            metric = item.get("metric") or {}
+            if not metric.get("attrs_filter"):
+                continue
+            try:
+                bound = bind_query(metric["attrs_filter"], attrs["params"])
+                metric["attrs_filter"] = SourceDataRequestSerializer.validate_query(
+                    self, bound
+                )
+            except VariableError as err:
+                errors.setdefault("params", {})[err.name] = [err.message]
+            except serializers.ValidationError as err:
+                series_errors[i] = {"metric": {"attrs_filter": err.detail}}
         if series_errors:
             errors["series"] = series_errors
         return errors
