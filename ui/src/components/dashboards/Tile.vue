@@ -35,6 +35,7 @@
             ></i>
             <div class="flex-1"></div>
             <div
+                v-if="!kiosk"
                 class="tile-actions flex items-center shrink-0 transition-opacity"
                 :class="{ 'tile-actions--open': menuOpen }"
             >
@@ -110,7 +111,7 @@
                 :code="code"
                 :validation="validation"
                 :timeZone="timeZone"
-                @rangeSelected="(r) => emit('rangeSelected', r)"
+                @rangeSelected="onChartRange"
                 @rowClick="onRowClick"
             />
         </div>
@@ -148,11 +149,22 @@ import { GripVertical } from 'lucide-vue-next'
 import ChartView from '@/components/dashboards/ChartView.vue'
 import TileMenuExtras from '@/components/dashboards/TileMenuExtras.vue'
 import { useChartData } from '@/composables/dashboards/useDashboardService'
+import { registerTileRequest } from '@/composables/useMarkers.js'
 import { buildDrilldownRoute } from '@/utils/drilldown'
 import { boundForExplorer } from '@/utils/dashboards'
 
-const props = defineProps(['tile', 'range', 'timeZone', 'editing', 'canEdit', 'queue', 'refreshTick'])
-const emit = defineEmits(['edit', 'duplicate', 'delete', 'rangeSelected'])
+const props = defineProps([
+    'tile',
+    'range',
+    'timeZone',
+    'editing',
+    'canEdit',
+    'queue',
+    'refreshTick',
+    'kiosk',
+    'sections',
+])
+const emit = defineEmits(['edit', 'duplicate', 'delete', 'move', 'rangeSelected'])
 
 const router = useRouter()
 const menu = ref()
@@ -172,10 +184,10 @@ const checkTruncated = () => {
     titleTruncated.value = titleEl.value.scrollWidth > titleEl.value.clientWidth
 }
 
-const reload = () => {
-    if (isText.value) return
+const requestBody = () => {
     const c = props.tile.chart
-    load(c.source, {
+    return {
+        source: c.source,
         from: props.range.from,
         to: props.range.to,
         query: c.query || '',
@@ -190,8 +202,20 @@ const reload = () => {
         params: props.range.params || {},
         ...(c.compare ? { compare: true } : {}),
         ...(c.sparkline ? { sparkline: true } : {}),
-    })
+    }
 }
+
+const reload = () => {
+    if (isText.value) return
+    const { source, ...body } = requestBody()
+    load(source, body)
+}
+
+watch(
+    () => props.tile.chart,
+    (chart) => registerTileRequest(chart, requestBody),
+    { immediate: true },
+)
 
 watch(
     () => [
@@ -223,9 +247,16 @@ const onRowClick = (group) => {
     if (props.tile.chart.group_by && !props.editing) openExplorer(group)
 }
 
+// A pinned tooltip asks for the explorer at its bucket; a drag zooms the dashboard.
+const onChartRange = (range) => {
+    if (!range.explore) return emit('rangeSelected', range)
+    const { chart, range: bound } = boundForExplorer(props.tile.chart, { ...props.range, ...range })
+    router.push(buildDrilldownRoute(chart, bound, undefined, props.timeZone))
+}
+
 const onFullscreenRange = (range) => {
     fullscreen.value = false
-    emit('rangeSelected', range)
+    onChartRange(range)
 }
 
 const menuItems = computed(() => {
@@ -242,6 +273,19 @@ const menuItems = computed(() => {
             { label: 'Duplicate', icon: 'pi pi-copy', command: () => emit('duplicate') },
             { label: 'Delete', icon: 'pi pi-trash', command: () => emit('delete') },
         )
+        const targets = [{ id: '', title: 'No section' }, ...(props.sections || [])].filter(
+            (s) => s.id !== (props.tile.section || ''),
+        )
+        if (props.sections?.length) {
+            items.push({
+                label: 'Move to section',
+                icon: 'pi pi-arrow-right-arrow-left',
+                items: targets.map((s) => ({
+                    label: s.title || 'Untitled section',
+                    command: () => emit('move', s.id),
+                })),
+            })
+        }
     }
     const extras = menuExtras.value?.items || []
     if (extras.length) items.push({ separator: true }, ...extras)

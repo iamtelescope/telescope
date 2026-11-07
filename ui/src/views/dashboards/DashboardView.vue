@@ -1,12 +1,47 @@
 <template>
     <div
         class="dash-page flex flex-col px-4 pt-3 pb-6 min-h-screen bg-surface-100 dark:bg-surface-950"
+        :class="{ 'dash-page--kiosk': kiosk }"
         data-testid="dashboard"
     >
         <ConfirmDialog />
         <DataView :loadings="[loading && !dashboard]" :errors="[error]">
             <template v-if="dashboard && draft">
-                <div class="dash-toolbar sticky top-0 z-10 -mx-4 px-4 pt-1 pb-3 bg-surface-100 dark:bg-surface-950">
+                <div
+                    v-if="kiosk"
+                    class="flex items-center gap-3 -mx-4 px-4 pb-3 mb-1 border-b border-surface-200 dark:border-surface-800"
+                    data-testid="kiosk-header"
+                >
+                    <LayoutDashboard class="w-5 h-5 shrink-0 text-surface-500 dark:text-surface-400" />
+                    <h1 class="m-0 text-2xl font-semibold truncate text-surface-900 dark:text-surface-0">
+                        {{ dashboard.name }}
+                    </h1>
+                    <span class="text-surface-500 dark:text-surface-400 truncate" data-testid="kiosk-range">
+                        {{ rangeLabel }}
+                    </span>
+                    <div class="flex-1"></div>
+                    <span
+                        class="flex items-center gap-1.5 shrink-0 text-sm text-surface-500 dark:text-surface-400"
+                        data-testid="kiosk-live-status"
+                    >
+                        <span class="dash-live-dot" :class="{ 'dash-live-dot--busy': refreshing }"></span>
+                        Live · every {{ refreshValue }} · Read-only
+                    </span>
+                    <Button
+                        icon="pi pi-window-minimize"
+                        text
+                        rounded
+                        severity="secondary"
+                        aria-label="Exit kiosk mode"
+                        v-tooltip.bottom="'Exit kiosk mode (Esc)'"
+                        data-testid="kiosk-exit"
+                        @click="exitKiosk"
+                    />
+                </div>
+                <div
+                    v-else
+                    class="dash-toolbar sticky top-0 z-10 -mx-4 px-4 pt-1 pb-3 bg-surface-100 dark:bg-surface-950"
+                >
                     <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                         <div class="flex flex-col min-w-0 flex-1 basis-64">
                             <div class="flex items-center gap-2 min-w-0">
@@ -42,6 +77,17 @@
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
+                            <Button
+                                v-if="zoomBase"
+                                label="Reset zoom"
+                                icon="pi pi-search-minus"
+                                severity="secondary"
+                                outlined
+                                size="small"
+                                v-tooltip.bottom="'Back to the range before zooming'"
+                                data-testid="dashboard-reset-zoom"
+                                @click="resetZoom"
+                            />
                             <div class="dash-control dash-time">
                                 <DatetimePicker
                                     :from="range.from"
@@ -310,10 +356,13 @@
                                     :canEdit="dashboard.canEdit()"
                                     :queue="queue"
                                     :refreshTick="refreshTick"
+                                    :kiosk="kiosk"
+                                    :sections="sections"
                                     @edit="openEditor(tileById[item.i])"
                                     @duplicate="duplicateTile(tileById[item.i])"
                                     @delete="deleteTile(tileById[item.i])"
-                                    @rangeSelected="onRangeSelect"
+                                    @move="(section) => moveTile(tileById[item.i], section)"
+                                    @rangeSelected="onZoom"
                                 />
                             </GridItem>
                         </GridLayout>
@@ -357,6 +406,7 @@ import {
 } from 'primevue'
 import { GridLayout, GridItem } from 'grid-layout-plus'
 import { LayoutDashboard } from 'lucide-vue-next'
+import { DateTime } from 'luxon'
 
 import DataView from '@/components/common/DataView.vue'
 import DatetimePicker from '@/components/explorer/controls/DatetimePicker.vue'
@@ -404,7 +454,8 @@ const draft = ref(null)
 // Grid items per section id; '' holds the tiles outside any section.
 const layouts = ref({})
 const collapsed = ref({})
-const editing = ref(route.query.edit === '1')
+const kiosk = computed(() => route.query.kiosk === '1')
+const editing = ref(route.query.edit === '1' && !kiosk.value)
 // Set by user edits only, so the grid's own compaction on load never counts as a change.
 const dirty = ref(false)
 const saving = ref(false)
@@ -432,6 +483,13 @@ const validZone = (tz) => (availableTimeZones.includes(tz) ? tz : null)
 const timeZone = computed(() => validZone(route.query.time_zone) ?? validZone(draft.value?.time.time_zone) ?? 'UTC')
 const refreshOptions = REFRESH_OPTIONS.map((v) => ({ value: v, label: v === 'off' ? 'Off' : `Every ${v}` }))
 const refreshing = computed(() => queue.pending.value > 0)
+// Kiosk mode always refreshes, every minute unless the dashboard sets an interval.
+const refreshValue = computed(() => (kiosk.value && draft.value?.refresh === 'off' ? '1m' : draft.value?.refresh))
+const rangeLabel = computed(() => {
+    const fmt = (v) =>
+        typeof v === 'number' ? DateTime.fromMillis(v, { zone: timeZone.value }).toFormat('yyyy-MM-dd HH:mm') : v
+    return `${fmt(range.value.from)} → ${fmt(range.value.to)} ${timeZone.value}`
+})
 const filterActive = computed(() => !!range.value.query && filterInput.value === range.value.query)
 const filterDirty = computed(() => filterInput.value !== range.value.query)
 const tileById = computed(() => Object.fromEntries((draft.value?.tiles || []).map((t) => [t.id, t])))
@@ -519,10 +577,34 @@ const setQuery = (params) => {
 }
 
 const onRangeSelect = (params) => {
+    zoomBase.value = null
     const query = { from: params.from, to: params.to }
     if (params.timeZone) query.time_zone = params.timeZone
     setQuery(query)
 }
+
+// The range before the first drag-to-zoom on any tile; Reset zoom returns to it.
+const zoomBase = ref(null)
+const onZoom = (params) => {
+    if (!zoomBase.value) zoomBase.value = { from: route.query.from, to: route.query.to }
+    setQuery({ from: params.from, to: params.to })
+}
+const resetZoom = () => {
+    const query = { ...route.query, ...zoomBase.value }
+    for (const key of ['from', 'to']) if (query[key] === undefined) delete query[key]
+    zoomBase.value = null
+    router.replace({ query })
+}
+
+const enterKiosk = () => setQuery({ kiosk: '1' })
+const exitKiosk = () => {
+    const query = { ...route.query }
+    delete query.kiosk
+    router.replace({ query })
+}
+useEventListener(window, 'keydown', (e) => {
+    if (e.key === 'Escape' && kiosk.value && !document.querySelector('.p-dialog')) exitKiosk()
+})
 
 const onVariableChange = (variable, value) => setQuery(variableRouteQuery(variable, value))
 
@@ -551,20 +633,23 @@ const tick = () => {
     refreshTick.value++
 }
 
-let timer = null
 watch(
     () => draft.value?.refresh,
     (value, old) => {
         if (editing.value && old !== undefined) dirty.value = true
-        clearInterval(timer)
-        timer = null
-        if (REFRESH_MS[value]) {
-            timer = setInterval(() => {
-                if (!document.hidden) tick()
-            }, REFRESH_MS[value])
-        }
     },
 )
+
+let timer = null
+watch(refreshValue, (value) => {
+    clearInterval(timer)
+    timer = null
+    if (REFRESH_MS[value]) {
+        timer = setInterval(() => {
+            if (!document.hidden) tick()
+        }, REFRESH_MS[value])
+    }
+})
 onBeforeUnmount(() => clearInterval(timer))
 
 const confirmDiscard = () =>
@@ -704,6 +789,7 @@ const menuItems = computed(() => {
     const d = dashboard.value
     if (!d) return []
     const items = [
+        { label: 'Kiosk mode', icon: 'pi pi-desktop', command: enterKiosk, disabled: editing.value },
         { label: 'Export JSON', icon: 'pi pi-download', command: () => exportDashboard(d) },
         { label: 'Duplicate', icon: 'pi pi-copy', command: duplicateDashboard },
     ]
@@ -753,6 +839,16 @@ const addTile = (title, chart, size = defaultTileSize(chart.display), extras = {
     rebuildLayout()
 }
 
+// Puts the tile at the bottom of its new section.
+const placeInSection = (tile, section) => {
+    if ((tile.section || '') === (section || '')) return
+    const siblings = draft.value.tiles.filter((t) => t !== tile && (t.section || '') === (section || ''))
+    tile.y = bottomY(siblings)
+    tile.x = 0
+    if (section) tile.section = section
+    else delete tile.section
+}
+
 const onEditorApply = ({ title, description, section, chart }) => {
     const existing = editorTile.value?.id && tileById.value[editorTile.value.id]
     if (!existing) return addTile(title, chart, undefined, { description, section })
@@ -761,13 +857,14 @@ const onEditorApply = ({ title, description, section, chart }) => {
     existing.chart = chart
     if (description) existing.description = description
     else delete existing.description
-    if ((existing.section || '') !== (section || '')) {
-        const siblings = draft.value.tiles.filter((t) => t !== existing && (t.section || '') === (section || ''))
-        existing.y = bottomY(siblings)
-        existing.x = 0
-        if (section) existing.section = section
-        else delete existing.section
-    }
+    placeInSection(existing, section)
+    dirty.value = true
+    rebuildLayout()
+}
+
+const moveTile = (tile, section) => {
+    syncLayout()
+    placeInSection(tile, section)
     dirty.value = true
     rebuildLayout()
 }
@@ -825,6 +922,26 @@ const deleteTile = (tile) => {
 .dash-filter--active {
     border-color: var(--p-primary-color);
     background: color-mix(in srgb, var(--p-primary-color) 5%, var(--p-inputtext-background));
+}
+.dash-page--kiosk {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    overflow: auto;
+}
+.dash-live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--p-green-500);
+}
+.dash-live-dot--busy {
+    animation: dash-pulse 1s ease-in-out infinite;
+}
+@keyframes dash-pulse {
+    50% {
+        opacity: 0.35;
+    }
 }
 .dash-empty-icon {
     background: color-mix(in srgb, var(--p-primary-color) 12%, transparent);

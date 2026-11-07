@@ -72,6 +72,10 @@ SOFTWARE.
 - `backend/telescope/query_attribution.py` (`log_comment` keys, the character allowlist and length cap) is adapted from HyperDX
   `packages/common-utils/src/clickhouse/attribution.ts`, and `backend/telescope_api2/views.py` (resource shapes, list pagination)
   follows `packages/api/src/routers/external-api/v2/*` (MIT, above).
+- `backend/telescope_otel/releases.py` (release markers: `min(timestamp)` per `service.version` per service, the lookback before
+  the window, the row cap) is adapted from HyperDX `packages/app/src/hooks/useReleaseAnnotations.tsx`; the kiosk header and `?kiosk=1`
+  in `ui/src/views/dashboards/DashboardView.vue` follow `components/DashboardKioskHeader.tsx` and `hooks/useDashboardKioskMode.ts`,
+  and the crosshair sync in `ui/src/components/dashboards/charts/TimeSeriesChart.vue` follows `src/chartSync.tsx` (MIT, above).
 
 ## Drain3
 

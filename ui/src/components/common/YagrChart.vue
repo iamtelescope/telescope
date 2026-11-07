@@ -14,18 +14,21 @@ const props = defineProps({
     theme: String,
     height: { type: [Number, String], default: 200 },
 })
+const emit = defineEmits(['ready'])
 const root = ref(null)
 let chart = null
 
 // Yagr's adaptive size already observes the root element and reflows on resize.
 onMounted(() => {
     chart = new Yagr(root.value, props.settings)
+    emit('ready', chart)
 })
 
 watch(props, () => {
     chart.dispose()
     chart = new Yagr(root.value, props.settings)
     chart.setTheme(props.theme)
+    emit('ready', chart)
 })
 
 onBeforeUnmount(() => {
