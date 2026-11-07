@@ -89,6 +89,10 @@ SOFTWARE.
   exception from attributes or span events, HTTP headers and bodies, span events, pod/node infrastructure correlations and
   their time ranges) are adapted from HyperDX `packages/app/src/components/DBRowOverviewPanel.tsx`, `ExceptionSubpanel.tsx`,
   `HttpMessageSections.tsx`, `SpanEventsSubpanel.tsx`, `DBInfraPanel.tsx` and `infraCorrelations.ts` (MIT, above).
+- `backend/telescope/fetchers/deltas.py` (row flattening, id/timestamp denylist, high-cardinality filter, semantic boost,
+  span-id stable sampling) is adapted from HyperDX `packages/common-utils/src/core/eventDeltas.ts` and
+  `packages/app/src/components/DBDeltaChart.tsx`; `ui/src/components/dashboards/charts/HeatmapChart.vue` and `heatmap.js` (log
+  buckets, drag-select outlier rectangle) follow `packages/app/src/components/DBHeatmapChart/*` (MIT, above).
 
 ## Drain3
 

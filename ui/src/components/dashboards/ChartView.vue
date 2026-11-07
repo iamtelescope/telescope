@@ -50,6 +50,13 @@
         :explore="!!explore"
         @rangeSelected="(range) => emit('rangeSelected', range)"
     />
+    <HeatmapChart
+        v-else-if="data.kind === 'heatmap'"
+        :data="data"
+        :unit="seriesUnit(chart.series[0], chart.number_format)"
+        :timeZone="timeZone"
+        @rangeSelected="(range) => emit('rangeSelected', range)"
+    />
     <NumberChart v-else-if="data.kind === 'number'" :data="data" :chart="chart" />
     <PieChart
         v-else-if="data.kind === 'table' && chart.display === 'pie'"
@@ -82,6 +89,8 @@ import TableChart from '@/components/dashboards/charts/TableChart.vue'
 import BarChart from '@/components/dashboards/charts/BarChart.vue'
 import PieChart from '@/components/dashboards/charts/PieChart.vue'
 import TextTile from '@/components/dashboards/charts/TextTile.vue'
+import HeatmapChart from '@/components/dashboards/charts/HeatmapChart.vue'
+import { seriesUnit } from '@/components/dashboards/charts/format.js'
 import { isTimeseries } from '@/utils/dashboards.js'
 
 const props = defineProps(['chart', 'data', 'loading', 'error', 'code', 'validation', 'timeZone', 'explore'])
@@ -90,6 +99,7 @@ const emit = defineEmits(['rangeSelected', 'rowClick'])
 const skeletonBars = [35, 55, 45, 70, 50, 65, 40, 60, 75, 55, 45, 60]
 
 const expectedKind = computed(() => {
+    if (props.chart.display === 'heatmap') return 'heatmap'
     if (isTimeseries(props.chart.display)) return 'timeseries'
     return props.chart.display === 'number' ? 'number' : 'table'
 })
@@ -105,6 +115,7 @@ const isEmpty = computed(() => {
     const d = props.data
     if (d.kind === 'timeseries') return !d.series.some((s) => s.values.some((v) => v !== null && v !== 0))
     if (d.kind === 'table') return !d.rows.length
+    if (d.kind === 'heatmap') return !d.cells.length
     return d.value === null || d.value === undefined
 })
 </script>

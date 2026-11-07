@@ -34,7 +34,8 @@ GRANULARITIES = ["auto"] + list(GRANULARITY_SECONDS)
 
 TIMESERIES_DISPLAYS = ["line", "stacked_area", "stacked_bar"]
 TABLE_DISPLAYS = ["table", "bar", "pie"]
-QUERY_DISPLAYS = TIMESERIES_DISPLAYS + ["number"] + TABLE_DISPLAYS
+HEATMAP_DISPLAY = "heatmap"
+QUERY_DISPLAYS = TIMESERIES_DISPLAYS + ["number"] + TABLE_DISPLAYS + [HEATMAP_DISPLAY]
 CHART_DISPLAYS = QUERY_DISPLAYS + ["text"]
 # Displays that draw one value per group or tile; extra series must be hidden formula operands.
 SINGLE_SERIES_DISPLAYS = ["number", "bar", "pie"]
@@ -138,6 +139,8 @@ def agg_expression(
 ) -> str:
     """`where` is the series' own condition as SQL; it picks the `<agg>_if` template."""
     agg = series["agg"]
+    if agg == "heatmap":
+        raise ValueError("a heatmap series only draws a heatmap tile")
     key = f"{agg}_if" if where else agg
     if agg == "count":
         return templates[key].format(w=where)
@@ -548,6 +551,8 @@ def formula_names(series: List[Dict]) -> Dict[str, int]:
 
 def with_formulas(request, run) -> ChartDataResponse:
     """Runs the query series through `run` and adds formula series over the aligned result."""
+    if request.display == HEATMAP_DISPLAY:
+        return heatmap_chart(request)
     if any(s["agg"] == "metric" for s in request.series):
         from telescope_otel.metrics_sql import fetch_metric_chart
 
@@ -605,6 +610,28 @@ def with_formulas(request, run) -> ChartDataResponse:
                 out.append(entry)
         result.series = out
     return result
+
+
+def heatmap_chart(request):
+    """A heatmap tile: its one series names the column, and the series filter narrows the rows."""
+    from telescope.fetchers.deltas import Selection, fetch_heatmap
+
+    series = request.series[0]
+    queries = [q for q in [request.query, series.get("where")] if q]
+    query = (
+        " and ".join(f"({q})" for q in queries)
+        if len(queries) > 1
+        else "".join(queries)
+    )
+    selection = Selection(
+        source=request.source,
+        time_from=request.time_from,
+        time_to=request.time_to,
+        column=series["column"],
+        query=query,
+        raw_query=request.raw_query,
+    )
+    return fetch_heatmap(selection, request.granularity)
 
 
 def _shifted(request, span: int, **changes):
