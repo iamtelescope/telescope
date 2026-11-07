@@ -81,6 +81,10 @@ SOFTWARE.
   and edge rows) is adapted from HyperDX `packages/app/src/hooks/useServiceMap.tsx`, and `ui/src/features/service-map/utils.js`
   and `ServiceMapGraph.vue` (colour ramps, error-rate buckets, node sizes, rate formatting) from
   `packages/app/src/components/ServiceMap/utils.ts`, `ServiceMapNode.tsx` and `ServiceMapEdge.tsx` (MIT, above).
+- `backend/telescope_otel/releases.py` (release markers: `min(timestamp)` per `service.version` per service, the lookback before
+  the window, the row cap) is adapted from HyperDX `packages/app/src/hooks/useReleaseAnnotations.tsx`; the kiosk header and `?kiosk=1`
+  in `ui/src/views/dashboards/DashboardView.vue` follow `components/DashboardKioskHeader.tsx` and `hooks/useDashboardKioskMode.ts`,
+  and the crosshair sync in `ui/src/components/dashboards/charts/TimeSeriesChart.vue` follows `src/chartSync.tsx` (MIT, above).
 
 ## Drain3
 
