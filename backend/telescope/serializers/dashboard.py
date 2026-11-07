@@ -225,7 +225,11 @@ class DashboardDataSerializer(StrictSerializer):
         size = len(json.dumps(data, separators=(",", ":")).encode())
         if size > DASHBOARD_MAX_DATA_BYTES:
             raise serializers.ValidationError(
-                f"data must be at most {DASHBOARD_MAX_DATA_BYTES} bytes"
+                {
+                    "non_field_errors": [
+                        f"data must be at most {DASHBOARD_MAX_DATA_BYTES} bytes"
+                    ]
+                }
             )
         return super().to_internal_value(data)
 
