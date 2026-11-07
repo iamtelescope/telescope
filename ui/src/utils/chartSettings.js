@@ -8,8 +8,12 @@ const escapeHtml = (value) =>
         (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
     )
 
-const calcRenderOptions = (type, timestamps, width) => {
+const calcRenderOptions = (type, timestamps, width, fitColumns) => {
     let options = {}
+    // Dashboard tiles have few buckets, so columns fill 70% of their slot instead of a fixed thin width.
+    if (type == 'column' && fitColumns) {
+        return { size: [0.7, 32, 1], radius: 0.2 }
+    }
     if (type == 'column') {
         let max = 15
 
@@ -44,7 +48,7 @@ const calcRenderOptions = (type, timestamps, width) => {
     return options
 }
 
-const makeTooltipRender = (timeZone, nameLabel, valueLabel, escape) => (data) => {
+const makeTooltipRender = (timeZone, nameLabel, valueLabel, escape, formatValue) => (data) => {
     const text = escape ? escapeHtml : (value) => value
     const dateTimeString = DateTime.fromMillis(data.x, { zone: timeZone }).toFormat('yyyy-MM-dd HH:mm:ss')
     let html = `<div class="font-medium pb-2 dark:text-neutral-300">${dateTimeString}</div><table class='p-0 m-0 w-full'>`
@@ -54,10 +58,14 @@ const makeTooltipRender = (timeZone, nameLabel, valueLabel, escape) => (data) =>
         if (item.dataValue == 0 && i > 25) {
             continue
         }
+        if (formatValue && (item.originalValue === null || item.originalValue === undefined)) {
+            continue
+        }
         html += '<tr>'
         html += `<td class="p-0 border-0 pr-2"><i style="color:${item.color};" class="pi pi-circle-fill"></i></td>`
         html += `<td class="p-0 border-0 pr-2">${text(item.name)}</td>`
-        html += `<td class="p-0 border-0 text-right"> ${text(item.dataValue)}</td>`
+        const value = formatValue ? formatValue(item.originalValue) : item.dataValue
+        html += `<td class="p-0 border-0 text-right"> ${text(value)}</td>`
         html += '</tr>'
         i++
     }
@@ -66,6 +74,7 @@ const makeTooltipRender = (timeZone, nameLabel, valueLabel, escape) => (data) =>
 }
 
 // series: [{name, data, color}]; width sizes the columns of a column chart.
+// formatValue formats tooltip values and y ticks; legend, lineWidth and fitColumns default to the explorer look.
 const getChartSettings = ({
     type,
     timestamps,
@@ -78,13 +87,18 @@ const getChartSettings = ({
     plotLines = [],
     stacking = type != 'line',
     escape = false,
+    formatValue,
+    legend = true,
+    lineWidth = 1,
+    fitColumns = false,
     onSelect,
 }) => {
+    const yAxis = formatValue ? { y: { values: (u, splits) => splits.map((v) => formatValue(v)) } } : {}
     return {
         timeline: timestamps,
         timeMultiplier: 1,
         legend: {
-            show: true,
+            show: legend,
         },
         adaptive: true,
         height: 800,
@@ -95,7 +109,7 @@ const getChartSettings = ({
         },
         tooltip: {
             sum: true,
-            render: makeTooltipRender(timeZone, nameLabel, valueLabel, escape),
+            render: makeTooltipRender(timeZone, nameLabel, valueLabel, escape, formatValue),
         },
         chart: {
             appearance: {
@@ -104,12 +118,13 @@ const getChartSettings = ({
             },
             series: {
                 type: type,
-                renderOptions: calcRenderOptions(type, timestamps, width),
-                lineWidth: 1,
-                width: 1,
+                renderOptions: calcRenderOptions(type, timestamps, width, fitColumns),
+                lineWidth: lineWidth,
+                width: lineWidth,
             },
         },
         axes: {
+            ...yAxis,
             x: {
                 plotLines: plotLines,
                 values: [
