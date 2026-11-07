@@ -54,3 +54,37 @@ SOFTWARE.
   `packages/common-utils/src/variables.ts` (an empty selection is a no-op) and `types.ts` `DashboardFilterSchema` (MIT, above); no code is copied.
 - `backend/telescope_otel/detect.py` (OTel schema detection) and the role list in `backend/telescope_otel/roles.py` are adapted from
   HyperDX `packages/app/src/source.ts` (`inferTableSourceConfig`) and `packages/api/src/models/source.ts` (MIT, above).
+- `backend/telescope/patterns/mine.py` and `masking.py` (grouping by cluster, sample scaling, trend buckets, body flattening)
+  are adapted from HyperDX `packages/common-utils/src/drain/mine-patterns.ts` and `packages/app/src/hooks/usePatterns.tsx`, and
+  `ui/src/components/explorer/patterns/PatternTable.vue` with `PatternDrawer.vue` from `packages/app/src/components/PatternTable.tsx`
+  and `PatternSidePanel.tsx` (MIT, above).
+
+## Drain3
+
+`backend/telescope/patterns/drain.py` is a port of the Drain algorithm from Drain3 (`drain3/drain.py`, version 0.9.11),
+https://github.com/logpai/Drain3, also ported by HyperDX as `packages/common-utils/src/drain/drain.ts`.
+
+```
+MIT License
+
+Copyright (c) 2020-2022 International Business Machines
+and the Drain3 project contributors.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```

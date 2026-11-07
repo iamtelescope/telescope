@@ -63,6 +63,7 @@
                         :source="source"
                         :searchSeq="searchSeq"
                         :timeZone="displayTimeZone"
+                        @searchRequest="onPatternFilter"
                     />
                     <template v-else>
                         <Skeleton v-if="loading && rows === null" width="100%" height="400px"></Skeleton>
@@ -460,6 +461,11 @@ onMounted(() => {
         () => router.replace({ path: route.path, query: sourceControlsStore.routeQuery }),
     )
 })
+
+const onPatternFilter = () => {
+    resultsMode.value = 'rows'
+    controlsRef.value.handleSearch()
+}
 
 const onHistogrammRangeSelected = (params) => {
     sourceControlsStore.setFrom(params.from)
