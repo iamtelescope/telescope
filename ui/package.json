@@ -22,6 +22,7 @@
         "flyql": "0.0.59",
         "flyql-vue": "0.0.59",
         "fuse.js": "^7.1.0",
+        "grid-layout-plus": "1.1.1",
         "he": "^1.2.0",
         "highlight.js": "^11.11.1",
         "lucide-vue-next": "^0.530.0",

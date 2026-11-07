@@ -30,6 +30,16 @@ const routes = [
         component: () => import('@/components/user/ApiTokenNew.vue'),
     },
     {
+        path: '/dashboards',
+        name: 'dashboards',
+        component: () => import('@/views/dashboards/DashboardsView.vue'),
+    },
+    {
+        path: '/dashboards/:dashboardSlug',
+        name: 'dashboard',
+        component: () => import('@/views/dashboards/DashboardView.vue'),
+    },
+    {
         path: '/sources',
         name: 'sources',
         component: () => import('@/components/sources/Sources.vue'),
