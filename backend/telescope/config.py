@@ -68,6 +68,16 @@ SCHEMA = {
         "logging": {
             "type": "object",
         },
+        "alerts": {
+            "type": "object",
+            "properties": {
+                "enabled": {"type": "boolean"},
+                "tick_seconds": {"type": "integer", "minimum": 1},
+                "allow_private_webhook_targets": {"type": "boolean"},
+                "public_url": {"type": "string"},
+                "email": {"type": "object"},
+            },
+        },
         "frontend": {
             "type": "object",
             "properties": {
@@ -184,6 +194,22 @@ def get_default_config():
         "limits": {
             "max_saved_views_per_user": 0,
             "max_dashboards_per_user": 0,
+        },
+        "alerts": {
+            "enabled": True,
+            "tick_seconds": 15,
+            "allow_private_webhook_targets": False,
+            "public_url": "",
+            # SMTP for the email channel; an empty host uses Django's EMAIL_* settings.
+            "email": {
+                "host": "",
+                "port": 25,
+                "username": "",
+                "password": "",
+                "use_tls": False,
+                "use_ssl": False,
+                "from_email": "telescope@localhost",
+            },
         },
         "auth": {
             "providers": {

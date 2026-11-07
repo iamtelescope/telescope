@@ -29,6 +29,22 @@
       "minimum": 1,
       "maximum": 50
     },
+    "scheduler": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "replicas": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "resources": {
+          "type": "object"
+        }
+      }
+    },
     "resources": {
       "type": "object",
       "properties": {

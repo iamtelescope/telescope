@@ -32,3 +32,13 @@ SOFTWARE.
 
 - `dev/otel/schema/compat_logs.sql`, `compat_traces.sql`, `compat_metrics.sql` and `k8s_logs.sql` are adapted from HyperDX
   `docker/otel-collector/schema/seed/00002_otel_logs_compat.sql`, `00005_otel_traces_compat.sql` and `00003_otel_metrics.sql` (MIT, above).
+- `backend/telescope_alerts/evaluator.py` (window alignment, threshold comparison, consecutive windows, backfill) is adapted
+  from HyperDX `packages/api/src/tasks/checkAlerts/index.ts` (MIT, above).
+- `backend/telescope_alerts/templating.py` (message shape, comparators, template variables) is adapted from HyperDX
+  `packages/api/src/tasks/checkAlerts/template.ts` and `docs/alert-webhook-template-variables.md` (MIT, above).
+- `backend/telescope_alerts/channels/slack.py`, `webhook.py` and `net.py` (Slack payload, generic webhook, idempotency key,
+  redirect refusal) are adapted from HyperDX `packages/api/src/tasks/checkAlerts/transports/slack.ts` and `generic.ts` (MIT, above).
+- `backend/telescope_alerts/models.py` and `ui/src/features/alerts/useAlerts.js` (threshold types, intervals) follow HyperDX
+  `packages/common-utils/src/types.ts` `AlertThresholdType` and `ALERT_INTERVAL_TO_MINUTES` (MIT, above).
+- `ui/src/features/alerts/PreviewChart.vue` (threshold shading) is adapted from HyperDX
+  `packages/app/src/components/AlertPreviewChart.tsx` (MIT, above).

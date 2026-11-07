@@ -1,0 +1,67 @@
+{{- if .Values.scheduler.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "telescope.fullname" . }}-scheduler
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "telescope.labels" . | nindent 4 }}
+    app.kubernetes.io/component: scheduler
+spec:
+  replicas: {{ .Values.scheduler.replicas }}
+  # Recreate avoids two schedulers overlapping during a rollout; the DB lease covers the rest.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "telescope.name" . }}-scheduler
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: scheduler
+  # Its own name label keeps these pods out of the web Service and PodDisruptionBudget.
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "telescope.name" . }}-scheduler
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: scheduler
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: scheduler
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["scheduler"]
+          env:
+            - name: TELESCOPE_CONFIG_FILE
+              value: "/etc/telescope/config.yaml"
+          envFrom:
+            - secretRef:
+                name: {{ .Values.secretName }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/telescope
+              readOnly: true
+            {{- if eq .Values.database.type "sqlite" }}
+            - name: sqlite-data
+              mountPath: /app/data
+            {{- end }}
+          resources:
+            {{- toYaml .Values.scheduler.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "telescope.fullname" . }}-config
+        {{- if eq .Values.database.type "sqlite" }}
+        - name: sqlite-data
+          {{- if .Values.database.sqlite.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "telescope.fullname" . }}-sqlite
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+{{- end }}

@@ -16,7 +16,8 @@ def test_feature_apps_installed():
 
 
 def test_feature_apps_have_no_models():
-    for name in FEATURE_APPS:
+    # telescope_alerts got its models in P1.1.
+    for name in [n for n in FEATURE_APPS if n != "telescope_alerts"]:
         assert list(apps.get_app_config(name).get_models()) == []
 
 
