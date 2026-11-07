@@ -1,5 +1,5 @@
 <template>
-    <div :style="{ height: typeof height === 'number' ? `${height}px` : height, maxHeight: '800px' }">
+    <div :style="{ height: typeof height === 'number' ? `${height}px` : height }">
         <div ref="root" class="w-full h-full"></div>
     </div>
 </template>
