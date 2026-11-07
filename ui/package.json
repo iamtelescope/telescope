@@ -16,6 +16,7 @@
         "@primeuix/styles": "^1.2.5",
         "@primevue/forms": "^4.3.9",
         "@primevue/themes": "^4.0.2",
+        "@vue-flow/core": "^1.48.2",
         "@vueuse/components": "^10.10.1",
         "@vueuse/core": "^10.10.1",
         "core-js": "^3.8.3",

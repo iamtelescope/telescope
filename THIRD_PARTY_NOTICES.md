@@ -72,6 +72,10 @@ SOFTWARE.
 - `backend/telescope/query_attribution.py` (`log_comment` keys, the character allowlist and length cap) is adapted from HyperDX
   `packages/common-utils/src/clickhouse/attribution.ts`, and `backend/telescope_api2/views.py` (resource shapes, list pagination)
   follows `packages/api/src/routers/external-api/v2/*` (MIT, above).
+- `backend/telescope_otel/service_map.py` (the client/server span join, `cityHash64(TraceId) % N` sampling, the GROUPING SETS node
+  and edge rows) is adapted from HyperDX `packages/app/src/hooks/useServiceMap.tsx`, and `ui/src/features/service-map/utils.js`
+  and `ServiceMapGraph.vue` (colour ramps, error-rate buckets, node sizes, rate formatting) from
+  `packages/app/src/components/ServiceMap/utils.ts`, `ServiceMapNode.tsx` and `ServiceMapEdge.tsx` (MIT, above).
 
 ## Drain3
 
