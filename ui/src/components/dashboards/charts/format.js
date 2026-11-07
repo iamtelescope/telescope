@@ -1,4 +1,6 @@
 // Labels, units and number formatting shared by the dashboard chart renderers.
+import { metricLabel } from '@/components/dashboards/metrics/metrics.js'
+
 const LOCALE = 'en-US'
 
 export const seriesLabel = (s) => {
@@ -6,6 +8,7 @@ export const seriesLabel = (s) => {
     if (s.alias) return s.alias
     if (s.agg === 'count') return s.where ? `count where ${s.where}` : 'count'
     if (s.agg === 'formula') return s.formula
+    if (s.agg === 'metric') return metricLabel(s.metric)
     const where = s.where ? ` where ${s.where}` : ''
     if (s.agg === 'quantile') return `p${Math.round((s.level || 0) * 100)} ${s.column}${where}`
     if (s.agg === 'last_value') return `last ${s.column}${where}`

@@ -7,7 +7,7 @@ from rest_framework.test import APIClient
 
 from telescope.rbac.manager import RBACManager
 from telescope.rbac.roles import SourceRole
-from telescope_otel.releases import release_columns, releases_from_rows, scope_where
+from telescope_otel.releases import release_columns, scope_where
 from tests.otel import columns as C
 from tests.otel.test_trace import make_source
 
@@ -25,23 +25,6 @@ def post(user, slug, body):
     client = APIClient()
     client.force_login(user)
     return client.post(f"/ui/v1/otel/{slug}/releases", body, format="json").json()
-
-
-def test_first_version_of_each_service_is_not_a_release():
-    rows = [
-        ("checkout", "1.4.0", 100),
-        ("cart", "2.0.0", 50),
-        ("checkout", "1.5.0", 900),
-        ("cart", "2.1.0", 400),
-        ("api", "3.0.0", 600),
-    ]
-    assert releases_from_rows(rows, 500) == [
-        {"time": 900, "service": "checkout", "version": "1.5.0"}
-    ]
-    assert releases_from_rows(rows, 0) == [
-        {"time": 400, "service": "cart", "version": "2.1.0"},
-        {"time": 900, "service": "checkout", "version": "1.5.0"},
-    ]
 
 
 @pytest.mark.django_db

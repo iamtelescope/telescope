@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 from rest_framework.test import APIClient
@@ -84,8 +85,9 @@ def metric(base, agg, **extra):
     return {"agg": "metric", "metric": {**base, "agg": agg, **extra}}
 
 
-def reference_increase(ch_client, db, window, step_ms, where):
-    """Per-bucket sum of clamped per-series deltas, computed in Python from raw points."""
+def reference_increase(ch_client, db, window, step_ms, where, clamp=False):
+    """Per-bucket sum of per-series deltas from raw points; a drop restarts the counter, as in
+    Prometheus increase(), or counts 0 with `clamp`."""
     rows = ch_client.query(
         f"SELECT ResourceAttributes, Attributes, toUnixTimestamp(TimeUnix) * 1000, Value"
         f" FROM `{db}`.otel_metrics_sum WHERE MetricName = 'http.server.requests' AND {where}"
@@ -99,7 +101,8 @@ def reference_increase(ch_client, db, window, step_ms, where):
         last[key] = value
         if prev is None or not window[0] <= ts < window[1]:
             continue
-        out[ts // step_ms * step_ms, attrs["http.route"]] += max(value - prev, 0)
+        delta = (0 if clamp else value) if value < prev else value - prev
+        out[ts // step_ms * step_ms, attrs["http.route"]] += delta
     return out
 
 
@@ -126,9 +129,12 @@ def test_increase_per_5m_matches_python_reference_across_the_reset(
         values = [truth.get((ts, s["group"]), 0) for ts in data["timestamps"]]
         assert s["values"] == pytest.approx(values)
         assert all(v >= 0 for v in s["values"])
-    # The bucket holding the reset point only counts the clamped deltas after it.
+    # The point after the reset counts in full, so the bucket holds more than clamped deltas.
+    clamped = reference_increase(
+        ch_client, otel_db, window, 300000, "ServiceName = 'frontend'", clamp=True
+    )
     checkout = next(s for s in data["series"] if s["group"] == "/api/checkout")
-    assert 0 < checkout["values"][reset_bucket] < checkout["values"][reset_bucket - 1]
+    assert checkout["values"][reset_bucket] > clamped[reset, "/api/checkout"] > 0
 
     rate = chart(
         root_user,
@@ -412,12 +418,14 @@ def number(user, source, base, agg):
 
 def test_exponential_histogram_quantiles(root_user, synthetic):
     exp = {"name": "exp", "type": "exponential_histogram"}
-    # 10 in (1,2], 5 in (2,4], 10 in (4,8].
-    assert number(root_user, synthetic, exp, "p50") == pytest.approx(3.0)
-    assert number(root_user, synthetic, exp, "p95") == pytest.approx(4 + 4 * 8.75 / 10)
+    # 10 in (1,2], 5 in (2,4], 10 in (4,8]; Prometheus interpolates on a log2 scale.
+    assert number(root_user, synthetic, exp, "p50") == pytest.approx(2**1.5)
+    assert number(root_user, synthetic, exp, "p95") == pytest.approx(
+        2 ** (2 + 8.75 / 10)
+    )
     reset = {"name": "exp.reset", "type": "exponential_histogram"}
     # 2 in (2,4] before the restart, 3 in (1,2] after it.
-    assert number(root_user, synthetic, reset, "p50") == pytest.approx(1 + 2.5 / 3)
+    assert number(root_user, synthetic, reset, "p50") == pytest.approx(2 ** (2.5 / 3))
 
 
 def test_summary_quantile_passthrough(root_user, synthetic):
@@ -425,3 +433,124 @@ def test_summary_quantile_passthrough(root_user, synthetic):
     assert number(root_user, synthetic, rpc, "p50") == pytest.approx(4.0)
     assert number(root_user, synthetic, rpc, "p95") == pytest.approx(4.0)
     assert number(root_user, synthetic, rpc, "p99") is None
+
+
+def test_exponential_histogram_negative_buckets_rank_first(
+    root_user, synthetic, ch_client
+):
+    # Delta at scale 0: 10 in [-4,-2), 5 zeros, 5 in (1,2].
+    ch_client.insert(
+        f"{SYNTH_DB}.otel_metrics_exponential_histogram",
+        [["exp.neg", datetime.utcfromtimestamp(T0 + 60), 1, 0, 5, 0, [5], 1, [10]]],
+        column_names=[
+            "MetricName",
+            "TimeUnix",
+            "AggregationTemporality",
+            "Scale",
+            "ZeroCount",
+            "PositiveOffset",
+            "PositiveBucketCounts",
+            "NegativeOffset",
+            "NegativeBucketCounts",
+        ],
+    )
+    neg = {"name": "exp.neg", "type": "exponential_histogram"}
+    assert number(root_user, synthetic, neg, "p50") == pytest.approx(-2.0)
+    assert number(root_user, synthetic, neg, "p95") == pytest.approx(2**0.8)
+
+
+SUM_COLUMNS = [
+    "MetricName",
+    "ScopeName",
+    "Attributes",
+    "TimeUnix",
+    "Value",
+    "AggregationTemporality",
+    "IsMonotonic",
+]
+
+
+def insert_sums(ch_client, points):
+    ch_client.insert(
+        f"{SYNTH_DB}.otel_metrics_sum",
+        [
+            [n, sc, a, datetime.utcfromtimestamp(t), v, 2, m]
+            for n, sc, a, t, v, m in points
+        ],
+        column_names=SUM_COLUMNS,
+    )
+
+
+def increase(user, source, name):
+    window = (T0 * 1000, (T0 + 300) * 1000)
+    series = [metric({"name": name, "type": "sum"}, "increase")]
+    return chart(user, source, window, series, display="number")["value"]
+
+
+def test_counter_reset_counts_the_restarted_value_per_scope(
+    root_user, synthetic, ch_client
+):
+    # Same name and attributes in two scopes are two streams; s1 resets at its 4th point.
+    s1 = [0, 100, 200, 10, 110]
+    s2 = [5000, 5001, 5002, 5003]
+    insert_sums(
+        ch_client,
+        [("req", "s1", {"k": "a"}, T0 + 60 * i, v, True) for i, v in enumerate(s1)]
+        + [
+            ("req", "s2", {"k": "a"}, T0 + 30 + 60 * i, v, True)
+            for i, v in enumerate(s2)
+        ],
+    )
+    # Prometheus increase(): 100 + 100 + 10 + 100 for s1, 3 for s2.
+    assert increase(root_user, synthetic, "req") == 313
+
+
+def test_up_down_sum_keeps_its_decreases(root_user, synthetic, ch_client):
+    points = [10, 30, 20, 25]
+    insert_sums(
+        ch_client,
+        [("queue", "s", {}, T0 + 60 * i, v, False) for i, v in enumerate(points)],
+    )
+    assert increase(root_user, synthetic, "queue") == 15
+
+
+def test_grouped_metric_chart_reads_only_the_top_groups(
+    root_user, synthetic, ch_client
+):
+    ch_client.insert(
+        f"{SYNTH_DB}.otel_metrics_gauge",
+        [
+            ["temp", {"k": f"g{g:02}", "r": "x"}, datetime.utcfromtimestamp(T0 + t), g]
+            for g in range(30)
+            for t in (0, 300, 600)
+        ],
+        column_names=["MetricName", "Attributes", "TimeUnix", "Value"],
+    )
+    sizes = []
+
+    def counting(client, sql, **kw):
+        result = client.query(sql, **kw)
+        sizes.append(len(result.result_rows))
+        return result
+
+    window = (T0 * 1000, (T0 + 900) * 1000)
+    series = [metric({"name": "temp", "type": "gauge"}, "max")]
+    with patch("telescope_otel.metrics_sql._client_query", counting):
+        line = chart(
+            root_user, synthetic, window, series, group_by="Attributes.k", limit=3
+        )
+        table = chart(
+            root_user,
+            synthetic,
+            window,
+            series,
+            display="table",
+            group_by="Attributes.k, Attributes.r",
+            limit=3,
+        )
+    assert [s["group"] for s in line["series"]] == ["g29", "g28", "g27"]
+    assert line["truncated"] is True
+    assert [r["group"] for r in table["rows"]] == ["g29 · x", "g28 · x", "g27 · x"]
+    assert table["truncated"] is True
+    # Top query, then 4 groups x 3 buckets; then top query, then 4 groups; never all 30.
+    assert sizes == [4, 12, 4, 4]

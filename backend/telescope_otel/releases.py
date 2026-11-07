@@ -42,20 +42,6 @@ def release_columns(source):
     )
 
 
-def releases_from_rows(rows, window_from):
-    """Rows of (service, version, first seen ms) to markers. A service's earliest version was
-    already running, so only later versions inside the window count as releases."""
-    seen = set()
-    result = []
-    for service, version, first in sorted(rows, key=lambda r: (r[2], r[0], r[1])):
-        if service not in seen:
-            seen.add(service)
-            continue
-        if first >= window_from:
-            result.append({"time": first, "service": service, "version": version})
-    return result
-
-
 def scope_where(source, query, series):
     """The tile's filter: its query and, when every series has one, the OR of the series filters."""
     parts = [f"({Fetcher._flyql_sql(source, query)})"]
@@ -82,12 +68,15 @@ def fetch_releases(source, query, raw_query, series, time_from, time_to):
     table = f"{source.data['database']}.{source.data['table']}"
     scope = f"{scope_where(source, query, series)} AND ({raw_query or 'true'})"
     # The tile's filters pick the services; a release is dated on all rows of its service.
+    # Each service's first version is dropped in SQL, so the limit keeps the newest releases.
     sql = (
-        f"SELECT toString({service}) AS s, {version} AS v,"
-        f" toUnixTimestamp64Milli(toDateTime64(min({time_column}), 3)) AS first_seen"
+        f"SELECT s, v, first_seen FROM (SELECT toString({service}) AS s, {version} AS v,"
+        f" toUnixTimestamp64Milli(toDateTime64(min({time_column}), 3)) AS first_seen,"
+        f" row_number() OVER (PARTITION BY s ORDER BY first_seen, v) AS n"
         f" FROM {table} WHERE {time_clause} AND v != ''"
         f" AND s IN (SELECT DISTINCT toString({service}) FROM {table} WHERE {time_clause} AND {scope})"
-        f" GROUP BY s, v ORDER BY first_seen LIMIT {MAX_ROWS}"
+        f" GROUP BY s, v) WHERE n > 1 AND first_seen >= {int(time_from)}"
+        f" ORDER BY first_seen DESC, s, v LIMIT {MAX_ROWS}"
     )
     if source.data.get("settings"):
         sql += f" SETTINGS {source.data['settings']}"
@@ -95,7 +84,8 @@ def fetch_releases(source, query, raw_query, series, time_from, time_to):
         rows = _client_query(
             c.client, sql, settings={"max_execution_time": QUERY_TIMEOUT_SECONDS}
         ).result_rows
-    return releases_from_rows(rows, time_from)
+    rows = sorted(rows, key=lambda r: (r[2], r[0], r[1]))
+    return [{"time": t, "service": s, "version": v} for s, v, t in rows]
 
 
 class ReleasesView(APIView):

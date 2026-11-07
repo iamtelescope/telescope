@@ -14,6 +14,8 @@ from telescope_otel.trace import (
 SERVER_KINDS = ("Server", "Consumer", "SPAN_KIND_SERVER", "SPAN_KIND_CONSUMER")
 CLIENT_KINDS = ("Client", "Producer", "SPAN_KIND_CLIENT", "SPAN_KIND_PRODUCER")
 REQUIRED_ROLES = ("trace_id", "span_id", "parent_span_id", "span_kind", "service")
+# As in HyperDX: bounded time, and a join that may spill to disk instead of running out of memory.
+QUERY_SETTINGS = {"max_execution_time": 60, "join_algorithm": "auto"}
 
 
 def _in(values):
@@ -96,7 +98,9 @@ def fetch_service_map(source, time_from, time_to, query="", sampling=1, trace_id
     sql = service_map_sql(source, roles, query, sampling, trace_id)
     params = {"from": time_from, "to": time_to, "trace_id": trace_id or ""}
     with ClickhouseConnect(source.conn.data) as c:
-        rows = _client_query(c.client, sql, parameters=params).result_rows
+        rows = _client_query(
+            c.client, sql, parameters=params, settings=QUERY_SETTINGS
+        ).result_rows
 
     nodes, edges = {}, []
     for server, client, node_level, requests, errors, q in rows:

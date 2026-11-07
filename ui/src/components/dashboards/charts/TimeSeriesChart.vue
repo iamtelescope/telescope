@@ -35,7 +35,8 @@ import {
 import { getChartSettings } from '@/utils/chartSettings.js'
 import { useMarkers, markerPlotLines } from '@/composables/useMarkers.js'
 
-const props = defineProps(['data', 'chart', 'timeZone'])
+// `explore` adds "Open in explorer at this bucket" to the pinned tooltip; the parent opens it.
+const props = defineProps({ data: Object, chart: Object, timeZone: String, explore: Boolean })
 const emit = defineEmits(['rangeSelected'])
 
 // Every dashboard time series shares one uPlot cursor sync group, so the crosshair follows across tiles.
@@ -140,7 +141,14 @@ const settings = computed(() => {
         tooltip: { ...base.tooltip, show: (y) => !!y.plugins.tooltip?.state.pinned || y.root.matches(':hover') },
         editUplotOptions: (opts) => {
             opts = base.editUplotOptions(opts)
-            opts.cursor.sync = { key: SYNC_KEY, setSeries: false, scales: ['x', null] }
+            // Only the crosshair is shared: a drag selects, and zooms, on its own chart.
+            const crosshair = (type) => type === 'mousemove' || type === 'mouseleave'
+            opts.cursor.sync = {
+                key: SYNC_KEY,
+                setSeries: false,
+                scales: ['x', null],
+                filters: { pub: crosshair, sub: crosshair },
+            }
             opts.hooks = { ...opts.hooks, draw: [...(opts.hooks?.draw || []), placeFlags] }
             return opts
         },
@@ -172,7 +180,7 @@ const onReady = (yagr) => {
     }
     // The tooltip re-renders right after it pins, so the button is added on render too.
     const addButton = (elem, x) => {
-        if (x === null || x === undefined || elem.querySelector('.tile-tooltip-explore')) return
+        if (!props.explore || x === null || x === undefined || elem.querySelector('.tile-tooltip-explore')) return
         const button = document.createElement('button')
         button.type = 'button'
         button.className = 'tile-tooltip-explore'

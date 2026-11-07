@@ -111,6 +111,7 @@
                 :code="code"
                 :validation="validation"
                 :timeZone="timeZone"
+                :explore="true"
                 @rangeSelected="onChartRange"
                 @rowClick="onRowClick"
             />
@@ -132,6 +133,7 @@
                     :code="code"
                     :validation="validation"
                     :timeZone="timeZone"
+                    :explore="true"
                     @rangeSelected="onFullscreenRange"
                     @rowClick="onRowClick"
                 />

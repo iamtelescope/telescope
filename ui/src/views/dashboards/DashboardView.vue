@@ -583,9 +583,10 @@ const onRangeSelect = (params) => {
     setQuery(query)
 }
 
-// The range before the first drag-to-zoom on any tile; Reset zoom returns to it.
+// The range before the first drag-to-zoom on any tile; Reset zoom returns to it. Kiosk never zooms.
 const zoomBase = ref(null)
 const onZoom = (params) => {
+    if (kiosk.value) return
     if (!zoomBase.value) zoomBase.value = { from: route.query.from, to: route.query.to }
     setQuery({ from: params.from, to: params.to })
 }

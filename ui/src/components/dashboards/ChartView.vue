@@ -47,6 +47,7 @@
         :data="data"
         :chart="chart"
         :timeZone="timeZone"
+        :explore="!!explore"
         @rangeSelected="(range) => emit('rangeSelected', range)"
     />
     <NumberChart v-else-if="data.kind === 'number'" :data="data" :chart="chart" />
@@ -83,7 +84,7 @@ import PieChart from '@/components/dashboards/charts/PieChart.vue'
 import TextTile from '@/components/dashboards/charts/TextTile.vue'
 import { isTimeseries } from '@/utils/dashboards.js'
 
-const props = defineProps(['chart', 'data', 'loading', 'error', 'code', 'validation', 'timeZone'])
+const props = defineProps(['chart', 'data', 'loading', 'error', 'code', 'validation', 'timeZone', 'explore'])
 const emit = defineEmits(['rangeSelected', 'rowClick'])
 
 const skeletonBars = [35, 55, 45, 70, 50, 65, 40, 60, 75, 55, 45, 60]

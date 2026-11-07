@@ -60,6 +60,9 @@ def test_rows_fold_into_nodes_and_edges(traces):
         "to": 1000,
         "trace_id": "",
     }
+    settings = client.query.call_args.kwargs["settings"]
+    assert settings["max_execution_time"] == 60
+    assert settings["join_algorithm"] == "auto"
     assert result["sampling"] == 5
     assert result["nodes"] == [
         {

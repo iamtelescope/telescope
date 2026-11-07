@@ -27,14 +27,22 @@ def test_histogram_quantile_edges():
     assert histogram_quantile(0.99, BOUNDS, [0, 0, 0, 0, 7]) == 2.5
 
 
-def test_exponential_quantile():
-    # Scale 0: bucket i is (2^i, 2^(i+1)].
+def test_exponential_quantile_interpolates_on_a_log_scale():
+    # Scale 0: key 2i is bucket i, (2^i, 2^(i+1)]; values as Prometheus promql/quantile.go gives them.
     assert exponential_quantile(0.5, 0, {0: 10, 2: 10}, 0) == pytest.approx(2.0)
-    assert exponential_quantile(0.25, 0, {1: 4}, 4) == 0.0
-    assert exponential_quantile(0.75, 1, {2: 2}, 0) == pytest.approx(
-        2 + (2**1.5 - 2) * 0.75
-    )
+    assert exponential_quantile(0.5, 0, {2: 10}, 0) == pytest.approx(2**1.5)
+    assert exponential_quantile(0.5, -2, {2: 10}, 0) == pytest.approx(64)
+    assert exponential_quantile(0.25, 0, {2: 4}, 4) == 0.0
+    assert exponential_quantile(0.75, 1, {4: 2}, 0) == pytest.approx(2**1.375)
     assert exponential_quantile(0.5, 0, {}, 0) is None
+
+
+def test_exponential_quantile_ranks_negative_buckets_first():
+    # Key 2i+1 is negative bucket i, [-2^(i+1), -2^i): 10 in [-4,-2), 5 zeros, 5 in (1,2].
+    buckets = {3: 10, 0: 5}
+    assert exponential_quantile(0.25, 0, buckets, 5) == pytest.approx(-(2**1.5))
+    assert exponential_quantile(0.6, 0, buckets, 5) == 0.0
+    assert exponential_quantile(0.9, 0, buckets, 5) == pytest.approx(2**0.6)
 
 
 def metrics_source(tables=None):

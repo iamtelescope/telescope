@@ -2,7 +2,8 @@
 exponential histogram, summary).
 
 Adapted from HyperDX packages/common-utils/src/core/renderChartConfig.ts (translateMetricChartConfig)
-and core/histogram.ts (MIT): per-series deltas with lagInFrame, clamped sum resets, bucket quantiles.
+and core/histogram.ts (MIT): per-series deltas with lagInFrame, bucket quantiles. Counter resets
+and exponential-histogram quantiles follow Prometheus (promql/functions.go, promql/quantile.go).
 """
 
 import math
@@ -33,8 +34,8 @@ METRIC_AGGS = {
 }
 METRIC_TYPES = list(METRIC_AGGS)
 ALL_METRIC_AGGS = sorted({a for aggs in METRIC_AGGS.values() for a in aggs})
-# A series is one attribute set, as in HyperDX's AttributesHash.
-SERIES_KEY = "cityHash64(ResourceAttributes, Attributes)"
+# A series is one OTel metric stream: resource, instrumentation scope and attributes.
+SERIES_KEY = "cityHash64(ResourceAttributes, ScopeName, ScopeVersion, ScopeAttributes, Attributes)"
 # Cumulative deltas need the point before the range, so reads start this much earlier.
 LOOKBACK_MS = 5 * 60 * 1000
 WINDOW = (
@@ -82,6 +83,7 @@ class MetricQuery:
             f"ifNull(toString({group_expression(g)}), '')" for g in plan.group_bys
         ]
         self.aliases = [f"`__telescope_g{i}`" for i in range(len(self.groups))]
+        self.bound = False
         if plan.kind == "timeseries":
             self.step_ms = plan.step_ms
             self.bucket = (
@@ -111,7 +113,29 @@ class MetricQuery:
         if metric.get("attrs_filter"):
             source = self.request.source
             parts.append(f"({Fetcher._flyql_sql(source, metric['attrs_filter'])})")
+        if self.bound:
+            parts.append(self.restriction())
         return " AND ".join(parts)
+
+    def restriction(self) -> str:
+        """Keeps only the groups bound as the `groups` parameter."""
+        if len(self.groups) == 1:
+            return f"{self.groups[0]} IN {{groups:Array(String)}}"
+        types = ", ".join(["String"] * len(self.groups))
+        return f"tuple({', '.join(self.groups)}) IN {{groups:Array(Tuple({types}))}}"
+
+    def top_sql(self, metric: Dict, limit: int) -> str:
+        """The `limit` groups with the highest bucket value; histograms rank by observations."""
+        rank = "max(`__telescope_v`)"
+        if metric["type"] == "histogram":
+            rank = "sum(arraySum(`__telescope_v`))"
+        elif metric["type"] == "exponential_histogram":
+            rank = "sum(arraySum(mapValues(`__telescope_v`)) + `__telescope_z`)"
+        aliases = ", ".join(self.aliases)
+        return (
+            f"SELECT {aliases} FROM ({self.sql(metric)}) GROUP BY {aliases}"
+            f" ORDER BY {rank} DESC, {aliases} LIMIT {int(limit)}"
+        )
 
     def dimensions(self) -> str:
         return "".join(f", {e} AS {a}" for e, a in zip(self.groups, self.aliases))
@@ -128,7 +152,7 @@ class MetricQuery:
         tail = f" GROUP BY {self.group_by()} ORDER BY `__telescope_t`"
         if agg in GAUGE_AGGS:
             return (
-                f"SELECT {self.bucket} AS `__telescope_t`{dims}, {GAUGE_AGGS[agg]}"
+                f"SELECT {self.bucket} AS `__telescope_t`{dims}, {GAUGE_AGGS[agg]} AS `__telescope_v`"
                 f" FROM {table} WHERE {self.where(metric)}{tail}"
             )
         if kind == "summary":
@@ -139,20 +163,21 @@ class MetricQuery:
                 " `ValueAtQuantiles.Quantile`)]"
             )
             return (
-                f"SELECT {self.bucket} AS `__telescope_t`{dims}, avg({value})"
+                f"SELECT {self.bucket} AS `__telescope_t`{dims}, avg({value}) AS `__telescope_v`"
                 f" FROM {table} WHERE {self.where(metric)}"
                 f" AND arrayExists({match}, `ValueAtQuantiles.Quantile`){tail}"
             )
         window = WINDOW.format(key=SERIES_KEY)
         after = f"TimeUnix >= {_ms(self.time_from)}"
         if kind == "sum":
-            # Resets give a negative delta, clamped to 0 as in HyperDX.
+            # A monotonic counter that drops restarted from 0, as in Prometheus; up-down sums can fall.
+            prev = "ifNull(lagInFrame(toNullable(Value), 1) OVER w, Value)"
             delta = (
-                "if(AggregationTemporality = 1, Value, greatest(Value"
-                " - ifNull(lagInFrame(toNullable(Value), 1) OVER w, Value), 0))"
+                f"multiIf(AggregationTemporality = 1, Value, IsMonotonic AND Value < {prev},"
+                f" Value, Value - {prev})"
             )
             return (
-                f"{head}, sum(`__d`) FROM (SELECT TimeUnix, {self.bucket} AS `__telescope_t`{dims},"
+                f"{head}, sum(`__d`) AS `__telescope_v` FROM (SELECT TimeUnix, {self.bucket} AS `__telescope_t`{dims},"
                 f" {delta} AS `__d` FROM {table} WHERE {self.where(metric, True)} {window})"
                 f" WHERE {after}{tail}"
             )
@@ -168,7 +193,7 @@ class MetricQuery:
                 f" arrayMap((c, p) -> c - p, {counts}, {prev}))"
             )
             return (
-                f"{head}, `__b`, sumForEach(`__d`) FROM (SELECT TimeUnix,"
+                f"{head}, `__b`, sumForEach(`__d`) AS `__telescope_v` FROM (SELECT TimeUnix,"
                 f" {self.bucket} AS `__telescope_t`{dims}, ExplicitBounds AS `__b`,"
                 f" {delta} AS `__d` FROM {table} WHERE {self.where(metric, True)} {window})"
                 f" WHERE {after} GROUP BY {self.group_by()}, `__b` ORDER BY `__telescope_t`"
@@ -176,13 +201,15 @@ class MetricQuery:
         return self._exponential_sql(metric, table, head, dims, window, after)
 
     def _exponential_sql(self, metric, table, head, dims, window, after) -> str:
-        # Buckets are rescaled to the coarsest scale in range, then keyed by index.
+        # Buckets are rescaled to the coarsest scale in range; positive bucket i is key 2i, negative 2i+1.
         scale = f"(SELECT min(Scale) FROM {table} WHERE {self.where(metric, True)})"
-        keys = (
-            f"arrayMap(i -> toInt64(floor((PositiveOffset + i - 1) / exp2(Scale - `__s`))),"
-            " arrayEnumerate(PositiveBucketCounts))"
+        keys = ", ".join(
+            f"arrayMap(i -> toInt64(floor(({side}Offset + i - 1) / exp2(Scale - `__s`))) * 2 + {sign},"
+            f" arrayEnumerate({side}BucketCounts))"
+            for side, sign in (("Positive", 0), ("Negative", 1))
         )
-        counts = "CAST(PositiveBucketCounts AS Array(Int64))"
+        keys = f"arrayConcat({keys})"
+        counts = "CAST(arrayConcat(PositiveBucketCounts, NegativeBucketCounts) AS Array(Int64))"
         point = (
             f"CAST(arrayReduce('sumMap', [{keys}], [{counts}]), 'Map(Int64, Int64)')"
         )
@@ -203,7 +230,7 @@ class MetricQuery:
             f" {reset}, toInt64(ZeroCount), toInt64(ZeroCount) - {prev_zero})"
         )
         return (
-            f"{head}, any(`__s`), sumMap(`__d`), sum(`__z`) FROM (SELECT TimeUnix,"
+            f"{head}, any(`__s`), sumMap(`__d`) AS `__telescope_v`, sum(`__z`) AS `__telescope_z` FROM (SELECT TimeUnix,"
             f" {self.bucket} AS `__telescope_t`{dims}, {scale} AS `__s`, {point} AS `__m`,"
             f" {delta} AS `__d`, {zero} AS `__z`"
             f" FROM {table} WHERE {self.where(metric, True)} {window})"
@@ -254,22 +281,29 @@ def histogram_quantile(level: float, bounds, counts) -> Optional[float]:
 
 
 def exponential_quantile(level: float, scale, buckets, zero_count) -> Optional[float]:
-    """Bucket `i` holds (base^i, base^(i+1)] with base = 2^(2^-scale); zeros sit at 0."""
-    buckets = {int(k): v for k, v in (buckets or {}).items() if v > 0}
-    zero_count = max(int(zero_count or 0), 0)
-    total = zero_count + sum(buckets.values())
+    """Key 2i is positive bucket i, (base^i, base^(i+1)] with base = 2^(2^-scale), and 2i+1 its
+    negative mirror; zeros sit at 0. Interpolates on a log2 scale, as Prometheus does.
+    """
+    width = 2.0 ** -int(scale)
+    # (value order, index order, negative, count): negatives, then zero, then positives.
+    spans = [(1, 0, 0, max(int(zero_count or 0), 0))]
+    for key, count in (buckets or {}).items():
+        index, negative = int(key) >> 1, int(key) & 1
+        spans.append((0, -index, 1, count) if negative else (2, index, 0, count))
+    spans = [span for span in sorted(spans) if span[3] > 0]
+    total = sum(span[3] for span in spans)
     if total <= 0:
         return None
     rank = level * total
-    if rank <= zero_count:
-        return 0.0
-    base = 2 ** (2 ** -int(scale))
-    seen = zero_count
-    for index in sorted(buckets):
-        count = buckets[index]
+    seen = 0
+    for side, order, negative, count in spans:
         if seen + count >= rank:
-            lower, upper = base**index, base ** (index + 1)
-            return lower + (upper - lower) * (rank - seen) / count
+            fraction = (rank - seen) / count
+            if side == 1:
+                return 0.0
+            if negative:
+                return -(2 ** (-order * width + width * (1 - fraction)))
+            return 2 ** (order * width + width * fraction)
         seen += count
     return None
 
@@ -289,14 +323,27 @@ def fetch_metric_chart(request):
     )
     merged: Dict = {}
     with ClickhouseConnect(source.conn.data) as c:
-        for i, series in enumerate(request.series):
-            metric = series["metric"]
-            rows = _client_query(
+
+        def run(sql, parameters):
+            return _client_query(
                 c.client,
-                query.sql(metric) + settings,
-                parameters={"metric": metric["name"]},
+                sql + settings,
+                parameters=parameters,
                 settings={"max_execution_time": CHART_QUERY_TIMEOUT_SECONDS},
             ).result_rows
+
+        params = {}
+        if width:
+            # Only the top limit + 1 groups of the first series are read, as for column charts.
+            first = request.series[0]["metric"]
+            top = run(query.top_sql(first, plan.limit + 1), {"metric": first["name"]})
+            params["groups"] = [tuple(r) if width > 1 else r[0] for r in top]
+            query.bound = True
+        for i, series in enumerate(request.series):
+            if query.bound and not params["groups"]:
+                break
+            metric = series["metric"]
+            rows = run(query.sql(metric), {**params, "metric": metric["name"]})
             for row in query.values(metric, rows):
                 key = tuple(row[: width + 1])
                 merged.setdefault(key, [None] * len(request.series))[i] = clean_value(
