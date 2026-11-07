@@ -43,6 +43,8 @@ class Command(BaseCommand):
         if options["once"] or at_ms is not None:
             try:
                 written = tick(holder, lease_seconds, at_ms)
+                # A one-off run must not block the long-running scheduler until the lease expires.
+                release_lease(holder)
             except DatabaseError as err:
                 raise CommandError(f"database error (is it migrated?): {err}")
             self.stdout.write(

@@ -1,6 +1,7 @@
 import json
 import socket
 from datetime import timedelta
+from io import StringIO
 
 import pytest
 from django.core import mail
@@ -180,6 +181,17 @@ def test_lease():
     assert not acquire_lease("a", 60)
     release_lease("b")
     assert acquire_lease("a", 60)
+
+
+@pytest.mark.django_db
+def test_one_off_run_releases_the_lease():
+    from django.core.management import call_command
+
+    call_command(
+        "telescope_scheduler", "--once", "--holder", "replay", stdout=StringIO()
+    )
+    assert not SchedulerLease.objects.exists()
+    assert acquire_lease("long-running", 60)
 
 
 @pytest.mark.django_db
