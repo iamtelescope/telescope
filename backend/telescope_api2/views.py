@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from telescope.auth.token import TokenAuth
 from telescope.constants import UTC_ZONE
 from telescope.fetchers import get_fetchers
+from telescope.fetchers.chart import fetch_chart
 from telescope.fetchers.request import ChartDataRequest, DataRequest
 from telescope.query_attribution import debug_sql
 from telescope.rbac import permissions
@@ -237,7 +238,12 @@ class ChartView(V2View):
             granularity=v["granularity"],
             limit=v["limit"],
         )
-        data = fetch(lambda f: f.fetch_chart_data(chart_request), source).as_dict()
+        data = fetch(
+            lambda f: fetch_chart(
+                f, chart_request, compare=v["compare"], sparkline=v["sparkline"]
+            ),
+            source,
+        ).as_dict()
         return Response(with_debug(data, request.user, slug))
 
 

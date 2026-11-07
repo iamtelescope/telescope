@@ -104,6 +104,8 @@ CHART_REQUEST = {
         "granularity": {"type": "string", "default": "auto"},
         "limit": {"type": "integer"},
         "params": OBJ,
+        "compare": {"type": "boolean", "default": False},
+        "sparkline": {"type": "boolean", "default": False},
     },
 }
 DEBUG = {

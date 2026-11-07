@@ -196,3 +196,15 @@ def test_routes_resolve_before_the_api_stub():
         assert (
             resolver.resolve(path).func.view_class.__module__ == "telescope_api2.views"
         )
+
+
+@pytest.mark.django_db
+def test_chart_compare_queries_the_previous_period(root_user, ch_source, fake_ch):
+    response = token_client(root_user).post(
+        f"/api/v1/sources/{ch_source.slug}/chart",
+        chart_body(compare=True),
+        format="json",
+    )
+    assert response.status_code == 200, response.content
+    assert fake_ch.query.call_count == 2
+    assert response.json()["previous_offset_ms"] == 3600000
