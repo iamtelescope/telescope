@@ -106,6 +106,7 @@
                         :h="item.h"
                         :i="item.i"
                         :min-h="1"
+                        :max-h="48"
                         drag-allow-from=".tile-drag-handle"
                     >
                         <Tile
@@ -153,6 +154,7 @@ import { DashboardService } from '@/sdk/services/dashboard'
 import { createRequestQueue } from '@/utils/requestQueue'
 import { REFRESH_MS, REFRESH_OPTIONS, bottomY, defaultTileSize, newTileId } from '@/utils/dashboards'
 import { exportDashboard } from '@/utils/dashboardFile'
+import { fieldErrorsText } from '@/utils/utils'
 
 const route = useRoute()
 const router = useRouter()
@@ -288,10 +290,8 @@ const handleUpdateResponse = (response) => {
         })
         askReload()
     } else if (response.validation && !response.validation.result) {
-        const fields = Object.entries(response.validation.fields || {}).map(
-            ([k, v]) => `${k}: ${[].concat(v).join(', ')}`,
-        )
-        const text = [...(response.validation.non_field || []), ...fields].join('; ')
+        const fields = fieldErrorsText(response.validation.fields)
+        const text = [...(response.validation.non_field || []), fields].filter(Boolean).join('; ')
         toast.add({ severity: 'error', summary: 'Invalid dashboard', detail: text, life: 10000 })
     }
     response.sendToastErrors(toast)

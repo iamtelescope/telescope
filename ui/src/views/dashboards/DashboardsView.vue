@@ -195,6 +195,7 @@ import { useGetDashboards, useSaveDashboard } from '@/composables/dashboards/use
 import { useGetSources } from '@/composables/sources/useSourceService'
 import { emptyDashboardData } from '@/utils/dashboards'
 import { checkDashboardFile, fileSourceSlugs, remapSources } from '@/utils/dashboardFile'
+import { fieldErrorsText } from '@/utils/utils'
 
 const router = useRouter()
 const toast = useToast()
@@ -218,11 +219,6 @@ const rows = computed(() =>
         updatedAt: d.updatedAt,
     })),
 )
-
-const fieldErrorsText = (validation) =>
-    Object.entries(validation?.fields || {})
-        .map(([k, v]) => `${k}: ${[].concat(v).join(', ')}`)
-        .join('; ')
 
 const newVisible = ref(false)
 const newName = ref('')
@@ -248,7 +244,7 @@ const createNew = async () => {
         router.push({ name: 'dashboard', params: { dashboardSlug: response.data.slug }, query: { edit: '1' } })
         return
     }
-    newErrors.value = [...response.errors, fieldErrorsText(response.validation)].filter(Boolean).join('; ')
+    newErrors.value = [...response.errors, fieldErrorsText(response.validation?.fields)].filter(Boolean).join('; ')
 }
 
 const importVisible = ref(false)

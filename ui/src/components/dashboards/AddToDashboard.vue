@@ -58,6 +58,7 @@ import { Dashboard } from '@/sdk/models/dashboard'
 import { DashboardService } from '@/sdk/services/dashboard'
 import { useSourceControlsStore } from '@/stores/sourceControls'
 import { bottomY, emptyDashboardData, newTileId } from '@/utils/dashboards'
+import { fieldErrorsText } from '@/utils/utils'
 
 const props = defineProps(['source'])
 
@@ -115,8 +116,8 @@ const buildTile = (tiles) => ({
 })
 
 const describe = (response) => {
-    const fields = Object.entries(response.validation?.fields || {}).map(([k, v]) => `${k}: ${[].concat(v).join(', ')}`)
-    return [...response.errors, ...(response.validation?.non_field || []), ...fields].join('; ')
+    const fields = fieldErrorsText(response.validation?.fields)
+    return [...response.errors, ...(response.validation?.non_field || []), fields].filter(Boolean).join('; ')
 }
 
 const add = async () => {
