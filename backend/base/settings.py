@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "telescope",
+    "telescope_alerts",
+    "telescope_otel",
+    "telescope_api2",
 ]
 
 if CONFIG["auth"]["providers"]["github"]["enabled"]:
