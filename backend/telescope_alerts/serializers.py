@@ -137,6 +137,11 @@ class ChannelInputSerializer(StrictSerializer):
         return attrs
 
 
+def iso(value):
+    """ISO 8601, which the UI parses; the default JSON renderer would write str(datetime)."""
+    return value.isoformat() if value else None
+
+
 def user_dict(user):
     if user is None:
         return None
@@ -148,7 +153,7 @@ def channel_dict(channel, with_config: bool):
     if with_config:
         data["config"] = mask_config(channel.kind, channel.config)
         data["created_by"] = user_dict(channel.created_by)
-        data["updated_at"] = channel.updated_at
+        data["updated_at"] = iso(channel.updated_at)
     return data
 
 
@@ -183,9 +188,9 @@ def alert_dict(alert, can_edit: bool):
         "channels": [c.pk for c in alert.channels.all()],
         "owner": user_dict(alert.owner),
         "last_evaluated_window": alert.last_evaluated_window,
-        "last_evaluated_at": alert.last_evaluated_at,
-        "created_at": alert.created_at,
-        "updated_at": alert.updated_at,
+        "last_evaluated_at": iso(alert.last_evaluated_at),
+        "created_at": iso(alert.created_at),
+        "updated_at": iso(alert.updated_at),
         "can_edit": can_edit,
     }
 
@@ -198,5 +203,5 @@ def history_dict(row):
         "state": row.state,
         "value": row.value,
         "error": row.error,
-        "notified_at": row.notified_at,
+        "notified_at": iso(row.notified_at),
     }

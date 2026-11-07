@@ -1,10 +1,13 @@
+from datetime import datetime
+
 import pytest
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from telescope.models import Dashboard, GlobalRoleBinding
 from telescope.rbac.manager import RBACManager
 from telescope.rbac.roles import SourceRole
-from telescope_alerts.models import Alert, AlertChannel
+from telescope_alerts.models import Alert, AlertChannel, AlertHistory
 
 rbac_manager = RBACManager()
 
@@ -305,3 +308,28 @@ def test_send_test_reports_failure(root_user, make_receiver, alerts_config):
     doc = call(admin, "post", f"ui/v1/alert-channels/{created['data']['id']}/test")
     assert not doc["result"] and "HTTP 404" in doc["errors"][0]
     assert len(bad.requests) == 1  # 4xx is not retried
+
+
+@pytest.mark.django_db
+def test_timestamps_are_iso_8601(root_user, clickhouse_source):
+    client = client_for(root_user)
+    alert = call(client, "post", "ui/v1/alerts", search_alert())["data"]
+    now = timezone.now()
+    Alert.objects.filter(pk=alert["id"]).update(last_evaluated_at=now)
+    AlertHistory.objects.create(
+        alert_id=alert["id"],
+        window_start=0,
+        window_end=1,
+        state="ALERT",
+        notified_at=now,
+    )
+    got = call(client, "get", f"ui/v1/alerts/{alert['id']}")["data"]
+    (row,) = call(client, "get", f"ui/v1/alerts/{alert['id']}/history")["data"]
+    for value in [
+        got["last_evaluated_at"],
+        got["created_at"],
+        got["updated_at"],
+        row["notified_at"],
+    ]:
+        assert "T" in value and datetime.fromisoformat(value).tzinfo is not None
+    assert datetime.fromisoformat(got["last_evaluated_at"]) == now
