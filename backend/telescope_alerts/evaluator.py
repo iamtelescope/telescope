@@ -91,6 +91,15 @@ def is_silenced(alert) -> bool:
     return until is not None and until > timezone.now()
 
 
+def is_held(alert) -> bool:
+    """Silenced or disabled now, read fresh before each delivery."""
+    row = Alert.objects.filter(pk=alert.pk).values_list("silenced_until", "state")
+    row = row.first()
+    if row is None or row[1] == STATE_DISABLED:
+        return True
+    return row[0] is not None and row[0] > timezone.now()
+
+
 def _number(value) -> Optional[float]:
     return None if value is None else float(value)
 
@@ -182,10 +191,12 @@ class Superseded(Exception):
     """Another evaluator, a schedule change or a disable moved the alert first."""
 
 
-def notify(alert, message, renew=None):
-    """Sends to every channel; returns (errors, number delivered)."""
+def notify(alert, message, renew=None, held=None):
+    """Sends to every channel until `held()` is true; returns (errors, number delivered)."""
     errors, sent = [], 0
     for channel in alert.channels.all():
+        if held and held():
+            break
         try:
             channels.send(channel, message)
             sent += 1
@@ -270,7 +281,7 @@ def apply_window(
             aq.source_query,
             public_url,
         )
-        row_errors, sent = notify(alert, message, renew)
+        row_errors, sent = notify(alert, message, renew, lambda: is_held(alert))
         errors += row_errors
         update = {"error": "; ".join(row_errors)[:2000]}
         if sent:

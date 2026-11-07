@@ -27,7 +27,12 @@
                 </template>
                 <template #actions>
                     <template v-if="alert">
-                        <SilenceButton :alert="alert" class="mr-2" @changed="(a) => (alert = a)" />
+                        <SilenceButton
+                            v-if="alert.can_edit"
+                            :alert="alert"
+                            class="mr-2"
+                            @changed="(a) => (alert = a)"
+                        />
                         <Button
                             v-if="alert.can_edit && alert.channels.length"
                             size="small"

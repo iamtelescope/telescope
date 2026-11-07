@@ -175,7 +175,7 @@
                         <Column class="w-1 text-nowrap pr-4">
                             <template #body="{ data }">
                                 <div class="flex items-center gap-2 justify-end">
-                                    <SilenceButton :alert="data" compact @changed="replace" />
+                                    <SilenceButton v-if="data.can_edit" :alert="data" compact @changed="replace" />
                                     <ToggleSwitch
                                         v-if="data.can_edit"
                                         :modelValue="data.state !== 'DISABLED'"

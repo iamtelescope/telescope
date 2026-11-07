@@ -7,8 +7,16 @@ import pytest
 from django.utils import timezone
 
 from telescope.models import SavedView
+from telescope.rbac.manager import RBACManager
+from telescope.rbac.roles import SourceRole
+from telescope_alerts import channels, services
 from telescope_alerts.evaluator import due_windows, evaluate_alert, latest_window_start
-from telescope_alerts.models import Alert, AlertHistory, SavedViewFavorite
+from telescope_alerts.models import (
+    Alert,
+    AlertChannel,
+    AlertHistory,
+    SavedViewFavorite,
+)
 from telescope_alerts.scheduler import tick
 from telescope_alerts.tests.test_api import call, client_for, search_alert
 from telescope_alerts.tests.test_evaluator import (
@@ -21,6 +29,7 @@ from telescope_alerts.tests.test_evaluator import (
 )
 
 STEP = 5 * MIN
+rbac_manager = RBACManager()
 
 
 def utc(ms):
@@ -393,3 +402,77 @@ def test_silence_on_the_planted_spike(
         ("firing", spike_from + STEP),
         ("resolved", spike_to),
     ]
+
+
+@pytest.mark.django_db
+def test_reenabling_does_not_replay_the_disabled_period(
+    root_user, clickhouse_source, fake_values, receiver, alerts_config
+):
+    alert = make_alert(root_user, clickhouse_source)
+    alert.channels.add(webhook(receiver))
+    evaluate_alert(alert, T0 + STEP)
+    client = client_for(root_user)
+    call(client, "post", f"ui/v1/alerts/{alert.pk}/enabled", {"enabled": False})
+    for i in range(1, 31):
+        fake_values[T0 + i * STEP] = {"": 99.0 if i % 2 else 1.0}
+    call(client, "post", f"ui/v1/alerts/{alert.pk}/enabled", {"enabled": True})
+    assert evaluate_alert(Alert.objects.get(pk=alert.pk), T0 + 30 * STEP) == 1
+    assert [(b["status"], b["startTime"]) for b in receiver.json()] == [
+        ("firing", T0 + 29 * STEP)
+    ]
+
+
+@pytest.mark.django_db
+def test_only_editors_silence(root_user, test_user, clickhouse_source):
+    alert = make_alert(root_user, clickhouse_source)
+    rbac_manager.grant_source_role(
+        clickhouse_source, SourceRole.USER.value, user=test_user
+    )
+    other = client_for(test_user)
+    path = f"ui/v1/alerts/{alert.pk}"
+    assert call(other, "get", path)["result"]
+    until = (timezone.now() + timedelta(hours=1)).isoformat()
+    for method, body in [("post", {"until": until}), ("delete", None)]:
+        doc = call(other, method, f"{path}/silenced", body)
+        assert doc["errors"] == ["Only the owner can change this alert"]
+    alert.refresh_from_db()
+    assert alert.silenced_until is None and alert.silenced_by is None
+
+
+@pytest.mark.django_db
+def test_markers_read_at_most_the_newest_rows(
+    root_user, clickhouse_source, monkeypatch
+):
+    monkeypatch.setattr(services, "RANGE_HISTORY_LIMIT", 4)
+    alert = make_alert(root_user, clickhouse_source)
+    for i in range(8):
+        AlertHistory.objects.create(
+            alert=alert,
+            group_key="",
+            window_start=T0 + i * STEP,
+            window_end=T0 + (i + 1) * STEP,
+            state="ALERT" if i % 2 else "OK",
+        )
+    client = client_for(root_user)
+    base = f"ui/v1/alerts/markers?source={clickhouse_source.slug}"
+    got = call(client, "get", f"{base}&from=0&to={T0 + 9 * STEP}")["data"]
+    assert [m["time"] for m in got] == [T0 + 5 * STEP, T0 + 7 * STEP]
+
+
+@pytest.mark.django_db
+def test_silence_set_while_sending_stops_the_rest(
+    root_user, clickhouse_source, fake_values, monkeypatch
+):
+    alert = make_alert(root_user, clickhouse_source)
+    for name in ("one", "two", "three"):
+        alert.channels.add(AlertChannel.objects.create(kind="webhook", name=name))
+    sent = []
+
+    def send(channel, message):
+        sent.append(channel.name)
+        silence(alert, timedelta(hours=1))
+
+    monkeypatch.setattr(channels, "send", send)
+    fake_values[T0] = {"": 99.0}
+    assert evaluate_alert(alert, T0 + STEP) == 1
+    assert len(sent) == 1

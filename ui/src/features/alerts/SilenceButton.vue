@@ -15,7 +15,7 @@
 </template>
 
 <script setup>
-// Silence (acknowledge) for a preset time, as HyperDX AlertsPage "Ack"; history keeps being written.
+// Silence for a preset time, as HyperDX AlertsPage "Ack", for those who may edit; history keeps being written.
 import { ref, computed } from 'vue'
 import { DateTime } from 'luxon'
 import { Button, Menu, useToast } from 'primevue'

@@ -281,12 +281,14 @@ class AlertService:
             raise ValueError("source, or dashboard and tile, is required")
         markers = []
         for alert in self._visible_alerts(user, queryset):
+            # The newest rows only, as history() caps a range read.
             rows = alert.history.filter(
                 window_start__gte=time_from - alert.interval_ms,
                 window_start__lte=time_to,
-            ).order_by("group_key", "window_start")
+            ).order_by("-window_start", "group_key")
+            rows = rows.values_list("group_key", "window_start", "state")
             previous = {}
-            for row in rows.values_list("group_key", "window_start", "state"):
+            for row in sorted(rows[:RANGE_HISTORY_LIMIT]):
                 group, start, state = row
                 was = previous.get(group)
                 previous[group] = (start, state)
@@ -309,8 +311,8 @@ class AlertService:
         return sorted(markers, key=lambda m: (m["time"], m["alert_id"]))
 
     def silence(self, user: User, pk: int, data):
-        """Anyone who can see an alert may silence (acknowledge) it, as in HyperDX."""
-        alert = self._get(user, pk)
+        """Only those who may edit an alert may silence it."""
+        alert = self._get(user, pk, for_edit=True)
         serializer = SilenceInputSerializer(data=data)
         if not serializer.is_valid():
             raise SerializerValidationError(serializer)
@@ -322,7 +324,7 @@ class AlertService:
         return self.get(user, pk)
 
     def unsilence(self, user: User, pk: int):
-        alert = self._get(user, pk)
+        alert = self._get(user, pk, for_edit=True)
         Alert.objects.filter(pk=alert.pk).update(
             silenced_until=None, silenced_at=None, silenced_by=None
         )
@@ -331,8 +333,9 @@ class AlertService:
     def set_enabled(self, user: User, pk: int, enabled: bool):
         alert = self._get(user, pk, for_edit=True)
         if enabled:
+            # Restart at the latest window, so the disabled period is not replayed.
             Alert.objects.filter(pk=alert.pk, state=STATE_DISABLED).update(
-                state=STATE_OK, last_error=""
+                state=STATE_OK, last_error="", last_evaluated_window=None
             )
         else:
             Alert.objects.filter(pk=alert.pk).update(state=STATE_DISABLED)
