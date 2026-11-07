@@ -1,5 +1,5 @@
 <template>
-    <div class="p-2" data-testid="explorer">
+    <div class="p-2" data-testid="explorer" ref="rootRef">
         <Controls
             ref="controlsRef"
             @searchRequest="onSearchRequest"
@@ -41,7 +41,12 @@
                         :groupByLabel="sourceControlsStore.graphGroupBy"
                     />
                 </BorderCard>
-                <BorderCard :loading="loading" data-testid="explorer-results">
+                <BorderCard
+                    :loading="loading"
+                    data-testid="explorer-results"
+                    @mouseenter="liveTail.hovering.value = sourceControlsStore.live"
+                    @mouseleave="liveTail.hovering.value = false"
+                >
                     <SelectButton
                         v-if="patternsAvailable(source)"
                         v-model="resultsMode"
@@ -89,19 +94,60 @@
                             :columns="columns"
                             :timeZone="displayTimeZone"
                         />
+                        <div
+                            v-if="showLoadMore"
+                            class="flex items-center justify-center gap-3 pt-3 pb-1"
+                            data-testid="explorer-load-more"
+                        >
+                            <Button
+                                label="Load more"
+                                icon="pi pi-angle-double-down"
+                                size="small"
+                                severity="secondary"
+                                outlined
+                                :loading="loadingMore"
+                                @click="onLoadMore"
+                                data-testid="explorer-load-more-btn"
+                            />
+                            <span
+                                class="text-sm text-neutral-500 dark:text-neutral-400"
+                                data-testid="explorer-rows-shown"
+                            >
+                                {{ rows.length }} rows shown
+                            </span>
+                        </div>
                     </template>
                 </BorderCard>
             </div>
+        </div>
+        <div
+            v-if="sourceControlsStore.live && liveTail.paused.value"
+            class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 shadow-lg pl-4 pr-2 py-1 text-sm"
+            role="status"
+            data-testid="explorer-live-paused"
+        >
+            <i class="pi pi-pause-circle text-amber-600 dark:text-amber-400"></i>
+            <span v-if="liveTail.scrolled.value">Live tail paused while scrolled</span>
+            <span v-else>Live tail paused while the pointer is over the results</span>
+            <Button
+                v-if="liveTail.scrolled.value"
+                label="Resume"
+                icon="pi pi-play"
+                size="small"
+                rounded
+                @click="liveTail.resume"
+                data-testid="explorer-live-resume"
+            />
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, onBeforeMount, computed } from 'vue'
+import { ref, onBeforeMount, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useToast } from 'primevue'
-import { Skeleton, SelectButton } from 'primevue'
+import { Skeleton, SelectButton, Button } from 'primevue'
 import { useSourceControlsStore } from '@/stores/sourceControls'
 import {
     useGetSourceData,
@@ -121,6 +167,9 @@ import FacetSidebar from '@/components/explorer/FacetSidebar.vue'
 import PatternsView, { available as patternsAvailable } from '@/components/explorer/results/PatternsView.vue'
 import { validateFlyqlInputs } from '@/sdk/flyql-validator'
 import { localTimeZone } from '@/utils/datetimeranges'
+import { SourceService } from '@/sdk/services/source'
+import { useLiveTail } from '@/composables/useLiveTail'
+import { resolveTime, mergeLiveRows, toCsv, downloadFile, supportsPaging } from '@/utils/explorerPaging'
 
 const controlsRef = ref(null)
 
@@ -148,6 +197,7 @@ const {
     rows: separateRows,
     columns: separateColumns,
     message: separateMessage,
+    cursor: separateCursor,
     error: separateError,
     loading: separateLoading,
     validation: separateValidation,
@@ -198,6 +248,11 @@ const paramsChanged = computed(() => {
 })
 
 const onSearchRequest = () => {
+    if (sourceControlsStore.live && sourceControlsStore.to !== 'now') {
+        // Live tail follows "now": an absolute range becomes the last 5 minutes.
+        if (typeof sourceControlsStore.from !== 'string') sourceControlsStore.setFrom('now-5m')
+        sourceControlsStore.setTo('now')
+    }
     lastSearchRouteQuery.value = sourceControlsStore.routeQuery
     displayTimeZone.value = sourceControlsStore.timeZone
     router.push({ path: route.path, query: sourceControlsStore.routeQuery })
@@ -212,6 +267,14 @@ const onSearchRequest = () => {
     }
     flyqlDiagnostics.value = []
     searchSeq.value++
+    const now = Date.now()
+    searchParams.value = {
+        ...sourceControlsStore.dataRequestParams,
+        from: resolveTime(sourceControlsStore.from, now),
+        to: resolveTime(sourceControlsStore.to, now),
+    }
+    loadMoreSeq++
+    loadingMore.value = false
 
     if (useCombinedMode.value) {
         // Combined mode: single request with graph params merged
@@ -298,18 +361,101 @@ const onShareURL = () => {
         })
 }
 
-const onDownload = () => {
-    const data = JSON.stringify(rows.value, null, 2)
-    const blob = new Blob([data], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'telescope_data.json'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+const onDownload = (format) => {
+    if (format === 'csv') {
+        downloadFile(toCsv(columns.value || [], rows.value || []), 'text/csv;charset=utf-8', 'telescope_data.csv')
+    } else {
+        downloadFile(JSON.stringify(rows.value, null, 2), 'application/json', 'telescope_data.json')
+    }
 }
+
+// ---- Load more (keyset paging) and live tail
+const srv = new SourceService()
+const rootRef = ref(null)
+const searchParams = ref(null)
+const loadingMore = ref(false)
+let loadMoreSeq = 0
+let lastLiveGraph = 0
+
+const showLoadMore = computed(
+    () =>
+        !useCombinedMode.value &&
+        supportsPaging(props.source) &&
+        !!separateCursor.value &&
+        !sourceControlsStore.live &&
+        showSourceDataTable.value &&
+        rows.value.length > 0,
+)
+
+const onLoadMore = async () => {
+    const seq = loadMoreSeq
+    loadingMore.value = true
+    const response = await srv.getData(props.source.slug, { ...searchParams.value, before: separateCursor.value })
+    if (seq !== loadMoreSeq) return
+    loadingMore.value = false
+    if (response.result) {
+        separateRows.value = separateRows.value.concat(response.data.rows)
+        separateCursor.value = response.data.cursor ?? null
+    } else {
+        const detail = response.errors.join(', ') || JSON.stringify(response.validation?.columns ?? {})
+        toast.add({ severity: 'error', summary: 'Failed to load more rows', detail, life: 6000 })
+    }
+}
+
+const liveTick = async () => {
+    const shown = rows.value || []
+    if (loading.value || !searchParams.value) return
+    const boundary = shown.length ? shown[0].time.unixtime : searchParams.value.from
+    const params = { ...searchParams.value, from: boundary, to: 'now' }
+    const seq = loadMoreSeq
+    let response
+    if (useCombinedMode.value) {
+        response = await srv.getDataAndGraph(props.source.slug, { ...params, group_by: '' })
+    } else {
+        response = await srv.getData(props.source.slug, params)
+    }
+    if (seq !== loadMoreSeq || !sourceControlsStore.live || !response.result) return
+    const fresh = response.data.rows
+    const target = useCombinedMode.value ? combinedRows : separateRows
+    if (fresh.length >= searchParams.value.limit) {
+        // More new rows than one page: show the newest page, as a fresh search would.
+        target.value = fresh
+        if (!useCombinedMode.value) separateCursor.value = response.data.cursor ?? null
+    } else {
+        const merged = mergeLiveRows(shown, fresh, boundary)
+        target.value = merged.rows
+        if (merged.trimmed && !useCombinedMode.value) separateCursor.value = null
+    }
+    if (!useCombinedMode.value && sourceControlsStore.showGraph && Date.now() - lastLiveGraph > 10000) {
+        lastLiveGraph = Date.now()
+        separateGraphLoad(props.source.slug, sourceControlsStore.graphRequestParams)
+    }
+}
+
+const liveTail = useLiveTail({
+    enabled: computed(() => sourceControlsStore.live),
+    intervalSeconds: computed(() => sourceControlsStore.liveInterval),
+    rootRef,
+    tick: liveTick,
+})
+
+// Registered after mount so the store's init from the URL does not count as a toggle.
+onMounted(() => {
+    watch(
+        () => sourceControlsStore.live,
+        (live) => {
+            router.replace({ path: route.path, query: sourceControlsStore.routeQuery })
+            if (live) {
+                lastLiveGraph = Date.now()
+                onSearchRequest()
+            }
+        },
+    )
+    watch(
+        () => sourceControlsStore.liveInterval,
+        () => router.replace({ path: route.path, query: sourceControlsStore.routeQuery }),
+    )
+})
 
 const onHistogrammRangeSelected = (params) => {
     sourceControlsStore.setFrom(params.from)

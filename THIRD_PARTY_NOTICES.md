@@ -32,3 +32,5 @@ SOFTWARE.
 
 - `dev/otel/schema/compat_logs.sql`, `compat_traces.sql`, `compat_metrics.sql` and `k8s_logs.sql` are adapted from HyperDX
   `docker/otel-collector/schema/seed/00002_otel_logs_compat.sql`, `00005_otel_traces_compat.sql` and `00003_otel_metrics.sql` (MIT, above).
+- `ui/src/composables/useLiveTail.js` adapts the live-tail timer of HyperDX `useLiveUpdate` in
+  `packages/app/src/DBSearchPage.tsx` (interval polling, skipped while the tab is hidden or a query runs) (MIT, above).

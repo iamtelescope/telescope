@@ -28,6 +28,9 @@ from telescope.utils import (
 
 import re
 
+from telescope.fetchers.search import body_column
+
+TEXT_AND_PAGING_KINDS = {"clickhouse", "starrocks"}
 SUPPORTED_KINDS = {"clickhouse", "starrocks", "docker", "kubernetes"}
 
 
@@ -692,12 +695,51 @@ class SourceDataRequestSerializer(serializers.Serializer):
     to = serializers.CharField()
     limit = serializers.IntegerField()
     context_columns = serializers.JSONField(allow_null=True, required=False)
+    before = serializers.JSONField(allow_null=True, required=False)
+    text = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False, max_length=1000
+    )
 
     def get_fields(self):
         fields = super().get_fields()
         _from = fields.pop("_from")
         fields["from"] = _from
         return fields
+
+    def validate_before(self, value):
+        if value is None:
+            return None
+        source = self.context["source"]
+        if source.kind not in TEXT_AND_PAGING_KINDS:
+            raise serializers.ValidationError(
+                f"paging is not supported for {source.kind} sources"
+            )
+        if not isinstance(value, dict) or not isinstance(value.get("time"), (str, int)):
+            raise serializers.ValidationError("expected an object with a time")
+        if source.kind == "clickhouse" and not re.fullmatch(
+            r"-?\d{1,20}", str(value["time"])
+        ):
+            raise serializers.ValidationError("time: expected an integer")
+        if source.uniq_column:
+            if not isinstance(value.get("uniq"), (str, int)):
+                raise serializers.ValidationError("uniq: required for this source")
+        else:
+            skip = value.get("skip", 0)
+            if not isinstance(skip, int) or isinstance(skip, bool) or skip < 0:
+                raise serializers.ValidationError("skip: expected an integer >= 0")
+        return value
+
+    def validate_text(self, value):
+        if not value:
+            return ""
+        source = self.context["source"]
+        if source.kind not in TEXT_AND_PAGING_KINDS:
+            raise serializers.ValidationError(
+                f"text search is not supported for {source.kind} sources"
+            )
+        if not body_column(source):
+            raise serializers.ValidationError("source has no body column")
+        return value
 
     def validate_from(self, value):
         value, error = parse_time(value)

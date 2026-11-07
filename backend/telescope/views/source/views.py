@@ -377,6 +377,8 @@ class SourceDataView(APIView):
                 time_to=serializer.validated_data["to"],
                 limit=serializer.validated_data["limit"],
                 context_columns=serializer.validated_data["context_columns"],
+                before=serializer.validated_data.get("before"),
+                text=serializer.validated_data.get("text") or "",
             )
             data_response = fetcher.fetch_data(
                 data_request,
@@ -395,6 +397,7 @@ class SourceDataView(APIView):
                     ],
                     "rows": [row.as_dict() for row in data_response.rows],
                     "message": data_response.message,
+                    "cursor": data_response.cursor,
                 }
         return Response(response.as_dict())
 
@@ -487,6 +490,7 @@ class SourceGraphDataView(APIView):
                 time_to=serializer.validated_data["to"],
                 group_by=serializer.validated_data["group_by"],
                 context_columns=serializer.validated_data["context_columns"],
+                text=serializer.validated_data.get("text") or "",
             )
             logger.info("Fetching graph data with request: %s", graph_data_request)
             graph_data_response = fetcher.fetch_graph_data(graph_data_request)
