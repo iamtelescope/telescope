@@ -45,6 +45,12 @@ from telescope.serializers.source import (
     SourceDataRequestSerializer,
 )
 from telescope.utils import parse_time
+from telescope_rawsql.query import RAW_SQL_DISPLAY
+from telescope_rawsql.serializers import (
+    RawSqlChartSerializer,
+    raw_sql_key,
+    raw_sql_tile_error,
+)
 from telescope_otel.metrics_sql import (
     ALL_METRIC_AGGS,
     METRIC_AGGS,
@@ -351,6 +357,8 @@ class ChartField(serializers.Field):
             raise serializers.ValidationError("Expected an object")
         if data.get("display") == "text":
             serializer = TextChartSerializer(data=data)
+        elif data.get("display") == RAW_SQL_DISPLAY:
+            serializer = RawSqlChartSerializer(data=data)
         else:
             serializer = QueryChartSerializer(data=data)
         if not serializer.is_valid():
@@ -562,6 +570,15 @@ class DashboardDataSerializer(StrictSerializer):
             chart = tile["chart"]
             if chart["display"] == "text":
                 continue
+            if chart["display"] == RAW_SQL_DISPLAY:
+                error = raw_sql_tile_error(
+                    self.context["user"],
+                    tile,
+                    self.context.get("old_raw_queries", set()),
+                )
+                if error:
+                    tile_errors[i] = {"chart": error}
+                continue
             slug = chart["source"]
             if slug not in sources:
                 sources[slug] = self._get_source(slug)
@@ -615,10 +632,19 @@ class DashboardDataSerializer(StrictSerializer):
 
 
 def dashboard_raw_queries(data) -> set:
+    tiles = [
+        tile
+        for tile in (data or {}).get("tiles", [])
+        if isinstance(tile.get("chart"), dict)
+    ]
     return {
         (tile.get("id"), tile["chart"].get("source"), tile["chart"].get("raw_query"))
-        for tile in (data or {}).get("tiles", [])
-        if isinstance(tile.get("chart"), dict) and tile["chart"].get("raw_query")
+        for tile in tiles
+        if tile["chart"].get("raw_query")
+    } | {
+        raw_sql_key(tile)
+        for tile in tiles
+        if tile["chart"].get("display") == RAW_SQL_DISPLAY
     }
 
 

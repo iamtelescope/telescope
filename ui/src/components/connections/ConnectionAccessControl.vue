@@ -204,7 +204,13 @@ const selectGroupDisabled = ref(false)
 const selectRoleDisabled = ref(false)
 const grantButtonLoading = ref(false)
 
-const roles = ref([{ name: 'owner' }, { name: 'editor' }, { name: 'viewer' }, { name: 'user' }])
+const roles = ref([
+    { name: 'owner' },
+    { name: 'editor' },
+    { name: 'viewer' },
+    { name: 'user' },
+    { name: 'raw_sql_user' },
+])
 
 const selectedUser = ref(null)
 const selectedGroup = ref(null)

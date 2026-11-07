@@ -56,9 +56,14 @@
                 </div>
                 <div class="flex flex-col gap-1">
                     <label class="font-medium">Display</label>
-                    <div class="grid grid-cols-9 gap-1" role="radiogroup" data-testid="tile-display">
+                    <div
+                        class="grid gap-1"
+                        :class="rawSql ? 'grid-cols-5' : 'grid-cols-9'"
+                        role="radiogroup"
+                        data-testid="tile-display"
+                    >
                         <button
-                            v-for="d in DISPLAY_BUTTONS"
+                            v-for="d in displayButtons"
                             :key="d.value"
                             type="button"
                             role="radio"
@@ -89,6 +94,12 @@
                         placeholder="Notes for this dashboard"
                     />
                 </div>
+                <RawSqlFields
+                    v-else-if="chart.display === 'sql'"
+                    :chart="chart"
+                    :validation="preview.validation.value"
+                    @submit="runPreview"
+                />
                 <template v-else>
                     <div class="flex flex-col gap-1">
                         <label class="font-medium">Source</label>
@@ -640,6 +651,7 @@ import {
     ChartColumnStacked,
     ChartLine,
     ChartPie,
+    Code,
     Grid3x3,
     Hash,
     Sheet,
@@ -660,7 +672,8 @@ import {
 } from '@/components/dashboards/metrics/metrics'
 import QueryEditor from '@/components/explorer/controls/QueryEditor.vue'
 import RawQueryEditor from '@/components/explorer/controls/RawQueryEditor.vue'
-import { useChartData } from '@/composables/dashboards/useDashboardService'
+import RawSqlFields from '@/features/rawsql/RawSqlFields.vue'
+import { RAW_SQL_EXAMPLE, rawSqlBody, useTileData } from '@/features/rawsql/service.js'
 import { durationUnit } from '@/components/dashboards/charts/heatmap.js'
 import { SourceService } from '@/sdk/services/source'
 import {
@@ -679,8 +692,8 @@ import {
     maxLimit,
 } from '@/utils/dashboards.js'
 
-// `sections` are the dashboard's sections, so the tile can be placed in one.
-const props = defineProps(['visible', 'tile', 'sources', 'range', 'timeZone', 'sections'])
+// `sections` are the dashboard's sections, so the tile can be placed in one; `rawSql` offers the SQL display.
+const props = defineProps(['visible', 'tile', 'sources', 'range', 'timeZone', 'sections', 'rawSql'])
 const emit = defineEmits(['update:visible', 'apply'])
 
 const ICONS = {
@@ -693,6 +706,7 @@ const ICONS = {
     pie: ChartPie,
     heatmap: Grid3x3,
     text: Type,
+    sql: Code,
 }
 const UNIT_LABELS = {
     number: 'number',
@@ -711,9 +725,12 @@ const DISPLAY_BUTTONS = [
     { value: 'heatmap', label: 'Heatmap' },
     ...DISPLAYS.filter((d) => d.value === 'text'),
 ].map((d) => ({ ...d, icon: ICONS[d.value] }))
+const displayButtons = computed(() =>
+    props.rawSql ? [...DISPLAY_BUTTONS, { value: 'sql', label: 'SQL', icon: Code }] : DISPLAY_BUTTONS,
+)
 
 const sourceSrv = new SourceService()
-const preview = useChartData()
+const preview = useTileData()
 const confirm = useConfirm()
 
 const form = ref(null)
@@ -1003,6 +1020,12 @@ watch([form, heatmapUnit], ([f, unit], [oldForm, old]) => {
 
 const setDisplay = (display) => {
     const c = chart.value
+    if (display === 'sql') {
+        c.display = display
+        c.sql = c.sql || RAW_SQL_EXAMPLE
+        c.connection = c.connection ?? null
+        return
+    }
     const wasHeatmap = c.display === 'heatmap'
     c.display = display
     if (display === 'heatmap') {
@@ -1027,7 +1050,7 @@ const setDisplay = (display) => {
 
 // Client-side checks of spec 2.1, shown next to their fields; the server validates the rest.
 const sourceError = computed(() => {
-    if (!form.value || chart.value.display === 'text') return null
+    if (!form.value || ['text', 'sql'].includes(chart.value.display)) return null
     if (!chart.value.source) return 'Choose a source'
     if (!source.value) return `Source ${chart.value.source} is not available`
     return serverError('source')
@@ -1059,6 +1082,10 @@ const limitError = computed(() => {
 
 const problem = computed(() => {
     if (!form.value || chart.value.display === 'text') return null
+    if (chart.value.display === 'sql') {
+        if (chart.value.connection == null) return 'Choose a connection'
+        return chart.value.sql?.trim() ? null : 'Type a SELECT query'
+    }
     if (sourceError.value && !source.value) return sourceError.value
     if (isHeatmap.value && source.value.kind !== 'clickhouse') return 'Heatmaps need a ClickHouse source'
     const series = seriesErrors.value.find((e, idx) => e && !serverSeriesError(idx))
@@ -1077,6 +1104,8 @@ const canPreview = computed(() => !!form.value && chart.value.display !== 'text'
 const cleanChart = () => {
     const c = chart.value
     if (c.display === 'text') return { display: 'text', text: c.text || '' }
+    if (c.display === 'sql')
+        return { display: 'sql', connection: c.connection, sql: c.sql || '', granularity: c.granularity || 'auto' }
     const result = {
         source: c.source,
         display: c.display,
@@ -1141,6 +1170,7 @@ const runPreview = () => {
     if (!canPreview.value) return
     const c = cleanChart()
     previewChart.value = c
+    if (c.display === 'sql') return preview.load(c.connection, rawSqlBody(c, props.range), 'sql')
     preview.load(c.source, {
         from: props.range.from,
         to: props.range.to,
