@@ -89,6 +89,10 @@ SOFTWARE.
   exception from attributes or span events, HTTP headers and bodies, span events, pod/node infrastructure correlations and
   their time ranges) are adapted from HyperDX `packages/app/src/components/DBRowOverviewPanel.tsx`, `ExceptionSubpanel.tsx`,
   `HttpMessageSections.tsx`, `SpanEventsSubpanel.tsx`, `DBInfraPanel.tsx` and `infraCorrelations.ts` (MIT, above).
+- `backend/telescope_mcp/views.py` and `backend/telescope_mcp/tools.py` (the stateless streamable HTTP transport with
+  405 on GET/DELETE, the tool set, the read/write behaviour hints and the 50k-character response trim) are adapted from HyperDX
+  `packages/api/src/mcp/app.ts`, `mcp/tools/annotations.ts`, `mcp/tools/*` and `utils/trimToolResponse.ts`;
+  `backend/telescope_mcp/MCP.md` follows `MCP.md` (MIT, above).
 
 ## Drain3
 
