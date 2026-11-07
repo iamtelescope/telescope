@@ -8,16 +8,82 @@
         @click="open"
         data-testid="add-to-dashboard-btn"
     />
-    <Dialog v-model:visible="visible" modal header="Add to dashboard" :style="{ width: '30rem' }">
-        <div class="flex flex-col gap-3">
-            <SelectButton
-                v-model="mode"
-                :options="modes"
-                optionLabel="label"
-                optionValue="value"
-                :allowEmpty="false"
-                size="small"
-            />
+    <Dialog
+        v-model:visible="visible"
+        modal
+        :header="added ? 'Tile added' : 'Add to dashboard'"
+        :style="{ width: '34rem' }"
+        :breakpoints="{ '575px': '95vw' }"
+        data-testid="add-to-dashboard"
+    >
+        <div v-if="added" class="flex flex-col items-center text-center gap-3 py-4">
+            <div class="flex items-center justify-center w-12 h-12 rounded-full bg-green-100 dark:bg-green-900">
+                <i class="pi pi-check text-xl text-green-700 dark:text-green-300" />
+            </div>
+            <div>
+                <span class="font-medium">{{ added.title || 'The tile' }}</span> was added to
+                <span class="font-medium">{{ added.name }}</span
+                >.
+            </div>
+        </div>
+        <div v-else class="flex flex-col gap-4">
+            <div
+                class="flex flex-col gap-1 p-3 rounded-md text-sm bg-surface-50 dark:bg-surface-800 border border-surface-200 dark:border-surface-700"
+            >
+                <div class="flex gap-2">
+                    <span class="w-20 shrink-0 text-surface-500">Source</span>
+                    <span class="font-medium truncate">{{ source.name }}</span>
+                </div>
+                <div class="flex gap-2">
+                    <span class="w-20 shrink-0 text-surface-500">Filter</span>
+                    <span class="font-mono truncate" :title="store.query">{{ store.query || 'none' }}</span>
+                </div>
+                <div v-if="store.rawQuery" class="flex gap-2">
+                    <span class="w-20 shrink-0 text-surface-500">Raw SQL</span>
+                    <span class="font-mono truncate" :title="store.rawQuery">{{ store.rawQuery }}</span>
+                </div>
+                <div class="flex gap-2">
+                    <span class="w-20 shrink-0 text-surface-500">Chart</span>
+                    <span>count(), stacked bars{{ store.graphGroupBy ? ` by ${store.graphGroupBy}` : '' }}</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label for="add_tile_title" class="font-medium">Tile title</label>
+                <InputText
+                    id="add_tile_title"
+                    v-model="title"
+                    size="small"
+                    maxlength="128"
+                    autofocus
+                    @keydown.enter="add"
+                />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2" role="radiogroup">
+                <button
+                    v-for="m in modes"
+                    :key="m.value"
+                    type="button"
+                    role="radio"
+                    :aria-checked="mode === m.value"
+                    :disabled="m.value === 'existing' && !loading && !editable.length"
+                    class="flex items-start gap-2 p-3 rounded-md border text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    :class="
+                        mode === m.value
+                            ? 'border-primary bg-highlight'
+                            : 'border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800'
+                    "
+                    @click="mode = m.value"
+                >
+                    <i :class="m.icon" class="mt-1" />
+                    <span class="flex flex-col">
+                        <span class="font-medium">{{ m.label }}</span>
+                        <span class="text-xs text-surface-500 dark:text-surface-400">{{ m.hint }}</span>
+                    </span>
+                </button>
+            </div>
+
             <div v-if="mode === 'existing'" class="flex flex-col gap-1">
                 <label class="font-medium">Dashboard</label>
                 <Select
@@ -26,32 +92,69 @@
                     optionLabel="name"
                     optionValue="slug"
                     filter
+                    autoFilterFocus
                     size="small"
                     :loading="loading"
                     placeholder="Choose a dashboard"
                     emptyMessage="No dashboards you can edit"
-                />
+                    data-testid="add-to-dashboard-select"
+                >
+                    <template #option="{ option }">
+                        <div class="flex items-center justify-between w-full gap-3">
+                            <span class="truncate">{{ option.name }}</span>
+                            <span class="flex items-center gap-2 shrink-0 text-xs text-surface-500">
+                                <i v-if="option.shared" class="pi pi-users" v-tooltip.top="'Shared'" />
+                                {{ option.tilesCount }} {{ option.tilesCount === 1 ? 'tile' : 'tiles' }}
+                            </span>
+                        </div>
+                    </template>
+                </Select>
             </div>
             <div v-else class="flex flex-col gap-1">
-                <label class="font-medium">New dashboard name</label>
-                <InputText v-model="newName" size="small" maxlength="255" />
-            </div>
-            <div class="flex flex-col gap-1">
-                <label class="font-medium">Tile title</label>
-                <InputText v-model="title" size="small" maxlength="128" />
+                <label for="add_dashboard_name" class="font-medium">New dashboard name</label>
+                <InputText
+                    id="add_dashboard_name"
+                    v-model="newName"
+                    size="small"
+                    maxlength="255"
+                    placeholder="e.g. Service overview"
+                    @keydown.enter="add"
+                />
+                <span class="text-sm text-surface-500 dark:text-surface-400">Created private; share it later.</span>
             </div>
             <ErrorText v-if="problem" :text="problem" />
         </div>
         <template #footer>
-            <Button label="Cancel" severity="secondary" outlined size="small" @click="visible = false" />
-            <Button label="Add" size="small" :disabled="!canAdd" :loading="saving" @click="add" />
+            <template v-if="added">
+                <Button label="Close" severity="secondary" outlined size="small" @click="visible = false" />
+                <Button
+                    label="Open dashboard"
+                    icon="pi pi-arrow-right"
+                    iconPos="right"
+                    size="small"
+                    data-testid="add-to-dashboard-open"
+                    @click="openDashboard"
+                />
+            </template>
+            <template v-else>
+                <Button label="Cancel" severity="secondary" outlined size="small" @click="visible = false" />
+                <Button
+                    label="Add tile"
+                    size="small"
+                    :disabled="!canAdd"
+                    :loading="saving"
+                    data-testid="add-to-dashboard-submit"
+                    @click="add"
+                />
+            </template>
         </template>
     </Dialog>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
-import { Button, Dialog, InputText, Select, SelectButton, useToast } from 'primevue'
+import { useRouter } from 'vue-router'
+import { Button, Dialog, InputText, Select } from 'primevue'
 
 import ErrorText from '@/components/common/ErrorText.vue'
 import { Dashboard } from '@/sdk/models/dashboard'
@@ -62,12 +165,12 @@ import { bottomY, emptyDashboardData, newTileId } from '@/utils/dashboards'
 const props = defineProps(['source'])
 
 const srv = new DashboardService()
-const toast = useToast()
+const router = useRouter()
 const store = useSourceControlsStore()
 
 const modes = [
-    { value: 'existing', label: 'Existing dashboard' },
-    { value: 'new', label: 'New dashboard' },
+    { value: 'existing', label: 'Existing dashboard', hint: 'Append to one you can edit', icon: 'pi pi-th-large' },
+    { value: 'new', label: 'New dashboard', hint: 'Start a new one with this tile', icon: 'pi pi-plus' },
 ]
 const visible = ref(false)
 const mode = ref('existing')
@@ -78,13 +181,15 @@ const dashboardSlug = ref(null)
 const newName = ref('')
 const title = ref('')
 const problem = ref('')
+const added = ref(null)
 
 const editable = computed(() => dashboards.value.filter((d) => d.canEdit()))
 const canAdd = computed(() => (mode.value === 'existing' ? !!dashboardSlug.value : !!newName.value.trim()))
 
 const open = async () => {
     problem.value = ''
-    title.value = ''
+    added.value = null
+    title.value = store.graphGroupBy ? `${props.source.name} by ${store.graphGroupBy}` : props.source.name
     visible.value = true
     loading.value = true
     const response = await srv.getDashboards()
@@ -92,6 +197,10 @@ const open = async () => {
     dashboards.value = response.result ? response.data.map((d) => new Dashboard(d)) : []
     problem.value = response.errors.join(', ')
     if (!editable.value.length) mode.value = 'new'
+    else if (!editable.value.some((d) => d.slug === dashboardSlug.value)) {
+        const latest = [...editable.value].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))[0]
+        dashboardSlug.value = latest.slug
+    }
 }
 
 const buildTile = (tiles) => ({
@@ -120,6 +229,7 @@ const describe = (response) => {
 }
 
 const add = async () => {
+    if (!canAdd.value || saving.value) return
     problem.value = ''
     saving.value = true
     let response
@@ -144,18 +254,18 @@ const add = async () => {
     }
     saving.value = false
     if (response.result) {
-        toast.add({
-            severity: 'success',
-            summary: 'Success',
-            detail: `Tile added to ${response.data.name}`,
-            life: 3000,
-        })
-        visible.value = false
+        added.value = { slug: response.data.slug, name: response.data.name, title: title.value }
+        if (mode.value === 'new') newName.value = ''
         return
     }
     // A version conflict means someone saved in between; pressing Add again reloads and retries.
     problem.value = response.validation?.fields?.version
-        ? `${response.validation.fields.version.join(', ')}. Press Add to reload and try again.`
+        ? `${response.validation.fields.version.join(', ')}. Press Add tile to reload and try again.`
         : describe(response)
+}
+
+const openDashboard = () => {
+    visible.value = false
+    router.push({ name: 'dashboard', params: { dashboardSlug: added.value.slug } })
 }
 </script>
