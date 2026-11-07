@@ -3,6 +3,9 @@ import re
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
 
+from flyql import FlyqlError, ParserError, parse
+from flyql.core.expression import FunctionCall, Parameter
+
 from telescope.constants import (
     CHART_AUTO_BUCKETS,
     CHART_MAX_POINTS,
@@ -326,3 +329,139 @@ class ChartPlan:
             groups,
             truncated,
         )
+
+
+VARIABLE_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,63}$")
+MULTI_VALUE_OPERATORS = {"=": "in", "!=": "not in"}
+
+
+class VariableError(ValueError):
+    def __init__(self, name: str, message: str):
+        super().__init__(message)
+        self.name = name
+        self.message = message
+
+
+def flyql_literal(name: str, value) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return repr(value)
+    text = str(value)
+    # FlyQL strings drop line breaks and read a trailing backslash as an escape.
+    if "\n" in text or "\r" in text or text.endswith("\\"):
+        raise VariableError(
+            name, "a value cannot contain a line break or end with a backslash"
+        )
+    return "'" + text.replace("'", "\\'") + "'"
+
+
+def _param_values(param: Parameter, params: Dict) -> List:
+    if param.positional or param.name not in params:
+        raise VariableError(param.name, f"no value for ${param.name}")
+    value = params[param.name]
+    values = value if isinstance(value, list) else [value]
+    return [v for v in values if v is not None and v != ""]
+
+
+def _bind_expression(text: str, expr, params: Dict) -> Optional[str]:
+    """Bound text of one expression, or None when an empty variable drops it."""
+    start, end = expr.key.range.start, expr.range.end
+    edits = []
+    if isinstance(expr.value, Parameter):
+        name = expr.value.name
+        values = _param_values(expr.value, params)
+        if not values:
+            return None
+        literals = [flyql_literal(name, v) for v in values]
+        if len(literals) == 1:
+            edits.append((expr.value_range.start, expr.value_range.end, literals[0]))
+        elif expr.operator in MULTI_VALUE_OPERATORS:
+            operator = MULTI_VALUE_OPERATORS[expr.operator]
+            edits.append(
+                (
+                    expr.operator_range.start,
+                    expr.value_range.end,
+                    f"{operator} [{', '.join(literals)}]",
+                )
+            )
+        else:
+            raise VariableError(
+                name, f"several values need = or != instead of {expr.operator}"
+            )
+    elif isinstance(expr.value, FunctionCall) and expr.value.parameter_args:
+        name = expr.value.parameter_args[0].name
+        raise VariableError(name, f"${name} cannot be used inside a function")
+    elif expr.values and any(isinstance(v, Parameter) for v in expr.values):
+        items = []
+        for value, value_range in zip(expr.values, expr.value_ranges):
+            if isinstance(value, Parameter):
+                items += [
+                    flyql_literal(value.name, v) for v in _param_values(value, params)
+                ]
+            else:
+                items.append(text[value_range.start : value_range.end])
+        if not items:
+            return None
+        first, last = expr.value_ranges[0], expr.value_ranges[-1]
+        edits.append((first.start, last.end, ", ".join(items)))
+    result = text[start:end]
+    for edit_start, edit_end, replacement in sorted(edits, reverse=True):
+        result = result[: edit_start - start] + replacement + result[edit_end - start :]
+    return result
+
+
+def _bind_node(text: str, node, params: Dict) -> Optional[str]:
+    if node.expression is not None:
+        body = _bind_expression(text, node.expression, params)
+    else:
+        parts = [
+            part
+            for part in (
+                _bind_node(text, child, params)
+                for child in (node.left, node.right)
+                if child is not None
+            )
+            if part is not None
+        ]
+        if not parts:
+            return None
+        body = (
+            parts[0]
+            if len(parts) == 1
+            else f"({parts[0]} {node.bool_operator} {parts[1]})"
+        )
+    if body is None:
+        return None
+    return f"not {body}" if node.negated else body
+
+
+def _has_params(node) -> bool:
+    if node is None:
+        return False
+    expr = node.expression
+    if expr is not None:
+        return (
+            isinstance(expr.value, Parameter)
+            or (
+                isinstance(expr.value, FunctionCall) and bool(expr.value.parameter_args)
+            )
+            or any(isinstance(v, Parameter) for v in expr.values or [])
+        )
+    return _has_params(node.left) or _has_params(node.right)
+
+
+def bind_query(query: str, params: Dict) -> str:
+    """Substitutes `$name` values into a FlyQL query and returns FlyQL text.
+
+    A list binds as `in [...]`; an empty value drops the expression that uses it.
+    """
+    if not query or "$" not in query:
+        return query
+    try:
+        root = parse(query).root
+    except (ParserError, FlyqlError):
+        return query
+    if not _has_params(root):
+        return query
+    return _bind_node(query, root, params or {}) or ""

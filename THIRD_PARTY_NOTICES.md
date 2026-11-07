@@ -50,3 +50,5 @@ SOFTWARE.
   HyperDX `packages/common-utils/src/core/metadata.ts`, and `ui/src/components/explorer/FacetSidebar.vue` with
   `ui/src/components/explorer/facets/FacetGroup.vue` (include/exclude, "show more") from
   `packages/app/src/components/DBSearchPageFilters.tsx` (MIT, above).
+- `backend/telescope/fetchers/chart.py` (`bind_query`) and `ui/src/utils/dashboards.js` (`bindFlyql`) follow the variable semantics of HyperDX
+  `packages/common-utils/src/variables.ts` (an empty selection is a no-op) and `types.ts` `DashboardFilterSchema` (MIT, above); no code is copied.

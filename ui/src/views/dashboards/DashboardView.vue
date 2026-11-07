@@ -79,6 +79,17 @@
                                 <div class="hidden sm:block w-px h-6 mx-1 bg-surface-300 dark:bg-surface-700"></div>
                                 <template v-if="editing">
                                     <Button
+                                        label="Variables"
+                                        icon="pi pi-sliders-h"
+                                        severity="secondary"
+                                        outlined
+                                        size="small"
+                                        :badge="variables.length ? String(variables.length) : undefined"
+                                        badgeSeverity="secondary"
+                                        @click="variablesVisible = true"
+                                        data-testid="dashboard-variables-btn"
+                                    />
+                                    <Button
                                         label="Add tile"
                                         icon="pi pi-plus"
                                         severity="secondary"
@@ -154,6 +165,13 @@
                             data-testid="dashboard-filter-clear"
                         />
                     </div>
+                    <VariableBar
+                        :variables="variables"
+                        :values="varValues"
+                        :range="range"
+                        :missing="range.missing"
+                        @change="onVariableChange"
+                    />
                 </div>
                 <div v-if="!draft.tiles.length" class="flex flex-1 items-start justify-center pt-12 pb-16">
                     <div
@@ -234,6 +252,12 @@
             :timeZone="timeZone"
             @apply="onEditorApply"
         />
+        <VariablesEditor
+            v-model:visible="variablesVisible"
+            :variables="variables"
+            :sources="sources || []"
+            @apply="onVariablesApply"
+        />
     </div>
 </template>
 
@@ -260,6 +284,8 @@ import DataView from '@/components/common/DataView.vue'
 import DatetimePicker from '@/components/explorer/controls/DatetimePicker.vue'
 import Tile from '@/components/dashboards/Tile.vue'
 import TileEditor from '@/components/dashboards/TileEditor.vue'
+import VariableBar from '@/components/dashboards/variables/VariableBar.vue'
+import VariablesEditor from '@/components/dashboards/variables/VariablesEditor.vue'
 import { useGetDashboard, useSaveDashboard } from '@/composables/dashboards/useDashboardService'
 import { useGetSources } from '@/composables/sources/useSourceService'
 import { Dashboard } from '@/sdk/models/dashboard'
@@ -269,9 +295,15 @@ import {
     GRID_COLUMNS,
     REFRESH_MS,
     REFRESH_OPTIONS,
+    VARIABLE_URL_PREFIX,
     defaultTileSize,
+    missingRequired,
     newTileId,
     newTilePosition,
+    upgradeDashboardData,
+    variableParams,
+    variableRouteQuery,
+    variableValues,
 } from '@/utils/dashboards'
 import { exportDashboard } from '@/utils/dashboardFile'
 import { availableTimeZones } from '@/utils/datetimeranges'
@@ -300,14 +332,20 @@ const filterInput = ref('')
 const menu = ref()
 const editorVisible = ref(false)
 const editorTile = ref(null)
+const variablesVisible = ref(false)
 
 const toMillisOrString = (value) => (/^\d+$/.test(String(value)) ? parseInt(value) : value)
 
-// URL query params override the saved range, filter and time zone until Save.
+const variables = computed(() => draft.value?.variables || [])
+const varValues = computed(() => variableValues(variables.value, route.query))
+
+// URL query params override the saved range, filter, time zone and variables until Save.
 const range = computed(() => ({
     from: toMillisOrString(route.query.from ?? draft.value?.time.from),
     to: toMillisOrString(route.query.to ?? draft.value?.time.to),
     query: route.query.query ?? draft.value?.query ?? '',
+    params: variableParams(variables.value, varValues.value),
+    missing: missingRequired(variables.value, varValues.value),
 }))
 const validZone = (tz) => (availableTimeZones.includes(tz) ? tz : null)
 const timeZone = computed(() => validZone(route.query.time_zone) ?? validZone(draft.value?.time.time_zone) ?? 'UTC')
@@ -329,7 +367,7 @@ const syncLayout = () => {
 }
 
 const resetDraft = () => {
-    draft.value = JSON.parse(JSON.stringify(dashboard.value.data))
+    draft.value = upgradeDashboardData(JSON.parse(JSON.stringify(dashboard.value.data)))
     dirty.value = false
     rebuildLayout()
 }
@@ -354,6 +392,22 @@ const onRangeSelect = (params) => {
     const query = { from: params.from, to: params.to }
     if (params.timeZone) query.time_zone = params.timeZone
     setQuery(query)
+}
+
+const onVariableChange = (variable, value) => setQuery(variableRouteQuery(variable, value))
+
+const onVariablesApply = (list) => {
+    draft.value.variables = list
+    dirty.value = true
+    const names = new Set(list.map((v) => v.name))
+    const stale = Object.keys(route.query).filter(
+        (k) => k.startsWith(VARIABLE_URL_PREFIX) && !names.has(k.slice(VARIABLE_URL_PREFIX.length)),
+    )
+    if (stale.length) {
+        const query = { ...route.query }
+        stale.forEach((k) => delete query[k])
+        router.replace({ query })
+    }
 }
 
 const applyFilter = () => setQuery({ query: filterInput.value.trim() })
@@ -460,6 +514,11 @@ const save = async () => {
     const data = JSON.parse(JSON.stringify(draft.value))
     data.time = { from: range.value.from, to: range.value.to, time_zone: timeZone.value }
     data.query = range.value.query
+    data.variables = data.variables.map((v) => {
+        const { default: _old, ...rest } = v
+        const value = varValues.value[v.name]
+        return [].concat(value).length && value !== '' ? { ...rest, default: value } : rest
+    })
     saving.value = true
     const response = await update(slug, body(data))
     saving.value = false

@@ -1,4 +1,5 @@
 import json
+import math
 from typing import List
 
 from flyql import FlyqlError
@@ -21,6 +22,9 @@ from telescope.fetchers.chart import (
     QUERY_DISPLAYS,
     TABLE_DISPLAYS,
     TIMESERIES_DISPLAYS,
+    VARIABLE_NAME_RE,
+    VariableError,
+    bind_query,
     chart_range_error,
     is_numeric_column_type,
 )
@@ -39,6 +43,20 @@ rbac_manager = RBACManager()
 DASHBOARD_REFRESH = ["off", "30s", "1m", "5m"]
 NUMBER_UNITS = ["number", "bytes", "duration_ms", "percent"]
 DEFAULT_CHART_LIMIT = 10
+DASHBOARD_DATA_VERSION = 2
+VARIABLE_TYPES = ["values", "static", "text"]
+DASHBOARD_MAX_VARIABLES = 20
+VARIABLE_MAX_OPTIONS = 1000
+VARIABLE_MAX_VALUES = 100
+VARIABLE_MAX_VALUE_LENGTH = 1000
+
+
+def upgrade_dashboard_data(data):
+    """Returns `data` at DASHBOARD_DATA_VERSION; v1 data had no version or variables."""
+    if isinstance(data, dict) and data.get("version", 1) == 1:
+        data = {**data, "version": 2}
+        data.setdefault("variables", [])
+    return data
 
 
 class StrictSerializer(serializers.Serializer):
@@ -179,6 +197,71 @@ class ChartField(serializers.Field):
         return value
 
 
+class VariableDefaultField(serializers.Field):
+    """A string, or a list of strings for a multi-value variable."""
+
+    def to_internal_value(self, data):
+        items = data if isinstance(data, list) else [data]
+        if len(items) > VARIABLE_MAX_VALUES:
+            raise serializers.ValidationError(
+                f"at most {VARIABLE_MAX_VALUES} values are allowed"
+            )
+        for item in items:
+            if not isinstance(item, str) or len(item) > VARIABLE_MAX_VALUE_LENGTH:
+                raise serializers.ValidationError(
+                    f"must be strings of at most {VARIABLE_MAX_VALUE_LENGTH} characters"
+                )
+        return data
+
+    def to_representation(self, value):
+        return value
+
+
+class DashboardVariableSerializer(StrictSerializer):
+    name = serializers.RegexField(VARIABLE_NAME_RE)
+    label = serializers.CharField(required=False, allow_blank=True, max_length=128)
+    type = serializers.ChoiceField(choices=VARIABLE_TYPES)
+    source = serializers.CharField(required=False, max_length=64)
+    column = serializers.CharField(required=False, max_length=255)
+    options = serializers.ListField(
+        child=serializers.CharField(max_length=VARIABLE_MAX_VALUE_LENGTH),
+        required=False,
+        max_length=VARIABLE_MAX_OPTIONS,
+    )
+    multi = serializers.BooleanField(required=False, default=False)
+    required = serializers.BooleanField(required=False, default=False)
+    default = VariableDefaultField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        errors = {}
+        kind = attrs["type"]
+        for key in ("source", "column"):
+            if kind == "values" and key not in attrs:
+                errors[key] = ["This field is required."]
+            elif kind != "values" and key in attrs:
+                errors[key] = ["only allowed for type values"]
+        if kind == "static" and not attrs.get("options"):
+            errors["options"] = ["a static variable needs at least 1 option"]
+        elif kind != "static" and "options" in attrs:
+            errors["options"] = ["only allowed for type static"]
+        if kind == "text" and attrs["multi"]:
+            errors["multi"] = ["a text variable takes one value"]
+        default = attrs.get("default")
+        if isinstance(default, list) and not attrs["multi"]:
+            errors["default"] = ["a single-value variable takes one default"]
+        elif kind == "static" and default:
+            unknown = [
+                v
+                for v in (default if isinstance(default, list) else [default])
+                if v not in attrs.get("options", [])
+            ]
+            if unknown:
+                errors["default"] = [f"{unknown[0]} is not one of the options"]
+        if errors:
+            raise serializers.ValidationError(errors)
+        return attrs
+
+
 class DashboardTileSerializer(StrictSerializer):
     id = serializers.RegexField(r"^[A-Za-z0-9_-]{1,32}$")
     x = serializers.IntegerField(min_value=0, max_value=23)
@@ -221,14 +304,19 @@ class DashboardDataSerializer(StrictSerializer):
     """Context: `user` saving it, `old_sources`, the slugs already stored, and
     `old_raw_queries`, the stored (tile id, source, raw_query) triples."""
 
+    version = serializers.ChoiceField(choices=[DASHBOARD_DATA_VERSION])
     time = DashboardTimeSerializer()
     query = serializers.CharField(allow_blank=True, max_length=10000)
     refresh = serializers.ChoiceField(choices=DASHBOARD_REFRESH)
+    variables = serializers.ListField(
+        child=DashboardVariableSerializer(), max_length=DASHBOARD_MAX_VARIABLES
+    )
     tiles = serializers.ListField(
         child=DashboardTileSerializer(), max_length=DASHBOARD_MAX_TILES
     )
 
     def to_internal_value(self, data):
+        data = upgrade_dashboard_data(data)
         size = len(json.dumps(data, separators=(",", ":")).encode())
         if size > DASHBOARD_MAX_DATA_BYTES:
             raise serializers.ValidationError(
@@ -308,7 +396,30 @@ class DashboardDataSerializer(StrictSerializer):
                 tile_errors[i] = {"chart": chart_errors}
         if tile_errors:
             raise serializers.ValidationError({"tiles": tile_errors})
+        self._validate_variables(attrs["variables"], sources, old_sources)
         return attrs
+
+    def _validate_variables(self, variables, sources, old_sources):
+        names = set()
+        errors = {}
+        for i, variable in enumerate(variables):
+            if variable["name"] in names:
+                errors[i] = {"name": [f"duplicate variable {variable['name']}"]}
+                continue
+            names.add(variable["name"])
+            if variable["type"] != "values":
+                continue
+            slug = variable["source"]
+            if slug not in sources:
+                sources[slug] = self._get_source(slug)
+            source = sources[slug]
+            if source is None:
+                if slug not in old_sources:
+                    errors[i] = {"source": [f"source {slug} not found"]}
+            elif variable["column"] not in source._columns:
+                errors[i] = {"column": [f"source has no column {variable['column']}"]}
+        if errors:
+            raise serializers.ValidationError({"variables": errors})
 
 
 def dashboard_raw_queries(data) -> set:
@@ -324,6 +435,10 @@ def dashboard_sources(data) -> set:
         tile["chart"]["source"]
         for tile in (data or {}).get("tiles", [])
         if isinstance(tile.get("chart"), dict) and tile["chart"].get("source")
+    } | {
+        variable["source"]
+        for variable in (data or {}).get("variables", [])
+        if isinstance(variable, dict) and variable.get("source")
     }
 
 
@@ -371,6 +486,12 @@ class DashboardSerializer(serializers.ModelSerializer):
     def get_permissions(self, obj):
         return [p.value for p in permissions.Dashboard if p.value in obj.permissions]
 
+    def to_representation(self, instance):
+        result = super().to_representation(instance)
+        if "data" in result:
+            result["data"] = upgrade_dashboard_data(result["data"])
+        return result
+
 
 class DashboardListSerializer(DashboardSerializer):
     tiles_count = serializers.SerializerMethodField()
@@ -382,6 +503,32 @@ class DashboardListSerializer(DashboardSerializer):
 
     def get_tiles_count(self, obj):
         return len((obj.data or {}).get("tiles", []))
+
+
+class ParamValueField(serializers.Field):
+    """A variable value: a string, number or boolean, or a list of them."""
+
+    def to_internal_value(self, data):
+        items = data if isinstance(data, list) else [data]
+        if len(items) > VARIABLE_MAX_VALUES:
+            raise serializers.ValidationError(
+                f"at most {VARIABLE_MAX_VALUES} values are allowed"
+            )
+        for item in items:
+            if isinstance(item, float) and not math.isfinite(item):
+                raise serializers.ValidationError("must be a finite number")
+            if isinstance(item, str) and len(item) > VARIABLE_MAX_VALUE_LENGTH:
+                raise serializers.ValidationError(
+                    f"must be at most {VARIABLE_MAX_VALUE_LENGTH} characters"
+                )
+            if item is not None and not isinstance(item, (str, int, float, bool)):
+                raise serializers.ValidationError(
+                    "must be a string, number, boolean or a list of them"
+                )
+        return data
+
+    def to_representation(self, value):
+        return value
 
 
 class SourceChartDataRequestSerializer(SourceDataRequestSerializer):
@@ -397,13 +544,34 @@ class SourceChartDataRequestSerializer(SourceDataRequestSerializer):
         choices=GRANULARITIES, required=False, default="auto"
     )
     limit = serializers.IntegerField(required=False, default=DEFAULT_CHART_LIMIT)
+    params = serializers.DictField(
+        child=ParamValueField(), required=False, default=dict
+    )
 
     def __init__(self, *args, **kwargs):
         super(SourceChartDataRequestSerializer, self).__init__(*args, **kwargs)
         self.fields.pop("columns", None)
 
+    # Queries are checked in validate(), once their variables are bound.
+    def validate_query(self, value):
+        return value or ""
+
     def validate_dashboard_query(self, value):
-        return self.validate_query(value)
+        return value or ""
+
+    def _bind_queries(self, attrs) -> dict:
+        errors = {}
+        for field in ("query", "dashboard_query"):
+            try:
+                bound = bind_query(attrs.get(field) or "", attrs["params"])
+            except VariableError as err:
+                errors.setdefault("params", {})[err.name] = [err.message]
+                continue
+            try:
+                attrs[field] = SourceDataRequestSerializer.validate_query(self, bound)
+            except serializers.ValidationError as err:
+                errors[field] = err.detail
+        return errors
 
     def validate_series(self, value):
         errors = chart_series_errors(self.context["source"], value)
@@ -416,7 +584,8 @@ class SourceChartDataRequestSerializer(SourceDataRequestSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        errors = chart_shape_errors(attrs)
+        errors = self._bind_queries(attrs)
+        errors.update(chart_shape_errors(attrs))
         if attrs["from"] >= attrs["to"]:
             errors["to"] = ["must be after from"]
         elif attrs["display"] in TIMESERIES_DISPLAYS:
