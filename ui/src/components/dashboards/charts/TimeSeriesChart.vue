@@ -92,6 +92,8 @@ const settings = computed(() => {
         legend: series.length > 1,
         lineWidth: props.chart.display === 'line' ? 2 : 1,
         fitColumns: true,
+        // Room on the right for the last x tick label, which sits on the plot edge.
+        padding: [14, 22, 0, 4],
         onSelect: (range) => emit('rangeSelected', range),
     })
 })

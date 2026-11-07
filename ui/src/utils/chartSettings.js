@@ -91,6 +91,7 @@ const getChartSettings = ({
     legend = true,
     lineWidth = 1,
     fitColumns = false,
+    padding,
     onSelect,
 }) => {
     const yAxis = formatValue ? { y: { values: (u, splits) => splits.map((v) => formatValue(v)) } } : {}
@@ -112,6 +113,7 @@ const getChartSettings = ({
             render: makeTooltipRender(timeZone, nameLabel, valueLabel, escape, formatValue),
         },
         chart: {
+            ...(padding ? { size: { adaptive: true, padding } } : {}),
             appearance: {
                 drawOrder: ['plotLines', 'axes', 'series'],
                 theme: theme,
