@@ -5,6 +5,7 @@ from telescope.fetchers.request import (
     DataRequest,
     GraphDataRequest,
     DataAndGraphDataRequest,
+    ChartDataRequest,
 )
 from telescope.fetchers.response import (
     AutocompleteResponse,
@@ -12,6 +13,7 @@ from telescope.fetchers.response import (
     GraphDataResponse,
     DataAndGraphDataResponse,
     JsonKeysResponse,
+    ChartDataResponse,
 )
 
 
@@ -49,3 +51,7 @@ class BaseFetcher:
         tz: Optional[zoneinfo.ZoneInfo] = None,
     ) -> DataAndGraphDataResponse:
         raise NotImplementedError("Combined fetch not supported for this source type")
+
+    @classmethod
+    def fetch_chart_data(cls, request: ChartDataRequest) -> ChartDataResponse:
+        raise NotImplementedError

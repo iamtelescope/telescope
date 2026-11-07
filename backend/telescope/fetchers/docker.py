@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -23,6 +24,8 @@ from telescope.fetchers.response import (
     GraphDataResponse,
 )
 from telescope.fetchers.fetcher import BaseFetcher
+from telescope.fetchers.chart import ChartPlan
+from telescope.fetchers.utils import row_group_value
 from telescope.fetchers.models import Row, UTC_ZONE
 
 logger = logging.getLogger("telescope.fetchers.docker")
@@ -420,15 +423,7 @@ class Fetcher(BaseFetcher):
         return DataResponse(rows=rows)
 
     @classmethod
-    def fetch_data_and_graph(
-        cls,
-        request,
-        tz,
-    ):
-
-        from telescope.fetchers.utils import generate_graph_from_rows
-        from telescope.fetchers.response import DataAndGraphDataResponse
-
+    def _collect_rows(cls, request, tz):
         rows = []
         client = docker.DockerClient(base_url=request.source.conn.data["address"])
         since = request.time_from / 1000
@@ -507,6 +502,19 @@ class Fetcher(BaseFetcher):
                                 continue
                             if matched:
                                 rows.append(row)
+        return rows
+
+    @classmethod
+    def fetch_data_and_graph(
+        cls,
+        request,
+        tz,
+    ):
+
+        from telescope.fetchers.utils import generate_graph_from_rows
+        from telescope.fetchers.response import DataAndGraphDataResponse
+
+        rows = cls._collect_rows(request, tz)
 
         group_by_field = request.group_by[0] if request.group_by else None
         use_severity_grouping = not group_by_field
@@ -527,3 +535,11 @@ class Fetcher(BaseFetcher):
             graph_data=graph_data,
             graph_total=graph_total,
         )
+
+    @classmethod
+    def fetch_chart_data(cls, request):
+        plan = ChartPlan(request)
+        rows_request = copy.copy(request)
+        rows_request.time_from, rows_request.time_to = plan.time_from, plan.query_to
+        rows = cls._collect_rows(rows_request, UTC_ZONE)
+        return plan.count_rows(rows, lambda row: row_group_value(row, plan.group_by))

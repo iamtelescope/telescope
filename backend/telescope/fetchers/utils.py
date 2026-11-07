@@ -99,6 +99,22 @@ def apply_remap(extracted_value: str, remap_rules: List[Dict[str, Any]]) -> str:
     return extracted_value
 
 
+def row_group_value(row, group_by) -> str:
+    if "." in group_by.name:
+        spl = group_by.name.split(".")
+        json_path = spl[1:]
+        try:
+            data = json.loads(row.data[spl[0]])
+            for key in json_path:
+                data = data.get(key, {})
+            if not data:
+                return "__none__"
+            return str(data)
+        except (json.JSONDecodeError, KeyError, TypeError):
+            return "__none__"
+    return str(row.data.get(group_by.name, "__none__"))
+
+
 def generate_graph_from_rows(
     rows: List,
     time_from: int,
@@ -133,21 +149,7 @@ def generate_graph_from_rows(
         if group_by_severity:
             groupper_name = row.severity if row.severity else "__none__"
         elif group_by:
-            if "." in group_by.name:
-                spl = group_by.name.split(".")
-                json_path = spl[1:]
-                try:
-                    data = json.loads(row.data[spl[0]])
-                    for key in json_path:
-                        data = data.get(key, {})
-                    if not data:
-                        groupper_name = "__none__"
-                    else:
-                        groupper_name = str(data)
-                except (json.JSONDecodeError, KeyError, TypeError):
-                    groupper_name = "__none__"
-            else:
-                groupper_name = str(row.data.get(group_by.name, "__none__"))
+            groupper_name = row_group_value(row, group_by)
 
         if groupper_name not in stats_by_ts:
             stats_by_ts[groupper_name] = {}
