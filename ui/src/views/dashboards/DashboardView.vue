@@ -1,101 +1,197 @@
 <template>
-    <div class="flex flex-col px-4 pt-4 min-h-screen" data-testid="dashboard">
+    <div
+        class="dash-page flex flex-col px-4 pt-3 pb-6 min-h-screen bg-surface-100 dark:bg-surface-950"
+        data-testid="dashboard"
+    >
         <ConfirmDialog />
         <DataView :loadings="[loading && !dashboard]" :errors="[error]">
             <template v-if="dashboard && draft">
-                <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
-                    <div class="flex flex-col min-w-0">
-                        <div class="text-2xl font-medium flex items-center">
-                            <LayoutDashboard class="mr-2 w-6 h-6" />
-                            <span class="truncate">{{ dashboard.name }}</span>
-                            <Tag v-if="dashboard.shared" value="shared" severity="secondary" class="ml-2" />
-                        </div>
-                        <div v-if="dashboard.description" class="text-surface-500">{{ dashboard.description }}</div>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-1">
-                        <DatetimePicker
-                            :from="range.from"
-                            :to="range.to"
-                            :timeZone="timeZone"
-                            @rangeSelect="onRangeSelect"
-                        />
-                        <Select
-                            v-model="draft.refresh"
-                            :options="REFRESH_OPTIONS"
-                            size="small"
-                            v-tooltip.bottom="'Auto refresh'"
-                        >
-                            <template #value="{ value }"
-                                ><i class="pi pi-sync mr-1 text-xs"></i>{{ value === 'off' ? 'Off' : value }}</template
-                            >
-                        </Select>
-                        <Button icon="pi pi-refresh" text size="small" v-tooltip.bottom="'Refresh now'" @click="tick" />
-                        <template v-if="dashboard.canEdit()">
-                            <template v-if="editing">
-                                <Button
-                                    label="Add tile"
-                                    icon="pi pi-plus"
-                                    size="small"
-                                    text
-                                    @click="openEditor(null)"
+                <div class="dash-toolbar sticky top-0 z-10 -mx-4 px-4 pt-1 pb-3 bg-surface-100 dark:bg-surface-950">
+                    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                        <div class="flex flex-col min-w-0 flex-1 basis-64">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <LayoutDashboard class="w-5 h-5 shrink-0 text-surface-500 dark:text-surface-400" />
+                                <h1
+                                    class="m-0 text-2xl font-semibold truncate text-surface-900 dark:text-surface-0"
+                                    :title="dashboard.name"
+                                >
+                                    {{ dashboard.name }}
+                                </h1>
+                                <Tag
+                                    v-if="dashboard.shared"
+                                    value="Shared"
+                                    icon="pi pi-users"
+                                    severity="secondary"
+                                    class="dash-badge shrink-0"
                                 />
-                                <Button label="Cancel" severity="secondary" outlined size="small" @click="cancelEdit" />
-                                <Button label="Save" icon="pi pi-check" size="small" :loading="saving" @click="save" />
+                                <Tag
+                                    v-if="editing"
+                                    :value="dirty ? 'Unsaved changes' : 'Editing'"
+                                    :icon="dirty ? 'pi pi-circle-fill' : 'pi pi-pencil'"
+                                    :severity="dirty ? 'warn' : 'info'"
+                                    class="dash-badge shrink-0"
+                                    data-testid="dashboard-edit-state"
+                                />
+                            </div>
+                            <div
+                                v-if="dashboard.description"
+                                class="mt-0.5 ml-7 text-surface-500 dark:text-surface-400 truncate"
+                                :title="dashboard.description"
+                            >
+                                {{ dashboard.description }}
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="dash-control dash-time">
+                                <DatetimePicker
+                                    :from="range.from"
+                                    :to="range.to"
+                                    :timeZone="timeZone"
+                                    @rangeSelect="onRangeSelect"
+                                />
+                            </div>
+                            <div class="dash-control flex items-stretch">
+                                <Button
+                                    :icon="refreshing ? 'pi pi-refresh pi-spin' : 'pi pi-refresh'"
+                                    text
+                                    severity="secondary"
+                                    size="small"
+                                    class="dash-refresh-btn"
+                                    aria-label="Refresh"
+                                    v-tooltip.bottom="'Refresh now'"
+                                    @click="tick"
+                                />
+                                <Select
+                                    v-model="draft.refresh"
+                                    :options="refreshOptions"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    size="small"
+                                    class="dash-refresh-select"
+                                    :class="{ 'dash-refresh-select--on': draft.refresh !== 'off' }"
+                                    aria-label="Auto refresh"
+                                    v-tooltip.bottom="'Auto refresh'"
+                                >
+                                    <template #value="{ value }">{{ value === 'off' ? 'Off' : value }}</template>
+                                </Select>
+                            </div>
+                            <template v-if="dashboard.canEdit()">
+                                <div class="hidden sm:block w-px h-6 mx-1 bg-surface-300 dark:bg-surface-700"></div>
+                                <template v-if="editing">
+                                    <Button
+                                        label="Add tile"
+                                        icon="pi pi-plus"
+                                        severity="secondary"
+                                        outlined
+                                        size="small"
+                                        @click="openEditor(null)"
+                                    />
+                                    <Button label="Cancel" severity="secondary" text size="small" @click="cancelEdit" />
+                                    <Button
+                                        label="Save"
+                                        icon="pi pi-check"
+                                        size="small"
+                                        :loading="saving"
+                                        @click="save"
+                                    />
+                                </template>
+                                <Button
+                                    v-else
+                                    label="Edit"
+                                    icon="pi pi-pencil"
+                                    severity="secondary"
+                                    outlined
+                                    size="small"
+                                    @click="editing = true"
+                                />
                             </template>
                             <Button
-                                v-else
-                                label="Edit"
-                                icon="pi pi-pencil"
-                                size="small"
+                                icon="pi pi-ellipsis-v"
+                                severity="secondary"
                                 outlined
-                                @click="editing = true"
+                                size="small"
+                                aria-label="Dashboard actions"
+                                aria-haspopup="true"
+                                @click="(e) => menu.toggle(e)"
+                                data-testid="dashboard-menu-btn"
                             />
-                        </template>
+                            <Menu ref="menu" :model="menuItems" :popup="true" />
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-3">
+                        <IconField class="flex-1 min-w-0">
+                            <InputIcon class="pi pi-filter" :class="{ 'text-primary': filterActive }" />
+                            <InputText
+                                v-model="filterInput"
+                                size="small"
+                                fluid
+                                :class="{ 'dash-filter--active': filterActive }"
+                                placeholder="Filter every tile with FlyQL, e.g. service = 'api' and level = 'ERROR'"
+                                aria-label="Dashboard filter"
+                                @keydown.enter="applyFilter"
+                                @keydown.esc="filterInput = range.query"
+                                data-testid="dashboard-filter"
+                            />
+                        </IconField>
                         <Button
-                            icon="pi pi-ellipsis-v"
+                            v-if="filterDirty"
+                            label="Apply"
+                            icon="pi pi-arrow-right"
+                            iconPos="right"
+                            size="small"
+                            outlined
+                            v-tooltip.bottom="'Or press Enter'"
+                            @click="applyFilter"
+                        />
+                        <Button
+                            v-if="filterInput || range.query"
+                            label="Clear"
+                            icon="pi pi-times"
+                            severity="secondary"
                             text
                             size="small"
-                            @click="(e) => menu.toggle(e)"
-                            data-testid="dashboard-menu-btn"
+                            @click="clearFilter"
+                            data-testid="dashboard-filter-clear"
                         />
-                        <Menu ref="menu" :model="menuItems" :popup="true" />
                     </div>
                 </div>
-                <div class="mb-2">
-                    <InputText
-                        v-model="filterInput"
-                        size="small"
-                        fluid
-                        placeholder="Dashboard filter (FlyQL), applied to every tile. Press Enter to apply"
-                        @keydown.enter="applyFilter"
-                        data-testid="dashboard-filter"
-                    />
-                </div>
-                <div
-                    v-if="!draft.tiles.length"
-                    class="flex flex-col items-center justify-center py-16 text-gray-500 dark:text-gray-400"
-                >
-                    <LayoutDashboard class="w-12 h-12 mb-4 opacity-40" />
-                    <p class="text-lg font-medium mb-2">This dashboard has no tiles</p>
-                    <Button
-                        v-if="dashboard.canEdit()"
-                        label="Add tile"
-                        icon="pi pi-plus"
-                        size="small"
-                        @click="startAdd"
-                    />
+                <div v-if="!draft.tiles.length" class="flex flex-1 items-start justify-center pt-12 pb-16">
+                    <div
+                        class="flex flex-col items-center text-center max-w-md w-full px-8 py-12 rounded-xl border-2 border-dashed border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900"
+                    >
+                        <div class="flex items-center justify-center w-12 h-12 mb-4 rounded-full dash-empty-icon">
+                            <LayoutDashboard class="w-6 h-6 text-primary" />
+                        </div>
+                        <div class="text-base font-semibold text-surface-800 dark:text-surface-100">
+                            This dashboard is empty
+                        </div>
+                        <p class="mt-1 mb-5 text-surface-500 dark:text-surface-400">
+                            <template v-if="dashboard.canEdit()">
+                                Add a tile to chart a query: time series, numbers, tables, top N lists or notes.
+                            </template>
+                            <template v-else>Its owner has not added any tiles yet.</template>
+                        </p>
+                        <Button
+                            v-if="dashboard.canEdit()"
+                            label="Add tile"
+                            icon="pi pi-plus"
+                            size="small"
+                            @click="startAdd"
+                        />
+                    </div>
                 </div>
                 <GridLayout
                     v-else
                     v-model:layout="layout"
-                    :col-num="24"
+                    :col-num="GRID_COLUMNS"
                     :row-height="32"
                     :margin="[8, 8]"
                     :is-draggable="editing"
                     :is-resizable="editing"
                     :vertical-compact="true"
                     @layout-updated="syncLayout"
-                    class="-mx-2"
+                    class="dash-grid -mx-2"
+                    :class="{ 'dash-grid--editing': editing }"
                 >
                     <GridItem
                         v-for="item in layout"
@@ -105,15 +201,20 @@
                         :w="item.w"
                         :h="item.h"
                         :i="item.i"
-                        :min-h="1"
+                        :min-h="2"
+                        :min-w="2"
                         :max-h="48"
                         drag-allow-from=".tile-drag-handle"
+                        drag-ignore-from="button"
+                        @moved="dirty = true"
+                        @resized="dirty = true"
                     >
                         <Tile
                             :tile="tileById[item.i]"
                             :range="range"
                             :timeZone="timeZone"
                             :editing="editing"
+                            :canEdit="dashboard.canEdit()"
                             :queue="queue"
                             :refreshTick="refreshTick"
                             @edit="openEditor(tileById[item.i])"
@@ -138,8 +239,20 @@
 
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
-import { onBeforeRouteLeave, onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
-import { Button, ConfirmDialog, InputText, Menu, Select, Tag, useConfirm, useToast } from 'primevue'
+import { useRoute, useRouter, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
+import { useEventListener } from '@vueuse/core'
+import {
+    Button,
+    ConfirmDialog,
+    IconField,
+    InputIcon,
+    InputText,
+    Menu,
+    Select,
+    Tag,
+    useConfirm,
+    useToast,
+} from 'primevue'
 import { GridLayout, GridItem } from 'grid-layout-plus'
 import { LayoutDashboard } from 'lucide-vue-next'
 
@@ -152,7 +265,14 @@ import { useGetSources } from '@/composables/sources/useSourceService'
 import { Dashboard } from '@/sdk/models/dashboard'
 import { DashboardService } from '@/sdk/services/dashboard'
 import { createRequestQueue } from '@/utils/requestQueue'
-import { REFRESH_MS, REFRESH_OPTIONS, bottomY, defaultTileSize, newTileId } from '@/utils/dashboards'
+import {
+    GRID_COLUMNS,
+    REFRESH_MS,
+    REFRESH_OPTIONS,
+    defaultTileSize,
+    newTileId,
+    newTilePosition,
+} from '@/utils/dashboards'
 import { exportDashboard } from '@/utils/dashboardFile'
 import { availableTimeZones } from '@/utils/datetimeranges'
 import { fieldErrorsText } from '@/utils/utils'
@@ -172,6 +292,8 @@ const queue = createRequestQueue(4)
 const draft = ref(null)
 const layout = ref([])
 const editing = ref(route.query.edit === '1')
+// Set by user edits only, so the grid's own compaction on load never counts as a change.
+const dirty = ref(false)
 const saving = ref(false)
 const refreshTick = ref(0)
 const filterInput = ref('')
@@ -189,6 +311,10 @@ const range = computed(() => ({
 }))
 const validZone = (tz) => (availableTimeZones.includes(tz) ? tz : null)
 const timeZone = computed(() => validZone(route.query.time_zone) ?? validZone(draft.value?.time.time_zone) ?? 'UTC')
+const refreshOptions = REFRESH_OPTIONS.map((v) => ({ value: v, label: v === 'off' ? 'Off' : `Every ${v}` }))
+const refreshing = computed(() => queue.pending.value > 0)
+const filterActive = computed(() => !!range.value.query && filterInput.value === range.value.query)
+const filterDirty = computed(() => filterInput.value !== range.value.query)
 const tileById = computed(() => Object.fromEntries((draft.value?.tiles || []).map((t) => [t.id, t])))
 
 const rebuildLayout = () => {
@@ -204,6 +330,7 @@ const syncLayout = () => {
 
 const resetDraft = () => {
     draft.value = JSON.parse(JSON.stringify(dashboard.value.data))
+    dirty.value = false
     rebuildLayout()
 }
 
@@ -229,7 +356,12 @@ const onRangeSelect = (params) => {
     setQuery(query)
 }
 
-const applyFilter = () => setQuery({ query: filterInput.value })
+const applyFilter = () => setQuery({ query: filterInput.value.trim() })
+
+const clearFilter = () => {
+    filterInput.value = ''
+    if (range.value.query) setQuery({ query: '' })
+}
 
 const tick = () => {
     refreshTick.value++
@@ -238,7 +370,8 @@ const tick = () => {
 let timer = null
 watch(
     () => draft.value?.refresh,
-    (value) => {
+    (value, old) => {
+        if (editing.value && old !== undefined) dirty.value = true
         clearInterval(timer)
         timer = null
         if (REFRESH_MS[value]) {
@@ -250,21 +383,29 @@ watch(
 )
 onBeforeUnmount(() => clearInterval(timer))
 
-const isDirty = () => {
-    if (!editing.value || !draft.value || !dashboard.value) return false
-    syncLayout()
-    return JSON.stringify(draft.value) !== JSON.stringify(dashboard.value.data)
-}
-const confirmLeave = () => !isDirty() || window.confirm('Discard unsaved dashboard changes?')
-onBeforeRouteLeave(confirmLeave)
-onBeforeRouteUpdate((to, from) => to.params.dashboardSlug === from.params.dashboardSlug || confirmLeave())
-const onBeforeUnload = (event) => {
-    if (isDirty()) event.preventDefault()
-}
-window.addEventListener('beforeunload', onBeforeUnload)
-onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload))
+const confirmDiscard = () =>
+    !dirty.value ||
+    new Promise((resolve) => {
+        confirm.require({
+            header: 'Discard unsaved changes?',
+            message: 'Your changes to this dashboard have not been saved.',
+            icon: 'pi pi-exclamation-triangle',
+            rejectProps: { label: 'Keep editing', severity: 'secondary', outlined: true },
+            acceptProps: { label: 'Discard', severity: 'danger' },
+            accept: () => resolve(true),
+            reject: () => resolve(false),
+            onHide: () => resolve(false),
+        })
+    })
 
-const cancelEdit = () => {
+onBeforeRouteLeave(() => confirmDiscard())
+onBeforeRouteUpdate((to, from) => to.params.dashboardSlug === from.params.dashboardSlug || confirmDiscard())
+useEventListener(window, 'beforeunload', (e) => {
+    if (dirty.value) e.preventDefault()
+})
+
+const cancelEdit = async () => {
+    if (!(await confirmDiscard())) return
     editing.value = false
     resetDraft()
 }
@@ -344,7 +485,11 @@ const duplicateDashboard = async () => {
         data: response.data.data,
     })
     created.sendToast(toast)
-    if (created.result) router.push({ name: 'dashboard', params: { dashboardSlug: created.data.slug } })
+    if (created.validation && !created.validation.result) {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'This dashboard failed validation', life: 6000 })
+    } else if (created.result) {
+        router.push({ name: 'dashboard', params: { dashboardSlug: created.data.slug } })
+    }
 }
 
 const deleteDashboard = () => {
@@ -359,6 +504,7 @@ const deleteDashboard = () => {
             response.sendToastErrors(toast)
             if (response.result) {
                 editing.value = false
+                dirty.value = false
                 router.push({ name: 'dashboards' }).then(() => response.sendToastMessages(toast))
             }
         },
@@ -379,7 +525,8 @@ const menuItems = computed(() => {
             command: toggleShared,
         })
     }
-    if (d.canDelete()) items.push({ label: 'Delete', icon: 'pi pi-trash', command: deleteDashboard })
+    if (d.canDelete())
+        items.push({ separator: true }, { label: 'Delete', icon: 'pi pi-trash', command: deleteDashboard })
     return items
 })
 
@@ -389,21 +536,21 @@ const startAdd = () => {
 }
 
 const openEditor = (tile) => {
+    editing.value = true
     editorTile.value = tile
     editorVisible.value = true
 }
 
-const addTile = (title, chart) => {
+const addTile = (title, chart, size = defaultTileSize(chart.display)) => {
     syncLayout()
-    const size = defaultTileSize(chart.display)
     draft.value.tiles.push({
         id: newTileId(draft.value.tiles),
-        x: 0,
-        y: bottomY(draft.value.tiles),
+        ...newTilePosition(draft.value.tiles, size.w),
         ...size,
         title,
         chart,
     })
+    dirty.value = true
     rebuildLayout()
 }
 
@@ -412,18 +559,91 @@ const onEditorApply = ({ title, chart }) => {
     if (existing) {
         existing.title = title
         existing.chart = chart
+        dirty.value = true
     } else {
         addTile(title, chart)
     }
 }
 
 const duplicateTile = (tile) => {
-    addTile(tile.title, JSON.parse(JSON.stringify(tile.chart)))
+    addTile(tile.title, JSON.parse(JSON.stringify(tile.chart)), { w: tile.w, h: tile.h })
 }
 
 const deleteTile = (tile) => {
     syncLayout()
     draft.value.tiles = draft.value.tiles.filter((t) => t.id !== tile.id)
+    dirty.value = true
     rebuildLayout()
 }
 </script>
+
+<style scoped>
+.dash-control {
+    border: 1px solid var(--p-surface-300);
+    border-radius: var(--p-border-radius-md);
+    background: var(--p-surface-0);
+}
+.dark .dash-control {
+    border-color: var(--p-surface-700);
+    background: var(--p-surface-900);
+}
+.dash-time :deep(.p-button) {
+    margin: 0;
+    color: var(--p-text-color);
+}
+.dash-refresh-btn {
+    border-radius: 0;
+    border-right: 1px solid var(--p-surface-300);
+}
+.dark .dash-refresh-btn {
+    border-right-color: var(--p-surface-700);
+}
+.dash-refresh-select {
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    min-width: 4.5rem;
+}
+.dash-refresh-select--on :deep(.p-select-label) {
+    color: var(--p-primary-color);
+    font-weight: 600;
+}
+.dash-badge {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+}
+.dash-badge :deep(.p-tag-icon) {
+    font-size: 0.65rem;
+}
+.dash-filter--active {
+    border-color: var(--p-primary-color);
+    background: color-mix(in srgb, var(--p-primary-color) 5%, var(--p-inputtext-background));
+}
+.dash-empty-icon {
+    background: color-mix(in srgb, var(--p-primary-color) 12%, transparent);
+}
+.dash-grid {
+    --vgl-placeholder-bg: var(--p-primary-color);
+    --vgl-placeholder-opacity: 15%;
+    --vgl-resizer-size: 14px;
+    --vgl-resizer-border-color: var(--p-surface-400);
+}
+.dash-grid :deep(.vgl-item--placeholder) {
+    border-radius: 0.5rem;
+}
+.dash-grid :deep(.vgl-item__resizer) {
+    right: 3px;
+    bottom: 3px;
+}
+.dash-grid :deep(.vgl-item__resizer:hover) {
+    --vgl-resizer-border-color: var(--p-primary-color);
+}
+.dash-grid--editing {
+    background-image: radial-gradient(var(--p-surface-300) 1px, transparent 1px);
+    background-size: 16px 16px;
+    border-radius: 0.5rem;
+}
+.dark .dash-grid--editing {
+    background-image: radial-gradient(var(--p-surface-700) 1px, transparent 1px);
+}
+</style>
