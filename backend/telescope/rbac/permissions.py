@@ -28,6 +28,8 @@ class Connection(Enum):
     EDIT = "edit"
     GRANT = "grant"
     DELETE = "delete"
+    # Granted only by the raw_sql_user role, never through a global permission.
+    RAW_SQL = "raw_sql"
 
 
 class Source(Enum):

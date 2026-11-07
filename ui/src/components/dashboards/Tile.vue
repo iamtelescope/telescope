@@ -40,7 +40,7 @@
                 :class="{ 'tile-actions--open': menuOpen }"
             >
                 <Button
-                    v-if="!isText"
+                    v-if="!isText && !isSql"
                     icon="pi pi-compass"
                     text
                     rounded
@@ -150,7 +150,7 @@ import { GripVertical } from 'lucide-vue-next'
 
 import ChartView from '@/components/dashboards/ChartView.vue'
 import TileMenuExtras from '@/components/dashboards/TileMenuExtras.vue'
-import { useChartData } from '@/composables/dashboards/useDashboardService'
+import { rawSqlBody, useTileData } from '@/features/rawsql/service.js'
 import { registerTileRequest } from '@/composables/useMarkers.js'
 import { buildDrilldownRoute } from '@/utils/drilldown'
 import { boundForExplorer } from '@/utils/dashboards'
@@ -175,12 +175,13 @@ const menuOpen = ref(false)
 const titleEl = ref()
 const titleTruncated = ref(false)
 const fullscreen = ref(false)
-const { data, loading, error, code, validation, load, abort } = useChartData(props.queue, () => ({
+const { data, loading, error, code, validation, load, abort } = useTileData(props.queue, () => ({
     dashboard: router.currentRoute.value.params.dashboardSlug || '',
     tile: props.tile.id,
 }))
 
 const isText = computed(() => props.tile.chart.display === 'text')
+const isSql = computed(() => props.tile.chart.display === 'sql')
 
 const checkTruncated = () => {
     titleTruncated.value = titleEl.value.scrollWidth > titleEl.value.clientWidth
@@ -209,6 +210,7 @@ const requestBody = () => {
 
 const reload = () => {
     if (isText.value) return
+    if (isSql.value) return load(props.tile.chart.connection, rawSqlBody(props.tile.chart, props.range), 'sql')
     const { source, ...body } = requestBody()
     load(source, body)
 }
@@ -263,7 +265,7 @@ const onFullscreenRange = (range) => {
 
 const menuItems = computed(() => {
     const items = []
-    if (!isText.value) {
+    if (!isText.value && !isSql.value) {
         items.push({ label: 'Open in explorer', icon: 'pi pi-compass', command: () => openExplorer() })
     }
     items.push({ label: 'Fullscreen', icon: 'pi pi-window-maximize', command: () => (fullscreen.value = true) })

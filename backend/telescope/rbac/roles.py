@@ -22,6 +22,7 @@ class ConnectionRole(Enum):
     EDITOR = "editor"
     VIEWER = "viewer"
     USER = "user"
+    RAW_SQL_USER = "raw_sql_user"
 
 
 ROLES = {
@@ -96,6 +97,11 @@ ROLES = {
         ConnectionRole.USER.value: [
             permissions.Connection.READ.value,
             permissions.Connection.USE.value,
+        ],
+        ConnectionRole.RAW_SQL_USER.value: [
+            permissions.Connection.READ.value,
+            permissions.Connection.USE.value,
+            permissions.Connection.RAW_SQL.value,
         ],
     },
 }

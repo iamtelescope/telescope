@@ -589,7 +589,9 @@ const groupOptions = computed(() => {
         .map(([name]) => name)
     return form.group_by && !names.includes(form.group_by) ? [form.group_by, ...names] : names
 })
-const queryTiles = computed(() => (dashboard.value?.data?.tiles || []).filter((t) => t.chart?.display !== 'text'))
+const queryTiles = computed(() =>
+    (dashboard.value?.data?.tiles || []).filter((t) => !['text', 'sql'].includes(t.chart?.display)),
+)
 const tileOptions = computed(() =>
     queryTiles.value.map((t) => ({ id: t.id, label: t.title || `${t.chart.source} (${t.id})` })),
 )

@@ -377,6 +377,7 @@
             :range="range"
             :timeZone="timeZone"
             :sections="sections"
+            :rawSql="true"
             @apply="onEditorApply"
         />
         <VariablesEditor

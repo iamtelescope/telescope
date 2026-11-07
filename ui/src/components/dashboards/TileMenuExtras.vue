@@ -58,7 +58,7 @@ const firing = computed(() => alerts.value.some((a) => a.state === 'ALERT'))
 
 const items = computed(() => {
     const dashboard = route.params.dashboardSlug
-    if (!dashboard || !props.tile?.chart || props.tile.chart.display === 'text') return []
+    if (!dashboard || !props.tile?.chart || ['text', 'sql'].includes(props.tile.chart.display)) return []
     return [
         {
             label: 'Create alert',

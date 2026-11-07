@@ -5,7 +5,8 @@
         class="flex flex-col items-center justify-center gap-1.5 h-full p-2 text-center text-sm text-surface-500 dark:text-surface-400"
     >
         <i class="pi pi-lock text-xl"></i>
-        <span>You don't have access to source {{ chart.source }}</span>
+        <span v-if="chart.display === 'sql'">You don't have raw SQL access to this connection</span>
+        <span v-else>You don't have access to source {{ chart.source }}</span>
     </div>
     <div v-else-if="validation && !validation.result && code !== 'query_failed'" class="h-full overflow-auto">
         <ValidationError :validation="validation" message="Invalid tile settings" />
@@ -70,6 +71,7 @@
         :chart="chart"
         @rowClick="(group) => emit('rowClick', group)"
     />
+    <RawSqlTable v-else-if="data.kind === 'rows'" :data="data" />
     <TableChart
         v-else-if="data.kind === 'table'"
         :data="data"
@@ -90,6 +92,7 @@ import BarChart from '@/components/dashboards/charts/BarChart.vue'
 import PieChart from '@/components/dashboards/charts/PieChart.vue'
 import TextTile from '@/components/dashboards/charts/TextTile.vue'
 import HeatmapChart from '@/components/dashboards/charts/HeatmapChart.vue'
+import RawSqlTable from '@/features/rawsql/RawSqlTable.vue'
 import { seriesUnit } from '@/components/dashboards/charts/format.js'
 import { isTimeseries } from '@/utils/dashboards.js'
 
@@ -99,6 +102,7 @@ const emit = defineEmits(['rangeSelected', 'rowClick'])
 const skeletonBars = [35, 55, 45, 70, 50, 65, 40, 60, 75, 55, 45, 60]
 
 const expectedKind = computed(() => {
+    if (props.chart.display === 'sql') return 'rows'
     if (props.chart.display === 'heatmap') return 'heatmap'
     if (isTimeseries(props.chart.display)) return 'timeseries'
     return props.chart.display === 'number' ? 'number' : 'table'
@@ -114,7 +118,7 @@ const skeletonLayout = computed(() => {
 const isEmpty = computed(() => {
     const d = props.data
     if (d.kind === 'timeseries') return !d.series.some((s) => s.values.some((v) => v !== null && v !== 0))
-    if (d.kind === 'table') return !d.rows.length
+    if (d.kind === 'table' || d.kind === 'rows') return !d.rows.length
     if (d.kind === 'heatmap') return !d.cells.length
     return d.value === null || d.value === undefined
 })

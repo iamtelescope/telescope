@@ -23,6 +23,7 @@ from telescope.services.helpers import check_user_hit_create_dashboards_limit
 
 DASHBOARD_NOT_FOUND = "Dashboard not found"
 NO_SOURCE_ACCESS_TEXT = "You have no access to the source of this tile."
+NO_RAW_SQL_ACCESS_TEXT = "You have no raw SQL access to the connection of this tile."
 
 
 class DashboardService:
@@ -61,10 +62,20 @@ class DashboardService:
                 user, required_permissions=[permissions.Source.USE.value]
             )
         }
+        raw_sql = {
+            c.pk
+            for c in self.rbac_manager.get_connections(
+                user, required_permissions=[permissions.Connection.RAW_SQL.value]
+            )
+        }
         for tile in data["data"].get("tiles", []):
             source = tile["chart"].get("source")
             if source is not None and source not in usable:
                 tile["chart"] = {"display": "text", "text": NO_SOURCE_ACCESS_TEXT}
+            # Readers without RAW_SQL do not see the SQL either.
+            if tile["chart"].get("display") == "sql":
+                if tile["chart"].get("connection") not in raw_sql:
+                    tile["chart"] = {"display": "text", "text": NO_RAW_SQL_ACCESS_TEXT}
 
     def get(self, user: User, slug: str):
         with transaction.atomic():
