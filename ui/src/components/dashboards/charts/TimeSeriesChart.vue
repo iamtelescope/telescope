@@ -13,7 +13,7 @@ import { useDark } from '@vueuse/core'
 
 import YagrChart from '@/components/common/YagrChart.vue'
 import TruncatedHint from '@/components/dashboards/charts/TruncatedHint.vue'
-import { seriesLabel, seriesUnit, groupLabel, formatNumber } from '@/components/dashboards/charts/format.js'
+import { seriesLabel, seriesUnit, groupLabel, formatTileValue } from '@/components/dashboards/charts/format.js'
 import {
     ACCENT,
     categoricalColor,
@@ -47,29 +47,41 @@ const pointsCount = computed(() => {
     return inProgress ? ts.length - 1 : ts.length
 })
 
+const shownDefs = computed(() => (props.chart.series || []).filter((s) => !s.hidden))
+
 const unit = computed(() => {
-    const units = new Set((props.chart.series || []).map((s) => seriesUnit(s, props.chart.number_format)))
+    const units = new Set(shownDefs.value.map((s) => seriesUnit(s, props.chart.number_format)))
     return units.size === 1 ? [...units][0] : 'number'
 })
 
+// Hidden series are formula operands; previous-period series reuse their current series' color.
 const lines = computed(() => {
     const defs = props.chart.series || []
-    const groups = props.data.series.map((s) => s.group)
-    const severity = defs.length === 1 && isSeverityGrouping(props.chart.group_by, groups)
-    const items = props.data.series.map((s) => {
+    const shown = props.data.series.filter((s) => !defs[s.series_index]?.hidden)
+    const current = shown.filter((s) => !s.previous)
+    const groups = current.map((s) => s.group)
+    const severity = shownDefs.value.length === 1 && isSeverityGrouping(props.chart.group_by, groups)
+    const named = (s) => {
         const label = seriesLabel(defs[s.series_index])
         let name = label
         if (s.group !== null && s.group !== undefined) {
-            name = defs.length > 1 ? `${label} · ${groupLabel(s.group)}` : groupLabel(s.group)
+            name = shownDefs.value.length > 1 ? `${label} · ${groupLabel(s.group)}` : groupLabel(s.group)
         }
-        return { ...s, name }
-    })
+        return { ...s, name: s.previous ? `${name} (previous)` : name }
+    }
+    const items = current.map(named)
     if (severity) items.sort((a, b) => severityRank(a.group) - severityRank(b.group))
-    return items.map((s, idx) => {
-        let color = severity ? severityColor(s.group, theme.value) : null
+    const colors = {}
+    const result = items.map((s, idx) => {
+        let color = defs[s.series_index]?.color || (severity ? severityColor(s.group, theme.value) : null)
         if (!color) color = items.length === 1 ? ACCENT[theme.value] : categoricalColor(idx, theme.value)
+        colors[`${s.group}|${s.series_index}`] = color
         return { ...s, color }
     })
+    const previous = shown
+        .filter((s) => s.previous)
+        .map((s) => ({ ...named(s), color: colors[`${s.group}|${s.series_index}`] || ACCENT[theme.value] }))
+    return result.concat(previous)
 })
 
 const settings = computed(() => {
@@ -82,6 +94,8 @@ const settings = computed(() => {
         data: s.values.slice(0, n),
         stack: 'tile',
         color: s.color,
+        // The previous period is an unstacked dashed line over the current one.
+        ...(s.previous ? { type: 'line', stackGroup: 1, width: 1.5, dash: [6, 4] } : {}),
     }))
     series.reverse()
     return getChartSettings({
@@ -94,7 +108,7 @@ const settings = computed(() => {
         nameLabel: props.chart.group_by || 'Series',
         valueLabel: 'Value',
         escape: true,
-        formatValue: (v) => formatNumber(v, unit.value, { compact: true }),
+        formatValue: (v) => formatTileValue(v, unit.value, props.chart.number_format, { compact: true }),
         legend: series.length > 1,
         lineWidth: props.chart.display === 'line' ? 2 : 1,
         fitColumns: true,

@@ -29,7 +29,12 @@ from telescope.fetchers.response import (
     ChartDataResponse,
 )
 from telescope.fetchers.fetcher import BaseFetcher
-from telescope.fetchers.chart import ChartPlan, agg_expression, quote_column
+from telescope.fetchers.chart import (
+    ChartPlan,
+    agg_expression,
+    quote_column,
+    with_formulas,
+)
 from telescope.fetchers.models import Row
 from telescope.fetchers.search import body_column, next_cursor
 
@@ -45,6 +50,19 @@ CHART_AGGS = {
     "max": "max({c})",
     "quantile": "percentile_approx({c}, {l})",
     "uniq": "approx_count_distinct({c})",
+    "last_value": "max_by({c}, {t})",
+    "any": "any_value({c})",
+    # With a per-series condition; rows failing it become NULL, which every aggregate skips.
+    "count_if": "count(CASE WHEN {w} THEN 1 END)",
+    "sum_if": "sum(CASE WHEN {w} THEN {c} END)",
+    "avg_if": "avg(CASE WHEN {w} THEN {c} END)",
+    "min_if": "min(CASE WHEN {w} THEN {c} END)",
+    "max_if": "max(CASE WHEN {w} THEN {c} END)",
+    "quantile_if": "percentile_approx(CASE WHEN {w} THEN {c} END, {l})",
+    "uniq_if": "approx_count_distinct(CASE WHEN {w} THEN {c} END)",
+    "last_value_if": "max_by({c}, CASE WHEN {w} THEN {t} END)",
+    # any_value may pick a NULL from a failing row, so min stands in for "any matching value".
+    "any_if": "min(CASE WHEN {w} THEN {c} END)",
 }
 
 
@@ -576,18 +594,31 @@ class Fetcher(BaseFetcher):
 
     @classmethod
     def fetch_chart_data(cls, request: ChartDataRequest) -> ChartDataResponse:
+        return with_formulas(request, cls._fetch_chart_sql)
+
+    @classmethod
+    def _flyql_sql(cls, source, query: str) -> str:
+        if not query:
+            return "true"
+        parser = parse(query)
+        assert parser.root
+        return to_sql_where(
+            parser.root,
+            columns=flyql_starrocks_columns(source._columns),
+            registry=transformer_registry(),
+        )
+
+    @classmethod
+    def _series_where(cls, source, series) -> Optional[str]:
+        if not series.get("where"):
+            return None
+        return f"({cls._flyql_sql(source, series['where'])})"
+
+    @classmethod
+    def _fetch_chart_sql(cls, request: ChartDataRequest) -> ChartDataResponse:
         source = request.source
         plan = ChartPlan(request)
-        if request.query:
-            parser = parse(request.query)
-            assert parser.root
-            filter_clause = to_sql_where(
-                parser.root,
-                columns=flyql_starrocks_columns(source._columns),
-                registry=transformer_registry(),
-            )
-        else:
-            filter_clause = "true"
+        filter_clause = cls._flyql_sql(source, request.query)
         raw_where_clause = request.raw_query or "true"
         time_clause = build_time_clause(
             source.time_column, source.date_column, plan.time_from, plan.query_to
@@ -601,12 +632,20 @@ class Fetcher(BaseFetcher):
             hint_vars += f", {source.data['settings']}"
         select = f"SELECT /*+ SET_VAR({hint_vars}) */"
         aggs = ", ".join(
-            f"{agg_expression(CHART_AGGS, source, item)} AS `__telescope_v{i}`"
+            f"{agg_expression(CHART_AGGS, source, item, cls._series_where(source, item))}"
+            f" AS `__telescope_v{i}`"
             for i, item in enumerate(request.series)
         )
-        group = ""
-        if plan.group_by:
-            group = f"ifnull(cast({build_group_by_value(plan.group_by)} as string), '')"
+        exprs = [
+            f"ifnull(cast({build_group_by_value(g)} as string), '')"
+            for g in plan.group_bys
+        ]
+        if len(exprs) == 1:
+            aliases = ["`__telescope_g`"]
+        else:
+            aliases = [f"`__telescope_g{i}`" for i in range(len(exprs))]
+        group = ", ".join(f"{e} AS {a}" for e, a in zip(exprs, aliases))
+        group_aliases = ", ".join(aliases)
 
         assert source.conn
         with StarrocksConnect(source.conn.data) as c:
@@ -622,8 +661,8 @@ class Fetcher(BaseFetcher):
             if plan.kind == "table":
                 return plan.table(
                     run(
-                        f"{select} {group} AS `__telescope_g`, {aggs} FROM {from_db_table} WHERE {where}"
-                        f" GROUP BY `__telescope_g` ORDER BY `__telescope_v0` DESC, `__telescope_g`"
+                        f"{select} {group}, {aggs} FROM {from_db_table} WHERE {where}"
+                        f" GROUP BY {group_aliases} ORDER BY `__telescope_v0` DESC, {group_aliases}"
                         f" LIMIT {plan.limit + 1}"
                     )
                 )
@@ -647,18 +686,33 @@ class Fetcher(BaseFetcher):
                 )
             groups, truncated = plan.top_groups(
                 run(
-                    f"{select} {group} AS `__telescope_g` FROM {from_db_table} WHERE {where}"
-                    f" GROUP BY `__telescope_g` ORDER BY count(*) DESC, `__telescope_g`"
+                    f"{select} {group} FROM {from_db_table} WHERE {where}"
+                    f" GROUP BY {group_aliases} ORDER BY count(*) DESC, {group_aliases}"
                     f" LIMIT {plan.limit + 1}"
                 )
             )
             if not groups:
                 return plan.timeseries([], groups, truncated)
             # Values are escaped like the driver does; its %(name)s pass would also hit user literals.
-            group_list = ", ".join(escape_param(str(g)) for g in groups)
+            if len(exprs) == 1:
+                group_list = ", ".join(escape_param(str(g)) for g in groups)
+                restrict = f"{exprs[0]} IN ({group_list})"
+            else:
+                restrict = (
+                    "("
+                    + " OR ".join(
+                        "("
+                        + " AND ".join(
+                            f"{e} = {escape_param(str(v))}" for e, v in zip(exprs, g)
+                        )
+                        + ")"
+                        for g in groups
+                    )
+                    + ")"
+                )
             rows = run(
-                f"{select} {bucket} AS `__telescope_t`, {group} AS `__telescope_g`, {aggs}"
-                f" FROM {from_db_table} WHERE {where} AND {group} IN ({group_list})"
-                f" GROUP BY `__telescope_t`, `__telescope_g` ORDER BY `__telescope_t`"
+                f"{select} {bucket} AS `__telescope_t`, {group}, {aggs}"
+                f" FROM {from_db_table} WHERE {where} AND {restrict}"
+                f" GROUP BY `__telescope_t`, {group_aliases} ORDER BY `__telescope_t`"
             )
             return plan.timeseries(rows, groups, truncated)

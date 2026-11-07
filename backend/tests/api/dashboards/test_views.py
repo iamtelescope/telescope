@@ -182,7 +182,7 @@ def test_chart_data_raw_query_permission(test_user, clickhouse_source):
         ({"display": "number", "group_by": "hostname"}, "group_by"),
         ({"series": []}, "series"),
         ({"series": [{"agg": "sum", "column": "hostname"}]}, "series"),
-        ({"group_by": "hostname, level"}, "group_by"),
+        ({"group_by": "hostname, level, thread_name, thread_id"}, "group_by"),
         ({"granularity": "2m"}, "granularity"),
         ({"limit": 51}, "limit"),
         ({"query": "nope = 1"}, "query"),

@@ -11,19 +11,55 @@ export const DISPLAYS = [
     { value: 'number', label: 'Number' },
     { value: 'table', label: 'Table' },
     { value: 'bar', label: 'Top N' },
+    { value: 'pie', label: 'Pie' },
     { value: 'text', label: 'Text' },
 ]
 
-export const AGGS = ['count', 'sum', 'avg', 'min', 'max', 'quantile', 'uniq']
+// Query aggregations; tile series may also be a 'formula' over them.
+export const AGGS = ['count', 'sum', 'avg', 'min', 'max', 'quantile', 'uniq', 'last_value', 'any']
+export const MAX_GROUP_BY = 3
+// Displays that show one series; extra series must be hidden formula operands.
+export const SINGLE_SERIES_DISPLAYS = ['number', 'bar', 'pie']
+export const COLOR_RULE_OPS = [
+    { value: 'gt', label: '>' },
+    { value: 'gte', label: '≥' },
+    { value: 'lt', label: '<' },
+    { value: 'lte', label: '≤' },
+    { value: 'eq', label: '=' },
+]
 export const QUANTILE_LEVELS = [0.5, 0.75, 0.9, 0.95, 0.99]
 export const GRANULARITIES = ['auto', '15s', '30s', '1m', '5m', '10m', '15m', '30m', '1h', '2h', '6h', '12h', '1d']
 export const REFRESH_OPTIONS = ['off', '30s', '1m', '5m']
 export const REFRESH_MS = { '30s': 30000, '1m': 60000, '5m': 300000 }
-export const NUMBER_UNITS = ['number', 'bytes', 'duration_ms', 'percent']
+export const NUMBER_UNITS = [
+    'number',
+    'bytes',
+    'bytes_si',
+    'duration_ns',
+    'duration_us',
+    'duration_ms',
+    'duration_s',
+    'percent',
+]
 export const MAX_SERIES = 5
 
 export const isTimeseries = (display) => TIMESERIES_DISPLAYS.includes(display)
 export const maxLimit = (display) => (isTimeseries(display) ? 50 : 100)
+
+// The series a single-value display shows: the first one not hidden.
+export const visibleIndex = (series) =>
+    Math.max(
+        0,
+        (series || []).findIndex((s) => !s.hidden),
+    )
+
+// The color of the first matching rule, or null.
+export const ruleColor = (rules, value) => {
+    if (value === null || value === undefined) return null
+    const test = { gt: (a, b) => a > b, gte: (a, b) => a >= b, lt: (a, b) => a < b, lte: (a, b) => a <= b }
+    const rule = (rules || []).find((r) => (test[r.op] ? test[r.op](value, r.value) : value === r.value))
+    return rule ? rule.color : null
+}
 
 // Spec section 5 numeric type check, after unwrapping Nullable and LowCardinality.
 export const isNumericType = (type) => {
@@ -47,6 +83,7 @@ export const emptyDashboardData = () => ({
     refresh: 'off',
     version: DASHBOARD_DATA_VERSION,
     variables: [],
+    sections: [],
     tiles: [],
 })
 
@@ -104,7 +141,7 @@ export const formatValue = (value, format) => {
     return num(value)
 }
 
-export const DASHBOARD_DATA_VERSION = 2
+export const DASHBOARD_DATA_VERSION = 3
 export const VARIABLE_TYPES = [
     { value: 'values', label: 'Column values' },
     { value: 'static', label: 'Static list' },
@@ -113,10 +150,12 @@ export const VARIABLE_TYPES = [
 export const VARIABLE_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/
 export const VARIABLE_URL_PREFIX = 'var-'
 
-// v1 dashboards had no version and no variables; the server upgrades them the same way.
+// v1 dashboards had no variables, v2 no sections; the server upgrades them the same way.
 export const upgradeDashboardData = (data) => {
-    if (!data || (data.version ?? 1) !== 1) return data
-    return { ...data, version: DASHBOARD_DATA_VERSION, variables: data.variables || [] }
+    if (!data) return data
+    if ((data.version ?? 1) === 1) data = { ...data, version: 2, variables: data.variables || [] }
+    if (data.version === 2) data = { ...data, version: DASHBOARD_DATA_VERSION, sections: data.sections || [] }
+    return data
 }
 
 const asList = (value) => (Array.isArray(value) ? value : value === undefined || value === null ? [] : [value])

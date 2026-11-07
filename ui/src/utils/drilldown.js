@@ -1,11 +1,18 @@
 export const escapeFlyqlValue = (value) => String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 
+// `group` is one value, or one value per column of a several-column group by.
 export function buildDrilldownQuery(tileQuery, dashboardQuery, groupBy, group) {
     const parts = [tileQuery, dashboardQuery].filter((q) => q && q.trim())
-    const hasGroup = groupBy && group !== undefined && group !== null && group !== '__none__'
-    if (!hasGroup && parts.length < 2) return parts[0] || ''
+    const columns = Array.isArray(group) ? (groupBy || '').split(',').map((c) => c.trim()) : [groupBy]
+    const values = Array.isArray(group) ? group : [group]
+    const groups = groupBy
+        ? columns
+              .map((c, i) => [c, values[i]])
+              .filter(([c, v]) => c && v !== undefined && v !== null && v !== '__none__')
+        : []
+    if (!groups.length && parts.length < 2) return parts[0] || ''
     const conditions = parts.map((q) => `(${q})`)
-    if (hasGroup) conditions.push(`${groupBy} = '${escapeFlyqlValue(group)}'`)
+    for (const [column, value] of groups) conditions.push(`${column} = '${escapeFlyqlValue(value)}'`)
     return conditions.join(' and ')
 }
 
@@ -15,7 +22,7 @@ export function buildDrilldownRoute(chart, range, group, timeZone) {
         from: range.from,
         to: range.to,
         timeZone,
-        graph_group_by: chart.group_by || '',
+        graph_group_by: (chart.group_by || '').split(',')[0].trim(),
     }
     const q = buildDrilldownQuery(chart.query, range.query, chart.group_by, group)
     if (q) query.query = q

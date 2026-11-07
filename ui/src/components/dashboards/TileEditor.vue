@@ -30,8 +30,33 @@
                     />
                 </div>
                 <div class="flex flex-col gap-1">
+                    <label for="tile_description" class="font-medium">
+                        Description <span class="font-normal text-surface-500">(optional)</span>
+                    </label>
+                    <Textarea
+                        id="tile_description"
+                        v-model="form.description"
+                        rows="1"
+                        autoResize
+                        maxlength="1024"
+                        placeholder="Shown as a hint next to the title"
+                        data-testid="tile-description-input"
+                    />
+                </div>
+                <div v-if="sectionOptions.length > 1" class="flex flex-col gap-1">
+                    <label class="font-medium">Section</label>
+                    <Select
+                        v-model="form.section"
+                        :options="sectionOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        size="small"
+                        data-testid="tile-section"
+                    />
+                </div>
+                <div class="flex flex-col gap-1">
                     <label class="font-medium">Display</label>
-                    <div class="grid grid-cols-7 gap-1" role="radiogroup" data-testid="tile-display">
+                    <div class="grid grid-cols-8 gap-1" role="radiogroup" data-testid="tile-display">
                         <button
                             v-for="d in DISPLAY_BUTTONS"
                             :key="d.value"
@@ -112,7 +137,8 @@
                             <div
                                 v-for="(s, idx) in chart.series"
                                 :key="idx"
-                                class="flex flex-col gap-1"
+                                class="flex flex-col gap-1 pb-2 border-b border-surface-100 dark:border-surface-800 last:border-0"
+                                :class="{ 'opacity-60': s.hidden }"
                                 data-testid="tile-series"
                             >
                                 <div class="flex items-center gap-1">
@@ -124,9 +150,23 @@
                                         optionDisabled="disabled"
                                         size="small"
                                         class="w-32 shrink-0"
+                                        data-testid="series-agg"
                                         @change="onAggChange(s)"
                                     />
+                                    <InputText
+                                        v-if="s.agg === 'formula'"
+                                        v-model="s.formula"
+                                        size="small"
+                                        class="flex-1 min-w-0 font-mono"
+                                        :placeholder="formulaExample"
+                                        maxlength="1024"
+                                        aria-label="Formula"
+                                        data-testid="series-formula"
+                                        :invalid="!!seriesErrors[idx]"
+                                        @keydown.enter="runPreview"
+                                    />
                                     <Select
+                                        v-else
                                         v-model="s.column"
                                         :options="columnOptions(s.agg)"
                                         filter
@@ -143,6 +183,44 @@
                                         size="small"
                                         class="w-24 shrink-0"
                                     />
+                                    <label
+                                        class="series-color relative shrink-0 w-6 h-6 rounded border border-surface-300 dark:border-surface-600 cursor-pointer"
+                                        :style="{ background: s.color || 'transparent' }"
+                                        v-tooltip.top="s.color ? 'Series color' : 'Automatic color'"
+                                    >
+                                        <i v-if="!s.color" class="pi pi-palette text-xs text-surface-500 m-auto"></i>
+                                        <input
+                                            type="color"
+                                            class="absolute inset-0 opacity-0 cursor-pointer"
+                                            :value="s.color || '#2a78d6'"
+                                            aria-label="Series color"
+                                            @input="(e) => (s.color = e.target.value)"
+                                        />
+                                    </label>
+                                    <Button
+                                        v-if="s.color"
+                                        icon="pi pi-replay"
+                                        text
+                                        size="small"
+                                        severity="secondary"
+                                        class="shrink-0 w-6 h-6 p-0"
+                                        aria-label="Automatic color"
+                                        v-tooltip.top="'Automatic color'"
+                                        @click="delete s.color"
+                                    />
+                                    <Button
+                                        :icon="s.hidden ? 'pi pi-eye-slash' : 'pi pi-eye'"
+                                        text
+                                        size="small"
+                                        severity="secondary"
+                                        class="shrink-0"
+                                        :aria-label="s.hidden ? 'Show series' : 'Hide series'"
+                                        v-tooltip.top="
+                                            s.hidden ? 'Hidden: only used by formulas' : 'Hide, e.g. a formula operand'
+                                        "
+                                        data-testid="series-hide"
+                                        @click="s.hidden = !s.hidden"
+                                    />
                                     <Button
                                         icon="pi pi-times"
                                         text
@@ -154,17 +232,35 @@
                                         @click="chart.series.splice(idx, 1)"
                                     />
                                 </div>
-                                <InputText
-                                    v-model="s.alias"
-                                    size="small"
-                                    :placeholder="`Alias: ${seriesLabel(s)}`"
-                                    maxlength="64"
-                                    aria-label="Alias"
-                                    @keydown.enter="runPreview"
-                                />
+                                <div class="flex items-center gap-1">
+                                    <InputText
+                                        v-model="s.alias"
+                                        size="small"
+                                        class="w-40 shrink-0"
+                                        :placeholder="`Alias: ${seriesLabel(s)}`"
+                                        maxlength="64"
+                                        aria-label="Alias"
+                                        data-testid="series-alias"
+                                        @keydown.enter="runPreview"
+                                    />
+                                    <InputText
+                                        v-if="s.agg !== 'formula' && !countOnly"
+                                        v-model="s.where"
+                                        size="small"
+                                        class="flex-1 min-w-0 font-mono"
+                                        placeholder="Only rows where… (FlyQL)"
+                                        maxlength="10000"
+                                        aria-label="Series filter"
+                                        data-testid="series-where"
+                                        @keydown.enter="runPreview"
+                                    />
+                                </div>
                                 <ErrorText v-if="seriesErrors[idx]" :text="seriesErrors[idx]" class="text-sm" />
                             </div>
-                            <ErrorText v-if="serverError('series')" :text="serverError('series')" class="text-sm" />
+                            <span v-if="hasFormula" class="text-xs text-surface-500 dark:text-surface-400">
+                                Formulas use + - * / and parentheses over series aliases; a zero divisor gives no value.
+                            </span>
+                            <ErrorText v-if="seriesListError" :text="seriesListError" class="text-sm" />
                         </div>
 
                         <div v-if="source.contextColumns && countOnly" class="flex flex-col gap-1">
@@ -197,21 +293,42 @@
                             <div class="flex flex-col gap-1 min-w-0">
                                 <label class="font-medium" :class="{ 'opacity-50': !usesGroupBy }">
                                     Group by
-                                    <span v-if="chart.display !== 'bar'" class="font-normal text-surface-500"
-                                        >(optional)</span
-                                    >
+                                    <span v-if="!groupRequired" class="font-normal text-surface-500">(optional)</span>
                                 </label>
-                                <Select
-                                    v-model="groupBy"
-                                    :options="groupByOptions"
-                                    optionLabel="name"
-                                    editable
-                                    :showClear="!!chart.group_by && usesGroupBy"
+                                <div v-for="(g, idx) in groupBys" :key="idx" class="flex items-center gap-1">
+                                    <Select
+                                        :modelValue="g ? { name: g } : null"
+                                        :options="groupByOptions"
+                                        optionLabel="name"
+                                        editable
+                                        :showClear="!!g && usesGroupBy"
+                                        size="small"
+                                        class="flex-1 min-w-0"
+                                        :disabled="!usesGroupBy"
+                                        :placeholder="usesGroupBy ? 'None' : 'Not used by Number'"
+                                        :invalid="!!groupByError"
+                                        data-testid="tile-group-by"
+                                        @change="(e) => onGroupByChange(idx, e)"
+                                    />
+                                    <Button
+                                        v-if="idx > 0"
+                                        icon="pi pi-times"
+                                        text
+                                        size="small"
+                                        severity="secondary"
+                                        aria-label="Remove group by column"
+                                        @click="groupBys.splice(idx, 1)"
+                                    />
+                                </div>
+                                <Button
+                                    v-if="usesGroupBy && groupBys.length < maxGroupBy && groupBys[0]"
+                                    icon="pi pi-plus"
+                                    label="Group by column"
+                                    text
                                     size="small"
-                                    :disabled="!usesGroupBy"
-                                    :placeholder="usesGroupBy ? 'None' : 'Not used by Number'"
-                                    :invalid="!!groupByError"
-                                    @change="onGroupByChange"
+                                    class="self-start py-0"
+                                    data-testid="tile-add-group-by"
+                                    @click="groupBys.push('')"
                                 />
                                 <ErrorText v-if="groupByError" :text="groupByError" class="text-sm" />
                             </div>
@@ -249,9 +366,12 @@
                                 <label class="font-medium" :class="{ 'opacity-50': !hasUnit }">Unit</label>
                                 <Select
                                     v-model="numberFormat.unit"
-                                    :options="NUMBER_UNITS"
+                                    :options="unitOptions"
+                                    optionLabel="label"
+                                    optionValue="value"
                                     size="small"
                                     :disabled="!hasUnit"
+                                    data-testid="tile-unit"
                                 />
                             </div>
                             <div class="flex flex-col gap-1">
@@ -264,6 +384,99 @@
                                     fluid
                                     showButtons
                                     :disabled="!hasNumberFormat"
+                                />
+                            </div>
+                        </div>
+                        <div v-if="hasUnit" class="grid grid-cols-3 gap-3 -mt-2">
+                            <InputText
+                                v-model="numberFormat.prefix"
+                                size="small"
+                                maxlength="16"
+                                placeholder="Prefix, e.g. $"
+                                aria-label="Prefix"
+                            />
+                            <InputText
+                                v-model="numberFormat.suffix"
+                                size="small"
+                                maxlength="16"
+                                placeholder="Suffix, e.g. req/s"
+                                aria-label="Suffix"
+                                data-testid="tile-suffix"
+                            />
+                            <label class="flex items-center gap-2 text-sm">
+                                <Checkbox v-model="numberFormat.compact" binary inputId="tile_compact" />
+                                <span>Compact (1.2K)</span>
+                            </label>
+                        </div>
+
+                        <div v-if="timeseries || chart.display === 'number'" class="flex flex-wrap gap-x-5 gap-y-2">
+                            <label class="flex items-center gap-2 text-sm">
+                                <Checkbox v-model="chart.compare" binary data-testid="tile-compare" />
+                                <span>Compare to the previous period</span>
+                            </label>
+                            <label v-if="chart.display === 'number'" class="flex items-center gap-2 text-sm">
+                                <Checkbox v-model="chart.sparkline" binary data-testid="tile-sparkline" />
+                                <span>Sparkline</span>
+                            </label>
+                        </div>
+
+                        <div v-if="hasColorRules" class="flex flex-col gap-1">
+                            <div class="flex items-center justify-between">
+                                <label class="font-medium">
+                                    Color rules <span class="font-normal text-surface-500">(first match wins)</span>
+                                </label>
+                                <Button
+                                    icon="pi pi-plus"
+                                    label="Rule"
+                                    text
+                                    size="small"
+                                    :disabled="colorRules.length >= 10"
+                                    data-testid="tile-add-color-rule"
+                                    @click="colorRules.push({ op: 'gt', value: 0, color: '#e34948' })"
+                                />
+                            </div>
+                            <div
+                                v-for="(rule, idx) in colorRules"
+                                :key="idx"
+                                class="flex items-center gap-1"
+                                data-testid="tile-color-rule"
+                            >
+                                <span class="text-sm text-surface-500 w-12 shrink-0">value</span>
+                                <Select
+                                    v-model="rule.op"
+                                    :options="COLOR_RULE_OPS"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    size="small"
+                                    class="w-20 shrink-0"
+                                />
+                                <InputNumber
+                                    v-model="rule.value"
+                                    size="small"
+                                    class="flex-1 min-w-0"
+                                    inputClass="w-full"
+                                    :maxFractionDigits="6"
+                                    aria-label="Rule value"
+                                />
+                                <label
+                                    class="relative shrink-0 w-6 h-6 rounded border border-surface-300 dark:border-surface-600 cursor-pointer"
+                                    :style="{ background: rule.color }"
+                                >
+                                    <input
+                                        type="color"
+                                        class="absolute inset-0 opacity-0 cursor-pointer"
+                                        :value="rule.color"
+                                        aria-label="Rule color"
+                                        @input="(e) => (rule.color = e.target.value)"
+                                    />
+                                </label>
+                                <Button
+                                    icon="pi pi-times"
+                                    text
+                                    size="small"
+                                    severity="secondary"
+                                    aria-label="Remove rule"
+                                    @click="colorRules.splice(idx, 1)"
                                 />
                             </div>
                         </div>
@@ -372,9 +585,20 @@
 
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
-import { Dialog, Button, ConfirmDialog, InputText, InputNumber, Select, Tag, Textarea, useConfirm } from 'primevue'
+import {
+    Dialog,
+    Button,
+    Checkbox,
+    ConfirmDialog,
+    InputText,
+    InputNumber,
+    Select,
+    Tag,
+    Textarea,
+    useConfirm,
+} from 'primevue'
 import { useDebounceFn } from '@vueuse/core'
-import { ChartArea, ChartBarBig, ChartColumnStacked, ChartLine, Hash, Sheet, Type } from 'lucide-vue-next'
+import { ChartArea, ChartBarBig, ChartColumnStacked, ChartLine, ChartPie, Hash, Sheet, Type } from 'lucide-vue-next'
 
 import ErrorText from '@/components/common/ErrorText.vue'
 import ChartView from '@/components/dashboards/ChartView.vue'
@@ -385,18 +609,22 @@ import { useChartData } from '@/composables/dashboards/useDashboardService'
 import { SourceService } from '@/sdk/services/source'
 import {
     AGGS,
+    COLOR_RULE_OPS,
     DISPLAYS,
     GRANULARITIES,
+    MAX_GROUP_BY,
     MAX_SERIES,
     NUMBER_UNITS,
     QUANTILE_LEVELS,
+    SINGLE_SERIES_DISPLAYS,
     countOnlyKind,
     isNumericType,
     isTimeseries,
     maxLimit,
 } from '@/utils/dashboards.js'
 
-const props = defineProps(['visible', 'tile', 'sources', 'range', 'timeZone'])
+// `sections` are the dashboard's sections, so the tile can be placed in one.
+const props = defineProps(['visible', 'tile', 'sources', 'range', 'timeZone', 'sections'])
 const emit = defineEmits(['update:visible', 'apply'])
 
 const ICONS = {
@@ -406,8 +634,20 @@ const ICONS = {
     number: Hash,
     table: Sheet,
     bar: ChartBarBig,
+    pie: ChartPie,
     text: Type,
 }
+const UNIT_LABELS = {
+    number: 'number',
+    bytes: 'bytes (KiB)',
+    bytes_si: 'bytes (kB)',
+    duration_ns: 'duration ns',
+    duration_us: 'duration µs',
+    duration_ms: 'duration ms',
+    duration_s: 'duration s',
+    percent: 'percent',
+}
+const unitOptions = NUMBER_UNITS.map((u) => ({ value: u, label: UNIT_LABELS[u] || u }))
 const DISPLAY_BUTTONS = DISPLAYS.map((d) => ({ ...d, icon: ICONS[d.value] }))
 
 const sourceSrv = new SourceService()
@@ -417,7 +657,8 @@ const confirm = useConfirm()
 const form = ref(null)
 const numberFormat = ref({ unit: 'number', decimals: 0 })
 const contextColumnsData = ref(null)
-const groupBy = ref(null)
+const groupBys = ref([''])
+const colorRules = ref([])
 const previewChart = ref(null)
 const advancedOpen = ref(false)
 const confirming = ref(false)
@@ -427,8 +668,17 @@ const isNew = computed(() => !props.tile?.id)
 const chart = computed(() => form.value.chart)
 const source = computed(() => (props.sources || []).find((s) => s.slug === chart.value.source) || null)
 const countOnly = computed(() => !!source.value && countOnlyKind(source.value.kind))
-const maxSeries = computed(() => (['number', 'bar'].includes(chart.value.display) ? 1 : MAX_SERIES))
-const hasNumberFormat = computed(() => ['number', 'table', 'bar'].includes(chart.value.display))
+const maxSeries = MAX_SERIES
+const singleSeries = computed(() => SINGLE_SERIES_DISPLAYS.includes(chart.value.display))
+const groupRequired = computed(() => ['bar', 'pie'].includes(chart.value.display))
+const maxGroupBy = computed(() => (countOnly.value ? 1 : MAX_GROUP_BY))
+const hasNumberFormat = computed(() => ['number', 'table', 'bar', 'pie'].includes(chart.value.display))
+const hasColorRules = computed(() => ['number', 'table', 'bar'].includes(chart.value.display))
+const hasFormula = computed(() => chart.value.series.some((s) => s.agg === 'formula'))
+const sectionOptions = computed(() => [
+    { value: '', label: 'No section' },
+    ...(props.sections || []).map((s) => ({ value: s.id, label: s.title || 'Untitled section' })),
+])
 const timeseries = computed(() => isTimeseries(chart.value.display))
 const hasUnit = computed(() => hasNumberFormat.value || timeseries.value)
 const usesGroupBy = computed(() => chart.value.display !== 'number')
@@ -448,14 +698,27 @@ const defaultChart = () => ({
     limit: 10,
 })
 
-const state = () => JSON.stringify([form.value, numberFormat.value])
+const state = () => JSON.stringify([form.value, numberFormat.value, groupBys.value, colorRules.value])
+
+const splitGroupBy = (value) =>
+    (value || '')
+        .split(',')
+        .map((g) => g.trim())
+        .filter(Boolean)
 
 const init = () => {
     const tile = props.tile ? JSON.parse(JSON.stringify(props.tile)) : {}
     const base = { ...defaultChart(), text: '', ...tile.chart }
-    form.value = { title: tile.title || '', chart: base }
+    form.value = {
+        title: tile.title || '',
+        description: tile.description || '',
+        section: tile.section || '',
+        chart: base,
+    }
     numberFormat.value = { unit: 'number', decimals: 0, ...(tile.chart?.number_format || {}) }
-    groupBy.value = base.group_by ? { name: base.group_by } : null
+    groupBys.value = splitGroupBy(base.group_by)
+    if (!groupBys.value.length) groupBys.value = ['']
+    colorRules.value = JSON.parse(JSON.stringify(base.color_rules || []))
     advancedOpen.value = !!base.raw_query
     preview.abort()
     preview.data.value = null
@@ -508,7 +771,14 @@ const loadContextColumns = async () => {
     if (response.result && source.value?.slug === slug) contextColumnsData.value = response.data
 }
 
-const aggOptions = computed(() => AGGS.map((a) => ({ value: a, label: a, disabled: countOnly.value && a !== 'count' })))
+const AGG_LABELS = { last_value: 'last value', quantile: 'percentile' }
+const aggOptions = computed(() =>
+    [...AGGS, 'formula'].map((a) => ({
+        value: a,
+        label: AGG_LABELS[a] || a,
+        disabled: countOnly.value && a !== 'count',
+    })),
+)
 
 const columnOptions = (agg) => {
     const result = []
@@ -517,6 +787,13 @@ const columnOptions = (agg) => {
     }
     return result
 }
+
+// Example over the aliases already typed, e.g. "errors / total * 100".
+const formulaExample = computed(() => {
+    const aliases = chart.value.series.filter((s) => s.agg !== 'formula' && s.alias).map((s) => s.alias)
+    if (aliases.length >= 2) return `${aliases[0]} / ${aliases[1]} * 100`
+    return aliases.length ? `${aliases[0]} * 100` : 'Alias the series, then e.g. errors / total * 100'
+})
 
 // A sensible first column: a duration-like numeric one, or a group-by column for uniq.
 const defaultColumn = (agg) => {
@@ -528,6 +805,7 @@ const defaultColumn = (agg) => {
 
 const seriesLabel = (s) => {
     if (s.agg === 'count') return 'count()'
+    if (s.agg === 'formula') return s.formula || 'formula'
     const column = s.column || '…'
     if (s.agg === 'quantile') return `p${Math.round((s.level ?? 0.95) * 100)}(${column})`
     return `${s.agg}(${column})`
@@ -553,7 +831,7 @@ const groupByOptions = computed(() => {
     return result
 })
 
-const onGroupByChange = (event) => {
+const onGroupByChange = (idx, event) => {
     let value = event.value
     if (typeof value == 'object') {
         if (value === null) {
@@ -562,14 +840,29 @@ const onGroupByChange = (event) => {
             value = value.name
         }
     }
-    chart.value.group_by = value
+    groupBys.value[idx] = value
+    if (!value && idx > 0) groupBys.value.splice(idx, 1)
 }
 
+watch(
+    groupBys,
+    (list) => {
+        const columns = list.filter(Boolean)
+        if (form.value && splitGroupBy(chart.value.group_by).join() !== columns.join())
+            chart.value.group_by = columns.join(', ')
+    },
+    { deep: true },
+)
+
 const onAggChange = (s) => {
-    if (s.agg === 'count') delete s.column
+    if (s.agg === 'count' || s.agg === 'formula') delete s.column
     else if (!s.column || !columnOptions(s.agg).includes(s.column)) s.column = defaultColumn(s.agg)
     if (s.agg === 'quantile') s.level = s.level ?? 0.95
     else delete s.level
+    if (s.agg === 'formula') {
+        delete s.where
+        s.formula = s.formula ?? ''
+    } else delete s.formula
 }
 
 const addSeries = () => {
@@ -581,7 +874,7 @@ const addSeries = () => {
 const onSourceChange = () => {
     chart.value.context_columns = {}
     chart.value.group_by = ''
-    groupBy.value = null
+    groupBys.value = ['']
     if (countOnly.value) chart.value.series = chart.value.series.map(() => ({ agg: 'count' }))
     chart.value.series.forEach(onAggChange)
     loadContextColumns()
@@ -590,11 +883,14 @@ const onSourceChange = () => {
 const setDisplay = (display) => {
     const c = chart.value
     c.display = display
-    if (c.series.length > maxSeries.value) c.series = c.series.slice(0, maxSeries.value)
+    // A single-value display keeps the first series, unless hidden operands feed a formula.
+    if (singleSeries.value && c.series.length > 1 && !c.series.some((s) => s.hidden)) c.series = c.series.slice(0, 1)
     if (c.display === 'number') {
         c.group_by = ''
-        groupBy.value = null
+        groupBys.value = ['']
     }
+    if (!isTimeseries(display) && display !== 'number') c.compare = false
+    if (display !== 'number') c.sparkline = false
     if (c.limit > maxLimit(c.display)) c.limit = maxLimit(c.display)
 }
 
@@ -607,16 +903,18 @@ const sourceError = computed(() => {
 })
 
 const seriesErrors = computed(() =>
-    (form.value && source.value ? chart.value.series : []).map((s) => {
+    (form.value && source.value ? chart.value.series : []).map((s, idx) => {
         if (countOnly.value && s.agg !== 'count') return `${s.agg} is not supported for ${source.value.kind}`
+        if (s.agg === 'formula') return s.formula?.trim() ? serverSeriesError(idx) : 'Type a formula'
         if (s.agg !== 'count' && !s.column) return `Choose a column for ${s.agg}`
-        return null
+        return serverSeriesError(idx)
     }),
 )
 
 const groupByError = computed(() => {
     if (!form.value || !usesGroupBy.value) return null
     if (chart.value.display === 'bar' && !chart.value.group_by) return 'Top N needs a group by column'
+    if (chart.value.display === 'pie' && !chart.value.group_by) return 'Pie needs a group by column'
     return serverError('group_by')
 })
 
@@ -630,10 +928,13 @@ const limitError = computed(() => {
 const problem = computed(() => {
     if (!form.value || chart.value.display === 'text') return null
     if (sourceError.value && !source.value) return sourceError.value
-    const series = seriesErrors.value.find(Boolean)
+    const series = seriesErrors.value.find((e, idx) => e && !serverSeriesError(idx))
     if (series) return series
-    if (chart.value.series.length > maxSeries.value) return `${chart.value.display} takes exactly 1 series`
-    if (chart.value.display === 'bar' && !chart.value.group_by) return groupByError.value
+    const shown = chart.value.series.filter((s) => !s.hidden).length
+    if (singleSeries.value && chart.value.series.length > 1 && shown !== 1)
+        return `${chart.value.display} shows exactly 1 series: hide the others`
+    if (chart.value.series.every((s) => s.agg === 'formula')) return 'A formula needs at least one query series'
+    if (groupRequired.value && !chart.value.group_by) return groupByError.value
     return limitError.value
 })
 
@@ -647,9 +948,13 @@ const cleanChart = () => {
         display: c.display,
         series: c.series.map((s) => {
             const item = { agg: s.agg }
-            if (s.agg !== 'count') item.column = s.column
+            if (s.agg === 'formula') item.formula = (s.formula || '').trim()
+            else if (s.agg !== 'count') item.column = s.column
             if (s.agg === 'quantile') item.level = s.level
             if (s.alias) item.alias = s.alias
+            if (s.where?.trim() && s.agg !== 'formula') item.where = s.where.trim()
+            if (s.color) item.color = s.color
+            if (s.hidden) item.hidden = true
             return item
         }),
         query: c.query || '',
@@ -659,7 +964,21 @@ const cleanChart = () => {
         granularity: c.granularity || 'auto',
         limit: c.limit,
     }
-    if (hasUnit.value) result.number_format = { ...numberFormat.value }
+    if (hasUnit.value) {
+        // Optional format keys are only stored when set, so v1 tiles keep their shape.
+        const { prefix, suffix, compact, ...format } = numberFormat.value
+        result.number_format = { ...format }
+        if (prefix) result.number_format.prefix = prefix
+        if (suffix) result.number_format.suffix = suffix
+        if (compact) result.number_format.compact = true
+    }
+    if (c.compare && (timeseries.value || c.display === 'number')) result.compare = true
+    if (c.sparkline && c.display === 'number') result.sparkline = true
+    if (hasColorRules.value && colorRules.value.length) {
+        result.color_rules = colorRules.value
+            .filter((r) => typeof r.value === 'number')
+            .map((r) => ({ op: r.op, value: r.value, color: r.color }))
+    }
     return result
 }
 
@@ -671,6 +990,14 @@ const flatten = (value) => {
 }
 
 const serverError = (name) => flatten(preview.validation.value?.fields?.[name]).join('; ') || null
+const seriesListError = computed(() => {
+    const errors = preview.validation.value?.fields?.series
+    return Array.isArray(errors) ? flatten(errors).join('; ') : null
+})
+const serverSeriesError = (idx) => {
+    const errors = preview.validation.value?.fields?.series
+    return errors && !Array.isArray(errors) ? flatten(errors[idx]).join('; ') || null : null
+}
 
 const runPreview = () => {
     if (!canPreview.value) return
@@ -689,6 +1016,8 @@ const runPreview = () => {
         granularity: c.granularity,
         limit: c.limit,
         params: props.range.params || {},
+        compare: !!c.compare,
+        sparkline: !!c.sparkline,
     })
 }
 
@@ -698,7 +1027,8 @@ const debouncedPreview = useDebounceFn(runPreview, 500)
 watch(previewKey, (key) => key && debouncedPreview())
 
 const onApply = () => {
-    emit('apply', { title: form.value.title, chart: cleanChart() })
+    const { title, description, section } = form.value
+    emit('apply', { title, description, section, chart: cleanChart() })
     emit('update:visible', false)
 }
 </script>

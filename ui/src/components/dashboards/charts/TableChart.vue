@@ -10,7 +10,7 @@
             class="chart-table flex-1 min-h-0 text-sm"
             :rowHover="true"
             :rowClass="() => (clickable ? 'cursor-pointer' : '')"
-            @row-click="(e) => emit('rowClick', e.data.group)"
+            @row-click="(e) => emit('rowClick', e.data.groups || e.data.group)"
         >
             <Column v-if="groupColumn" field="group" :header="groupColumn.name" sortable>
                 <template #body="{ data: row }">
@@ -33,7 +33,12 @@
                 :pt="{ columnHeaderContent: { class: 'justify-end' } }"
             >
                 <template #body="{ data: row }">
-                    <span :title="exactNumber(row[col.field])">{{ col.format(row[col.field]) }}</span>
+                    <span
+                        :title="exactNumber(row[col.field])"
+                        :class="{ 'font-semibold': cellColor(row[col.field]) }"
+                        :style="cellColor(row[col.field]) ? { color: cellColor(row[col.field]) } : null"
+                        >{{ col.format(row[col.field]) }}</span
+                    >
                 </template>
             </Column>
         </DataTable>
@@ -50,9 +55,10 @@ import {
     seriesLabel,
     seriesUnit,
     groupLabel,
-    formatNumber,
+    formatTileValue,
     exactNumber,
 } from '@/components/dashboards/charts/format.js'
+import { ruleColor } from '@/utils/dashboards.js'
 
 const props = defineProps(['data', 'chart'])
 const emit = defineEmits(['rowClick'])
@@ -62,6 +68,7 @@ const isEmptyGroup = (group) => group === '__none__' || group === ''
 
 // An ungrouped table still gets a nameless group column with one empty group; it is not shown.
 const groupColumn = computed(() => props.data.columns.find((c) => c.kind === 'group' && c.name))
+// Hidden series are formula operands and get no column.
 const valueColumns = computed(() => {
     const defs = props.chart.series || []
     const format = props.chart.number_format
@@ -72,13 +79,16 @@ const valueColumns = computed(() => {
             return {
                 name: defs[idx] ? seriesLabel(defs[idx]) : c.name,
                 field: `v${idx}`,
-                format: (v) => formatNumber(v, unit, { decimals: unit === 'number' ? format?.decimals : undefined }),
+                hidden: !!defs[idx]?.hidden,
+                format: (v) => formatTileValue(v, unit, format),
             }
         })
+        .filter((c) => !c.hidden)
 })
+const cellColor = (value) => ruleColor(props.chart.color_rules, value)
 const rows = computed(() =>
     props.data.rows.map((row) => {
-        const item = { group: row.group }
+        const item = { group: row.group, groups: row.groups }
         row.values.forEach((v, idx) => (item[`v${idx}`] = v))
         return item
     }),

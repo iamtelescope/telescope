@@ -58,3 +58,6 @@ SOFTWARE.
   offset/start in `backend/telescope_alerts/evaluator.py` are adapted from HyperDX `packages/api/src/routers/api/alerts.ts`
   and `packages/api/src/tasks/checkAlerts/index.ts` (`getScheduledWindowStart`); `ui/src/features/alerts/AlertDetail.vue`,
   `AlertsView.vue` and `SilenceButton.vue` from `packages/app/src/AlertDetailPage.tsx` and `AlertsPage.tsx` (MIT, above).
+- `backend/telescope/fetchers/chart.py` (`parse_formula`, `eval_formula`: the arithmetic grammar, depth and length limits, a missing
+  operand as 0 and a zero divisor as null) is adapted from HyperDX `packages/common-utils/src/core/formula.ts`, and the per-series
+  `If` combinator in `backend/telescope/fetchers/clickhouse.py` follows `packages/common-utils/src/core/renderChartConfig.ts` (MIT, above).

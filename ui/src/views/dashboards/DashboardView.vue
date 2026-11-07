@@ -90,6 +90,15 @@
                                         data-testid="dashboard-variables-btn"
                                     />
                                     <Button
+                                        label="Section"
+                                        icon="pi pi-plus"
+                                        severity="secondary"
+                                        outlined
+                                        size="small"
+                                        data-testid="dashboard-add-section"
+                                        @click="addSection"
+                                    />
+                                    <Button
                                         label="Add tile"
                                         icon="pi pi-plus"
                                         severity="secondary"
@@ -173,7 +182,10 @@
                         @change="onVariableChange"
                     />
                 </div>
-                <div v-if="!draft.tiles.length" class="flex flex-1 items-start justify-center pt-12 pb-16">
+                <div
+                    v-if="!draft.tiles.length && !sections.length"
+                    class="flex flex-1 items-start justify-center pt-12 pb-16"
+                >
                     <div
                         class="flex flex-col items-center text-center max-w-md w-full px-8 py-12 rounded-xl border-2 border-dashed border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900"
                     >
@@ -198,50 +210,115 @@
                         />
                     </div>
                 </div>
-                <GridLayout
-                    v-else
-                    v-model:layout="layout"
-                    :col-num="GRID_COLUMNS"
-                    :row-height="32"
-                    :margin="[8, 8]"
-                    :is-draggable="editing"
-                    :is-resizable="editing"
-                    :vertical-compact="true"
-                    @layout-updated="syncLayout"
-                    class="dash-grid -mx-2"
-                    :class="{ 'dash-grid--editing': editing }"
-                >
-                    <GridItem
-                        v-for="item in layout"
-                        :key="item.i"
-                        :x="item.x"
-                        :y="item.y"
-                        :w="item.w"
-                        :h="item.h"
-                        :i="item.i"
-                        :min-h="2"
-                        :min-w="2"
-                        :max-h="48"
-                        drag-allow-from=".tile-drag-handle"
-                        drag-ignore-from="button"
-                        @moved="dirty = true"
-                        @resized="dirty = true"
-                    >
-                        <Tile
-                            :tile="tileById[item.i]"
-                            :range="range"
-                            :timeZone="timeZone"
-                            :editing="editing"
-                            :canEdit="dashboard.canEdit()"
-                            :queue="queue"
-                            :refreshTick="refreshTick"
-                            @edit="openEditor(tileById[item.i])"
-                            @duplicate="duplicateTile(tileById[item.i])"
-                            @delete="deleteTile(tileById[item.i])"
-                            @rangeSelected="onRangeSelect"
-                        />
-                    </GridItem>
-                </GridLayout>
+                <template v-else>
+                    <template v-for="group in groups" :key="group.id">
+                        <div
+                            v-if="group.section"
+                            class="dash-section flex items-center gap-2 mt-3 mb-1 py-1.5 border-b border-surface-300 dark:border-surface-700"
+                            data-testid="dashboard-section"
+                        >
+                            <Button
+                                :icon="isCollapsed(group.section) ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
+                                text
+                                rounded
+                                severity="secondary"
+                                size="small"
+                                :aria-label="isCollapsed(group.section) ? 'Expand section' : 'Collapse section'"
+                                data-testid="dashboard-section-toggle"
+                                @click="toggleSection(group.section)"
+                            />
+                            <InputText
+                                v-if="editing"
+                                v-model="group.section.title"
+                                size="small"
+                                maxlength="128"
+                                class="font-semibold min-w-0 w-72"
+                                placeholder="Section title"
+                                aria-label="Section title"
+                                @input="dirty = true"
+                            />
+                            <h2
+                                v-else
+                                class="m-0 text-lg font-semibold truncate text-surface-800 dark:text-surface-100 cursor-pointer"
+                                @click="toggleSection(group.section)"
+                            >
+                                {{ group.section.title || 'Untitled section' }}
+                            </h2>
+                            <span class="text-sm text-surface-500 dark:text-surface-400 shrink-0">
+                                {{ group.tiles.length }} {{ group.tiles.length === 1 ? 'tile' : 'tiles' }}
+                            </span>
+                            <div class="flex-1"></div>
+                            <template v-if="editing">
+                                <Button
+                                    icon="pi pi-plus"
+                                    label="Tile"
+                                    text
+                                    size="small"
+                                    severity="secondary"
+                                    @click="openEditor(null, group.id)"
+                                />
+                                <Button
+                                    icon="pi pi-trash"
+                                    text
+                                    rounded
+                                    size="small"
+                                    severity="secondary"
+                                    aria-label="Delete section"
+                                    v-tooltip.top="'Delete section, keep its tiles'"
+                                    @click="deleteSection(group.section)"
+                                />
+                            </template>
+                        </div>
+                        <GridLayout
+                            v-if="
+                                (group.section
+                                    ? !isCollapsed(group.section)
+                                    : group.tiles.length || !sections.length) && layouts[group.id]
+                            "
+                            v-model:layout="layouts[group.id]"
+                            :col-num="GRID_COLUMNS"
+                            :row-height="32"
+                            :margin="[8, 8]"
+                            :is-draggable="editing"
+                            :is-resizable="editing"
+                            :vertical-compact="true"
+                            @layout-updated="syncLayout"
+                            class="dash-grid -mx-2"
+                            :class="{ 'dash-grid--editing': editing, 'min-h-16': group.section && editing }"
+                        >
+                            <GridItem
+                                v-for="item in layouts[group.id]"
+                                :key="item.i"
+                                :x="item.x"
+                                :y="item.y"
+                                :w="item.w"
+                                :h="item.h"
+                                :i="item.i"
+                                :min-h="2"
+                                :min-w="2"
+                                :max-h="48"
+                                drag-allow-from=".tile-drag-handle"
+                                drag-ignore-from="button"
+                                @moved="dirty = true"
+                                @resized="dirty = true"
+                            >
+                                <Tile
+                                    :tile="tileById[item.i]"
+                                    :range="range"
+                                    :timeZone="timeZone"
+                                    :editing="editing"
+                                    :canEdit="dashboard.canEdit()"
+                                    :queue="queue"
+                                    :refreshTick="refreshTick"
+                                    @edit="openEditor(tileById[item.i])"
+                                    @duplicate="duplicateTile(tileById[item.i])"
+                                    @delete="deleteTile(tileById[item.i])"
+                                    @rangeSelected="onRangeSelect"
+                                />
+                            </GridItem>
+                        </GridLayout>
+                    </template>
+                </template>
             </template>
         </DataView>
         <TileEditor
@@ -250,6 +327,7 @@
             :sources="sources || []"
             :range="range"
             :timeZone="timeZone"
+            :sections="sections"
             @apply="onEditorApply"
         />
         <VariablesEditor
@@ -294,6 +372,7 @@ import { createRequestQueue } from '@/utils/requestQueue'
 import {
     GRID_COLUMNS,
     REFRESH_MS,
+    bottomY,
     REFRESH_OPTIONS,
     VARIABLE_URL_PREFIX,
     defaultTileSize,
@@ -322,7 +401,9 @@ const { update, create, remove } = useSaveDashboard()
 
 const queue = createRequestQueue(4)
 const draft = ref(null)
-const layout = ref([])
+// Grid items per section id; '' holds the tiles outside any section.
+const layouts = ref({})
+const collapsed = ref({})
 const editing = ref(route.query.edit === '1')
 // Set by user edits only, so the grid's own compaction on load never counts as a change.
 const dirty = ref(false)
@@ -354,20 +435,69 @@ const refreshing = computed(() => queue.pending.value > 0)
 const filterActive = computed(() => !!range.value.query && filterInput.value === range.value.query)
 const filterDirty = computed(() => filterInput.value !== range.value.query)
 const tileById = computed(() => Object.fromEntries((draft.value?.tiles || []).map((t) => [t.id, t])))
+const sections = computed(() => draft.value?.sections || [])
+const groups = computed(() => [
+    { id: '', section: null, tiles: (draft.value?.tiles || []).filter((t) => !t.section) },
+    ...sections.value.map((section) => ({
+        id: section.id,
+        section,
+        tiles: draft.value.tiles.filter((t) => t.section === section.id),
+    })),
+])
 
 const rebuildLayout = () => {
-    layout.value = draft.value.tiles.map((t) => ({ i: t.id, x: t.x, y: t.y, w: t.w, h: t.h }))
+    const result = { '': [] }
+    for (const section of sections.value) result[section.id] = []
+    for (const t of draft.value.tiles) {
+        ;(result[t.section || ''] || result['']).push({ i: t.id, x: t.x, y: t.y, w: t.w, h: t.h })
+    }
+    layouts.value = result
 }
 
 const syncLayout = () => {
-    for (const item of layout.value) {
-        const tile = tileById.value[item.i]
-        if (tile) Object.assign(tile, { x: item.x, y: item.y, w: item.w, h: item.h })
+    for (const items of Object.values(layouts.value)) {
+        for (const item of items) {
+            const tile = tileById.value[item.i]
+            if (tile) Object.assign(tile, { x: item.x, y: item.y, w: item.w, h: item.h })
+        }
     }
+}
+
+// In view mode a collapse is local; while editing it is saved with the dashboard.
+const isCollapsed = (section) => collapsed.value[section.id] ?? !!section.collapsed
+const toggleSection = (section) => {
+    const value = !isCollapsed(section)
+    collapsed.value = { ...collapsed.value, [section.id]: value }
+    if (editing.value) {
+        section.collapsed = value
+        dirty.value = true
+    }
+}
+
+const addSection = () => {
+    syncLayout()
+    const used = [...draft.value.tiles, ...sections.value]
+    draft.value.sections = [...sections.value, { id: newTileId(used), title: 'New section', collapsed: false }]
+    dirty.value = true
+    rebuildLayout()
+}
+
+// Its tiles move below the tiles outside any section.
+const deleteSection = (section) => {
+    syncLayout()
+    let y = bottomY(draft.value.tiles.filter((t) => !t.section))
+    for (const t of draft.value.tiles.filter((t) => t.section === section.id).sort((a, b) => a.y - b.y)) {
+        delete t.section
+        t.y = y + t.y
+    }
+    draft.value.sections = sections.value.filter((s) => s.id !== section.id)
+    dirty.value = true
+    rebuildLayout()
 }
 
 const resetDraft = () => {
     draft.value = upgradeDashboardData(JSON.parse(JSON.stringify(dashboard.value.data)))
+    collapsed.value = {}
     dirty.value = false
     rebuildLayout()
 }
@@ -594,38 +724,56 @@ const startAdd = () => {
     openEditor(null)
 }
 
-const openEditor = (tile) => {
+// `section` presets the section of a new tile.
+const openEditor = (tile, section = '') => {
     editing.value = true
-    editorTile.value = tile
+    editorTile.value = tile || (section ? { section } : null)
     editorVisible.value = true
 }
 
-const addTile = (title, chart, size = defaultTileSize(chart.display)) => {
+const tileExtras = (extras) => {
+    const result = {}
+    if (extras.description) result.description = extras.description
+    if (extras.section) result.section = extras.section
+    return result
+}
+
+const addTile = (title, chart, size = defaultTileSize(chart.display), extras = {}) => {
     syncLayout()
+    const siblings = draft.value.tiles.filter((t) => (t.section || '') === (extras.section || ''))
     draft.value.tiles.push({
-        id: newTileId(draft.value.tiles),
-        ...newTilePosition(draft.value.tiles, size.w),
+        id: newTileId([...draft.value.tiles, ...sections.value]),
+        ...newTilePosition(siblings, size.w),
         ...size,
         title,
+        ...tileExtras(extras),
         chart,
     })
     dirty.value = true
     rebuildLayout()
 }
 
-const onEditorApply = ({ title, chart }) => {
-    const existing = editorTile.value && tileById.value[editorTile.value.id]
-    if (existing) {
-        existing.title = title
-        existing.chart = chart
-        dirty.value = true
-    } else {
-        addTile(title, chart)
+const onEditorApply = ({ title, description, section, chart }) => {
+    const existing = editorTile.value?.id && tileById.value[editorTile.value.id]
+    if (!existing) return addTile(title, chart, undefined, { description, section })
+    syncLayout()
+    existing.title = title
+    existing.chart = chart
+    if (description) existing.description = description
+    else delete existing.description
+    if ((existing.section || '') !== (section || '')) {
+        const siblings = draft.value.tiles.filter((t) => t !== existing && (t.section || '') === (section || ''))
+        existing.y = bottomY(siblings)
+        existing.x = 0
+        if (section) existing.section = section
+        else delete existing.section
     }
+    dirty.value = true
+    rebuildLayout()
 }
 
 const duplicateTile = (tile) => {
-    addTile(tile.title, JSON.parse(JSON.stringify(tile.chart)), { w: tile.w, h: tile.h })
+    addTile(tile.title, JSON.parse(JSON.stringify(tile.chart)), { w: tile.w, h: tile.h }, tile)
 }
 
 const deleteTile = (tile) => {
