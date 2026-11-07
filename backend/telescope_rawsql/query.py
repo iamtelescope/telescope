@@ -1,6 +1,7 @@
 """Runs one raw SQL SELECT for a tile, read-only and bounded.
 
-ClickHouse parses the query first (EXPLAIN AST); SETTINGS clauses and non-allowlisted table functions are refused.
+ClickHouse parses the query first (EXPLAIN AST); SETTINGS clauses, non-allowlisted table functions and functions that
+read server files, settings or other tables are refused. EXPLAIN QUERY TREE then checks every table it reads.
 """
 
 import datetime
@@ -33,13 +34,27 @@ SAFE_TABLE_FUNCTIONS = {
     "generate_series",
     "values",
 }
+# Scalar functions that read server files or settings, or tables the query does not name.
+REFUSED_FUNCTIONS = {"file", "getServerSetting", "joinGet", "joinGetOrNull"}
+REFUSED_PREFIX = "dict"
+RAW_SQL_MAX_MEMORY = 1024**3
+RAW_SQL_MAX_ROWS_TO_READ = 1_000_000_000
+RAW_SQL_MAX_THREADS = 4
 QUERY_SETTINGS = {
     "readonly": 2,
     "max_execution_time": CHART_QUERY_TIMEOUT_SECONDS,
     "max_result_rows": RAW_SQL_MAX_ROWS + 1,
     "max_result_bytes": RAW_SQL_MAX_BYTES,
     "result_overflow_mode": "throw",
+    "max_memory_usage": RAW_SQL_MAX_MEMORY,
+    "max_rows_to_read": RAW_SQL_MAX_ROWS_TO_READ,
+    "read_overflow_mode": "throw",
+    "max_threads": RAW_SQL_MAX_THREADS,
 }
+# A table the query reads; aliases are renamed __tableN, and FINAL/SAMPLE follow the name.
+TABLE_RE = re.compile(r"^\s*TABLE id: \d+,(?: alias: \w+,)? table_name: (.*)$")
+TABLE_MODIFIERS_RE = re.compile(r", (?:final|sample_size|sample_offset): .*$")
+MAX_SAFE_INT = 2**53 - 1
 WRAPPER_TOP = ["SelectWithUnionQuery (children 1)", " ExpressionList (children 1)"]
 FIRST_WORD_RE = re.compile(r"(?:\s+|--[^\n]*|/\*.*?\*/|\()*(\w*)", re.S)
 
@@ -84,13 +99,26 @@ def ast_error(ast_lines) -> str:
         node = line.strip()
         if node == "Set" or node.startswith("Set "):
             return "SETTINGS clauses are not allowed"
+        if not node.startswith("Function "):
+            continue
+        name = node.split()[1]
         parent = ast_lines[i - 1] if i else ""
-        if node.startswith("Function ") and parent.strip().startswith(
-            "TableExpression"
-        ):
-            name = node.split()[1]
+        if parent.strip().startswith("TableExpression"):
             if name not in SAFE_TABLE_FUNCTIONS:
                 return f"table function {name} is not allowed"
+        elif name in REFUSED_FUNCTIONS or name.startswith(REFUSED_PREFIX):
+            return f"function {name} is not allowed"
+    return None
+
+
+def table_error(tree_lines, tables: set) -> str:
+    """Why the analyzed query is refused (it reads a table outside `tables`), or None."""
+    for line in tree_lines:
+        match = TABLE_RE.match(line)
+        if match:
+            name = TABLE_MODIFIERS_RE.sub("", match.group(1))
+            if name not in tables:
+                return f"table {name} is not a source you can query on this connection"
     return None
 
 
@@ -104,7 +132,10 @@ def clickhouse_message(err) -> str:
 def json_value(value):
     if isinstance(value, float):
         return value if math.isfinite(value) else None
-    if value is None or isinstance(value, (bool, int, str)):
+    if isinstance(value, int) and not isinstance(value, bool):
+        # JSON numbers above 2^53 lose digits in the browser.
+        return value if abs(value) <= MAX_SAFE_INT else str(value)
+    if value is None or isinstance(value, (bool, str)):
         return value
     if isinstance(value, decimal.Decimal):
         return float(value)
@@ -122,8 +153,15 @@ def json_value(value):
 
 
 def run_raw_sql(
-    connection, sql: str, time_from: int, time_to: int, granularity: str, params
+    connection,
+    tables: set,
+    sql: str,
+    time_from: int,
+    time_to: int,
+    granularity: str,
+    params,
 ) -> Dict:
+    """Runs `sql` on `connection` if it reads only `tables` ("db.table")."""
     query, parameters = build_query(sql, time_from, time_to, granularity, params)
     with ClickhouseConnect(connection.data) as c:
         try:
@@ -136,6 +174,16 @@ def run_raw_sql(
         except DatabaseError as err:
             raise RawSqlError(clickhouse_message(err))
         error = ast_error([row[0] for row in explained])
+        if error:
+            raise RawSqlError(error)
+        # Analysis errors (an unknown table, a type mismatch) are query failures.
+        tree = _client_query(
+            c.client,
+            f"SELECT explain FROM (EXPLAIN QUERY TREE {query})",
+            parameters=parameters,
+            settings=QUERY_SETTINGS,
+        ).result_rows
+        error = table_error([row[0] for row in tree], tables)
         if error:
             raise RawSqlError(error)
         result = _client_query(

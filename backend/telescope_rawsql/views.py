@@ -13,6 +13,7 @@ from telescope_rawsql.serializers import (
     NO_ACCESS,
     RawSqlRequestSerializer,
     raw_sql_connection,
+    raw_sql_tables,
 )
 
 logger = logging.getLogger("telescope.rawsql")
@@ -52,6 +53,7 @@ class RawSqlQueryView(APIView):
         try:
             response.data = run_raw_sql(
                 connection,
+                raw_sql_tables(request.user, connection),
                 data["sql"],
                 data["from"],
                 data["to"],

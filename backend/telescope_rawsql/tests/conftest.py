@@ -2,8 +2,9 @@ import pytest
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 
-from telescope.models import Connection
+from telescope.models import Connection, Source
 from telescope.rbac.manager import RBACManager
+from tests.data import get_clickhouse_source_data
 from tests.fixtures import *  # noqa: F401,F403
 from tests.integration.conftest import ch_settings, ch_settings_dict  # noqa: F401
 
@@ -56,3 +57,14 @@ def sql_user(db):
 def grant(connection, user, role="raw_sql_user"):
     RBACManager().grant_connection_role(connection, role, user=user)
     return user
+
+
+def source_on(connection, user, slug, database, table, role="user", **data):
+    """A ClickHouse source on `connection` over database.table, with `role` granted to `user`."""
+    fields = get_clickhouse_source_data(slug)
+    del fields["kind"], fields["connection"]
+    fields.update(conn=connection, data={"database": database, "table": table, **data})
+    source = Source.create(kind="clickhouse", data=fields)
+    if role:
+        RBACManager().grant_source_role(source, role, user=user)
+    return source

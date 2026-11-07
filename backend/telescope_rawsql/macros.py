@@ -61,16 +61,27 @@ class MacroError(Exception):
 
 
 def scan(text: str, start: int):
-    """Yields (index, char) outside quotes, so a ')' or ',' in a literal does not count."""
-    quote = None
-    i = start
+    """Yields (index, char) outside quotes and comments, so a ')' or ';' in either does not count."""
+    quote, depth, i = None, 0, start
     while i < len(text):
-        c = text[i]
+        c, pair = text[i], text[i : i + 2]
         if quote:
             if c == "\\":
                 i += 1
             elif c == quote:
                 quote = None
+        elif pair == "/*":
+            # ClickHouse nests block comments.
+            depth += 1
+            i += 1
+        elif depth:
+            if pair == "*/":
+                depth -= 1
+                i += 1
+        elif pair in ("--", "# ", "#!"):
+            end = text.find("\n", i)
+            i = len(text) if end < 0 else end
+            continue
         elif c in "'\"`":
             quote = c
         else:

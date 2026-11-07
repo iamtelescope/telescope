@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from telescope.fetchers.chart import GRANULARITIES, VARIABLE_NAME_RE
 from telescope.models import Connection
+from telescope_otel.metrics_sql import metric_tables
 from telescope.rbac import permissions
 from telescope.rbac.manager import RBACManager
 from telescope.utils import parse_time
@@ -21,6 +22,22 @@ def raw_sql_connection(user, pk):
     except Connection.DoesNotExist:
         return None
     return connection if connection.kind == "clickhouse" else None
+
+
+def raw_sql_tables(user, connection) -> set:
+    """The "db.table" names raw SQL may read: the tables of the sources `user` may use on `connection`."""
+    tables = {"system.one"}
+    for source in rbac_manager.get_sources(
+        user,
+        source_filter={"conn_id": connection.pk},
+        required_permissions=[permissions.Source.USE.value],
+    ):
+        if source.kind != "clickhouse":
+            continue
+        database = source.data.get("database")
+        names = [source.data.get("table"), *metric_tables(source).values()]
+        tables.update(f"{database}.{name}" for name in names if name)
+    return tables
 
 
 class RawSqlChartSerializer(serializers.Serializer):

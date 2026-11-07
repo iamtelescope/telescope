@@ -5,7 +5,7 @@ from clickhouse_connect.driver.exceptions import DatabaseError
 
 from telescope.fetchers.clickhouse import ClickhouseConnect, _client_query
 from telescope_rawsql.query import QUERY_SETTINGS
-from telescope_rawsql.tests.conftest import T0, client_for, grant, query
+from telescope_rawsql.tests.conftest import T0, client_for, grant, query, source_on
 
 pytestmark = [pytest.mark.clickhouse, pytest.mark.django_db]
 
@@ -67,9 +67,105 @@ def test_select_with_macros(client, ch_connection):
 def test_runs_read_only_with_limits(client, ch_connection):
     sql = (
         "SELECT getSetting('readonly'), getSetting('max_execution_time'),"
-        " getSetting('max_result_rows')"
+        " getSetting('max_result_rows'), getSetting('max_memory_usage'),"
+        " getSetting('max_rows_to_read'), getSetting('read_overflow_mode'),"
+        " getSetting('max_threads')"
     )
-    assert rows(client, ch_connection, sql) == [[2, 30.0, 1001]]
+    assert rows(client, ch_connection, sql) == [
+        [2, 30.0, 1001, 1024**3, 10**9, "throw", 4]
+    ]
+
+
+@pytest.mark.parametrize(
+    "sql,error",
+    [
+        ("SELECT length(groupArray(number)) FROM numbers(50000000)", "memory limit"),
+        ("SELECT sum(number) FROM numbers(1000000001)", "max_rows_to_read"),
+    ],
+)
+def test_work_is_bounded_not_only_the_result(client, ch_connection, sql, error):
+    result = run(client, ch_connection, sql)
+    assert not result["result"] and result["data"] == {"code": "query_failed"}
+    assert error in result["errors"][0].lower()
+
+
+@pytest.mark.parametrize(
+    "sql,name",
+    [
+        ("SELECT file('p5_review_probe.txt')", "file"),
+        ("SELECT length(file('p5_review_probe.txt')) AS n", "file"),
+        ("SELECT count() FROM numbers(1) WHERE file('x') != ''", "file"),
+        ("SELECT * FROM numbers(length(file('x')))", "file"),
+        ("SELECT getServerSetting('user_files_path')", "getServerSetting"),
+        ("SELECT joinGet('default.j', 'v', 1)", "joinGet"),
+        ("SELECT dictGet('default.d', 'v', toUInt64(1))", "dictGet"),
+        ("SELECT dictHas('default.d', toUInt64(1))", "dictHas"),
+    ],
+)
+def test_server_file_and_setting_readers_are_refused(client, ch_connection, sql, name):
+    assert refused(client, ch_connection, sql) == f"function {name} is not allowed"
+
+
+@pytest.mark.parametrize(
+    "sql,table",
+    [
+        ("SELECT count() FROM system.query_log", "system.query_log"),
+        ("SELECT name FROM system.users", "system.users"),
+        (
+            "SELECT count() FROM system.tables AS t, system.columns AS c",
+            "system.columns",
+        ),
+        (
+            "SELECT 1 FROM system.tables WHERE 1 IN (SELECT 1 FROM system.users)",
+            "system.users",
+        ),
+        (
+            "WITH q AS (SELECT * FROM system.query_log) SELECT count() FROM q",
+            "system.query_log",
+        ),
+        ("SELECT 0 IN system.one, count() FROM system.functions", "system.functions"),
+    ],
+)
+def test_only_tables_of_usable_sources_are_read(
+    client, ch_connection, sql_user, sql, table
+):
+    source_on(ch_connection, sql_user, "p5r-tables", "system", "tables")
+    assert refused(client, ch_connection, sql) == (
+        f"table {table} is not a source you can query on this connection"
+    )
+
+
+def test_tables_of_usable_sources_are_read(client, ch_connection, sql_user):
+    source_on(ch_connection, sql_user, "p5r-tables", "system", "tables")
+    source_on(ch_connection, sql_user, "p5r-viewer", "system", "columns", role="viewer")
+    source_on(
+        ch_connection,
+        sql_user,
+        "p5r-metrics",
+        "system",
+        "databases",
+        otel={"signal": "metrics", "metric_tables": {"sum": "functions"}},
+    )
+    one = "SELECT count() > 0 FROM system.tables WHERE database = 'system'"
+    assert rows(client, ch_connection, one) == [[True]]
+    assert rows(client, ch_connection, "SELECT count() > 0 FROM system.functions") == [
+        [True]
+    ]
+    assert rows(client, ch_connection, "SELECT 1") == [[1]]
+    # A viewer role reads the source's settings, not its rows.
+    assert "system.columns" in refused(
+        client, ch_connection, "SELECT 1 FROM system.columns"
+    )
+
+
+def test_comments_are_not_statements(client, ch_connection):
+    assert rows(client, ch_connection, "SELECT * FROM numbers(1) /* ; */") == [[0]]
+    assert rows(client, ch_connection, "SELECT 1 /* /* ; */ ; */ -- ;") == [[1]]
+    assert rows(client, ch_connection, "SELECT 1 -- it's ;\n, ';' AS s") == [[1, ";"]]
+    assert rows(client, ch_connection, "SELECT 2 # ; x\n") == [[2]]
+    assert refused(client, ch_connection, "SELECT 1 /* ; */; SELECT 2") == (
+        "multi-statement queries are not allowed"
+    )
 
 
 @pytest.mark.parametrize(
@@ -203,7 +299,8 @@ def test_values_are_json(client, ch_connection):
     sql = (
         "SELECT toDateTime64('2026-11-06 10:00:00.123', 3, 'UTC'), toDecimal64(1.5, 2),"
         " nan, map('k', [1, 2]), toUUID('00000000-0000-0000-0000-000000000001'),"
-        " toIPv4('10.0.0.1'), NULL"
+        " toIPv4('10.0.0.1'), NULL, toUInt64(18446744073709551615),"
+        " toInt64(-9007199254740993), toUInt64(9007199254740991), [cityHash64('x')]"
     )
     (row,) = rows(client, ch_connection, sql)
     assert row == [
@@ -214,4 +311,13 @@ def test_values_are_json(client, ch_connection):
         "00000000-0000-0000-0000-000000000001",
         "10.0.0.1",
         None,
+        "18446744073709551615",
+        "-9007199254740993",
+        9007199254740991,
+        [str(_ch_city_hash(ch_connection))],
     ]
+
+
+def _ch_city_hash(ch_connection):
+    with ClickhouseConnect(ch_connection.data) as c:
+        return _client_query(c.client, "SELECT cityHash64('x')").result_rows[0][0]
