@@ -52,3 +52,5 @@ SOFTWARE.
   `packages/app/src/components/DBSearchPageFilters.tsx` (MIT, above).
 - `backend/telescope/fetchers/chart.py` (`bind_query`) and `ui/src/utils/dashboards.js` (`bindFlyql`) follow the variable semantics of HyperDX
   `packages/common-utils/src/variables.ts` (an empty selection is a no-op) and `types.ts` `DashboardFilterSchema` (MIT, above); no code is copied.
+- `backend/telescope_otel/detect.py` (OTel schema detection) and the role list in `backend/telescope_otel/roles.py` are adapted from
+  HyperDX `packages/app/src/source.ts` (`inferTableSourceConfig`) and `packages/api/src/models/source.ts` (MIT, above).

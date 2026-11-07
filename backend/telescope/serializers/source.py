@@ -26,6 +26,8 @@ from telescope.utils import (
     convert_to_base_ch,
 )
 
+from telescope_otel.roles import validate_source_otel
+
 import re
 
 from telescope.fetchers.search import body_column
@@ -485,6 +487,7 @@ class ClickhouseSourceDataSerializer(serializers.Serializer):
     database = serializers.CharField(required=True)
     table = serializers.CharField(required=True)
     settings = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    otel = serializers.JSONField(required=False, allow_null=True)
 
 
 class StarrocksSourceDataSerializer(serializers.Serializer):
@@ -589,6 +592,7 @@ class NewClickhouseSourceSerializer(NewBaseSourceSerializer):
             errors[self.SEVERITY_RULES_NAME] = (
                 SerializeErrorMsg.SEVERITY_RULES_NOT_SUPPORTED
             )
+        errors.update(validate_source_otel(data))
 
         if errors:
             raise serializers.ValidationError(errors)
