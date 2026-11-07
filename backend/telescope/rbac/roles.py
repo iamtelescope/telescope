@@ -41,6 +41,7 @@ ROLES = {
             permissions.Global.GRANT_CONNECTION.value,
             permissions.Global.USE_CONNECTION.value,
             permissions.Global.DELETE_CONNECTION.value,
+            permissions.Global.MANAGE_ALERT_CHANNELS.value,
         ],
         GlobalRole.CONNECTION_MANAGER.value: [
             permissions.Global.CREATE_CONNECTION.value,

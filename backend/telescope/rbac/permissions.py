@@ -19,6 +19,8 @@ class Global(Enum):
 
     MANAGE_RBAC = "manage_rbac"
 
+    MANAGE_ALERT_CHANNELS = "manage_alert_channels"
+
 
 class Connection(Enum):
     USE = "use"
