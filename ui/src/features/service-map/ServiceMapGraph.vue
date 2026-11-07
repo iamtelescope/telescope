@@ -39,6 +39,20 @@
                     <span class="text-xs font-medium whitespace-nowrap">{{ data.service }}</span>
                 </div>
             </template>
+            <template #edge-service="edge">
+                <BaseEdge :id="edge.id" :path="edgePath(edge)" :marker-end="edge.markerEnd" :style="edge.style" />
+                <EdgeLabelRenderer>
+                    <div
+                        class="service-map-edge-label absolute cursor-pointer rounded-sm px-1 text-[11px] whitespace-nowrap"
+                        :style="labelPosition(edge)"
+                        :data-id="edge.id"
+                        data-testid="service-map-edge-label"
+                        @click="emit('select', { kind: 'edge', id: edge.id })"
+                    >
+                        {{ edge.label }}
+                    </div>
+                </EdgeLabelRenderer>
+            </template>
         </VueFlow>
         <div
             v-if="!compact"
@@ -60,16 +74,18 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
-import { Handle, MarkerType, Position, VueFlow } from '@vue-flow/core'
+import { BaseEdge, EdgeLabelRenderer, Handle, MarkerType, Position, VueFlow, getBezierPath } from '@vue-flow/core'
 import '@vue-flow/core/dist/style.css'
 
 import {
     ERROR_HIGH,
     METRICS,
+    bezierPoint,
     errorLevel,
     formatMs,
     formatPercent,
     formatRate,
+    labelSpots,
     layout,
     legendGradient,
     metricValue,
@@ -102,50 +118,67 @@ const max = computed(() =>
 const volume = (requests) =>
     props.rangeSeconds ? formatRate(requests / props.rangeSeconds) : `${requests} ${requests === 1 ? 'call' : 'calls'}`
 
-const flowNodes = computed(() => {
-    const positions = layout(
+const positions = computed(() =>
+    layout(
         nodes.value.map((n) => n.service),
         props.data.edges,
         props.compact ? 170 : 220,
         props.compact ? 90 : 150,
-    )
-    return nodes.value.map((n) => ({
+    ),
+)
+const sizes = computed(() =>
+    Object.fromEntries(
+        nodes.value.map((n) => [
+            n.service,
+            nodeSize(n.requests + n.outgoing, max.value.throughput) * (props.compact ? 0.7 : 1),
+        ]),
+    ),
+)
+const flowNodes = computed(() =>
+    nodes.value.map((n) => ({
         id: n.service,
         type: 'service',
-        position: positions[n.service],
+        position: positions.value[n.service],
         data: {
             service: n.service,
             level: n.requests ? errorLevel(n.error_rate) : 'none',
             colors: nodeColors(n, props.metric, max.value[props.metric]),
-            size: nodeSize(n.requests + n.outgoing, max.value.throughput) * (props.compact ? 0.7 : 1),
+            size: sizes.value[n.service],
             selected: props.selected?.kind === 'node' && props.selected.id === n.service,
         },
-    }))
-})
+    })),
+)
 
 const edgeId = (e) => `${e.client}->${e.server}`
+const edgeLabel = (e) =>
+    props.compact || !e.errors ? volume(e.requests) : `${volume(e.requests)} · ${formatPercent(e.error_rate)} err`
 const flowEdges = computed(() => {
     const top = Math.max(1, ...props.data.edges.map((e) => e.requests))
+    const labels = Object.fromEntries(props.data.edges.map((e) => [edgeId(e), edgeLabel(e)]))
+    const spots = labelSpots(props.data.edges, positions.value, sizes.value, labels)
     return props.data.edges.map((e) => {
         const selected = props.selected?.kind === 'edge' && props.selected.id === edgeId(e)
         const color =
             e.error_rate >= ERROR_HIGH ? 'hsl(0 72% 50%)' : selected ? 'var(--p-primary-color)' : 'var(--p-surface-400)'
         return {
             id: edgeId(e),
+            type: 'service',
             source: e.client,
             target: e.server,
-            label:
-                props.compact || !e.errors
-                    ? volume(e.requests)
-                    : `${volume(e.requests)} · ${formatPercent(e.error_rate)} err`,
+            label: labels[edgeId(e)],
+            data: { spot: spots[edgeId(e)] },
             markerEnd: { type: MarkerType.ArrowClosed, color },
             style: { stroke: color, strokeWidth: (selected ? 1.5 : 1) * (1 + 2.5 * Math.sqrt(e.requests / top)) },
-            labelStyle: { fill: 'var(--p-text-color)', fontSize: '11px' },
-            labelBgStyle: { fill: 'var(--p-content-background)' },
             class: 'cursor-pointer',
         }
     })
 })
+// Labels sit above every edge line, at the spot labelSpots picked along their own curve.
+const edgePath = (edge) => getBezierPath(edge)[0]
+const labelPosition = (edge) => {
+    const p = bezierPoint({ x: edge.sourceX, y: edge.sourceY }, { x: edge.targetX, y: edge.targetY }, edge.data.spot)
+    return { transform: `translate(-50%, -50%) translate(${p.x}px, ${p.y}px)` }
+}
 
 const legendLabel = computed(() => {
     if (props.metric === 'latency') return 'p95 latency'
@@ -175,7 +208,9 @@ watch(
     border: none;
     padding: 0;
 }
-.service-map :deep(.vue-flow__edge-textbg) {
-    rx: 3;
+.service-map-edge-label {
+    pointer-events: all;
+    color: var(--p-text-color);
+    background: var(--p-content-background);
 }
 </style>

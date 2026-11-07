@@ -85,6 +85,48 @@ export function layout(services, edges, dx = 220, dy = 110) {
     return positions
 }
 
+// A point on vue-flow's default bezier from a right handle to a left one, at u in 0..1.
+export function bezierPoint(s, t, u) {
+    const d = t.x - s.x
+    const off = d >= 0 ? 0.5 * d : 6.25 * Math.sqrt(-d)
+    const xs = [s.x, s.x + off, t.x - off, t.x]
+    const ys = [s.y, s.y, t.y, t.y]
+    const w = [(1 - u) ** 3, 3 * u * (1 - u) ** 2, 3 * u * u * (1 - u), u ** 3]
+    return { x: w.reduce((a, k, i) => a + k * xs[i], 0), y: w.reduce((a, k, i) => a + k * ys[i], 0) }
+}
+
+// Where along each edge its label sits: busiest edges first, each at the spot overlapping the
+// nodes (circle plus name, estimated) and the labels already placed the least.
+export function labelSpots(edges, positions, sizes, labels) {
+    const node = (s) => {
+        const p = positions[s]
+        return { x0: p.x, x1: p.x + Math.max(sizes[s], 7 * s.length), y0: p.y, y1: p.y + sizes[s] + 20 }
+    }
+    const area = (a, b) =>
+        Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) *
+        Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0))
+    const placed = Object.keys(positions).map(node)
+    const spots = {}
+    for (const e of [...edges].sort((a, b) => b.requests - a.requests)) {
+        const id = `${e.client}->${e.server}`
+        const [a, b] = [node(e.client), node(e.server)]
+        const s = { x: a.x1, y: (a.y0 + a.y1) / 2 }
+        const t = { x: b.x0, y: (b.y0 + b.y1) / 2 }
+        const half = { w: 3 * labels[id].length + 6, h: 9 }
+        let best = null
+        for (const u of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8]) {
+            const p = bezierPoint(s, t, u)
+            const box = { x0: p.x - half.w, x1: p.x + half.w, y0: p.y - half.h, y1: p.y + half.h }
+            const cost = placed.reduce((sum, o) => sum + area(box, o), 0)
+            if (!best || cost < best.cost) best = { u, cost, box }
+            if (!cost) break
+        }
+        placed.push(best.box)
+        spots[id] = best.u
+    }
+    return spots
+}
+
 export function formatRate(perSecond) {
     if (!Number.isFinite(perSecond) || perSecond <= 0) return '0 req/s'
     if (perSecond >= 1000) return `${(perSecond / 1000).toFixed(1)}k req/s`
