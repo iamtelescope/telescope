@@ -61,3 +61,7 @@ SOFTWARE.
 - `backend/telescope/fetchers/chart.py` (`parse_formula`, `eval_formula`: the arithmetic grammar, depth and length limits, a missing
   operand as 0 and a zero divisor as null) is adapted from HyperDX `packages/common-utils/src/core/formula.ts`, and the per-series
   `If` combinator in `backend/telescope/fetchers/clickhouse.py` follows `packages/common-utils/src/core/renderChartConfig.ts` (MIT, above).
+- `backend/telescope_otel/trace.py` (span tree build, the `Error`/`STATUS_CODE_ERROR` rule, the span cap with a truncated flag) and
+  `ui/src/features/traces/TraceWaterfall.vue` (service palette without red/green, collapse) are adapted from HyperDX
+  `packages/app/src/components/DBTraceWaterfallChart.tsx`, `traceWaterfallLimits.ts` and `packages/common-utils/src/core/spanPredicates.ts`;
+  `ui/src/features/traces/SpanDetail.vue` follows `SpanEventsSubpanel.tsx` and `SpanLinksSubpanel.tsx` (MIT, above).
