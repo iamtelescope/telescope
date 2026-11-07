@@ -73,7 +73,11 @@ function _validateQuery(schema, text) {
     // case as undefined behavior, so short-circuit to no diagnostics.
     if (!parser || !parser.root) return []
     const diags = diagnoseQuery(parser.root, schema)
-    return diags.filter((d) => d.severity === 'error').map((d) => ({ ...d, section: 'query', input: text }))
+    // A nested key under a known column (Map/JSON path) is resolved by the backend, as for columns above.
+    const nestedKey = (d) => d.code === CODE_UNKNOWN_COLUMN && d.range && text[d.range.start - 1] === '.'
+    return diags
+        .filter((d) => d.severity === 'error' && !nestedKey(d))
+        .map((d) => ({ ...d, section: 'query', input: text }))
 }
 
 /**

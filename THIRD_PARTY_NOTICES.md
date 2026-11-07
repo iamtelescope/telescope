@@ -32,3 +32,7 @@ SOFTWARE.
 
 - `dev/otel/schema/compat_logs.sql`, `compat_traces.sql`, `compat_metrics.sql` and `k8s_logs.sql` are adapted from HyperDX
   `docker/otel-collector/schema/seed/00002_otel_logs_compat.sql`, `00005_otel_traces_compat.sql` and `00003_otel_metrics.sql` (MIT, above).
+- `backend/telescope/fetchers/facets.py` (sampled value reads capped by `max_rows_to_read`, the 3e6 default) is adapted from
+  HyperDX `packages/common-utils/src/core/metadata.ts`, and `ui/src/components/explorer/FacetSidebar.vue` with
+  `ui/src/components/explorer/facets/FacetGroup.vue` (include/exclude, "show more") from
+  `packages/app/src/components/DBSearchPageFilters.tsx` (MIT, above).
