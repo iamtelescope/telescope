@@ -114,3 +114,19 @@ def test_arguments_are_validated(root_user):
     assert error and text.startswith("invalid arguments at limit")
     error, text = call_tool(client, "list_sources", {"extra": 1})
     assert error and "additional" in text.lower()
+
+
+def test_batches_are_capped_and_each_message_is_rate_limited(root_user, monkeypatch):
+    from telescope_api2 import throttle
+    from telescope_mcp import views
+
+    client = token_client(root_user)
+    ping = [{"jsonrpc": "2.0", "id": i, "method": "ping"} for i in range(21)]
+    too_big = client.post("/api/mcp", ping, format="json")
+    assert too_big.status_code == 400
+    assert client.post("/api/mcp", [], format="json").status_code == 400
+    assert len(client.post("/api/mcp", ping[:20], format="json").json()) == 20
+    assert sum(throttle._hits.values()) == 22  # two rejected requests + 20 messages
+    monkeypatch.setattr(throttle, "RATE_LIMIT_PER_MINUTE", 25)
+    monkeypatch.setattr(views, "MAX_BATCH", 30)
+    assert client.post("/api/mcp", ping[:10], format="json").status_code == 429

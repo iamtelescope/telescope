@@ -24,6 +24,10 @@ INSTRUCTIONS = (
 )
 
 
+# A batch (2025-03-26 only) is capped, and each message counts against the rate limit.
+MAX_BATCH = 20
+
+
 class McpTokenAuth(TokenAuth):
     """API v2 token auth that also takes `Authorization: Bearer <token>`, which MCP clients send."""
 
@@ -114,6 +118,14 @@ class McpView(APIView):
             error = rpc_error(None, types.PARSE_ERROR, "Parse error")
             return JsonResponse(error, status=400)
         messages = body if isinstance(body, list) else [body]
+        if not 0 < len(messages) <= MAX_BATCH:
+            error = rpc_error(
+                None, types.INVALID_REQUEST, f"A batch takes 1 to {MAX_BATCH} messages"
+            )
+            return JsonResponse(error, status=400)
+        throttle = TokenRateThrottle()
+        if not all(throttle.allow_request(request, self) for _ in messages[1:]):
+            self.throttled(request, throttle.wait())
         replies = [r for r in (handle(request.user, m) for m in messages) if r]
         if not replies:
             return HttpResponse(status=202)
