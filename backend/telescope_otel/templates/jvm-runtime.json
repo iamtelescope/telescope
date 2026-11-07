@@ -1,0 +1,435 @@
+{
+  "slug": "jvm-runtime",
+  "name": "JVM Runtime Metrics",
+  "description": "Heap memory, CPU utilization, threads, and GC metrics for JVM applications with the OTel Java Agent v2+ wth JVM v17+",
+  "tags": [
+    "OTel",
+    "Metrics",
+    "Runtime"
+  ],
+  "roles": {
+    "metrics": {
+      "label": "Metrics",
+      "signal": "metrics"
+    }
+  },
+  "dashboard": {
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "query": "",
+    "refresh": "off",
+    "variables": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "values",
+        "source": "{{metrics}}",
+        "column": "{{metrics.service}}",
+        "multi": true
+      }
+    ],
+    "sections": [],
+    "tiles": [
+      {
+        "id": "dd919b",
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "Heap Used",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.memory.used",
+                "type": "sum",
+                "agg": "avg",
+                "attrs_filter": "{{metrics.attrs}}.'jvm.memory.type' = 'heap'"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "c847ba",
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "CPU Utilization",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.cpu.recent_utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "v",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "v * 100",
+              "alias": "value"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "777a97",
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "Thread Count",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.thread.count",
+                "type": "sum",
+                "agg": "avg"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "number",
+            "decimals": 0
+          }
+        }
+      },
+      {
+        "id": "1b82ef",
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "CPU Count",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.cpu.count",
+                "type": "sum",
+                "agg": "avg"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "number",
+            "decimals": 0
+          }
+        }
+      },
+      {
+        "id": "6363a5",
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 7,
+        "title": "Heap: Used vs Committed vs Limit",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.memory.used",
+                "type": "sum",
+                "agg": "avg",
+                "attrs_filter": "{{metrics.attrs}}.'jvm.memory.type' = 'heap'"
+              },
+              "alias": "used"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.memory.committed",
+                "type": "sum",
+                "agg": "avg",
+                "attrs_filter": "{{metrics.attrs}}.'jvm.memory.type' = 'heap'"
+              },
+              "alias": "committed"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.memory.limit",
+                "type": "sum",
+                "agg": "avg",
+                "attrs_filter": "{{metrics.attrs}}.'jvm.memory.type' = 'heap'"
+              },
+              "alias": "limit"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "5abddd",
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 7,
+        "title": "Retained Heap After GC (by pool)",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.memory.used_after_last_gc",
+                "type": "sum",
+                "agg": "avg",
+                "attrs_filter": "{{metrics.attrs}}.'jvm.memory.type' = 'heap'"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "{{metrics.attrs}}.'jvm.memory.pool.name'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "c4abeb",
+        "x": 0,
+        "y": 11,
+        "w": 12,
+        "h": 7,
+        "title": "Heap Memory Used by Pool",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.memory.used",
+                "type": "sum",
+                "agg": "avg",
+                "attrs_filter": "{{metrics.attrs}}.'jvm.memory.type' = 'heap'"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "{{metrics.attrs}}.'jvm.memory.pool.name'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "26aa01",
+        "x": 12,
+        "y": 11,
+        "w": 12,
+        "h": 7,
+        "title": "Non-Heap Memory (metaspace)",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.memory.used",
+                "type": "sum",
+                "agg": "avg",
+                "attrs_filter": "{{metrics.attrs}}.'jvm.memory.type' = 'non_heap'"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "{{metrics.attrs}}.'jvm.memory.pool.name'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "ea6e2d",
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 7,
+        "title": "CPU Utilization",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.cpu.recent_utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "v",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "v * 100",
+              "alias": "value"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "bf01ef",
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 7,
+        "title": "CPU Cores Used",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.cpu.time",
+                "type": "sum",
+                "agg": "rate"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10
+        }
+      },
+      {
+        "id": "f90a9e",
+        "x": 0,
+        "y": 25,
+        "w": 12,
+        "h": 7,
+        "title": "Threads by State",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.thread.count",
+                "type": "sum",
+                "agg": "avg"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "{{metrics.attrs}}.'jvm.thread.state'",
+          "granularity": "auto",
+          "limit": 10
+        }
+      },
+      {
+        "id": "17f41d",
+        "x": 12,
+        "y": 25,
+        "w": 12,
+        "h": 7,
+        "title": "Loaded Classes",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.class.count",
+                "type": "sum",
+                "agg": "avg"
+              },
+              "alias": "current"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "jvm.class.loaded",
+                "type": "sum",
+                "agg": "increase"
+              },
+              "alias": "loaded/s"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10
+        }
+      }
+    ]
+  }
+}

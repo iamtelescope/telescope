@@ -1,0 +1,475 @@
+{
+  "slug": "clickhouse",
+  "name": "ClickHouse system",
+  "description": "Query latency, query counts by table, slowest queries, failures, server CPU and memory, and active parts per partition from ClickHouse system tables.",
+  "tags": [
+    "ClickHouse"
+  ],
+  "roles": {
+    "query_log": {
+      "label": "Query log",
+      "table": "system.query_log",
+      "optional": true,
+      "hint": "A source on system.query_log with time column event_time"
+    },
+    "metric_log": {
+      "label": "Metric log",
+      "table": "system.metric_log",
+      "optional": true,
+      "hint": "A source on system.metric_log with time column event_time"
+    },
+    "parts": {
+      "label": "Parts",
+      "table": "system.parts",
+      "optional": true,
+      "hint": "A source on system.parts with time column modification_time"
+    }
+  },
+  "dashboard": {
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "query": "",
+    "refresh": "1m",
+    "variables": [],
+    "sections": [
+      {
+        "id": "queries",
+        "title": "Queries"
+      },
+      {
+        "id": "server",
+        "title": "Server"
+      },
+      {
+        "id": "parts",
+        "title": "Parts"
+      }
+    ],
+    "tiles": [
+      {
+        "id": "queries",
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "Finished queries",
+        "chart": {
+          "source": "{{query_log}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "count"
+            }
+          ],
+          "query": "type = 'QueryFinish'",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "queries"
+      },
+      {
+        "id": "failed",
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "Failed queries",
+        "chart": {
+          "source": "{{query_log}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "count"
+            }
+          ],
+          "query": "type in ['ExceptionBeforeStart', 'ExceptionWhileProcessing']",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "queries"
+      },
+      {
+        "id": "p95-number",
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "p95 query duration",
+        "chart": {
+          "source": "{{query_log}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "quantile",
+              "level": 0.95,
+              "column": "query_duration_ms"
+            }
+          ],
+          "query": "type = 'QueryFinish'",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "duration_ms",
+            "decimals": 1
+          }
+        },
+        "section": "queries"
+      },
+      {
+        "id": "read-rows",
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "Rows read",
+        "chart": {
+          "source": "{{query_log}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "sum",
+              "column": "read_rows"
+            }
+          ],
+          "query": "type = 'QueryFinish'",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "number",
+            "decimals": 0,
+            "compact": true
+          }
+        },
+        "section": "queries"
+      },
+      {
+        "id": "latency",
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8,
+        "title": "Query latency",
+        "chart": {
+          "source": "{{query_log}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "quantile",
+              "level": 0.99,
+              "column": "query_duration_ms",
+              "alias": "p99"
+            },
+            {
+              "agg": "quantile",
+              "level": 0.95,
+              "column": "query_duration_ms",
+              "alias": "p95"
+            },
+            {
+              "agg": "quantile",
+              "level": 0.5,
+              "column": "query_duration_ms",
+              "alias": "p50"
+            }
+          ],
+          "query": "type = 'QueryFinish'",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "duration_ms",
+            "decimals": 1
+          }
+        },
+        "section": "queries"
+      },
+      {
+        "id": "by-kind",
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8,
+        "title": "Queries by kind",
+        "chart": {
+          "source": "{{query_log}}",
+          "display": "stacked_bar",
+          "series": [
+            {
+              "agg": "count",
+              "alias": "queries"
+            }
+          ],
+          "query": "type = 'QueryFinish'",
+          "group_by": "query_kind",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "queries"
+      },
+      {
+        "id": "by-table",
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 8,
+        "title": "Query count by table",
+        "chart": {
+          "source": "{{query_log}}",
+          "display": "bar",
+          "series": [
+            {
+              "agg": "count",
+              "alias": "queries"
+            }
+          ],
+          "query": "type = 'QueryFinish'",
+          "group_by": "tables",
+          "granularity": "auto",
+          "limit": 20
+        },
+        "section": "queries"
+      },
+      {
+        "id": "failures",
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 8,
+        "title": "Failures by exception code",
+        "chart": {
+          "source": "{{query_log}}",
+          "display": "stacked_bar",
+          "series": [
+            {
+              "agg": "count",
+              "alias": "failures"
+            }
+          ],
+          "query": "type in ['ExceptionBeforeStart', 'ExceptionWhileProcessing']",
+          "group_by": "exception_code",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "queries"
+      },
+      {
+        "id": "slowest",
+        "x": 0,
+        "y": 20,
+        "w": 24,
+        "h": 10,
+        "title": "Slowest query patterns",
+        "chart": {
+          "source": "{{query_log}}",
+          "display": "table",
+          "series": [
+            {
+              "agg": "quantile",
+              "level": 0.95,
+              "column": "query_duration_ms",
+              "alias": "p95 (ms)"
+            },
+            {
+              "agg": "count",
+              "alias": "queries"
+            },
+            {
+              "agg": "sum",
+              "column": "query_duration_ms",
+              "alias": "total (ms)"
+            },
+            {
+              "agg": "max",
+              "column": "memory_usage",
+              "alias": "max memory (bytes)"
+            }
+          ],
+          "query": "type = 'QueryFinish'",
+          "group_by": "normalized_query_hash, query_kind, tables",
+          "granularity": "auto",
+          "limit": 20
+        },
+        "section": "queries",
+        "description": "Queries grouped by normalized_query_hash; filter the query log by a hash to see its text."
+      },
+      {
+        "id": "cpu",
+        "x": 0,
+        "y": 30,
+        "w": 12,
+        "h": 8,
+        "title": "CPU usage (cores)",
+        "chart": {
+          "source": "{{metric_log}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "avg",
+              "column": "ProfileEvent_OSCPUVirtualTimeMicroseconds",
+              "hidden": true,
+              "alias": "cpu"
+            },
+            {
+              "agg": "formula",
+              "formula": "cpu / 1000000",
+              "alias": "cores"
+            }
+          ],
+          "query": "",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "server"
+      },
+      {
+        "id": "memory",
+        "x": 12,
+        "y": 30,
+        "w": 12,
+        "h": 8,
+        "title": "Memory tracked",
+        "chart": {
+          "source": "{{metric_log}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "avg",
+              "column": "CurrentMetric_MemoryTracking",
+              "alias": "memory"
+            }
+          ],
+          "query": "",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        },
+        "section": "server"
+      },
+      {
+        "id": "disk",
+        "x": 0,
+        "y": 38,
+        "w": 12,
+        "h": 8,
+        "title": "Disk reads and writes per second",
+        "chart": {
+          "source": "{{metric_log}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "avg",
+              "column": "ProfileEvent_OSReadChars",
+              "alias": "read"
+            },
+            {
+              "agg": "avg",
+              "column": "ProfileEvent_OSWriteChars",
+              "alias": "written"
+            }
+          ],
+          "query": "",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        },
+        "section": "server"
+      },
+      {
+        "id": "running",
+        "x": 12,
+        "y": 38,
+        "w": 12,
+        "h": 8,
+        "title": "Running queries and merges",
+        "chart": {
+          "source": "{{metric_log}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "avg",
+              "column": "CurrentMetric_Query",
+              "alias": "queries"
+            },
+            {
+              "agg": "avg",
+              "column": "CurrentMetric_Merge",
+              "alias": "merges"
+            }
+          ],
+          "query": "",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "server"
+      },
+      {
+        "id": "parts-per-partition",
+        "x": 0,
+        "y": 46,
+        "w": 24,
+        "h": 10,
+        "title": "Max active parts per partition",
+        "chart": {
+          "source": "{{parts}}",
+          "display": "table",
+          "series": [
+            {
+              "agg": "count",
+              "alias": "active parts"
+            },
+            {
+              "agg": "sum",
+              "column": "rows",
+              "alias": "rows"
+            }
+          ],
+          "query": "active",
+          "group_by": "database, table, partition",
+          "granularity": "auto",
+          "limit": 20
+        },
+        "section": "parts",
+        "description": "Active parts last modified within the time range."
+      },
+      {
+        "id": "parts-by-table",
+        "x": 0,
+        "y": 56,
+        "w": 24,
+        "h": 8,
+        "title": "Active parts by table",
+        "chart": {
+          "source": "{{parts}}",
+          "display": "bar",
+          "series": [
+            {
+              "agg": "count",
+              "alias": "active parts"
+            }
+          ],
+          "query": "active",
+          "group_by": "database, table",
+          "granularity": "auto",
+          "limit": 20
+        },
+        "section": "parts"
+      }
+    ]
+  }
+}

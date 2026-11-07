@@ -114,6 +114,7 @@ urlpatterns = [
     path("", include("telescope_otel.urls_trace")),
     path("", include("telescope_otel.urls_map")),
     path("", include("telescope_otel.urls_release")),
+    path("", include("telescope_otel.urls_templates")),
     path("", include("telescope_api2.urls")),
     path("liveness", index.liveness, name="liveness"),
     path("readiness", index.readiness, name="readiness"),

@@ -1,0 +1,390 @@
+{
+  "slug": "nodejs-runtime",
+  "name": "Node.js Runtime Metrics",
+  "description": "Event loop delay, heap usage, CPU utilization, and V8 memory for Node.js applications with OTel Runtime and Host Metrics instrumentations",
+  "tags": [
+    "OTel",
+    "Metrics",
+    "Runtime"
+  ],
+  "roles": {
+    "metrics": {
+      "label": "Metrics",
+      "signal": "metrics"
+    }
+  },
+  "dashboard": {
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "query": "",
+    "refresh": "off",
+    "variables": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "values",
+        "source": "{{metrics}}",
+        "column": "{{metrics.service}}",
+        "multi": true
+      }
+    ],
+    "sections": [],
+    "tiles": [
+      {
+        "id": "55ef66",
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "EL Delay p99 (ms)",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "nodejs.eventloop.delay.p99",
+                "type": "gauge",
+                "agg": "avg"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "number",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "31e132",
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "Event Loop Util",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "nodejs.eventloop.utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "v",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "v * 100",
+              "alias": "value"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "52f4a5",
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "Heap Used",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "v8js.memory.heap.used",
+                "type": "gauge",
+                "agg": "avg"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "2029f0",
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "CPU Utilization",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "process.cpu.utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "v",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "v * 100",
+              "alias": "value"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "f9dae7",
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 7,
+        "title": "Event Loop Delay Percentiles (ms)",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "nodejs.eventloop.delay.p50",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "p50"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "nodejs.eventloop.delay.p90",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "p90"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "nodejs.eventloop.delay.p99",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "p99"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "number",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "93c11e",
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 7,
+        "title": "Event Loop Utilization",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "nodejs.eventloop.utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "v",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "v * 100",
+              "alias": "value"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "7155d4",
+        "x": 0,
+        "y": 11,
+        "w": 12,
+        "h": 7,
+        "title": "V8 Heap: Used vs Limit",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "v8js.memory.heap.used",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "used"
+            },
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "v8js.memory.heap.limit",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "limit"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "c2ea50",
+        "x": 12,
+        "y": 11,
+        "w": 12,
+        "h": 7,
+        "title": "V8 Heap Spaces (physical size)",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "v8js.memory.heap.space.physical_size",
+                "type": "gauge",
+                "agg": "avg"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "{{metrics.attrs}}.'v8js.heap.space.name'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "bytes",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "ea6e2d",
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 7,
+        "title": "CPU Utilization",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "process.cpu.utilization",
+                "type": "gauge",
+                "agg": "avg"
+              },
+              "alias": "v",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "v * 100",
+              "alias": "value"
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 1
+          }
+        }
+      },
+      {
+        "id": "a73b57",
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 7,
+        "title": "Event Loop Busy Time",
+        "chart": {
+          "source": "{{metrics}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "metric",
+              "metric": {
+                "name": "nodejs.eventloop.time",
+                "type": "sum",
+                "agg": "increase"
+              }
+            }
+          ],
+          "query": "{{metrics.service}} = $service",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10
+        }
+      }
+    ]
+  }
+}

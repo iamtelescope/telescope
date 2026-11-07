@@ -1,0 +1,518 @@
+{
+  "slug": "services",
+  "name": "Services",
+  "description": "Request rate, errors and latency per service, the most time-consuming endpoints, database queries and errors, from OpenTelemetry traces.",
+  "tags": [
+    "OTel",
+    "Traces",
+    "APM"
+  ],
+  "roles": {
+    "traces": {
+      "label": "Traces",
+      "signal": "traces"
+    },
+    "logs": {
+      "label": "Logs",
+      "signal": "logs",
+      "optional": true
+    }
+  },
+  "dashboard": {
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "query": "",
+    "refresh": "off",
+    "variables": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "values",
+        "source": "{{traces}}",
+        "column": "{{traces.service}}",
+        "multi": true
+      }
+    ],
+    "sections": [
+      {
+        "id": "http",
+        "title": "HTTP"
+      },
+      {
+        "id": "database",
+        "title": "Database"
+      },
+      {
+        "id": "errors",
+        "title": "Errors"
+      }
+    ],
+    "tiles": [
+      {
+        "id": "requests",
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "Requests",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "count"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.span_kind}} in ['Server', 'SPAN_KIND_SERVER']",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "http"
+      },
+      {
+        "id": "error-rate",
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "Error rate",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "count",
+              "where": "{{traces.status_code}} in ['Error', 'STATUS_CODE_ERROR']",
+              "alias": "errors",
+              "hidden": true
+            },
+            {
+              "agg": "count",
+              "alias": "requests",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "errors / requests * 100",
+              "alias": "error rate"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.span_kind}} in ['Server', 'SPAN_KIND_SERVER']",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 2
+          }
+        },
+        "section": "http"
+      },
+      {
+        "id": "p95",
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "p95 latency",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "quantile",
+              "level": 0.95,
+              "column": "{{traces.duration}}"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.span_kind}} in ['Server', 'SPAN_KIND_SERVER']",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "{{traces.duration_unit}}",
+            "decimals": 1
+          }
+        },
+        "section": "http"
+      },
+      {
+        "id": "p50",
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "title": "p50 latency",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "number",
+          "series": [
+            {
+              "agg": "quantile",
+              "level": 0.5,
+              "column": "{{traces.duration}}"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.span_kind}} in ['Server', 'SPAN_KIND_SERVER']",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "{{traces.duration_unit}}",
+            "decimals": 1
+          }
+        },
+        "section": "http"
+      },
+      {
+        "id": "rate-by-service",
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8,
+        "title": "Requests by service",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "count",
+              "alias": "requests"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.span_kind}} in ['Server', 'SPAN_KIND_SERVER']",
+          "group_by": "{{traces.service}}",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "http"
+      },
+      {
+        "id": "errors-by-service",
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8,
+        "title": "Error rate by service",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "count",
+              "where": "{{traces.status_code}} in ['Error', 'STATUS_CODE_ERROR']",
+              "alias": "errors",
+              "hidden": true
+            },
+            {
+              "agg": "count",
+              "alias": "requests",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "errors / requests * 100",
+              "alias": "error rate"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.span_kind}} in ['Server', 'SPAN_KIND_SERVER']",
+          "group_by": "{{traces.service}}",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "percent",
+            "decimals": 2
+          }
+        },
+        "section": "http"
+      },
+      {
+        "id": "p95-by-service",
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 8,
+        "title": "p95 latency by service",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "quantile",
+              "level": 0.95,
+              "column": "{{traces.duration}}",
+              "alias": "p95"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.span_kind}} in ['Server', 'SPAN_KIND_SERVER']",
+          "group_by": "{{traces.service}}",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "{{traces.duration_unit}}",
+            "decimals": 1
+          }
+        },
+        "section": "http"
+      },
+      {
+        "id": "latency",
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 8,
+        "title": "Request latency",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "line",
+          "series": [
+            {
+              "agg": "quantile",
+              "level": 0.99,
+              "column": "{{traces.duration}}",
+              "alias": "p99"
+            },
+            {
+              "agg": "quantile",
+              "level": 0.95,
+              "column": "{{traces.duration}}",
+              "alias": "p95"
+            },
+            {
+              "agg": "quantile",
+              "level": 0.5,
+              "column": "{{traces.duration}}",
+              "alias": "p50"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.span_kind}} in ['Server', 'SPAN_KIND_SERVER']",
+          "group_by": "",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "{{traces.duration_unit}}",
+            "decimals": 1
+          }
+        },
+        "section": "http"
+      },
+      {
+        "id": "top-endpoints",
+        "x": 0,
+        "y": 20,
+        "w": 24,
+        "h": 10,
+        "title": "Top 20 endpoints by time consumed",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "table",
+          "series": [
+            {
+              "agg": "sum",
+              "column": "{{traces.duration}}",
+              "alias": "total",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "total / {{traces.ms_divisor}}",
+              "alias": "total time (ms)"
+            },
+            {
+              "agg": "count",
+              "alias": "requests"
+            },
+            {
+              "agg": "quantile",
+              "level": 0.95,
+              "column": "{{traces.duration}}",
+              "alias": "p95",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "p95 / {{traces.ms_divisor}}",
+              "alias": "p95 (ms)"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.span_kind}} in ['Server', 'SPAN_KIND_SERVER']",
+          "group_by": "{{traces.service}}, {{traces.span_name}}",
+          "granularity": "auto",
+          "limit": 20
+        },
+        "section": "http",
+        "description": "Server spans ranked by their summed duration."
+      },
+      {
+        "id": "db-time",
+        "x": 0,
+        "y": 30,
+        "w": 12,
+        "h": 8,
+        "title": "Total time per query",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "stacked_bar",
+          "series": [
+            {
+              "agg": "sum",
+              "column": "{{traces.duration}}",
+              "alias": "time"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.span_kind}} in ['Client', 'SPAN_KIND_CLIENT'] and {{traces.attrs}}.'db.statement'",
+          "group_by": "{{traces.attrs}}.'db.statement'",
+          "granularity": "auto",
+          "limit": 10,
+          "number_format": {
+            "unit": "{{traces.duration_unit}}",
+            "decimals": 1
+          }
+        },
+        "section": "database"
+      },
+      {
+        "id": "db-throughput",
+        "x": 12,
+        "y": 30,
+        "w": 12,
+        "h": 8,
+        "title": "Throughput per query",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "stacked_bar",
+          "series": [
+            {
+              "agg": "count",
+              "alias": "queries"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.span_kind}} in ['Client', 'SPAN_KIND_CLIENT'] and {{traces.attrs}}.'db.statement'",
+          "group_by": "{{traces.attrs}}.'db.statement'",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "database"
+      },
+      {
+        "id": "db-top",
+        "x": 0,
+        "y": 38,
+        "w": 24,
+        "h": 10,
+        "title": "Top 20 queries by time consumed",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "table",
+          "series": [
+            {
+              "agg": "sum",
+              "column": "{{traces.duration}}",
+              "alias": "total",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "total / {{traces.ms_divisor}}",
+              "alias": "total time (ms)"
+            },
+            {
+              "agg": "count",
+              "alias": "queries"
+            },
+            {
+              "agg": "quantile",
+              "level": 0.95,
+              "column": "{{traces.duration}}",
+              "alias": "p95",
+              "hidden": true
+            },
+            {
+              "agg": "formula",
+              "formula": "p95 / {{traces.ms_divisor}}",
+              "alias": "p95 (ms)"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.span_kind}} in ['Client', 'SPAN_KIND_CLIENT'] and {{traces.attrs}}.'db.statement'",
+          "group_by": "{{traces.service}}, {{traces.attrs}}.'db.statement'",
+          "granularity": "auto",
+          "limit": 20
+        },
+        "section": "database",
+        "description": "Client spans that carry db.statement, grouped by the calling service."
+      },
+      {
+        "id": "errors-per-service",
+        "x": 0,
+        "y": 48,
+        "w": 12,
+        "h": 8,
+        "title": "Error spans per service",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "stacked_bar",
+          "series": [
+            {
+              "agg": "count",
+              "alias": "errors"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.status_code}} in ['Error', 'STATUS_CODE_ERROR']",
+          "group_by": "{{traces.service}}",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "errors"
+      },
+      {
+        "id": "error-logs",
+        "x": 12,
+        "y": 48,
+        "w": 12,
+        "h": 8,
+        "title": "Error logs per service",
+        "chart": {
+          "source": "{{logs}}",
+          "display": "stacked_bar",
+          "series": [
+            {
+              "agg": "count",
+              "alias": "errors"
+            }
+          ],
+          "query": "{{logs.service}} = $service and {{logs.severity_text}} in ['ERROR', 'Error', 'error', 'FATAL', 'Fatal', 'fatal']",
+          "group_by": "{{logs.service}}",
+          "granularity": "auto",
+          "limit": 10
+        },
+        "section": "errors"
+      },
+      {
+        "id": "top-errors",
+        "x": 0,
+        "y": 56,
+        "w": 24,
+        "h": 8,
+        "title": "Top errored operations",
+        "chart": {
+          "source": "{{traces}}",
+          "display": "table",
+          "series": [
+            {
+              "agg": "count",
+              "alias": "errors"
+            }
+          ],
+          "query": "{{traces.service}} = $service and {{traces.status_code}} in ['Error', 'STATUS_CODE_ERROR']",
+          "group_by": "{{traces.service}}, {{traces.span_name}}, {{traces.status_message}}",
+          "granularity": "auto",
+          "limit": 20
+        },
+        "section": "errors"
+      }
+    ]
+  }
+}

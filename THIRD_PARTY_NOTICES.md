@@ -93,6 +93,10 @@ SOFTWARE.
   span-id stable sampling) is adapted from HyperDX `packages/common-utils/src/core/eventDeltas.ts` and
   `packages/app/src/components/DBDeltaChart.tsx`; `ui/src/components/dashboards/charts/HeatmapChart.vue` and `heatmap.js` (log
   buckets, drag-select outlier rectangle) follow `packages/app/src/components/DBHeatmapChart/*` (MIT, above).
+- `backend/telescope_otel/templates/{jvm,go,nodejs,python,dotnet}-runtime.json` are ported from HyperDX
+  `packages/app/src/dashboardTemplates/*-runtime*.json`; `services.json`, `kubernetes.json` and `clickhouse.json` follow the
+  queries of `ServicesDashboardPage/{HttpTab,DatabaseTab,ErrorsTab}.tsx`, `KubernetesDashboardPage.tsx` and `ClickhousePage.tsx`;
+  `backend/telescope_otel/provision.py` follows `packages/api/src/tasks/provisionDashboards/index.ts` (MIT, above).
 
 ## Drain3
 
