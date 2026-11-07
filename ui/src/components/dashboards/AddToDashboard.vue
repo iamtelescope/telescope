@@ -108,7 +108,7 @@ const buildTile = (tiles) => ({
         series: [{ agg: 'count' }],
         query: store.query || '',
         raw_query: store.rawQuery || '',
-        context_columns: structuredClone(store.contextColumns || {}),
+        context_columns: JSON.parse(JSON.stringify(store.contextColumns || {})),
         group_by: store.graphGroupBy || '',
         granularity: 'auto',
         limit: 10,
