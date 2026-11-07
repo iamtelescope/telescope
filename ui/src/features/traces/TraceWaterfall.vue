@@ -189,7 +189,6 @@
                     <span
                         class="absolute top-1.5 text-xs font-mono whitespace-nowrap text-neutral-600 dark:text-neutral-400"
                         :style="labelStyle(span)"
-                        data-testid="span-duration"
                         >{{ formatDuration(span.duration_ns) }}</span
                     >
                 </div>
