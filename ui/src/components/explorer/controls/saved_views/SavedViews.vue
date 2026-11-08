@@ -10,7 +10,7 @@
                 />
             </template>
         </Drawer>
-        <Dialog class="w-[600px] h-[600px]" v-model:visible="savedViewFormVisible" :modal="true" draggable>
+        <Dialog class="w-[600px]" v-model:visible="savedViewFormVisible" :modal="true" draggable>
             <template #container="{ closeCallback }">
                 <SavedViewForm
                     :source="source"
@@ -51,11 +51,22 @@
                             : currentView?.name || 'Default view'
                     }}</span
                 >
+                <span
+                    v-if="modified"
+                    class="ml-2 text-xs italic text-amber-700 dark:text-amber-300"
+                    v-tooltip.bottom="'The search differs from the saved view'"
+                    data-testid="saved-view-modified"
+                    >modified</span
+                >
             </div>
             <Button
                 icon="pi pi-ellipsis-v"
                 size="small"
                 text
+                aria-label="View actions"
+                aria-haspopup="true"
+                v-tooltip.bottom="'Save, rename or reset the view'"
+                data-testid="saved-view-actions"
                 @click="toggleSavedViewsMenu"
                 :loading="deleteLoading || saveLoading"
             />
@@ -116,10 +127,20 @@ const toggleSavedViewsMenu = (event) => {
     savedViewsMenu.value.toggle(event)
 }
 
+// Only the settings the view stores count: a view saved without a key does not pin it.
+const modified = computed(() => {
+    const data = currentView.value?.data
+    if (!data) return false
+    const params = sourceControlsStore.viewParams
+    return Object.entries(data).some(
+        ([key, value]) => key in params && JSON.stringify(params[key]) !== JSON.stringify(value),
+    )
+})
+
 const savedViewMenuItems = computed(() => {
     let items = [
         {
-            label: 'Save new view as...',
+            label: 'Save as new view…',
             icon: 'pi pi-plus',
             command: () => {
                 viewToUpdate.value = null
@@ -130,14 +151,14 @@ const savedViewMenuItems = computed(() => {
     if (currentView.value !== null) {
         if (currentView.value.isEditable()) {
             items.unshift({
-                label: 'Save',
+                label: 'Save changes',
                 icon: 'pi pi-save',
                 command: () => {
                     saveSavedView(currentView.value)
                 },
             })
             items.push({
-                label: 'Edit View',
+                label: 'Rename or edit…',
                 icon: 'pi pi-pencil',
                 command: () => {
                     viewToUpdate.value = currentView.value
@@ -156,7 +177,7 @@ const savedViewMenuItems = computed(() => {
         })
         if (currentView.value.isEditable()) {
             items.push({
-                label: 'Delete',
+                label: 'Delete view',
                 icon: 'pi pi-trash',
                 command: async () => {
                     viewToUpdate.value = currentView.value
@@ -180,6 +201,7 @@ const saveSavedView = async (view) => {
     let response = await sourceSrv.updateSavedView(props.source.slug, view.slug, data)
     saveLoading.value = false
     response.sendToast(toast)
+    if (response.result && response.validation?.result !== false) currentView.value.data = data.data
 }
 
 watch(props, () => {

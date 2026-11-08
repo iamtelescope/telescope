@@ -183,3 +183,21 @@ class TestParseColumns:
             parse_columns(source, "unknown.nested.field")
 
         assert "unknown" in str(exc_info.value)
+
+    def test_display_name_defaults_to_the_typed_name(self):
+        source = _make_source(
+            {
+                "ServiceName": _make_column("ServiceName"),
+                "status_code": _make_column("status_code", "uint16"),
+                "attributes": _make_column("attributes", "map"),
+            }
+        )
+
+        result = parse_columns(
+            source, "ServiceName, status_code, attributes.http.route"
+        )
+        assert [c.display_name for c in result] == [
+            "ServiceName",
+            "status_code",
+            "attributes.http.route",
+        ]

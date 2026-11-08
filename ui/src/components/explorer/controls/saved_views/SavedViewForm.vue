@@ -1,14 +1,16 @@
 <template>
     <div class="flex flex-row">
         <div class="text-3xl font-bold pl-6 pt-6 pb-0 text-nowrap">
-            <span v-if="!view">Create new view</span><span v-else>Update view</span>
+            <span v-if="!view">Save as new view</span><span v-else>Rename or edit view</span>
         </div>
         <div class="flex flex-row w-full justify-end">
-            <i class="pi pi-times hover:cursor-pointer p-4" @click="emitClose" />
+            <button class="p-4" aria-label="Close" @click="emitClose">
+                <i class="pi pi-times" />
+            </button>
         </div>
     </div>
-    <div class="flex flex-col flex-grow p-6 h-full overflow-auto">
-        <div class="flex flex-col h-full">
+    <div class="flex flex-col flex-grow p-6 overflow-auto">
+        <div class="flex flex-col">
             <div class="flex flex-col w-full">
                 <div class="flex flex-col gap-2">
                     <label for="scope" class="font-medium">Scope</label>
@@ -39,7 +41,15 @@
             <div class="flex flex-col w-full mt-4">
                 <div class="flex flex-col gap-2">
                     <FormLabel label="Name" :invalid="validationErrors.name !== ''" />
-                    <InputText id="name" v-model="name" :invalid="validationErrors.name !== ''" />
+                    <InputText
+                        id="name"
+                        v-model="name"
+                        :invalid="validationErrors.name !== ''"
+                        autofocus
+                        placeholder="e.g. Checkout errors"
+                        @keydown.enter="handleFormSubmit"
+                        data-testid="saved-view-name"
+                    />
                     <ErrorText :text="validationErrors.name" />
                 </div>
             </div>
@@ -49,7 +59,7 @@
                     <Textarea
                         id="description"
                         v-model="description"
-                        rows="8"
+                        rows="3"
                         cols="30"
                         style="resize: none"
                         :invalid="validationErrors.description !== ''"
@@ -70,7 +80,7 @@
             <Message v-if="nonFieldErrors.length !== 0" class="mt-2" severity="error"
                 ><span class="font-medium">Validation failed: </span>{{ nonFieldErrors.join(' ') }}
             </Message>
-            <div class="flex flex-col h-full justify-end">
+            <div class="flex flex-col justify-end">
                 <div class="flex flex-row mt-4 w-full justify-end">
                     <Button
                         label="Cancel"
@@ -149,7 +159,6 @@ const name = ref('')
 const description = ref('')
 
 if (props.view) {
-    console.log(props.view)
     shared.value = props.view.shared
     name.value = props.view.name
     description.value = props.view.description

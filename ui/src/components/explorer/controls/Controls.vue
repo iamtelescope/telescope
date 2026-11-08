@@ -1,6 +1,10 @@
 <template>
     <div>
-        <Toolbar class="toolbar-slim border-none p-0 mb-2" data-testid="explorer-controls">
+        <Toolbar
+            class="toolbar-slim border-none p-0 mb-2 whitespace-nowrap gap-y-1"
+            :pt="{ start: { class: 'flex-wrap gap-y-1' }, end: { class: 'flex-wrap gap-y-1' } }"
+            data-testid="explorer-controls"
+        >
             <template #start>
                 <Button
                     :class="{
@@ -20,17 +24,22 @@
                 <Button
                     icon="pi pi-share-alt"
                     class="mr-2"
-                    severity="primary"
-                    label="Share URL"
+                    severity="secondary"
+                    outlined
+                    aria-label="Share URL"
+                    v-tooltip.bottom="'Copy a link to this search'"
                     size="small"
                     @click="handleShareURL"
                     :disabled="loading"
+                    data-testid="explorer-share-btn"
                 />
                 <Button
                     icon="pi pi-download"
                     class="mr-2"
-                    severity="primary"
-                    label="Download"
+                    severity="secondary"
+                    outlined
+                    aria-label="Download"
+                    v-tooltip.bottom="'Download the rows shown'"
                     size="small"
                     @click="(event) => downloadMenu.toggle(event)"
                     :disabled="loading"
@@ -143,16 +152,42 @@
                     />
                 </IconField>
             </div>
-            <div class="mb-2" data-testid="explorer-flyql-editor">
-                <QueryEditor
-                    id="flyql_editor"
-                    @change="onQueryChange"
-                    :source="source"
-                    :value="sourceControlsStore.query"
-                    :from="sourceControlsStore.from"
-                    :to="sourceControlsStore.to"
-                    @submit="handleSearch"
+            <div class="mb-2 flex items-start gap-1" data-testid="explorer-flyql-editor">
+                <div class="flex-1 min-w-0">
+                    <QueryEditor
+                        id="flyql_editor"
+                        @change="onQueryChange"
+                        :source="source"
+                        :value="sourceControlsStore.query"
+                        :from="sourceControlsStore.from"
+                        :to="sourceControlsStore.to"
+                        @submit="handleSearch"
+                    />
+                </div>
+                <Button
+                    icon="pi pi-history"
+                    severity="secondary"
+                    text
+                    aria-label="Query history"
+                    v-tooltip.bottom="'Recent queries'"
+                    aria-haspopup="true"
+                    @click="(event) => historyMenu.toggle(event)"
+                    data-testid="explorer-query-history-btn"
                 />
+                <Menu ref="historyMenu" :model="historyItems" :popup="true" data-testid="explorer-query-history">
+                    <template #item="{ item, props: itemProps }">
+                        <a
+                            v-bind="itemProps.action"
+                            class="flex items-center gap-2 max-w-[36rem]"
+                            :class="{ 'opacity-60': item.disabled }"
+                        >
+                            <i v-if="item.icon" :class="item.icon" class="text-xs"></i>
+                            <span :class="{ 'font-mono text-sm truncate': item.query }" :title="item.query">{{
+                                item.label
+                            }}</span>
+                        </a>
+                    </template>
+                </Menu>
             </div>
             <div
                 v-if="source.isRawQueryAllowed() && showRawQueryEditor"
@@ -275,9 +310,52 @@ const handleSearch = () => {
     if (props.loading) {
         emit('searchCancel')
     } else {
+        rememberQuery(sourceControlsStore.query)
         emit('searchRequest')
     }
 }
+
+// The last executed queries of this source, newest first, kept in this browser.
+const HISTORY_SIZE = 20
+const historyKey = computed(() => `telescope.queryHistory.${props.source.slug}`)
+const historyMenu = ref(null)
+const readHistory = () => {
+    try {
+        const value = JSON.parse(localStorage.getItem(historyKey.value) || '[]')
+        return Array.isArray(value) ? value : []
+    } catch {
+        return []
+    }
+}
+const queryHistory = ref(readHistory())
+const writeHistory = (value) => {
+    queryHistory.value = value
+    try {
+        localStorage.setItem(historyKey.value, JSON.stringify(value))
+    } catch {
+        // storage unavailable: history lasts for this page only
+    }
+}
+const rememberQuery = (query) => {
+    const text = (query || '').trim()
+    if (!text) return
+    writeHistory([text, ...queryHistory.value.filter((q) => q !== text)].slice(0, HISTORY_SIZE))
+}
+const historyItems = computed(() => {
+    if (!queryHistory.value.length) return [{ label: 'Queries you run appear here', disabled: true }]
+    return [
+        ...queryHistory.value.map((query) => ({
+            label: query,
+            query,
+            command: () => {
+                sourceControlsStore.setQuery(query)
+                handleSearch()
+            },
+        })),
+        { separator: true },
+        { label: 'Clear history', icon: 'pi pi-trash', command: () => writeHistory([]) },
+    ]
+})
 
 const handleShareURL = () => {
     emit('shareURL')

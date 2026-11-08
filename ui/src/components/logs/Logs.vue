@@ -122,6 +122,14 @@
                             :sortable="true"
                             :showFilterMenu="false"
                         >
+                            <template #body="slotProps">
+                                <router-link
+                                    :to="{ name: 'explore', params: { sourceSlug: slotProps.data.slug } }"
+                                    class="table-link"
+                                >
+                                    {{ slotProps.data.name }}
+                                </router-link>
+                            </template>
                             <template #filter="{ filterModel, filterCallback }">
                                 <InputText
                                     v-model="filterModel.value"

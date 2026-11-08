@@ -5,6 +5,7 @@
                 class="flex-1 min-w-0 flex items-center gap-1 text-left text-sm font-semibold truncate py-1 hover:text-primary"
                 :title="id"
                 @click="open = !open"
+                :aria-expanded="open ? 'true' : 'false'"
                 :data-testid="`facet-header-${id}`"
             >
                 <i :class="open ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" class="text-xs opacity-60"></i>
@@ -15,6 +16,8 @@
                 class="px-1 opacity-40 hover:opacity-100"
                 :class="{ 'opacity-100 text-primary': pinned }"
                 :title="pinned ? 'Unpin' : 'Pin'"
+                :aria-label="`${pinned ? 'Unpin' : 'Pin'} ${id}`"
+                :aria-pressed="pinned ? 'true' : 'false'"
                 @click="emit('togglePin')"
                 :data-testid="`facet-pin-${id}`"
             >
@@ -24,6 +27,7 @@
                 v-if="removable"
                 class="px-1 opacity-40 hover:opacity-100"
                 title="Remove"
+                :aria-label="`Remove ${id}`"
                 @click="emit('remove')"
                 :data-testid="`facet-remove-${id}`"
             >
@@ -31,14 +35,22 @@
             </button>
         </div>
         <div v-if="open">
-            <div v-if="!values.length" class="text-xs opacity-60 pl-4 py-1">No values</div>
+            <div v-if="!filtered.length" class="text-xs opacity-60 pl-4 py-1">No values</div>
             <div
                 v-for="(item, i) in shown"
                 :key="i"
-                class="relative flex items-center gap-1 pl-4 pr-1 text-sm rounded cursor-pointer group/value hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                class="relative flex items-center gap-1 pl-4 pr-1 text-sm rounded cursor-pointer group/value hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary"
                 :class="{ 'bg-neutral-100 dark:bg-neutral-800': kind === 'keys' && expandedKeys.includes(item.value) }"
                 :title="kind === 'keys' ? 'Show values of this key' : 'Click to filter, Alt+click to exclude'"
                 @click="onClick($event, item)"
+                @keydown.enter.prevent="onClick($event, item)"
+                tabindex="0"
+                role="button"
+                :aria-label="
+                    kind === 'keys'
+                        ? `Show values of ${formatValue(item.value)}`
+                        : `Filter ${id} = ${formatValue(item.value)}, ${item.count} rows; Alt+Enter excludes`
+                "
                 :data-testid="`facet-value-${id}-${i}`"
             >
                 <div
@@ -55,6 +67,8 @@
                     <button
                         class="relative hidden group-hover/value:inline px-1 opacity-60 hover:opacity-100"
                         title="Filter for this value"
+                        aria-label="Filter for this value"
+                        tabindex="-1"
                         @click.stop="emit('include', item)"
                         :data-testid="`facet-include-${id}-${i}`"
                     >
@@ -63,6 +77,8 @@
                     <button
                         class="relative hidden group-hover/value:inline px-1 opacity-60 hover:opacity-100"
                         title="Exclude this value"
+                        aria-label="Exclude this value"
+                        tabindex="-1"
                         @click.stop="emit('exclude', item)"
                         :data-testid="`facet-exclude-${id}-${i}`"
                     >
@@ -74,12 +90,12 @@
                 }}</span>
             </div>
             <button
-                v-if="values.length > VISIBLE_VALUES"
+                v-if="filtered.length > VISIBLE_VALUES"
                 class="pl-4 text-xs text-primary hover:underline"
                 @click="showAll = !showAll"
                 :data-testid="`facet-more-${id}`"
             >
-                {{ showAll ? 'Show less' : `Show ${values.length - VISIBLE_VALUES} more` }}
+                {{ showAll ? 'Show less' : `Show ${filtered.length - VISIBLE_VALUES} more` }}
             </button>
             <div v-if="more && (showAll || values.length <= VISIBLE_VALUES)" class="pl-4 text-xs opacity-60">
                 Only the top {{ values.length }} are shown
@@ -102,13 +118,19 @@ const props = defineProps({
     pinned: Boolean,
     removable: Boolean,
     expandedKeys: { type: Array, default: () => [] },
+    filter: { type: String, default: '' },
 })
 const emit = defineEmits(['include', 'exclude', 'toggleKey', 'togglePin', 'remove'])
 
 const open = ref(true)
 const showAll = ref(false)
 
-const shown = computed(() => (showAll.value ? props.values : props.values.slice(0, VISIBLE_VALUES)))
+const filtered = computed(() =>
+    props.filter
+        ? props.values.filter((item) => String(formatValue(item.value)).toLowerCase().includes(props.filter))
+        : props.values,
+)
+const shown = computed(() => (showAll.value ? filtered.value : filtered.value.slice(0, VISIBLE_VALUES)))
 
 const share = (item) => (props.total ? Math.min(1, item.count / props.total) : 0)
 
