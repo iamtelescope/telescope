@@ -13,7 +13,7 @@
                 </div>
                 <button
                     v-if="summary !== text"
-                    class="mt-1 text-xs text-primary hover:underline"
+                    class="mt-1 text-xs underline text-red-700 dark:text-red-200 hover:no-underline"
                     :aria-expanded="open ? 'true' : 'false'"
                     @click="open = !open"
                     data-testid="search-error-toggle"
