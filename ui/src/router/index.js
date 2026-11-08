@@ -5,6 +5,44 @@ import { storeToRefs } from 'pinia'
 import ExploreView from '../views/sources/ExploreView.vue'
 import HomeView from '../views/RootView.vue'
 import { featureRoutes } from '@/features/registry.js'
+import { setPageTitle } from '@/components/common/pageTitle'
+
+// Browser tab titles by route name; feature routes are listed here too.
+const TITLES = {
+    root: 'Logs',
+    logs: 'Logs',
+    explore: (r) => `${r.params.sourceSlug} · Explore`,
+    userProfile: 'Profile',
+    apiTokenNew: 'New API token',
+    dashboards: 'Dashboards',
+    dashboard: 'Dashboard',
+    dashboardTemplates: 'Dashboard templates',
+    sources: 'Sources',
+    source: (r) => `${r.params.sourceSlug} · Source`,
+    sourceNew: 'New source',
+    sourceEdit: (r) => `Edit ${r.params.sourceSlug}`,
+    connections: 'Connections',
+    connection: 'Connection',
+    connectionNew: 'New connection',
+    connectionEdit: 'Edit connection',
+    rbac: 'Access control',
+    rbacUsers: 'Users',
+    rbacGroups: 'Groups',
+    rbacGroup: 'Group',
+    rbacGroupNew: 'New group',
+    rbacGroupEdit: 'Edit group',
+    rbacRoles: 'Roles',
+    alerts: 'Alerts',
+    alertNew: 'New alert',
+    alert: 'Edit alert',
+    alertDetail: 'Alert history',
+    alertChannels: 'Alert channels',
+    charts: 'Chart explorer',
+    metrics: 'Metrics',
+    serviceMap: 'Service map',
+    trace: (r) => `Trace ${String(r.params.traceId).slice(0, 8)}…`,
+    notFound: 'Page not found',
+}
 
 const routes = [
     {
@@ -121,6 +159,11 @@ const routes = [
         component: () => import('@/components/rbac/Roles.vue'),
     },
     ...featureRoutes,
+    {
+        path: '/:pathMatch(.*)*',
+        name: 'notFound',
+        component: () => import('@/components/common/NotFound.vue'),
+    },
 ]
 
 const router = createRouter({
@@ -134,6 +177,11 @@ router.beforeEach(async (to, from) => {
     if (!isLoggedIn.value && to.name !== 'login') {
         window.location = 'login'
     }
+})
+
+router.afterEach((to) => {
+    const t = TITLES[to.name]
+    setPageTitle(typeof t === 'function' ? t(to) : t)
 })
 
 export default router

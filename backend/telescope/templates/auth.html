@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <base href="{% if base_url %}{{ base_url }}/{% else %}/{% endif %}">
-    <title>Telescope</title>
+    <title>{% block title %}Telescope{% endblock %}</title>
     <script>
         const base = document.querySelector('base');
         if (base && base.outerHTML.includes('{%')) {
@@ -14,79 +14,134 @@
   </head>
   <style>
   @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+  html, body {
+    margin: 0;
+    min-height: 100%;
+  }
   body {
     background-color: #141919;
-    color: #333;
-    font-size: 13px;
-    font-family: "Open Sans";
+    color: #27272a;
+    font-size: 14px;
+    font-family: "Open Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   }
-  input {
-    border: 1px solid #dbdbdb;
-    border-radius: 5px;
-    min-heigth: 35px;
-    height: 35px;
-    width: 100%;
-    min-widht: 100%;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    padding-left: 10px;
-    padding-right: 10px;
+  .auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
     box-sizing: border-box;
+    background: linear-gradient(135deg, rgb(5, 7, 10), rgb(40, 60, 80));
   }
-  input:focus {
-    border-color: #385DAB;
-    outline: none;
+  .auth-page[hidden] {
+    display: none;
+  }
+  .form-box {
+    padding: 36px 40px 40px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 400px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  }
+  .logo {
+    height: 34px;
+    width: auto;
+    align-self: flex-start;
+    margin-bottom: 24px;
+  }
+  .form-label {
+    margin: 0 0 20px;
+    font-size: 22px;
+    font-weight: 600;
   }
   form {
     width: 100%;
-    min-width: 100%;
+    margin: 0;
   }
   .field {
-    margin-bottom: 10px;
+    margin-bottom: 14px;
   }
-  .field-label {
-    margin-bottom: 3px;
-    font-size: 13px;
+  .field label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
   }
-  .field-errors {
-    color: red;
+  input:not([type=submit]) {
+    border: 1px solid #c4c4cc;
+    border-radius: 6px;
+    height: 38px;
+    width: 100%;
+    padding: 6px 10px;
+    box-sizing: border-box;
+    font: inherit;
+    color: inherit;
   }
-  .form-label {
-    margin-bottom: 15px;
-    font-size: 26px;
-    font-weight: 600;
+  input:focus-visible, button:focus-visible, a:focus-visible {
+    border-color: #385DAB;
+    outline: 2px solid #385DAB;
+    outline-offset: 1px;
   }
-  .form-box {
-    padding: 40px;
-    border-radius: 20px;
-    width: 400px;
-    max-width: 400px;
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
-    background-color: white;
+  .field-errors, .form-errors {
+    color: #b91c1c;
   }
-  .form-errors {
-    color: red;
-    margin-bottom: 10px;
+  .field-errors ul, .form-errors ul {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
   }
-  .btn-submit {
+  .form-errors:not(:empty) {
+    margin: 4px 0 12px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+  }
+  .btn {
+    display: block;
+    width: 100%;
+    height: 40px;
     margin-top: 10px;
+    border: 0;
+    border-radius: 6px;
+    font: inherit;
+    font-weight: 600;
+    text-align: center;
+    line-height: 40px;
+    text-decoration: none;
+    cursor: pointer;
+    box-sizing: border-box;
+  }
+  .btn-submit, .btn-thirdparty {
     background-color: #385DAB;
     color: white;
   }
-  .btn-submit:hover {
-    cursor: pointer;
+  .btn-submit:hover, .btn-thirdparty:hover {
     background-color: #2e4e8d;
   }
-  .btn-thirdparty {
-    margin-top: 10px;
-    color: white;
-    background-color: #3678fa
+  .btn-secondary {
+    background: white;
+    color: #27272a;
+    border: 1px solid #c4c4cc;
   }
-  .btn-thirdparty:hover {
-    cursor: pointer;
-    background-color: #2665e1;
+  .btn-secondary:hover {
+    background: #f4f4f5;
+  }
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0 4px;
+    color: #71717a;
+    font-size: 13px;
+  }
+  .divider::before, .divider::after {
+    content: "";
+    flex: 1;
+    border-top: 1px solid #e4e4e7;
   }
   {% block style %}
   {% endblock %}

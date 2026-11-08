@@ -16,4 +16,4 @@ class SuperuserForm(forms.Form):
 
     def clean(self):
         if self.cleaned_data["password"] != self.cleaned_data["password_repeat"]:
-            raise ValidationError("Passwords does not patch")
+            raise ValidationError("Passwords do not match")

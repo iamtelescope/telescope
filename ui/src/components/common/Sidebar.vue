@@ -1,455 +1,245 @@
 <template>
-    <div
-        class="flex flex-col h-full transition-all duration-300 relative overflow-hidden text-gray-300 bg-gradient-to-b from-primary-800 to-primary-950"
+    <nav
+        aria-label="Main navigation"
+        class="sidebar flex flex-col h-full shrink-0 transition-[width] duration-200 overflow-hidden text-gray-300 bg-gradient-to-b from-primary-800 to-primary-950"
         :class="collapsed ? 'w-16' : 'w-64'"
     >
         <div
-            class="fixed top-0 z-10 flex flex-row items-center justify-between min-h-[50px] h-[50px] max-h-[50px] transition-all duration-300 overflow-x-hidden bg-primary-800"
-            :class="collapsed ? 'w-16' : 'w-64'"
+            class="flex items-center h-[50px] min-h-[50px] bg-primary-800"
+            :class="collapsed ? 'justify-center' : 'px-3'"
         >
-            <router-link to="/" class="flex items-center pl-3 hover:opacity-80 transition-opacity text-white">
-                <img src="@/assets/logo.png" alt="telescope" height="29px" width="29px" />
-                <span
-                    class="pl-2.5 text-xl font-medium transition-opacity duration-300"
-                    :class="collapsed ? 'opacity-0' : 'opacity-100'"
-                    >Telescope</span
-                >
+            <router-link
+                to="/"
+                class="flex items-center rounded-md text-white hover:opacity-80"
+                aria-label="Telescope home"
+            >
+                <img src="@/assets/logo.png" alt="" height="29" width="29" />
+                <span v-if="!collapsed" class="pl-2.5 text-xl font-medium">Telescope</span>
             </router-link>
-
-            <div class="pr-4 transition-opacity duration-300" :class="collapsed ? 'opacity-0' : 'opacity-100'">
-                <button
-                    class="flex items-center justify-center w-10 h-10 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                    @click="$emit('toggle-collapse')"
-                    title="Collapse Panel"
-                    :disabled="collapsed"
-                    data-testid="sidebar-collapse-btn"
-                >
-                    <PanelLeftClose :size="20" :stroke-width="1.5" />
-                </button>
-            </div>
+            <button
+                v-if="!collapsed"
+                class="ml-auto flex items-center justify-center w-8 h-8 rounded-md hover:bg-white/15"
+                @click="$emit('toggle-collapse')"
+                aria-label="Collapse sidebar"
+                v-tooltip.right="'Collapse sidebar'"
+                data-testid="sidebar-collapse-btn"
+            >
+                <PanelLeftClose :size="18" :stroke-width="1.5" />
+            </button>
         </div>
 
-        <div
-            class="flex justify-center py-4 transition-opacity duration-300"
-            :class="collapsed ? 'opacity-100' : 'opacity-0'"
-            :style="{ marginTop: '50px', paddingTop: '1rem' }"
-        >
+        <div class="flex flex-col gap-1 pt-2" :class="collapsed ? 'items-center' : ''">
             <button
-                class="flex items-center justify-center w-10 h-10 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
+                v-if="collapsed"
+                class="flex items-center justify-center w-10 h-10 rounded-md hover:bg-white/15"
                 @click="$emit('toggle-collapse')"
-                title="Expand Panel"
-                :disabled="!collapsed"
+                aria-label="Expand sidebar"
+                v-tooltip.right="'Expand sidebar'"
                 data-testid="sidebar-expand-btn"
             >
-                <PanelLeftOpen :size="20" :stroke-width="1.5" />
+                <PanelLeftOpen :size="18" :stroke-width="1.5" />
+            </button>
+            <button
+                class="flex items-center rounded-md border border-white/15 bg-white/5 hover:bg-white/15 text-gray-300"
+                :class="collapsed ? 'justify-center w-10 h-10' : 'mx-2 px-3 h-9 gap-3'"
+                @click="shell.paletteOpen = true"
+                aria-label="Search and jump to"
+                aria-keyshortcuts="Control+K Meta+K"
+                v-tooltip.right="collapsed ? `Search (${modKey} K)` : null"
+                data-testid="sidebar-search"
+            >
+                <Search class="w-4 h-4 shrink-0" aria-hidden="true" />
+                <template v-if="!collapsed">
+                    <span class="flex-1 text-left text-gray-400">Search…</span>
+                    <kbd class="kbd-dark">{{ modKey }} K</kbd>
+                </template>
             </button>
         </div>
 
         <div
-            v-if="!collapsed"
-            class="flex flex-col w-full flex-1 overflow-y-auto overflow-x-hidden"
-            :style="{ paddingTop: '50px' }"
+            class="flex flex-col flex-1 overflow-y-auto overflow-x-hidden pb-2"
+            :class="collapsed ? 'items-center' : ''"
         >
-            <div class="pl-4 py-3 text-base font-semibold text-gray-300">
-                <span class="transition-opacity duration-300">Explore</span>
-            </div>
-            <router-link
-                to="/"
-                class="flex items-center ml-2 mr-4 px-3 py-2 mb-2 text-base rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': $route.name === 'root' || $route.name === 'explore' }"
-            >
-                <ScrollText class="mr-3 w-4 h-4" />
-                <span class="transition-opacity duration-300">Logs</span>
-            </router-link>
-            <router-link
-                to="/dashboards"
-                class="flex items-center ml-2 mr-4 px-3 py-2 mb-2 text-base rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': $route.name === 'dashboards' || $route.name === 'dashboard' }"
-                data-testid="nav-dashboards"
-            >
-                <LayoutDashboard class="mr-3 w-4 h-4" />
-                <span class="transition-opacity duration-300">Dashboards</span>
-            </router-link>
-            <router-link
-                v-for="item in navItems('explore')"
-                :key="item.to"
-                :to="item.to"
-                class="flex items-center ml-2 mr-4 px-3 py-2 mb-2 text-base rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': isActive(item) }"
-                :data-testid="item.testid"
-            >
-                <component :is="item.icon" class="mr-3 w-4 h-4" />
-                <span class="transition-opacity duration-300">{{ item.label }}</span>
-            </router-link>
-
-            <div class="pl-4 py-3 text-base font-semibold text-gray-300 mt-4">Data</div>
-            <router-link
-                to="/connections"
-                class="flex items-center ml-2 mr-3 px-3 py-2 mb-2 text-base rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': $route.name?.startsWith('connection') }"
-            >
-                <Cable class="mr-3 w-4 h-4" />
-                Connections
-            </router-link>
-            <router-link
-                to="/sources"
-                class="flex items-center ml-2 mr-3 px-3 py-2 mb-2 text-base rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{
-                    'bg-black bg-opacity-30':
-                        $route.name === 'sources' ||
-                        $route.name === 'source' ||
-                        $route.name === 'sourceEdit' ||
-                        $route.name === 'sourceNew',
-                }"
-            >
-                <i class="pi pi-database mr-3 text-lg"></i>
-                Sources
-            </router-link>
-            <router-link
-                v-for="item in navItems('data')"
-                :key="item.to"
-                :to="item.to"
-                class="flex items-center ml-2 mr-3 px-3 py-2 mb-2 text-base rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': isActive(item) }"
-                :data-testid="item.testid"
-            >
-                <component :is="item.icon" class="mr-3 w-4 h-4" />
-                {{ item.label }}
-            </router-link>
-
-            <div v-if="user.hasAccessToSettings()" class="pl-4 py-3 text-base font-semibold text-gray-300 mt-4">
-                Administration
-            </div>
-            <router-link
-                v-if="user.hasAccessToSettings()"
-                to="/rbac/users"
-                class="flex items-center ml-2 mr-3 px-3 py-2 mb-2 text-base rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': $route.name === 'rbacUsers' }"
-            >
-                <i class="pi pi-users mr-3 text-lg"></i>
-                Users
-            </router-link>
-            <router-link
-                v-if="user.hasAccessToSettings()"
-                to="/rbac/groups"
-                class="flex items-center ml-2 mr-3 px-3 py-2 mb-2 text-base rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': $route.name?.startsWith('rbacGroup') }"
-            >
-                <i class="pi pi-user-plus mr-3 text-lg"></i>
-                Groups
-            </router-link>
-            <router-link
-                v-if="user.hasAccessToSettings()"
-                to="/rbac/roles"
-                class="flex items-center ml-2 mr-3 px-3 py-2 mb-2 text-base rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': $route.name?.startsWith('rbacRole') }"
-                data-testid="nav-roles"
-            >
-                <i class="pi pi-key mr-3 text-lg"></i>
-                Roles
-            </router-link>
-        </div>
-
-        <div
-            v-else
-            class="flex flex-col items-center w-16 max-w-16 overflow-x-hidden flex-1 overflow-y-auto"
-            :style="{ paddingTop: '50px' }"
-        >
-            <div class="py-3 text-base font-semibold text-gray-300 opacity-0 pointer-events-none">
-                <span>Explore</span>
-            </div>
-            <router-link
-                to="/"
-                class="flex items-center justify-center w-10 h-10 mb-2 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': $route.name === 'root' || $route.name === 'explore' }"
-                title="Logs"
-            >
-                <ScrollText class="w-4 h-4" />
-            </router-link>
-            <router-link
-                to="/dashboards"
-                class="flex items-center justify-center w-10 h-10 mb-2 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': $route.name === 'dashboards' || $route.name === 'dashboard' }"
-                title="Dashboards"
-                data-testid="nav-dashboards"
-            >
-                <LayoutDashboard class="w-4 h-4" />
-            </router-link>
-            <router-link
-                v-for="item in navItems('explore')"
-                :key="item.to"
-                :to="item.to"
-                class="flex items-center justify-center w-10 h-10 mb-2 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': isActive(item) }"
-                :title="item.label"
-                :data-testid="item.testid"
-            >
-                <component :is="item.icon" class="w-4 h-4" />
-            </router-link>
-
-            <!-- Invisible Data Section Header for height consistency -->
-            <div class="py-3 text-base font-semibold text-gray-300 mt-4 opacity-0 pointer-events-none">Data</div>
-            <router-link
-                to="/connections"
-                class="flex items-center justify-center w-10 h-10 mb-2 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': $route.name?.startsWith('connection') }"
-                title="Connections"
-            >
-                <Cable class="w-4 h-4" />
-            </router-link>
-            <router-link
-                to="/sources"
-                class="flex items-center justify-center w-10 h-10 mb-2 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{
-                    'bg-black bg-opacity-30':
-                        $route.name === 'sources' ||
-                        $route.name === 'source' ||
-                        $route.name === 'sourceEdit' ||
-                        $route.name === 'sourceNew',
-                }"
-                title="Sources"
-            >
-                <i class="pi pi-database text-lg"></i>
-            </router-link>
-            <router-link
-                v-for="item in navItems('data')"
-                :key="item.to"
-                :to="item.to"
-                class="flex items-center justify-center w-10 h-10 mb-2 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': isActive(item) }"
-                :title="item.label"
-                :data-testid="item.testid"
-            >
-                <component :is="item.icon" class="w-4 h-4" />
-            </router-link>
-
-            <!-- Invisible Administration Section Header for height consistency -->
-            <div
-                v-if="user.hasAccessToSettings()"
-                class="py-3 text-base font-semibold text-gray-300 mt-4 opacity-0 pointer-events-none"
-            >
-                Administration
-            </div>
-            <router-link
-                v-if="user.hasAccessToSettings()"
-                to="/rbac/users"
-                class="flex items-center justify-center w-10 h-10 mb-2 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': $route.name === 'rbacUsers' }"
-                title="Users"
-            >
-                <i class="pi pi-users text-lg"></i>
-            </router-link>
-            <router-link
-                v-if="user.hasAccessToSettings()"
-                to="/rbac/groups"
-                class="flex items-center justify-center w-10 h-10 mb-2 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': $route.name?.startsWith('rbacGroup') }"
-                title="Groups"
-            >
-                <i class="pi pi-user-plus text-lg"></i>
-            </router-link>
-            <router-link
-                v-if="user.hasAccessToSettings()"
-                to="/rbac/roles"
-                class="flex items-center justify-center w-10 h-10 mb-2 rounded text-gray-300 hover:bg-white hover:bg-opacity-30"
-                :class="{ 'bg-black bg-opacity-30': $route.name?.startsWith('rbacRole') }"
-                title="Roles"
-                data-testid="nav-roles"
-            >
-                <i class="pi pi-key text-lg"></i>
-            </router-link>
-        </div>
-
-        <!-- Buttons -->
-        <div v-if="!collapsed">
-            <div class="p-4 flex flex-col gap-2">
-                <Button
-                    v-if="configStore.config.show_github_url"
-                    icon="pi pi-github"
-                    outlined
-                    severity="contrast"
-                    size="small"
-                    as="a"
-                    :href="configStore.config.github_url"
-                    target="_blank"
-                    rel="noopener"
-                    label="GitHub"
-                    class="hover:bg-white hover:bg-opacity-30"
-                    style="border-color: var(--p-primary-700); color: rgb(209 213 219)"
-                ></Button>
-                <Button
-                    v-if="configStore.config.show_docs_url"
-                    icon="pi pi-book"
-                    outlined
-                    severity="contrast"
-                    size="small"
-                    as="a"
-                    :href="configStore.config.docs_url"
-                    target="_blank"
-                    rel="noopener"
-                    label="Docs"
-                    class="hover:bg-white hover:bg-opacity-30"
-                    style="border-color: var(--p-primary-700); color: rgb(209 213 219)"
-                ></Button>
-                <Button
-                    :icon="themeIcon"
-                    outlined
-                    severity="contrast"
-                    size="small"
-                    :label="isDark ? 'Light' : 'Dark'"
-                    @click="toggleDark()"
-                    class="hover:bg-white hover:bg-opacity-30"
-                    style="border-color: var(--p-primary-700); color: rgb(209 213 219)"
-                    data-testid="theme-toggle"
-                ></Button>
-            </div>
-        </div>
-
-        <!-- User Info -->
-        <div v-if="!collapsed">
-            <div class="p-4">
+            <template v-for="section in sections" :key="section.id">
                 <div
-                    v-if="user.avatarUrl"
-                    class="flex flex-row items-center cursor-pointer hover:bg-white hover:bg-opacity-30 rounded p-2 -m-2"
-                    :class="{ 'bg-black bg-opacity-30': $route.name === 'userProfile' }"
-                    @click="router.push('/profile')"
-                    title="Profile"
+                    v-if="!collapsed"
+                    class="pl-5 pt-5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400"
                 >
-                    <Avatar
-                        :image="user.avatarUrl"
-                        class="avaimg"
-                        style="color: rgb(209 213 219); background-color: var(--p-primary-700)"
-                    />
-                    <div class="ml-3 flex-1">
-                        <div class="font-medium text-sm" v-tooltip.right="usernameTooltip">
-                            {{ displayUsername }}
-                        </div>
-                        <div class="text-xs text-gray-400 flex items-center">
-                            <i v-if="user.type == 'github'" class="pi pi-github mr-1"></i>
-                            {{ user.type }}
-                        </div>
-                    </div>
+                    {{ section.label }}
                 </div>
-                <div
-                    v-else
-                    class="flex flex-row items-center cursor-pointer hover:bg-white hover:bg-opacity-30 rounded p-2 -m-2"
-                    :class="{ 'bg-black bg-opacity-30': $route.name === 'userProfile' }"
-                    @click="router.push('/profile')"
-                    title="Profile"
+                <div v-else class="w-8 border-t border-white/15 mt-3 mb-2" role="separator"></div>
+                <router-link
+                    v-for="item in section.items"
+                    :key="item.to"
+                    :to="item.to"
+                    class="nav-link flex items-center rounded"
+                    :class="[
+                        collapsed ? 'justify-center w-10 h-10 mb-0.5' : 'ml-2 mr-2 gap-3 px-3 h-9 mb-0.5',
+                        isActive(item) ? 'nav-link-active' : '',
+                    ]"
+                    :aria-current="isActive(item) ? 'page' : undefined"
+                    :aria-label="collapsed ? item.label : undefined"
+                    v-tooltip.right="collapsed ? item.label : null"
+                    :data-testid="item.testid"
                 >
-                    <Avatar icon="pi pi-user" style="color: rgb(209 213 219); background-color: var(--p-primary-700)" />
-                    <div class="ml-3 flex-1">
-                        <div class="font-medium text-sm" v-tooltip.right="usernameTooltip">
-                            {{ displayUsername }}
-                        </div>
-                        <div class="text-xs text-gray-400 flex items-center">
-                            <i v-if="user.type == 'github'" class="pi pi-github mr-1"></i>
-                            {{ user.type }}
-                        </div>
-                    </div>
-                </div>
-            </div>
+                    <component :is="item.icon" class="w-4 h-4 shrink-0" aria-hidden="true" />
+                    <span v-if="!collapsed" class="truncate">{{ item.label }}</span>
+                </router-link>
+            </template>
         </div>
 
-        <!-- Collapsed Bottom Section -->
-        <div class="p-2 flex flex-col items-center gap-2" v-else>
-            <Button
-                v-if="configStore.config.show_github_url"
-                icon="pi pi-github"
-                outlined
-                severity="contrast"
-                size="small"
-                as="a"
-                :href="configStore.config.github_url"
+        <div class="flex flex-col gap-0.5 py-2 border-t border-white/10" :class="collapsed ? 'items-center' : ''">
+            <button
+                class="footer-link"
+                :class="collapsed ? 'footer-link-icon' : 'footer-link-row'"
+                @click="shell.shortcutsOpen = true"
+                aria-label="Keyboard shortcuts"
+                v-tooltip.right="collapsed ? 'Keyboard shortcuts (?)' : null"
+                data-testid="sidebar-shortcuts"
+            >
+                <Keyboard class="w-4 h-4 shrink-0" aria-hidden="true" />
+                <template v-if="!collapsed">
+                    <span class="flex-1 text-left">Shortcuts</span>
+                    <kbd class="kbd-dark">?</kbd>
+                </template>
+            </button>
+            <a
+                v-for="link in externalLinks"
+                :key="link.label"
+                :href="link.href"
                 target="_blank"
                 rel="noopener"
-                title="GitHub"
-                class="hover:bg-white hover:bg-opacity-30"
-                style="border-color: var(--p-primary-500); color: rgb(209 213 219)"
-            ></Button>
-            <Button
-                v-if="configStore.config.show_docs_url"
-                icon="pi pi-book"
-                outlined
-                severity="contrast"
-                size="small"
-                as="a"
-                :href="configStore.config.docs_url"
-                target="_blank"
-                rel="noopener"
-                title="Docs"
-                class="hover:bg-white hover:bg-opacity-30"
-                style="border-color: var(--p-primary-500); color: rgb(209 213 219)"
-            ></Button>
-            <Button
-                :icon="themeIcon"
-                outlined
-                severity="contrast"
-                size="small"
+                class="footer-link"
+                :class="collapsed ? 'footer-link-icon' : 'footer-link-row'"
+                :aria-label="`${link.label} (opens in a new tab)`"
+                v-tooltip.right="collapsed ? link.label : null"
+            >
+                <i :class="link.icon" class="w-4 text-center" aria-hidden="true"></i>
+                <template v-if="!collapsed">
+                    <span class="flex-1">{{ link.label }}</span>
+                    <ExternalLink class="w-3 h-3 opacity-60" aria-hidden="true" />
+                </template>
+            </a>
+            <button
+                class="footer-link"
+                :class="collapsed ? 'footer-link-icon' : 'footer-link-row'"
                 @click="toggleDark()"
-                class="hover:bg-white hover:bg-opacity-30"
-                :title="isDark ? 'Switch to Light' : 'Switch to Dark'"
-                style="border-color: var(--p-primary-500); color: rgb(209 213 219)"
+                :aria-label="themeLabel"
+                v-tooltip.right="collapsed ? themeLabel : null"
                 data-testid="theme-toggle"
-            ></Button>
-            <div class="rounded p-1 -m-1" :class="{ 'bg-black bg-opacity-30': $route.name === 'userProfile' }">
+            >
+                <component :is="isDark ? Sun : Moon" class="w-4 h-4 shrink-0" aria-hidden="true" />
+                <span v-if="!collapsed" class="flex-1 text-left">{{ themeLabel }}</span>
+            </button>
+            <router-link
+                to="/profile"
+                class="footer-link"
+                :class="[
+                    collapsed ? 'footer-link-icon' : 'footer-link-row !h-11',
+                    $route.name === 'userProfile' ? 'nav-link-active' : '',
+                ]"
+                :aria-label="`Profile: ${user?.username || ''}`"
+                v-tooltip.right="collapsed ? user?.username : null"
+                data-testid="sidebar-profile"
+            >
                 <Avatar
-                    :image="user.avatarUrl"
-                    :icon="user.avatarUrl ? null : 'pi pi-user'"
-                    size="small"
-                    class="cursor-pointer"
-                    @click="router.push('/profile')"
-                    title="Profile"
+                    :image="user?.avatarUrl || null"
+                    :icon="user?.avatarUrl ? null : 'pi pi-user'"
+                    class="avaimg shrink-0 !w-7 !h-7"
                     style="color: rgb(209 213 219); background-color: var(--p-primary-700)"
                 />
-            </div>
+                <div v-if="!collapsed" class="flex-1 min-w-0 leading-tight">
+                    <div class="font-medium truncate text-gray-200" :title="user?.username">{{ user?.username }}</div>
+                    <div class="text-xs text-gray-400 flex items-center">
+                        <i v-if="user?.type == 'github'" class="pi pi-github mr-1 text-xs"></i>
+                        {{ user?.type }}
+                    </div>
+                </div>
+            </router-link>
         </div>
-    </div>
+    </nav>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { Avatar, Button } from 'primevue'
+import { Avatar } from 'primevue'
+import { useDark, useToggle } from '@vueuse/core'
+import { ExternalLink, Keyboard, Moon, PanelLeftClose, PanelLeftOpen, Search, Sun } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import { useConfigStore } from '@/stores/config'
-import { useDark, useToggle } from '@vueuse/core'
-import { PanelLeftOpen, PanelLeftClose, Cable, ScrollText, LayoutDashboard } from 'lucide-vue-next'
-import { featureNav } from '@/features/registry.js'
+import { navSections, isNavItemActive } from '@/components/common/navigation'
+import { shell, modKey } from '@/components/common/shell'
 
 defineProps(['collapsed'])
-
 defineEmits(['toggle-collapse'])
 
-const router = useRouter()
 const route = useRoute()
-
-const navItems = (section) => featureNav.filter((item) => (item.section || 'explore') === section)
-const isActive = (item) => (item.routeNames || []).includes(route.name)
 const configStore = useConfigStore()
 configStore.load()
 const { user } = storeToRefs(useAuthStore())
 
+const sections = computed(() => navSections(user.value))
+const isActive = (item) => isNavItemActive(item, route)
+
+const externalLinks = computed(() => {
+    const c = configStore.config
+    return [
+        c.show_docs_url && { label: 'Docs', href: c.docs_url, icon: 'pi pi-book' },
+        c.show_github_url && { label: 'GitHub', href: c.github_url, icon: 'pi pi-github' },
+    ].filter(Boolean)
+})
+
 const isDark = useDark()
-
-// Truncate username if longer than 20 characters
-const displayUsername = computed(() => {
-    if (!user.value?.username) return ''
-    return user.value.username.length > 20 ? user.value.username.substring(0, 20) + '...' : user.value.username
-})
-
-// Show tooltip only if username is truncated
-const usernameTooltip = computed(() => {
-    return user.value?.username?.length > 20 ? user.value.username : null
-})
 const toggleDark = useToggle(isDark)
-
-const themeIcon = computed(() => {
-    if (isDark.value) {
-        return 'pi pi-sun'
-    } else {
-        return 'pi pi-moon'
-    }
-})
+const themeLabel = computed(() => (isDark.value ? 'Switch to light theme' : 'Switch to dark theme'))
 </script>
+
+<style scoped>
+.nav-link,
+.footer-link {
+    color: rgb(209 213 219);
+}
+.nav-link:hover,
+.footer-link:hover {
+    background-color: rgb(255 255 255 / 0.12);
+    color: #fff;
+}
+.nav-link-active,
+.nav-link-active:hover {
+    background-color: rgb(0 0 0 / 0.3);
+    color: #fff;
+    box-shadow: inset 3px 0 0 var(--p-primary-200);
+}
+.footer-link {
+    display: flex;
+    align-items: center;
+    border-radius: 0.375rem;
+}
+.footer-link-row {
+    gap: 0.75rem;
+    margin: 0 0.5rem;
+    padding: 0 0.75rem;
+    height: 2rem;
+}
+.footer-link-icon {
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.25rem;
+}
+.kbd-dark {
+    font-family: inherit;
+    font-size: 11px;
+    line-height: 1;
+    padding: 3px 5px;
+    border-radius: 4px;
+    border: 1px solid rgb(255 255 255 / 0.2);
+    color: rgb(209 213 219);
+}
+/* A white ring: the default dark one disappears on the blue sidebar. */
+.sidebar :focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: -2px;
+}
+</style>
