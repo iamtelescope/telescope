@@ -1,50 +1,39 @@
 {% extends "auth.html" %}
-{% block style %}
-
-{% endblock %}
+{% block title %}Sign in · Telescope{% endblock %}
 {% block body %}
-<div style="height: 100vh; width: 100wh; background: linear-gradient(135deg, rgb(5, 7, 10), rgb(40, 60, 80));"{% if force_github_auth or force_auth_provider %} hidden{%endif%} >
-  <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
-    <div style="max-width: 500px; width: 500px; min-width: 500px;display: flex; align-items: left;">
-      <img src="static/namedlogo.png" style="margin-bottom: 10px; padding-left: 10px;" />
-    </div>
-    <div class="form-box">
-      <div class="form-label">Sign in to your account</div>
-      <form action="login" method="post" data-testid="login-form">
-        {% csrf_token %}
-
-        {% for field in form %}
-        <div class="field">
-          <div class="field-errors">{{ field.errors }}</div>
-          <div class="field-label">{{ field.name|capfirst }}</div>
-          {{ field }}
-        </div>
-        {% endfor %}
-        <div class="form-errors">
-        {% for err in form.non_field_errors %}
-          {{ err }}
-        {% endfor %}
-        </div>
-        <input class="btn-submit"  type="submit" value="Submit" data-testid="login-submit">
-      </form>
-      {% if github_enabled or okta_enabled %}
-      <div style="display: flex; justify-content: center; align-items:center; margin-top: 10px;">or sign in with</div>
-      {% endif %}
-      {% if github_enabled %}
-      <form action="login/github/login/" method="post">
-        {% csrf_token %}
-        <input id="github_submit" class="btn-thirdparty" type="submit" value="GitHub">
-      </form>
-      {% endif %}
-      {% if okta_enabled %}
-      <form action="login/okta/login/" method="post">
-        {% csrf_token %}
-        <input id="okta_submit" class="btn-thirdparty" type="submit" value="Okta">
-      </form>
-      {% endif %}
-    </div>
+<main class="auth-page"{% if force_github_auth or force_auth_provider %} hidden{% endif %}>
+  <div class="form-box">
+    <img class="logo" src="static/namedlogo.png" alt="Telescope" />
+    <h1 class="form-label">Sign in to your account</h1>
+    <form action="login" method="post" data-testid="login-form">
+      {% csrf_token %}
+      <div class="form-errors" role="alert">{% for err in form.non_field_errors %}{{ err }}{% endfor %}</div>
+      {% for field in form %}
+      <div class="field">
+        <label for="{{ field.id_for_label }}">{{ field.label|capfirst }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="field-errors" role="alert">{{ field.errors }}</div>{% endif %}
+      </div>
+      {% endfor %}
+      <button class="btn btn-submit" type="submit" data-testid="login-submit">Sign in</button>
+    </form>
+    {% if github_enabled or okta_enabled %}
+    <div class="divider">or continue with</div>
+    {% endif %}
+    {% if github_enabled %}
+    <form action="login/github/login/" method="post">
+      {% csrf_token %}
+      <input id="github_submit" class="btn btn-thirdparty" type="submit" value="GitHub">
+    </form>
+    {% endif %}
+    {% if okta_enabled %}
+    <form action="login/okta/login/" method="post">
+      {% csrf_token %}
+      <input id="okta_submit" class="btn btn-thirdparty" type="submit" value="Okta">
+    </form>
+    {% endif %}
   </div>
-</div>
+</main>
 {% if force_auth_provider == 'github' %}
 <script>
 document.getElementById("github_submit").click()
@@ -55,4 +44,3 @@ document.getElementById("okta_submit").click()
 </script>
 {% endif %}
 {% endblock %}
-

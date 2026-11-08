@@ -1,35 +1,22 @@
 {% extends "auth.html" %}
+{% block title %}Set up · Telescope{% endblock %}
 {% block body %}
-<div style="height: 100vh; width: 100wh; background: linear-gradient(135deg, rgb(5, 7, 10), rgb(40, 60, 80));">
-  <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;">
-    <div style="max-width: 500px; width: 500px; min-width: 500px;display: flex; align-items: left;">
-      <img src="static/namedlogo.png" style="margin-bottom: 10px; padding-left: 10px;" />
-    </div>
-    <div class="form-box">
-      <div class="form-label">Create superuser account</div>
-      <form action="setup" method="post">
-        {% csrf_token %}
-
-        {% for field in form %}
-        <div class="field">
-          <div class="field-label">{{ field.label|capfirst }}</div>
-          {{ field }}
-          <div class="field-errors">
-            {% for error in field.errors %}
-            &ndash; {{ error }}
-            {% endfor %}
-          </div>
-        </div>
-        {% endfor %}
-        <div class="form-errors">
-        {% for err in form.non_field_errors %}
-          {{ err }}
-        {% endfor %}
-        </div>
-        <input class="btn-submit"  type="submit" value="Create">
-      </form>
-    </div>
+<main class="auth-page">
+  <div class="form-box">
+    <img class="logo" src="static/namedlogo.png" alt="Telescope" />
+    <h1 class="form-label">Create the superuser account</h1>
+    <form action="setup" method="post">
+      {% csrf_token %}
+      <div class="form-errors" role="alert">{% for err in form.non_field_errors %}{{ err }}{% endfor %}</div>
+      {% for field in form %}
+      <div class="field">
+        <label for="{{ field.id_for_label }}">{{ field.label|capfirst }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="field-errors" role="alert">{% for error in field.errors %}{{ error }} {% endfor %}</div>{% endif %}
+      </div>
+      {% endfor %}
+      <button class="btn btn-submit" type="submit">Create account</button>
+    </form>
   </div>
-</div>
+</main>
 {% endblock %}
-
