@@ -23,12 +23,17 @@
     --p-surface-900: #18181b;
     --p-surface-950: #09090b;
     --p-content-border-radius: 6px;
+    --tl-focus-ring: var(--p-primary-500);
 }
 
 :root.dark {
     --p-surface-900: #2d2c33;
     --p-surface-950: #201f24;
-    --p-button-primary-color: #d7d7d7;
+    /* White on primary-400/500 passes 4.5:1; #d7d7d7 on the old primary-300 hover gave 2.7:1. */
+    --p-button-primary-color: #ffffff;
+    --p-button-primary-hover-color: #ffffff;
+    --p-button-primary-hover-background: var(--p-primary-500);
+    --p-button-primary-hover-border-color: var(--p-primary-500);
     --p-select-color: #d7d7d7;
     --p-input-text-color: #d7d7d7;
     --p-surface-0: #d7d7d7;
@@ -55,6 +60,7 @@
     --p-text-muted-color: var(--p-surface-200);
     --p-stepper-step-title-color: var(--p-surface-100);
     --p-stepper-step-title-active-color: var(--p-primary-300);
+    --tl-focus-ring: var(--p-primary-200);
 }
 
 @tailwind base;
@@ -103,6 +109,12 @@ body:where(.dark, .dark *) {
     background-color: var(--p-surface-900) !important;
     border: 1px solid var(--p-surface-600) !important;
     color: gray !important;
+}
+
+/* A visible keyboard focus ring everywhere; mouse clicks don't show it. */
+:where(a, button, summary, [role='button'], [role='tab'], [tabindex]:not([tabindex='-1'])):focus-visible {
+    outline: 2px solid var(--tl-focus-ring);
+    outline-offset: 2px;
 }
 
 .text-primary {
