@@ -217,6 +217,23 @@ def test_paginated_list_with_tags(root_user, clickhouse_source):
 
 
 @pytest.mark.django_db
+def test_paginated_list_reports_the_last_firing_window(root_user, clickhouse_source):
+    client = client_for(root_user)
+    fired = call(client, "post", "ui/v1/alerts", search_alert(name="fired"))["data"]
+    call(client, "post", "ui/v1/alerts", search_alert(name="quiet"))
+    alert = Alert.objects.get(pk=fired["id"])
+    for start, state in [(0, "ALERT"), (60_000, "ALERT"), (120_000, "OK")]:
+        AlertHistory.objects.create(
+            alert=alert, window_start=start, window_end=start + 60_000, state=state
+        )
+    items = call(client, "get", "ui/v1/alerts?page=1")["data"]["items"]
+    assert {a["name"]: a["last_fired_window"] for a in items} == {
+        "fired": 120_000,
+        "quiet": None,
+    }
+
+
+@pytest.mark.django_db
 def test_evaluation_pages_match_history_rows(root_user, clickhouse_source, fake_values):
     alert = make_alert(root_user, clickhouse_source, group_by="hostname")
     for i in range(25):

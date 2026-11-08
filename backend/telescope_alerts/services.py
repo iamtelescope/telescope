@@ -3,6 +3,7 @@ from typing import Any, Dict
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.db.models import Max
 from django.utils import timezone
 
 from telescope.rbac import permissions
@@ -161,8 +162,21 @@ class AlertService:
         page = max(1, as_int(params.get("page"), 1))
         size = min(MAX_PAGE_SIZE, max(1, as_int(params.get("page_size"), 25)))
         items = alerts[(page - 1) * size : page * size]
+        # The end of the newest firing window per alert, for the list's "Last fired" column.
+        fired = dict(
+            AlertHistory.objects.filter(alert__in=items, state=STATE_ALERT)
+            .values("alert")
+            .annotate(last=Max("window_end"))
+            .values_list("alert", "last")
+        )
         return {
-            "items": [alert_dict(a, self.can_edit(user, a)) for a in items],
+            "items": [
+                {
+                    **alert_dict(a, self.can_edit(user, a)),
+                    "last_fired_window": fired.get(a.pk),
+                }
+                for a in items
+            ],
             "total": len(alerts),
             "page": page,
             "page_size": size,
