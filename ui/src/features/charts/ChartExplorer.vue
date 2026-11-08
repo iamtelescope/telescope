@@ -10,7 +10,14 @@
                 </template>
                 <template #actions>
                     <div class="flex flex-wrap items-center gap-2">
-                        <DatetimePicker :from="range.from" :to="range.to" :timeZone="timeZone" @rangeSelect="onRange" />
+                        <div class="chart-time">
+                            <DatetimePicker
+                                :from="range.from"
+                                :to="range.to"
+                                :timeZone="timeZone"
+                                @rangeSelect="onRange"
+                            />
+                        </div>
                         <template v-if="config">
                             <Button
                                 label="Edit chart"
@@ -51,13 +58,20 @@
                     class="flex flex-col min-h-[32rem] h-[calc(100vh-12rem)] border rounded-lg border-surface-200 dark:border-surface-700 p-3 bg-surface-0 dark:bg-surface-900"
                     data-testid="chart-explorer"
                 >
-                    <div class="flex items-baseline gap-2 mb-2 min-w-0">
+                    <div class="flex items-baseline gap-2 min-w-0">
                         <span class="font-medium truncate" data-testid="chart-title">
                             {{ config.title || 'Untitled chart' }}
                         </span>
                         <span v-if="config.description" class="text-sm text-surface-500 truncate">
                             {{ config.description }}
                         </span>
+                    </div>
+                    <div
+                        class="mb-2 text-sm text-surface-500 dark:text-surface-400 truncate"
+                        :title="summary"
+                        data-testid="chart-summary"
+                    >
+                        {{ summary }}
                     </div>
                     <div class="flex-1 min-h-0">
                         <LogTileView
@@ -76,6 +90,7 @@
                             :validation="data.validation.value"
                             :timeZone="timeZone"
                             @rangeSelected="onRange"
+                            @retry="reload"
                         />
                     </div>
                 </div>
@@ -119,6 +134,7 @@ import { useChartData } from '@/composables/dashboards/useDashboardService'
 import { useGetSources } from '@/composables/sources/useSourceService'
 import { availableTimeZones } from '@/utils/datetimeranges'
 import { isLogTile } from '@/utils/dashboards'
+import { columnLabel } from '@/components/dashboards/charts/format.js'
 import { alertQuery, alertSeries, parseConfig, serializeConfig } from '@/features/charts/config.js'
 
 // Adapted from HyperDX DBChartPage: one chart, its config in the URL, saved to a dashboard or an alert.
@@ -151,28 +167,52 @@ const onRange = (r) => {
 }
 const createAlert = () => router.push({ name: 'alertNew', query: alertQuery(config.value) })
 
-watch(
-    () => JSON.stringify([config.value?.chart, range.value.from, range.value.to]),
-    () => {
-        const c = config.value?.chart
-        if (!c || c.display === 'text' || isLogTile(c.display)) return data.abort()
-        data.load(c.source, {
-            from: range.value.from,
-            to: range.value.to,
-            query: c.query || '',
-            dashboard_query: '',
-            raw_query: c.raw_query || '',
-            context_columns: c.context_columns || {},
-            display: c.display,
-            series: c.series,
-            group_by: c.group_by || '',
-            granularity: c.granularity || 'auto',
-            limit: c.limit ?? 10,
-            params: {},
-            ...(c.compare ? { compare: true } : {}),
-            ...(c.sparkline ? { sparkline: true } : {}),
-        })
-    },
-    { immediate: true },
-)
+// What the chart shows, in one line: source, filter and group by.
+const summary = computed(() => {
+    const c = config.value?.chart
+    if (!c || c.display === 'text') return ''
+    const parts = [source.value?.name || c.source]
+    if (c.query) parts.push(`where ${c.query}`)
+    if (c.group_by) parts.push(`by ${columnLabel(c.group_by)}`)
+    return parts.join(' · ')
+})
+
+const reload = () => {
+    const c = config.value?.chart
+    if (!c || c.display === 'text' || isLogTile(c.display)) return data.abort()
+    data.load(c.source, {
+        from: range.value.from,
+        to: range.value.to,
+        query: c.query || '',
+        dashboard_query: '',
+        raw_query: c.raw_query || '',
+        context_columns: c.context_columns || {},
+        display: c.display,
+        series: c.series,
+        group_by: c.group_by || '',
+        granularity: c.granularity || 'auto',
+        limit: c.limit ?? 10,
+        params: {},
+        ...(c.compare ? { compare: true } : {}),
+        ...(c.sparkline ? { sparkline: true } : {}),
+    })
+}
+
+watch(() => JSON.stringify([config.value?.chart, range.value.from, range.value.to]), reload, { immediate: true })
 </script>
+
+<style scoped>
+.chart-time {
+    border: 1px solid var(--p-surface-300);
+    border-radius: var(--p-border-radius-md);
+    background: var(--p-surface-0);
+}
+.dark .chart-time {
+    border-color: var(--p-surface-700);
+    background: var(--p-surface-900);
+}
+.chart-time :deep(.p-button) {
+    margin: 0;
+    color: var(--p-text-color);
+}
+</style>
