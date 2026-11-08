@@ -7,14 +7,38 @@
                 :allowEmpty="false"
                 :options="chartTypeOptions"
                 @change="onChartTypeSelect"
+                aria-label="Chart type"
             >
                 <template #option="slotProps">
-                    <font-awesome-icon :icon="`fa-solid fa-chart-${slotProps.option}`" />
+                    <font-awesome-icon
+                        :icon="`fa-solid fa-chart-${slotProps.option}`"
+                        :aria-label="`${slotProps.option} chart`"
+                        :title="`${slotProps.option[0].toUpperCase()}${slotProps.option.slice(1)} chart`"
+                    />
                 </template>
             </SelectButton>
             <div class="flex items-center pl-4">
-                <span class="text-gray-500">group by:</span>
+                <span class="text-gray-500 dark:text-gray-400">group by:</span>
                 <span class="pl-2 font-medium">{{ groupByLabel || '–' }}</span>
+            </div>
+            <div class="flex-1"></div>
+            <div class="flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400">
+                <span v-if="hasRowsShade" class="inline-flex items-center gap-1" data-testid="histogram-rows-legend">
+                    <span class="inline-block w-3 h-3 rounded-sm" :style="{ backgroundColor: shadeColor }"></span>
+                    rows listed below
+                </span>
+                <span class="hidden md:inline"
+                    ><i class="pi pi-arrows-h text-[10px]"></i> drag across the chart to zoom</span
+                >
+                <Button
+                    v-if="canUndoZoom"
+                    label="Undo zoom"
+                    icon="pi pi-undo"
+                    size="small"
+                    text
+                    @click="emit('undoZoom')"
+                    data-testid="histogram-undo-zoom"
+                />
             </div>
         </div>
         <div class="flex flex-col" id="histogramm" data-testid="explorer-histogram">
@@ -25,7 +49,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 
-import { SelectButton } from 'primevue'
+import { SelectButton, Button } from 'primevue'
 
 import { useDark } from '@vueuse/core'
 
@@ -35,8 +59,8 @@ import { getColor } from '@/utils/colors.js'
 import { getChartSettings as buildChartSettings } from '@/utils/chartSettings.js'
 import { useMarkers, markerPlotLines } from '@/composables/useMarkers.js'
 
-const props = defineProps(['source', 'stats', 'rows', 'timeZone', 'groupByLabel'])
-const emit = defineEmits(['rangeSelected'])
+const props = defineProps(['source', 'stats', 'rows', 'timeZone', 'groupByLabel', 'canUndoZoom'])
+const emit = defineEmits(['rangeSelected', 'undoZoom'])
 
 const chartSettings = ref(null)
 const chartDefaultType = ref('column')
@@ -67,26 +91,19 @@ const theme = computed(() => {
     }
 })
 
+// Neutral shading for the span of the listed rows, visible on both themes.
+const shadeColor = computed(() => (isDark.value ? 'rgba(148, 163, 184, 0.22)' : 'rgba(71, 85, 105, 0.14)'))
+const hasRowsShade = computed(
+    () => props.rows && props.rows.length > 1 && props.stats && props.rows.length < props.stats.total,
+)
+
 const calcPlotLines = () => {
     let plotLines = []
     if (props.rows && props.rows.length > 1 && props.stats) {
         let oldest_row = props.rows[props.rows.length - 1].time.unixtime
         let newest_row = props.rows[0].time.unixtime
         if (props.rows.length < props.stats.total) {
-            let color = 'rgba(0, 0, 255, 0.2)'
-            let plotSize = newest_row - oldest_row
-            let totalSize = props.stats.timestamps[props.stats.timestamps.length - 1] - props.stats.timestamps[0]
-            let plotPercent = (plotSize * 100) / totalSize
-
-            if (plotPercent == 0) {
-                color = 'rgba(0, 0, 255, 0.2)'
-            }
-            plotLines = [
-                {
-                    value: [newest_row, oldest_row],
-                    color: color,
-                },
-            ]
+            plotLines = [{ value: [newest_row, oldest_row], color: shadeColor.value }]
         }
     }
     return plotLines
