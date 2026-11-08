@@ -12,7 +12,7 @@
             <pre
                 v-for="(e, i) in errorList"
                 :key="i"
-                class="mt-2 text-left whitespace-pre-wrap break-words text-xs font-mono p-2 rounded bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300"
+                class="mt-2 w-full text-left whitespace-pre-wrap break-words text-xs font-mono p-2 rounded bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300"
                 >{{ e }}</pre
             >
         </template>
