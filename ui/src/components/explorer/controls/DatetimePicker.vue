@@ -1,7 +1,7 @@
 <template>
     <Button
         icon="pi pi-calendar"
-        class="mr-2"
+        class="mr-2 time-range-btn"
         :label="rangeLabel"
         text
         size="small"
@@ -81,10 +81,11 @@
                     optionLabel="label"
                     @change="handleSelectRelative"
                     fluid
-                    scroll-height="21rem"
+                    scroll-height="none"
                     :pt="{
                         root: { style: { border: 'none', minWidth: '200px' } },
                         list: { style: { padding: '0', boxShadow: 'none' } },
+                        option: { style: { padding: '0.3rem 0.75rem' } },
                     }"
                 />
             </div>
@@ -155,7 +156,7 @@ const initFromProps = () => {
 initFromProps()
 watch(props, initFromProps, { deep: true })
 
-const rangeLabel = computed(() => getNiceRangeText(props.from, props.to, props.timeZone) + ` [${props.timeZone}]`)
+const rangeLabel = computed(() => getNiceRangeText(props.from, props.to, props.timeZone) + ` (${props.timeZone})`)
 
 const toggleDropdown = (event) => dropdown.value.toggle(event)
 
@@ -202,3 +203,16 @@ const handleSelectRelative = (event) => {
     }
 }
 </script>
+
+<style scoped>
+/* One bordered time control on every page. */
+.time-range-btn {
+    border: 1px solid var(--p-surface-300);
+    background: var(--p-surface-0);
+    color: var(--p-text-color);
+}
+.dark .time-range-btn {
+    border-color: var(--p-surface-700);
+    background: var(--p-surface-900);
+}
+</style>

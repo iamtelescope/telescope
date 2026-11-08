@@ -1,9 +1,5 @@
 <template>
     <div class="flex flex-col">
-        <div class="flex justify-between order-last mt-6 pt-4 border-t border-surface-200 dark:border-surface-700">
-            <Button label="Back" severity="secondary" size="small" icon="pi pi-arrow-left" @click="emit('prev')" />
-            <Button label="Next" icon="pi pi-arrow-right" size="small" iconPos="right" @click="handleNext" />
-        </div>
         <div class="flex flex-col gap-1">
             <div class="grid grid-cols-2 gap-3">
                 <div>
@@ -81,6 +77,10 @@
                 <ToggleSwitch v-model="executeQueryOnOpen" inputId="executeQueryOnOpen" />
                 <label for="executeQueryOnOpen" class="font-medium">Execute query on open</label>
             </div>
+        </div>
+        <div class="flex justify-between mt-6 pt-4 border-t border-surface-200 dark:border-surface-700">
+            <Button label="Back" severity="secondary" size="small" icon="pi pi-arrow-left" @click="emit('prev')" />
+            <Button label="Next" icon="pi pi-arrow-right" size="small" iconPos="right" @click="handleNext" />
         </div>
     </div>
 </template>

@@ -15,17 +15,15 @@
                 </Header>
                 <div class="border radius-lg p-6 dark:border-neutral-600 mt-4">
                     <div class="flex flex-col gap-6">
-                        <div class="flex flex-col">
-                            <FloatLabel variant="on">
-                                <InputText
-                                    id="name"
-                                    v-model="groupData.name"
-                                    fluid
-                                    :invalid="createFieldErrors.name != ''"
-                                    @keyup.enter="handleCreate"
-                                />
-                                <label for="name">Name</label>
-                            </FloatLabel>
+                        <div class="flex flex-col gap-1">
+                            <label for="name" class="font-medium">Name</label>
+                            <InputText
+                                id="name"
+                                v-model="groupData.name"
+                                fluid
+                                :invalid="createFieldErrors.name != ''"
+                                @keyup.enter="handleCreate"
+                            />
                             <ErrorText :text="createFieldErrors.name" />
                         </div>
 
@@ -58,7 +56,6 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 
-import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 

@@ -277,7 +277,8 @@ export const useSourceControlsStore = defineStore('sourceDataControls', () => {
         setLimit(value.data.limit)
         setGraphGroupBy(value.data.graph_group_by)
         setShowGraph(value.data.show_graph)
-        setContextColumns(value.data.context_columns)
+        // A copy, so later edits do not change the view itself.
+        setContextColumns(value.data.context_columns && JSON.parse(JSON.stringify(value.data.context_columns)))
         _resultsMode.value = resultsModeOf(value.data.mode)
         _deltas.value = value.data.deltas ?? null
 

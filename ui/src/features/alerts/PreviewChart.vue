@@ -8,13 +8,13 @@
     >
         <YagrChart v-if="settings" :settings="settings" :theme="theme" height="100%" />
     </div>
-    <div class="flex flex-wrap gap-4 mt-2 text-xs text-surface-500">
+    <div class="flex flex-wrap gap-4 mt-2 text-xs text-surface-500 dark:text-surface-400">
         <span
             ><span class="inline-block w-4 border-t-2 align-middle mr-1" :style="{ borderColor: THRESHOLD }" />threshold
             <span class="font-mono" data-testid="alert-preview-threshold">{{ describeCondition(alert) }}</span></span
         >
         <span
-            ><span class="inline-block w-3 h-3 align-middle mr-1 rounded-sm" :style="{ background: FIRING }" />{{
+            ><span class="inline-block w-3 h-3 align-middle mr-1 rounded-sm" :style="{ background: FIRING_SWATCH }" />{{
                 bandLabel || 'would fire'
             }}</span
         >
@@ -26,7 +26,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useDark } from '@vueuse/core'
 
 import YagrChart from '@/components/common/YagrChart.vue'
-import { ACCENT, categoricalColor } from '@/components/dashboards/charts/palette.js'
+import { ACCENT, entityColors } from '@/components/dashboards/charts/palette.js'
 import { formatNumber, groupLabel } from '@/components/dashboards/charts/format.js'
 import { getChartSettings } from '@/utils/chartSettings.js'
 import { localTimeZone } from '@/utils/datetimeranges'
@@ -37,6 +37,8 @@ const props = defineProps(['data', 'alert', 'bandLabel'])
 
 const THRESHOLD = 'rgba(234, 88, 12, 0.9)'
 const FIRING = 'rgba(239, 68, 68, 0.18)'
+// The legend swatch is stronger than the band, so it reads on both themes.
+const FIRING_SWATCH = 'rgba(239, 68, 68, 0.55)'
 const isDark = useDark()
 const theme = computed(() => (isDark.value ? 'dark' : 'light'))
 const wrapper = ref(null)
@@ -65,11 +67,13 @@ const firingBands = computed(() => {
 
 const settings = computed(() => {
     if (!mounted.value) return null
+    const names = props.data.series.map((s) => (s.group ? groupLabel(s.group) : 'value'))
+    const byName = entityColors(names, theme.value)
     const series = props.data.series.map((s, idx) => ({
-        name: s.group ? groupLabel(s.group) : 'value',
+        name: names[idx],
         id: `${idx}`,
         data: s.values,
-        color: props.data.series.length === 1 ? ACCENT[theme.value] : categoricalColor(idx, theme.value),
+        color: props.data.series.length === 1 ? ACCENT[theme.value] : byName.get(names[idx]),
     }))
     const result = getChartSettings({
         type: 'line',

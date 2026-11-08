@@ -23,12 +23,27 @@
         </div>
         <template v-else-if="chart.display === 'search'">
             <div class="flex-1 min-h-0 overflow-auto">
-                <ExplorerTable :source="source" :rows="data.rows" :columns="data.columns" :timeZone="timeZone" />
+                <ExplorerTable
+                    :source="source"
+                    :rows="data.rows"
+                    :columns="data.columns"
+                    :timeZone="timeZone"
+                    :wrap="wrap"
+                />
             </div>
             <div
                 class="flex items-center justify-between gap-2 shrink-0 pt-1 text-xs text-surface-500 dark:text-surface-400"
             >
                 <span data-testid="log-tile-count">{{ data.rows.length.toLocaleString() }} rows</span>
+                <label class="inline-flex items-center gap-2 mr-auto cursor-pointer">
+                    <ToggleSwitch
+                        v-model="wrap"
+                        class="scale-75"
+                        aria-label="Wrap long values"
+                        data-testid="log-tile-wrap"
+                    />
+                    Wrap lines
+                </label>
                 <Button
                     v-if="cursor && supportsPaging(source)"
                     label="Load more"
@@ -70,7 +85,7 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { Button, Skeleton, useToast } from 'primevue'
+import { Button, Skeleton, ToggleSwitch, useToast } from 'primevue'
 
 import ValidationError from '@/components/common/ValidationError.vue'
 import TileError from '@/components/dashboards/charts/TileError.vue'
@@ -95,6 +110,7 @@ const loading = ref(false)
 const loadingMore = ref(false)
 const cursor = ref(null)
 const selected = ref(null)
+const wrap = ref(false)
 // The first page's range as the server resolved it, so later pages keep its 'now'.
 let resolved = null
 let controller = null

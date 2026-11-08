@@ -1,7 +1,7 @@
 <template>
     <div class="flex flex-col overflow-y-auto" data-testid="saved-views-list">
         <div class="text-2xl p-4 border-b border-neutral-300 dark:border-neutral-600">
-            <i class="pi pi-eye" /> <span class="font-medium">{{ source.name }}</span> source Saved Views
+            <i class="pi pi-eye" /> Saved views of <span class="font-medium">{{ source.name }}</span>
         </div>
         <DataView :loadings="[loading]" :errors="[error]">
             <div class="p-4 w-full flex flex-col gap-2" v-if="savedViews.length > 0">
@@ -42,7 +42,7 @@
                 groupRowsBy="kind"
                 :value="savedViewsPrepared"
                 removableSort
-                paginator
+                :paginator="savedViewsPrepared.length > 25"
                 :rows="25"
                 :row-hover="true"
                 @rowClick="handleRowClick"

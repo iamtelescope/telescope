@@ -304,10 +304,12 @@ const step = (delta) => {
     )
 }
 
-// Up/Down (or k/j) step through rows while the panel is open, unless the user is typing.
+// Up/Down (or k/j) step through rows while the panel is open, unless typing or a widget (tree, menu) took the key.
+const WIDGETS =
+    'input, textarea, select, [contenteditable="true"], .monaco-editor, [role=tree], [role=menu], [role=menubar], [role=listbox]'
 const onKeydown = (event) => {
-    if (event.altKey || event.ctrlKey || event.metaKey) return
-    if (event.target?.closest?.('input, textarea, select, [contenteditable="true"], .monaco-editor')) return
+    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return
+    if (event.target?.closest?.(WIDGETS)) return
     if (event.key === 'ArrowDown' || event.key === 'j') step(1)
     else if (event.key === 'ArrowUp' || event.key === 'k') step(-1)
     else return

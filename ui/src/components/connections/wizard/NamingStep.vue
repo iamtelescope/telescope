@@ -7,10 +7,6 @@
         @submit="onFormSubmit"
         class="flex flex-col"
     >
-        <div class="flex justify-between order-last mt-6 pt-4 border-t border-surface-200 dark:border-surface-700">
-            <Button label="Back" severity="secondary" size="small" icon="pi pi-arrow-left" @click="emit('prev')" />
-            <Button type="submit" label="Next" icon="pi pi-arrow-right" size="small" iconPos="right" />
-        </div>
         <div class="flex flex-col gap-4">
             <div>
                 <label for="name" class="font-medium">Name *</label>
@@ -26,6 +22,10 @@
                     {{ $form.description.error?.message }}
                 </Message>
             </div>
+        </div>
+        <div class="flex justify-between mt-6 pt-4 border-t border-surface-200 dark:border-surface-700">
+            <Button label="Back" severity="secondary" size="small" icon="pi pi-arrow-left" @click="emit('prev')" />
+            <Button type="submit" label="Next" icon="pi pi-arrow-right" size="small" iconPos="right" />
         </div>
     </Form>
 </template>

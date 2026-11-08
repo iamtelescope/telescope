@@ -55,7 +55,8 @@ import { useDark } from '@vueuse/core'
 
 import YagrChart from '@/components/common/YagrChart.vue'
 
-import { getColor } from '@/utils/colors.js'
+import { getColor, levelOf } from '@/utils/colors.js'
+import { entityColors, severityOf, severityRank } from '@/components/dashboards/charts/palette.js'
 import { getChartSettings as buildChartSettings } from '@/utils/chartSettings.js'
 import { useMarkers, markerPlotLines } from '@/composables/useMarkers.js'
 
@@ -115,16 +116,23 @@ const getChartSettings = (type) => {
         return null
     }
 
-    const series = []
-    for (const [key, value] of Object.entries(props.stats.data)) {
-        series.push({
+    // Levels in severity order, other groups by name, so the stack and legend are the same on every load.
+    const rank = (key) => severityRank(levelOf(key))
+    const keys = Object.keys(props.stats.data).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
+    const others = entityColors(
+        keys.filter((key) => !severityOf(levelOf(key))),
+        theme.value,
+    )
+    // Yagr lists and stacks series in reverse.
+    const series = keys
+        .map((key) => ({
             name: key,
-            data: value,
+            data: props.stats.data[key],
             stack: 'severity',
             id: key,
-            color: getColor(key),
-        })
-    }
+            color: others.get(key) ?? getColor(key),
+        }))
+        .reverse()
     return buildChartSettings({
         type: type,
         timestamps: props.stats.timestamps,

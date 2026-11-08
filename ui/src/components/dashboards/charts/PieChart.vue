@@ -94,7 +94,7 @@ import { useDark } from '@vueuse/core'
 import TruncatedHint from '@/components/dashboards/charts/TruncatedHint.vue'
 import { seriesUnit, groupLabel, formatTileValue, exactNumber } from '@/components/dashboards/charts/format.js'
 import {
-    categoricalColor,
+    entityColors,
     isSeverityGrouping,
     severityColor,
     severityRank,
@@ -131,11 +131,15 @@ const slices = computed(() => {
     items.sort((a, b) => (severity ? severityRank(a.group) - severityRank(b.group) : 0) || b.value - a.value)
     const sum = items.reduce((acc, r) => acc + r.value, 0)
     let angle = -Math.PI / 2
-    return items.map((r, idx) => {
+    const byName = entityColors(
+        items.map((r) => groupLabel(r.group)),
+        theme,
+    )
+    return items.map((r) => {
         const part = sum ? r.value / sum : 0
         const start = angle
         angle += part * 2 * Math.PI
-        const color = (severity && severityColor(r.group, theme)) || categoricalColor(idx, theme)
+        const color = (severity && severityColor(r.group, theme)) || byName.get(groupLabel(r.group))
         const share = `${(part * 100).toFixed(part < 0.1 ? 1 : 0)}%`
         return {
             ...r,

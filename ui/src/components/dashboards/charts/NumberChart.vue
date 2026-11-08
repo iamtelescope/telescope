@@ -45,7 +45,7 @@
 import { computed } from 'vue'
 import { useDark } from '@vueuse/core'
 
-import { valueLabel, seriesUnit, formatTileValue, exactNumber } from '@/components/dashboards/charts/format.js'
+import { seriesLabel, seriesUnit, formatTileValue, exactNumber } from '@/components/dashboards/charts/format.js'
 import { ACCENT } from '@/components/dashboards/charts/palette.js'
 import { ruleColor, visibleIndex } from '@/utils/dashboards.js'
 
@@ -53,7 +53,8 @@ const props = defineProps(['data', 'chart'])
 
 const isDark = useDark()
 const series = computed(() => props.chart.series?.[visibleIndex(props.chart.series)])
-const label = computed(() => valueLabel(series.value))
+// The series itself, e.g. "count" or "p95 Duration": rows may be spans, so no "rows" noun.
+const label = computed(() => seriesLabel(series.value))
 const text = computed(() =>
     formatTileValue(props.data.value, seriesUnit(series.value, props.chart.number_format), props.chart.number_format, {
         compact: true,

@@ -1,30 +1,15 @@
 // Helpers for the trace waterfall; the tree itself comes from the backend in display order.
+import { entityColors } from '@/components/dashboards/charts/palette.js'
+import { formatNumber } from '@/components/dashboards/charts/format.js'
+import { currentTheme } from '@/utils/colors.js'
 
-// Service palette without red (errors) and green (logs), as in HyperDX's waterfall.
-const SERVICE_COLORS = [
-    '#3b82f6',
-    '#8b5cf6',
-    '#f59e0b',
-    '#06b6d4',
-    '#ec4899',
-    '#6366f1',
-    '#14b8a6',
-    '#a16207',
-    '#d946ef',
-    '#64748b',
-]
 export const ERROR_COLOR = '#ef4444'
 
-export const serviceColors = (services) =>
-    Object.fromEntries(services.map((s, i) => [s, SERVICE_COLORS[i % SERVICE_COLORS.length]]))
+// The dashboards' per-name colors, so a service looks the same in a trace and on a tile.
+export const serviceColors = (services) => Object.fromEntries(entityColors(services, currentTheme()))
 
-export function formatDuration(ns) {
-    const abs = Math.abs(ns)
-    if (abs >= 1e9) return `${+(ns / 1e9).toFixed(abs >= 1e11 ? 0 : 2)}s`
-    if (abs >= 1e6) return `${+(ns / 1e6).toFixed(abs >= 1e8 ? 0 : 2)}ms`
-    if (abs >= 1e3) return `${+(ns / 1e3).toFixed(2)}µs`
-    return `${ns}ns`
-}
+// Durations read as on dashboards and the service map: "733 ms", "1.39 s", "12.5 µs".
+export const formatDuration = (ns) => formatNumber(ns, 'duration_ns')
 
 // Spans not hidden by a collapsed ancestor; `collapsed` is a Set of span indexes.
 export function visibleSpans(spans, collapsed) {

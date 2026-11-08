@@ -54,11 +54,11 @@
                             />
                         </svg>
                     </td>
-                    <td class="px-2 py-1 font-mono text-xs break-all" data-testid="pattern-text">
+                    <td class="px-2 py-1 font-mono text-xs [overflow-wrap:anywhere]" data-testid="pattern-text">
                         <template v-for="(part, p) in templateParts(pattern.pattern)" :key="p">
                             <span
                                 v-if="part === '<*>'"
-                                class="px-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                                class="px-0.5 rounded whitespace-nowrap bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
                                 >&lt;*&gt;</span
                             >
                             <span v-else>{{ part }}</span>

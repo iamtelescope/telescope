@@ -1,6 +1,6 @@
 {
   "slug": "python-runtime",
-  "name": "Python Runtime Metrics",
+  "name": "Python runtime metrics",
   "description": "CPU utilization, memory usage, GC collections, and thread count for Python applications with the OTel Runtime Metrics instrumentation",
   "tags": [
     "OTel",

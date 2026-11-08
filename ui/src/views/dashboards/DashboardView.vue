@@ -24,8 +24,12 @@
                         class="flex items-center gap-1.5 shrink-0 text-sm text-surface-500 dark:text-surface-400"
                         data-testid="kiosk-live-status"
                     >
-                        <span class="dash-live-dot" :class="{ 'dash-live-dot--busy': refreshing }"></span>
-                        Live · every {{ refreshValue }} · Read-only
+                        <span
+                            v-if="kioskLive"
+                            class="dash-live-dot"
+                            :class="{ 'dash-live-dot--busy': refreshing }"
+                        ></span>
+                        {{ kioskStatus }} · Read-only
                     </span>
                     <Button
                         icon="pi pi-window-minimize"
@@ -88,7 +92,7 @@
                                 data-testid="dashboard-reset-zoom"
                                 @click="resetZoom"
                             />
-                            <div class="dash-control dash-time">
+                            <div class="dash-time">
                                 <DatetimePicker
                                     :from="range.from"
                                     :to="range.to"
@@ -485,8 +489,16 @@ const validZone = (tz) => (availableTimeZones.includes(tz) ? tz : null)
 const timeZone = computed(() => validZone(route.query.time_zone) ?? validZone(draft.value?.time.time_zone) ?? 'UTC')
 const refreshOptions = REFRESH_OPTIONS.map((v) => ({ value: v, label: v === 'off' ? 'Off' : `Every ${v}` }))
 const refreshing = computed(() => queue.pending.value > 0)
-// Kiosk mode always refreshes, every minute unless the dashboard sets an interval.
-const refreshValue = computed(() => (kiosk.value && draft.value?.refresh === 'off' ? '1m' : draft.value?.refresh))
+// Kiosk mode refreshes a range that ends at now every minute unless the dashboard sets an interval.
+const relativeRange = computed(() => String(range.value.to).startsWith('now'))
+const refreshValue = computed(() =>
+    kiosk.value && relativeRange.value && draft.value?.refresh === 'off' ? '1m' : draft.value?.refresh,
+)
+const kioskLive = computed(() => relativeRange.value && !!REFRESH_MS[refreshValue.value])
+const kioskStatus = computed(() => {
+    if (!REFRESH_MS[refreshValue.value]) return 'Refresh off'
+    return kioskLive.value ? `Live · every ${refreshValue.value}` : `Refresh every ${refreshValue.value}`
+})
 const rangeLabel = computed(() => `${rangeText(range.value.from, range.value.to, timeZone.value)} (${timeZone.value})`)
 const filterActive = computed(() => !!range.value.query && filterInput.value === range.value.query)
 const filterDirty = computed(() => filterInput.value !== range.value.query)

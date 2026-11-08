@@ -179,7 +179,9 @@ router.beforeEach(async (to, from) => {
     }
 })
 
-router.afterEach((to) => {
+// A query-only change (time range, filters) keeps the title a view may have set.
+router.afterEach((to, from) => {
+    if (from.name && to.path === from.path) return
     const t = TITLES[to.name]
     setPageTitle(typeof t === 'function' ? t(to) : t)
 })

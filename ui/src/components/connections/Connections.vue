@@ -9,7 +9,7 @@
                         size="small"
                         severity="primary"
                         icon="pi pi-plus"
-                        label="Create"
+                        label="New connection"
                         @click="handleConnectionCreate"
                     />
                 </template>

@@ -16,17 +16,15 @@
                     </Header>
                     <div class="border radius-lg p-6 dark:border-neutral-600 mt-4">
                         <div class="flex flex-col gap-6">
-                            <div class="flex flex-col">
-                                <FloatLabel variant="on">
-                                    <InputText
-                                        id="name"
-                                        v-model="groupData.name"
-                                        fluid
-                                        :invalid="saveFieldErrors.name != ''"
-                                        @keyup.enter="handleSave"
-                                    />
-                                    <label for="name">Name</label>
-                                </FloatLabel>
+                            <div class="flex flex-col gap-1">
+                                <label for="name" class="font-medium">Name</label>
+                                <InputText
+                                    id="name"
+                                    v-model="groupData.name"
+                                    fluid
+                                    :invalid="saveFieldErrors.name != ''"
+                                    @keyup.enter="handleSave"
+                                />
                                 <ErrorText :text="saveFieldErrors.name" />
                             </div>
 
@@ -64,7 +62,6 @@ import Header from '@/components/common/Header.vue'
 import DataView from '@/components/common/DataView.vue'
 import ErrorText from '@/components/common/ErrorText.vue'
 import { useGetGroup } from '@/composables/rbac/useGroupService'
-import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import { GroupService } from '@/sdk/services/group'

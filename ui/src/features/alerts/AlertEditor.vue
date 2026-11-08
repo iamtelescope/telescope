@@ -6,7 +6,7 @@
                     <div class="flex items-center gap-3 min-w-0">
                         <router-link
                             :to="{ name: 'alerts' }"
-                            class="text-surface-500 hover:text-primary"
+                            class="text-surface-500 dark:text-surface-400 hover:text-primary"
                             title="Alerts"
                         >
                             <Bell class="w-8 h-8" />
@@ -21,7 +21,7 @@
                     </div>
                 </template>
                 <template #subtitle>
-                    <span v-if="stored" class="text-sm text-surface-500">
+                    <span v-if="stored" class="text-sm text-surface-500 dark:text-surface-400">
                         Owner {{ stored.owner?.username }}
                         <template v-if="stored.last_evaluated_at">
                             · evaluated {{ relative(stored.last_evaluated_at) }}</template
@@ -252,7 +252,10 @@
                                                 size="small"
                                             />
                                         </Field>
-                                        <div v-if="tile" class="text-sm text-surface-500 font-mono break-all">
+                                        <div
+                                            v-if="tile"
+                                            class="text-sm text-surface-500 dark:text-surface-400 font-mono break-all"
+                                        >
                                             {{ tile.chart.source
                                             }}<span v-if="tile.chart.query">: {{ tile.chart.query }}</span
                                             ><span v-if="tile.chart.group_by"> by {{ tile.chart.group_by }}</span>
@@ -266,7 +269,7 @@
                                 <template #actions>
                                     <span
                                         v-if="previewSummary"
-                                        class="text-sm text-surface-500 mr-2"
+                                        class="text-sm text-surface-500 dark:text-surface-400 mr-2"
                                         data-testid="alert-preview-summary"
                                         >{{ previewSummary }}</span
                                     >
@@ -275,12 +278,15 @@
                                     <ErrorText v-if="previewError" :text="previewError" />
                                     <div
                                         v-else-if="previewLoading && !previewData"
-                                        class="h-64 flex items-center justify-center text-surface-500"
+                                        class="h-64 flex items-center justify-center text-surface-500 dark:text-surface-400"
                                     >
                                         <i class="pi pi-spin pi-spinner mr-2" />Evaluating
                                     </div>
                                     <PreviewChart v-else-if="previewData" :data="previewData" :alert="form" />
-                                    <div v-else class="h-24 flex items-center justify-center text-surface-500 text-sm">
+                                    <div
+                                        v-else
+                                        class="h-24 flex items-center justify-center text-surface-500 dark:text-surface-400 text-sm"
+                                    >
                                         Choose what to watch to see how the alert would have behaved.
                                     </div>
                                 </div>
@@ -417,9 +423,10 @@
                                             data-testid="alert-channels"
                                         >
                                             <template #option="{ option }">
-                                                <i :class="kindIcon(option.kind)" class="mr-2 text-surface-500" />{{
-                                                    option.name
-                                                }}
+                                                <i
+                                                    :class="kindIcon(option.kind)"
+                                                    class="mr-2 text-surface-500 dark:text-surface-400"
+                                                />{{ option.name }}
                                             </template>
                                         </MultiSelect>
                                         <router-link :to="{ name: 'alertChannels' }" class="text-sm table-link mt-1"
@@ -462,7 +469,7 @@
                             data-testid="alert-history"
                         >
                             <template #empty>
-                                <div class="p-2 text-surface-500">
+                                <div class="p-2 text-surface-500 dark:text-surface-400">
                                     Not evaluated yet; the scheduler runs every few seconds.
                                 </div>
                             </template>

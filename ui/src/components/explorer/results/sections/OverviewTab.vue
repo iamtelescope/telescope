@@ -3,7 +3,7 @@
         <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 px-4 py-3" data-testid="row-top-level">
             <template v-for="item in top" :key="item.role">
                 <dt class="text-neutral-500">{{ item.label }}</dt>
-                <dd class="font-mono break-all" :data-testid="`row-top-${item.role}`">
+                <dd class="font-mono [overflow-wrap:anywhere]" :data-testid="`row-top-${item.role}`">
                     {{ item.role === 'duration' ? formatDuration(durationNs(source, item.value)) : item.value }}
                 </dd>
             </template>
@@ -50,7 +50,7 @@
             <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
                 <template v-for="[label, value] in httpFields" :key="label">
                     <dt class="text-neutral-500">{{ label }}</dt>
-                    <dd class="font-mono break-all">{{ value }}</dd>
+                    <dd class="font-mono [overflow-wrap:anywhere]">{{ value }}</dd>
                 </template>
             </dl>
             <template v-for="part in httpParts" :key="part.title">

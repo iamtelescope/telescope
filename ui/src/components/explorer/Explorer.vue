@@ -16,12 +16,22 @@
         />
         <FlyqlDiagnostics v-if="flyqlDiagnostics.length" :diagnostics="flyqlDiagnostics" />
         <div class="flex flex-row gap-2">
-            <FacetSidebar :source="source" :searchSeq="searchSeq" @searchRequest="controlsRef.handleSearch()" />
+            <FacetSidebar
+                :source="source"
+                :searchSeq="searchSeq"
+                :queryInvalid="flyqlDiagnostics.length > 0"
+                @searchRequest="controlsRef.handleSearch()"
+            />
             <div class="flex-1 min-w-0">
                 <BorderCard
                     class="mb-2"
                     :loading="graphLoading"
-                    v-if="sourceControlsStore.showGraph && !showInitialMessage && !(error && graphError)"
+                    v-if="
+                        sourceControlsStore.showGraph &&
+                        !showInitialMessage &&
+                        !(error && graphError) &&
+                        !flyqlDiagnostics.length
+                    "
                     data-testid="explorer-graph"
                 >
                     <Skeleton v-if="graphLoading && graphData === null" width="100%" height="235px"></Skeleton>
@@ -94,8 +104,15 @@
                             Wrap lines
                         </label>
                     </div>
+                    <!-- The query is checked before it is sent: nothing ran, so nothing stale is shown. -->
+                    <SearchError
+                        v-if="flyqlDiagnostics.length"
+                        title="Query not run"
+                        :error="flyqlDiagnostics.map((d) => `${d.section}: ${d.message}`)"
+                        data-testid="explorer-query-invalid"
+                    />
                     <PatternsView
-                        v-if="resultsMode === 'patterns' && patternsAvailable(source)"
+                        v-else-if="resultsMode === 'patterns' && patternsAvailable(source)"
                         :source="source"
                         :searchSeq="searchSeq"
                         :timeZone="displayTimeZone"

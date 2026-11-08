@@ -45,6 +45,34 @@ export const severityColor = (value, theme) => {
     return level ? SEVERITY[theme][level] : null
 }
 
+// Series past the palette share one neutral, so no two of them look like the same entity.
+const OTHER = { light: '#b9b8b2', dark: '#5f5e59' }
+
+const hashOf = (text) => {
+    let h = 2166136261
+    for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619)
+    return h >>> 0
+}
+
+// Each name starts at its own slot, so a service keeps its color across tiles, dashboards and traces.
+// The first names in rank order get colors; a clash is settled by name, so the same pair always resolves alike.
+export const entityColors = (names, theme) => {
+    // Green is left out: next to aqua it reads as the same hue, and green marks logs in the trace view.
+    const colors = CATEGORICAL[theme].filter((c) => c !== '#008300')
+    const unique = [...new Set(names)]
+    const result = new Map(unique.slice(colors.length).map((name) => [name, OTHER[theme]]))
+    const taken = new Set()
+    for (const name of unique.slice(0, colors.length).sort()) {
+        let slot = hashOf(String(name)) % colors.length
+        while (taken.has(slot)) slot = (slot + 1) % colors.length
+        taken.add(slot)
+        result.set(name, colors[slot])
+    }
+    return result
+}
+
+export const entityColor = (name, theme) => entityColors([name], theme).get(name)
+
 export const categoricalColor = (index, theme) => {
     const colors = CATEGORICAL[theme]
     return colors[index % colors.length]

@@ -14,7 +14,11 @@ export const SHORTCUTS = [
     { group: 'Command palette', keys: ['↑', '↓'], label: 'Move through results', join: 'or' },
     { group: 'Command palette', keys: ['Enter'], label: 'Open the selected result' },
     { group: 'Search', keys: ['Enter'], label: 'Run the query in a search or filter box' },
+    { group: 'Search', keys: ['↑', '↓'], label: 'Previous or next row while the row panel is open', join: 'or' },
+    { group: 'Search', keys: ['k', 'j'], label: 'Previous or next row, as ↑ and ↓', join: 'or' },
+    { group: 'Search', keys: ['Esc'], label: 'Close the row panel' },
     { group: 'Dashboards', keys: ['Esc'], label: 'Leave kiosk mode, or close the tile editor' },
+    { group: 'Dashboards', keys: [modKey, 'Enter'], label: 'Run the query of an SQL tile in the tile editor' },
 ]
 
 // True when a key press belongs to a text field or code editor, not to a global shortcut.

@@ -3,7 +3,9 @@
         icon="pi pi-th-large"
         class="mr-2"
         label="Add to dashboard"
-        text
+        :text="!outlined"
+        :outlined="outlined"
+        :severity="outlined ? 'secondary' : undefined"
         size="small"
         @click="open"
         data-testid="add-to-dashboard-btn"
@@ -164,7 +166,8 @@ import { bottomY, defaultTileSize, emptyDashboardData, newTileId } from '@/utils
 import { fieldErrorsText } from '@/utils/utils'
 
 // `tile` ({title, description, chart}) replaces the explorer's count() chart, e.g. from the chart explorer.
-const props = defineProps(['source', 'tile'])
+// `outlined` matches a header of bordered buttons (the chart explorer).
+const props = defineProps({ source: null, tile: null, outlined: Boolean })
 
 const srv = new DashboardService()
 const router = useRouter()

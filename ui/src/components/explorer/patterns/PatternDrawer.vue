@@ -10,7 +10,7 @@
     >
         <div v-if="pattern" class="flex flex-col gap-4 text-sm">
             <div
-                class="font-mono text-xs break-all rounded border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-2"
+                class="font-mono text-xs [overflow-wrap:anywhere] rounded border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-2"
                 data-testid="pattern-drawer-template"
             >
                 {{ pattern.pattern }}
@@ -49,7 +49,7 @@
                     <div class="text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">
                         {{ getDateTimeString(row.time, timeZone) }}
                     </div>
-                    <div class="font-mono text-xs whitespace-pre-wrap break-all">{{ row.body }}</div>
+                    <div class="font-mono text-xs whitespace-pre-wrap [overflow-wrap:anywhere]">{{ row.body }}</div>
                 </div>
             </div>
         </div>

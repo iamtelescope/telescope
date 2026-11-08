@@ -2,12 +2,12 @@
     <Content>
         <template #header>
             <Header>
-                <template #title> <Users class="mr-3 w-8 h-8" /> Group </template>
+                <template #title> <UserPlus class="mr-3 w-8 h-8" /> Group </template>
             </Header>
         </template>
         <template #content>
             <DataView :loadings="[groupLoading]" :errors="[groupError]">
-                <div class="flex flex-col max-w-[800px]">
+                <div class="flex flex-col max-w-[1000px]">
                     <Header>
                         <template #title>{{ group.name }} </template>
                         <template #actions>
@@ -47,7 +47,7 @@
                                         @remove="handleRevokeGlobalRole(role)"
                                     />
                                 </div>
-                                <div v-else class="text-gray-400">&ndash;</div>
+                                <div v-else class="text-gray-400">&mdash;</div>
                             </DataRow>
                         </ContentBlock>
 
@@ -68,7 +68,7 @@
                                         :disabled="selectGlobalRoleDisabled"
                                     />
                                     <Button
-                                        class="ml-2 pl-6 pr-6"
+                                        class="ml-2 pl-6 pr-6 min-w-24 shrink-0"
                                         :severity="grantButtonActive ? 'primary' : 'secondary'"
                                         label="Grant"
                                         :outlined="!grantButtonActive"
@@ -115,7 +115,7 @@
                                         @change="handleUserSelect"
                                     />
                                     <Button
-                                        class="ml-2 pl-6 pr-6"
+                                        class="ml-2 pl-6 pr-6 min-w-24 shrink-0"
                                         :severity="addButtonActive ? 'primary' : 'secondary'"
                                         label="Add"
                                         :outlined="!addButtonActive"
@@ -167,7 +167,7 @@
 
 <script setup>
 import { watch, ref, computed } from 'vue'
-import { Users } from 'lucide-vue-next'
+import { UserPlus, Users } from 'lucide-vue-next'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useToast } from 'primevue/usetoast'

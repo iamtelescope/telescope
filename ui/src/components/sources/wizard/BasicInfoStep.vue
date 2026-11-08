@@ -1,19 +1,15 @@
 <template>
     <Form v-slot="$form" :initialValues="initialValues" :resolver @submit="onFormSubmit" class="flex flex-col">
-        <div class="flex justify-between order-last mt-6 pt-4 border-t border-surface-200 dark:border-surface-700">
-            <Button label="Back" severity="secondary" size="small" icon="pi pi-arrow-left" @click="emit('prev')" />
-            <Button type="submit" label="Next" icon="pi pi-arrow-right" size="small" iconPos="right" />
-        </div>
         <div class="flex flex-col gap-1">
             <div>
-                <label for="name" class="font-medium text-lg">Name *</label>
+                <label for="name" class="font-medium">Name *</label>
                 <InputText name="name" id="name" class="w-full" fluid />
                 <Message v-if="$form.name?.invalid" severity="error" size="small" variant="simple">
                     {{ $form.name.error?.message }}
                 </Message>
             </div>
             <div class="pt-2">
-                <label for="slug" class="font-medium text-lg">Slug *</label>
+                <label for="slug" class="font-medium">Slug *</label>
                 <InputText name="slug" id="slug" class="w-full" fluid :disabled="props.isEditing" />
                 <Message v-if="props.isEditing" size="small" severity="secondary" variant="simple">
                     Slug cannot be changed after creation
@@ -23,12 +19,16 @@
                 </Message>
             </div>
             <div class="pt-2">
-                <label for="description" class="font-medium text-lg">Description</label>
+                <label for="description" class="font-medium">Description</label>
                 <InputText name="description" id="description" class="w-full" fluid />
                 <Message v-if="$form.description?.invalid" severity="error" size="small" variant="simple">
                     {{ $form.description.error?.message }}
                 </Message>
             </div>
+        </div>
+        <div class="flex justify-between mt-6 pt-4 border-t border-surface-200 dark:border-surface-700">
+            <Button label="Back" severity="secondary" size="small" icon="pi pi-arrow-left" @click="emit('prev')" />
+            <Button type="submit" label="Next" icon="pi pi-arrow-right" size="small" iconPos="right" />
         </div>
     </Form>
 </template>

@@ -14,7 +14,7 @@
                         size="small"
                         severity="primary"
                         icon="pi pi-plus"
-                        label="Create"
+                        label="New source"
                         @click="handleSourceCreate"
                     />
                 </template>
@@ -174,7 +174,7 @@
                                     placeholder="Filter by connection"
                                     size="small"
                                     fluid
-                                    class="min-w-32"
+                                    class="min-w-44"
                                 />
                             </template>
                         </Column>

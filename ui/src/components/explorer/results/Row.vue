@@ -81,7 +81,7 @@
                     </TabPanel>
                     <TabPanel value="0">
                         <DataTable :value="flattenRow" :row-hover="true" removableSort size="small">
-                            <Column field="path" header="Field" sortable class="font-medium text-nowrap">
+                            <Column field="path" header="Field" sortable class="font-medium text-nowrap" :pt="TOP">
                                 <template #body="slotProps">
                                     <div class="flex items-center gap-1">
                                         <Button
@@ -140,16 +140,17 @@
                                     </div>
                                 </template>
                             </Column>
-                            <Column field="value" header="Value" sortable>
+                            <Column field="value" header="Value" sortable :pt="TOP">
                                 <template #body="slotProps">
                                     <div class="flex items-start gap-1 group/value">
                                         <pre
                                             v-if="slotProps.data.value !== null && slotProps.data.value !== ''"
-                                            class="flex-1"
-                                            style="white-space: pre-wrap; word-wrap: break-all; word-break: break-all"
+                                            class="flex-1 py-1.5"
+                                            style="white-space: pre-wrap; overflow-wrap: anywhere"
+                                            data-testid="row-field-value"
                                             >{{ slotProps.data.value }}</pre
                                         >
-                                        <span v-else class="flex-1">&ndash;</span>
+                                        <span v-else class="flex-1 py-1.5">&ndash;</span>
                                         <Button
                                             v-if="slotProps.data.value !== null && slotProps.data.value !== ''"
                                             icon="pi pi-copy"
@@ -168,9 +169,7 @@
                     </TabPanel>
                     <TabPanel value="1">
                         <div class="p-4">
-                            <pre style="white-space: pre-wrap; word-wrap: break-all; word-break: break-all">{{
-                                row
-                            }}</pre>
+                            <pre style="white-space: pre-wrap; overflow-wrap: anywhere">{{ row }}</pre>
                         </div>
                     </TabPanel>
                     <TabPanel v-if="contextAvailable(source, row)" value="context">
@@ -223,6 +222,9 @@ const explorerColumns = inject('explorerColumns', null)
 const toast = useToast()
 const { copy } = useClipboard({ legacy: true })
 
+// Field and value cells start at the top, so a value's first line sits level with its field name.
+const TOP = { bodyCell: { style: 'vertical-align: top' } }
+
 const isShown = (path) => explorerColumns?.has(formatPathForQuery(path))
 
 const copyValue = async (text) => {
@@ -238,7 +240,9 @@ const dateTimeString = computed(() => {
     const dateTime = DateTime.fromMillis(props.row.time.unixtime, { zone: props.timeZone }).toFormat(
         'yyyy-MM-dd HH:mm:ss',
     )
-    return `${dateTime}.${props.row.time.microseconds} ${props.timeZone}`
+    // Milliseconds, as in the table, unless the time has sub-millisecond digits.
+    const us = String(props.row.time.microseconds ?? '').padStart(6, '0')
+    return `${dateTime}.${us.endsWith('000') ? us.slice(0, 3) : us} ${props.timeZone}`
 })
 
 const formatPathForQuery = (pathArray) => {

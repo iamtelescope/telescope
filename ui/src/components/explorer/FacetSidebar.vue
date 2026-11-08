@@ -60,7 +60,12 @@
             <div v-if="search && !shownGroups.length" class="text-xs opacity-70 py-1" data-testid="facet-search-empty">
                 No facet or value matches "{{ search }}".
             </div>
-            <div v-if="!data && !loading && !error" class="text-xs opacity-70 py-2">Run a search to see values.</div>
+            <div v-if="queryInvalid" class="text-xs opacity-70 py-2" data-testid="facet-query-invalid">
+                Fix the query to see values.
+            </div>
+            <div v-else-if="!data && !loading && !error" class="text-xs opacity-70 py-2">
+                Run a search to see values.
+            </div>
             <div class="max-h-[70vh] overflow-y-auto overflow-x-hidden">
                 <FacetGroup
                     v-for="facet in shownGroups"
@@ -124,7 +129,7 @@ import {
 } from '@/components/explorer/facets/facets'
 
 // Left panel of the explorer: top values per column of the last search; click filters, Alt+click excludes.
-const props = defineProps(['source', 'searchSeq'])
+const props = defineProps(['source', 'searchSeq', 'queryInvalid'])
 const emit = defineEmits(['searchRequest'])
 
 const store = useSourceControlsStore()
@@ -182,7 +187,9 @@ const groups = computed(() => {
     const more = new Set(data.value.more)
     const group = (column, key, kind, values) => {
         const id = key === null ? column : `${column}.${key}`
-        return { id, column, key, kind, title: facetPath(column, key), values: values || [], more: more.has(id) }
+        // A map key reads as the key alone, as on dashboards; the header tooltip keeps the full path.
+        const title = key === null ? column : key
+        return { id, column, key, kind, title, values: values || [], more: more.has(id) }
     }
     const column = (name) =>
         isMapType(props.source.columns[name]?.type)
@@ -209,7 +216,7 @@ const groups = computed(() => {
 // The search keeps groups whose name matches (all values) or that have a matching value (only those).
 const search = ref('')
 const term = computed(() => search.value.trim().toLowerCase())
-const titleMatches = (facet) => facet.title.toLowerCase().includes(term.value)
+const titleMatches = (facet) => `${facet.title} ${facet.id}`.toLowerCase().includes(term.value)
 const shownGroups = computed(() =>
     term.value
         ? groups.value.filter(

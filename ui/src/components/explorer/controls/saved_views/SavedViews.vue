@@ -201,7 +201,9 @@ const saveSavedView = async (view) => {
     let response = await sourceSrv.updateSavedView(props.source.slug, view.slug, data)
     saveLoading.value = false
     response.sendToast(toast)
-    if (response.result && response.validation?.result !== false) currentView.value.data = data.data
+    // A copy: viewParams shares the store's live context-columns object.
+    if (response.result && response.validation?.result !== false)
+        currentView.value.data = JSON.parse(JSON.stringify(data.data))
 }
 
 watch(props, () => {

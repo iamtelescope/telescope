@@ -1,26 +1,5 @@
 <template>
     <div class="flex flex-col">
-        <div
-            class="flex order-last mt-6 pt-4 border-t border-surface-200 dark:border-surface-700"
-            :class="showBack ? 'justify-between' : 'justify-end'"
-        >
-            <Button
-                v-if="showBack"
-                label="Back"
-                severity="secondary"
-                size="small"
-                icon="pi pi-arrow-left"
-                @click="emit('prev')"
-            />
-            <Button
-                label="Next"
-                icon="pi pi-arrow-right"
-                size="small"
-                iconPos="right"
-                @click="handleNext"
-                :disabled="!isValid"
-            />
-        </div>
         <div class="flex flex-col gap-3">
             <div>
                 <label for="connection_kind" class="font-medium">Type *</label>
@@ -124,6 +103,27 @@
                     class="mt-4"
                 />
             </div>
+        </div>
+        <div
+            class="flex mt-6 pt-4 border-t border-surface-200 dark:border-surface-700"
+            :class="showBack ? 'justify-between' : 'justify-end'"
+        >
+            <Button
+                v-if="showBack"
+                label="Back"
+                severity="secondary"
+                size="small"
+                icon="pi pi-arrow-left"
+                @click="emit('prev')"
+            />
+            <Button
+                label="Next"
+                icon="pi pi-arrow-right"
+                size="small"
+                iconPos="right"
+                @click="handleNext"
+                :disabled="!isValid"
+            />
         </div>
     </div>
 </template>

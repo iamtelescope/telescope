@@ -1,15 +1,5 @@
 <template>
     <div class="flex flex-col">
-        <div class="flex justify-between order-last mt-6 pt-4 border-t border-surface-200 dark:border-surface-700">
-            <Button label="Back" severity="secondary" size="small" icon="pi pi-arrow-left" @click="emit('prev')" />
-            <Button
-                :label="isEditing ? 'Save' : 'Create'"
-                icon="pi pi-check"
-                size="small"
-                @click="handleCreate"
-                :loading="createLoading"
-            />
-        </div>
         <div v-if="basicInfo?.name && connectionData?.connection" class="flex flex-col gap-4">
             <ContentBlock header="Basic Information">
                 <DataRow name="Name" :value="basicInfo.name" :copy="false" />
@@ -116,6 +106,16 @@
         </div>
         <div v-else class="text-center py-8 text-gray-500 dark:text-gray-300">
             <p>Please complete the previous steps first.</p>
+        </div>
+        <div class="flex justify-between mt-6 pt-4 border-t border-surface-200 dark:border-surface-700">
+            <Button label="Back" severity="secondary" size="small" icon="pi pi-arrow-left" @click="emit('prev')" />
+            <Button
+                :label="isEditing ? 'Save' : 'Create'"
+                icon="pi pi-check"
+                size="small"
+                @click="handleCreate"
+                :loading="createLoading"
+            />
         </div>
     </div>
 </template>

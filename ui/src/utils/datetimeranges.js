@@ -20,6 +20,9 @@ export const relativeTimeRanges = [
     { label: 'Last 6 hours', from: 'now-6h', to: 'now' },
     { label: 'Last 12 hours', from: 'now-12h', to: 'now' },
     { label: 'Last 24 hours', from: 'now-24h', to: 'now' },
+    { label: 'Last 2 days', from: 'now-2d', to: 'now' },
+    { label: 'Last 7 days', from: 'now-7d', to: 'now' },
+    { label: 'Last 30 days', from: 'now-30d', to: 'now' },
 ]
 
 export function tryGetRelativeOption(from, to) {
@@ -30,7 +33,14 @@ export function getNiceRangeText(from, to, timeZone) {
     if (typeof from === 'string' && typeof to === 'string')
         return tryGetRelativeOption(from, to)?.label ?? `${from} - ${to}`
 
-    return `${getDateTimeString(from, timeZone)} - ${getDateTimeString(to, timeZone)}`
+    return `${shortDateTimeString(from, timeZone)} → ${shortDateTimeString(to, timeZone)}`
+}
+
+// For labels: seconds and milliseconds only when they are set.
+function shortDateTimeString(input, timeZone) {
+    if (typeof input !== 'number') return input
+    const t = DateTime.fromMillis(input, { zone: timeZone })
+    return t.toFormat(t.millisecond ? absoluteTimeFormat : t.second ? 'yyyy-MM-dd HH:mm:ss' : 'yyyy-MM-dd HH:mm')
 }
 
 export function moveTimestampToTimeZone(timestamp, oldTimeZone, newTimeZone) {

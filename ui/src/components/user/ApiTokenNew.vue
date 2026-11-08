@@ -12,20 +12,18 @@
             <form class="max-w-[640px]" @submit.prevent="handleCreate" novalidate>
                 <div class="border rounded-lg p-6 dark:border-neutral-600 flex flex-col gap-6">
                     <div class="flex flex-col gap-1">
-                        <FloatLabel variant="on">
-                            <InputText
-                                id="name"
-                                ref="nameInput"
-                                v-model="tokenData.name"
-                                fluid
-                                autofocus
-                                maxlength="255"
-                                :invalid="!!createFieldErrors.name"
-                                aria-describedby="name-help name-error"
-                                @input="createFieldErrors.name = ''"
-                            />
-                            <label for="name">Name</label>
-                        </FloatLabel>
+                        <label for="name" class="font-medium">Name</label>
+                        <InputText
+                            id="name"
+                            ref="nameInput"
+                            v-model="tokenData.name"
+                            fluid
+                            autofocus
+                            maxlength="255"
+                            :invalid="!!createFieldErrors.name"
+                            aria-describedby="name-help name-error"
+                            @input="createFieldErrors.name = ''"
+                        />
                         <ErrorText id="name-error" role="alert" :text="createFieldErrors.name" />
                         <span id="name-help" class="text-sm text-surface-500 dark:text-surface-400">
                             A name you will recognise later, e.g. the script or host that uses it.
@@ -63,7 +61,6 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { KeyRound } from 'lucide-vue-next'
 
-import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 

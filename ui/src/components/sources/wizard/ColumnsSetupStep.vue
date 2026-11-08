@@ -1,9 +1,5 @@
 <template>
     <div class="flex flex-col">
-        <div class="flex justify-between order-last mt-6 pt-4 border-t border-surface-200 dark:border-surface-700">
-            <Button label="Back" severity="secondary" size="small" icon="pi pi-arrow-left" @click="emit('prev')" />
-            <Button label="Next" icon="pi pi-arrow-right" size="small" iconPos="right" @click="handleNext" />
-        </div>
         <div class="flex flex-col gap-1">
             <div class="flex justify-between items-center mb-3 gap-2">
                 <Button
@@ -170,6 +166,10 @@
                     </div>
                 </div>
             </ContentBlock>
+        </div>
+        <div class="flex justify-between mt-6 pt-4 border-t border-surface-200 dark:border-surface-700">
+            <Button label="Back" severity="secondary" size="small" icon="pi pi-arrow-left" @click="emit('prev')" />
+            <Button label="Next" icon="pi pi-arrow-right" size="small" iconPos="right" @click="handleNext" />
         </div>
     </div>
 </template>

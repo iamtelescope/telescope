@@ -1,6 +1,6 @@
 {
   "slug": "go-runtime",
-  "name": "Go Runtime Metrics",
+  "name": "Go runtime metrics",
   "description": "Memory usage, allocations, GC targets, CPU utilization, and goroutine metrics for Go applications with the OTel Runtime (v0.62+) and Host Metrics instrumentations",
   "tags": [
     "OTel",

@@ -17,9 +17,6 @@ export const seriesLabel = (s) => {
     return `${s.agg} ${s.column}${where}`
 }
 
-// The title of a single-value tile, e.g. "count of rows" or "p95 duration_ms".
-export const valueLabel = (s) => (s && !s.alias && s.agg === 'count' ? 'count of rows' : seriesLabel(s))
-
 // A map key column, e.g. ResourceAttributes.'k8s.pod.name', reads as its key.
 export const columnLabel = (name) => String(name || '').replace(/[A-Za-z_]\w*\.'([^']+)'/g, '$1')
 
@@ -93,6 +90,21 @@ export const formatTileValue = (value, unit, format, { compact = false } = {}) =
     const text = formatNumber(value, unit, { compact: compact || !!format?.compact, decimals })
     if (text === '–') return text
     return `${format?.prefix || ''}${text}${format?.suffix || ''}`
+}
+
+// Y axis labels are compact unless two ticks would read the same; then they get the decimals the tick step needs.
+export const axisLabels = (splits, unit, format) => {
+    const compact = splits.map((v) => formatTileValue(v, unit, format, { compact: true }))
+    if (new Set(compact).size === compact.length || !['number', 'percent'].includes(unit) || splits.length < 2) {
+        return compact
+    }
+    const step = Math.abs(splits[1] - splits[0])
+    let digits = 0
+    while (digits < 10 && Math.abs(step * 10 ** digits - Math.round(step * 10 ** digits)) > 1e-6) digits++
+    const text = (v) =>
+        v.toLocaleString(LOCALE, { minimumFractionDigits: digits, maximumFractionDigits: digits }) +
+        (unit === 'percent' ? '%' : '')
+    return splits.map((v) => `${format?.prefix || ''}${text(v)}${format?.suffix || ''}`)
 }
 
 const UNIT_WORDS = { s: 'second', m: 'minute', h: 'hour', d: 'day', w: 'week' }

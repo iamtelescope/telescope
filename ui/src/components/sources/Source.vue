@@ -7,7 +7,7 @@
         </template>
         <template #content>
             <DataView :loadings="[loading]" :errors="[error]">
-                <div class="flex flex-col max-w-[1280px]">
+                <div class="flex flex-col max-w-[1000px]">
                     <Header>
                         <template #title>
                             <div class="flex items-center gap-3">
@@ -79,22 +79,22 @@
                                         <DataRow name="Name" :value="source.name" :copy="false" />
                                         <DataRow
                                             name="Description"
-                                            :value="source.description || '&ndash;'"
+                                            :value="source.description || '&mdash;'"
                                             :copy="false"
                                         />
                                         <DataRow name="Time column" :value="source.timeColumn" :copy="false" />
                                         <DataRow
                                             name="Date column"
-                                            :value="source.dateColumn || '&ndash;'"
+                                            :value="source.dateColumn || '&mdash;'"
                                             :copy="false"
                                         />
                                         <DataRow
                                             name="Severity column"
-                                            :value="source.severityColumn || '&ndash;'"
+                                            :value="source.severityColumn || '&mdash;'"
                                             :copy="false"
                                         />
                                         <DataRow name="Default chosen columns" :copy="false">
-                                            {{ source.defaultChosenColumns?.join(', ') || '&ndash;' }}
+                                            {{ source.defaultChosenColumns?.join(', ') || '&mdash;' }}
                                         </DataRow>
                                         <DataRow name="Execute query on open" :showBorder="false" :copy="false">
                                             {{ source.executeQueryOnOpen ? 'Yes' : 'No' }}
@@ -166,30 +166,30 @@
 
                                     <ContentBlock header="Data" class="mt-3" v-if="source.kind === 'clickhouse'">
                                         <DataRow name="Database" :copy="false">
-                                            <span class="font-mono">{{ source.data?.database || '&ndash;' }}</span>
+                                            <span class="font-mono">{{ source.data?.database || '&mdash;' }}</span>
                                         </DataRow>
                                         <DataRow name="Table" :copy="false">
-                                            <span class="font-mono">{{ source.data?.table || '&ndash;' }}</span>
+                                            <span class="font-mono">{{ source.data?.table || '&mdash;' }}</span>
                                         </DataRow>
                                         <DataRow name="Query Settings" :copy="false" :showBorder="false">
                                             <span class="font-mono text-sm">{{
-                                                source.data?.settings || '&ndash;'
+                                                source.data?.settings || '&mdash;'
                                             }}</span>
                                         </DataRow>
                                     </ContentBlock>
                                     <ContentBlock header="Data" class="mt-3" v-if="source.kind === 'starrocks'">
                                         <DataRow name="Catalog" :copy="false">
-                                            <span class="font-mono">{{ source.data?.catalog || '&ndash;' }}</span>
+                                            <span class="font-mono">{{ source.data?.catalog || '&mdash;' }}</span>
                                         </DataRow>
                                         <DataRow name="Database" :copy="false">
-                                            <span class="font-mono">{{ source.data?.database || '&ndash;' }}</span>
+                                            <span class="font-mono">{{ source.data?.database || '&mdash;' }}</span>
                                         </DataRow>
                                         <DataRow name="Table" :copy="false">
-                                            <span class="font-mono">{{ source.data?.table || '&ndash;' }}</span>
+                                            <span class="font-mono">{{ source.data?.table || '&mdash;' }}</span>
                                         </DataRow>
                                         <DataRow name="Query Settings" :copy="false" :showBorder="false">
                                             <span class="font-mono text-sm">{{
-                                                source.data?.settings || '&ndash;'
+                                                source.data?.settings || '&mdash;'
                                             }}</span>
                                         </DataRow>
                                     </ContentBlock>
@@ -201,7 +201,7 @@
                                             >
                                                 {{ source.data.namespace_label_selector }}
                                             </code>
-                                            <span v-else>&ndash;</span>
+                                            <span v-else>&mdash;</span>
                                         </DataRow>
                                         <DataRow name="Namespace Field Selector" :copy="false">
                                             <code
@@ -210,7 +210,7 @@
                                             >
                                                 {{ source.data.namespace_field_selector }}
                                             </code>
-                                            <span v-else>&ndash;</span>
+                                            <span v-else>&mdash;</span>
                                         </DataRow>
                                         <DataRow name="Namespace FlyQL Filter" :copy="false" :showBorder="false">
                                             <code
@@ -219,7 +219,7 @@
                                             >
                                                 {{ source.data.namespace }}
                                             </code>
-                                            <span v-else>&ndash;</span>
+                                            <span v-else>&mdash;</span>
                                         </DataRow>
                                     </ContentBlock>
                                     <ContentBlock header="Columns" class="mt-3">
@@ -242,7 +242,7 @@
                                                     <span v-if="slotProps.data.display_name">{{
                                                         slotProps.data.display_name
                                                     }}</span>
-                                                    <span v-else>&ndash;</span>
+                                                    <span v-else>&mdash;</span>
                                                 </template>
                                             </Column>
                                             <Column
@@ -301,7 +301,7 @@
                                                     <span v-if="slotProps.data.values.length">{{
                                                         slotProps.data.values.join(', ')
                                                     }}</span>
-                                                    <span v-else>&ndash;</span>
+                                                    <span v-else>&mdash;</span>
                                                 </template>
                                             </Column>
                                             <template #empty>

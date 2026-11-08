@@ -54,6 +54,7 @@
                                     placeholder="Filter by username..."
                                     size="small"
                                     fluid
+                                    class="min-w-44"
                                 />
                             </template>
                         </Column>

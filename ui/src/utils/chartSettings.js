@@ -91,7 +91,8 @@ const getChartSettings = ({
     legend = true,
     lineWidth = 1,
     fitColumns = false,
-    padding,
+    // Room on the right for the last x tick label, which sits on the plot edge.
+    padding = [14, 22, 0, 4],
     onSelect,
 }) => {
     const yAxis = formatValue ? { y: { values: (u, splits) => splits.map((v) => formatValue(v)) } } : {}
@@ -113,7 +114,7 @@ const getChartSettings = ({
             render: makeTooltipRender(timeZone, nameLabel, valueLabel, escape, formatValue),
         },
         chart: {
-            ...(padding ? { size: { adaptive: true, padding } } : {}),
+            size: { adaptive: true, padding },
             appearance: {
                 drawOrder: ['plotLines', 'axes', 'series'],
                 theme: theme,

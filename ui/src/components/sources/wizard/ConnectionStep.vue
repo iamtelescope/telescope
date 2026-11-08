@@ -1,22 +1,8 @@
 <template>
     <div class="flex flex-col">
-        <div
-            class="flex order-last mt-6 pt-4 border-t border-surface-200 dark:border-surface-700"
-            :class="showBack ? 'justify-between' : 'justify-end'"
-        >
-            <Button
-                v-if="showBack"
-                label="Back"
-                severity="secondary"
-                size="small"
-                icon="pi pi-arrow-left"
-                @click="emit('prev')"
-            />
-            <Button label="Next" icon="pi pi-arrow-right" size="small" iconPos="right" @click="handleNext" />
-        </div>
         <div class="flex flex-col gap-1">
             <div>
-                <label for="connection" class="font-medium text-lg">Connection *</label>
+                <label for="connection" class="font-medium">Connection *</label>
                 <Select
                     v-model="connection"
                     inputId="connection"
@@ -81,21 +67,21 @@
             <!-- ClickHouse specific columns -->
             <template v-if="connection?.kind === 'clickhouse'">
                 <div class="pt-2">
-                    <label for="database" class="font-medium text-lg">Database *</label>
+                    <label for="database" class="font-medium">Database *</label>
                     <InputText v-model="database" id="database" class="w-full font-mono" fluid />
                     <Message v-if="errors.database" severity="error" size="small" variant="simple" class="mt-2">
                         {{ errors.database }}
                     </Message>
                 </div>
                 <div class="pt-2">
-                    <label for="table" class="font-medium text-lg">Table *</label>
+                    <label for="table" class="font-medium">Table *</label>
                     <InputText v-model="table" id="table" class="w-full font-mono" fluid />
                     <Message v-if="errors.table" severity="error" size="small" variant="simple" class="mt-2">
                         {{ errors.table }}
                     </Message>
                 </div>
                 <div class="pt-2">
-                    <label for="settings" class="font-medium text-lg">Query Settings</label>
+                    <label for="settings" class="font-medium">Query Settings</label>
                     <Textarea
                         v-model="settings"
                         id="settings"
@@ -150,7 +136,7 @@
             <!-- Kubernetes specific columns -->
             <template v-if="connection?.kind === 'kubernetes'">
                 <div class="pt-2">
-                    <label for="namespace_label_selector" class="font-medium text-lg">Namespace Label Selector</label>
+                    <label for="namespace_label_selector" class="font-medium">Namespace Label Selector</label>
                     <InputText
                         v-model="namespaceLabelSelector"
                         id="namespace_label_selector"
@@ -163,7 +149,7 @@
                     </Message>
                 </div>
                 <div class="pt-2">
-                    <label for="namespace_column_selector" class="font-medium text-lg">Namespace Field Selector</label>
+                    <label for="namespace_column_selector" class="font-medium">Namespace Field Selector</label>
                     <InputText
                         v-model="namespaceFieldSelector"
                         id="namespace_column_selector"
@@ -176,7 +162,7 @@
                     </Message>
                 </div>
                 <div class="pt-2">
-                    <label for="namespace" class="font-medium text-lg">Namespace FlyQL Filter</label>
+                    <label for="namespace" class="font-medium">Namespace FlyQL Filter</label>
                     <InputText
                         v-model="namespace"
                         id="namespace"
@@ -189,6 +175,27 @@
                     </Message>
                 </div>
             </template>
+        </div>
+        <div
+            class="flex mt-6 pt-4 border-t border-surface-200 dark:border-surface-700"
+            :class="showBack ? 'justify-between' : 'justify-end'"
+        >
+            <Button
+                v-if="showBack"
+                label="Back"
+                severity="secondary"
+                size="small"
+                icon="pi pi-arrow-left"
+                @click="emit('prev')"
+            />
+            <Button
+                label="Next"
+                icon="pi pi-arrow-right"
+                size="small"
+                iconPos="right"
+                @click="handleNext"
+                :disabled="!connection"
+            />
         </div>
     </div>
 </template>

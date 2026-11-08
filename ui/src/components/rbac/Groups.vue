@@ -3,13 +3,13 @@
     <Content v-else>
         <template #header>
             <Header>
-                <template #title> <Users class="mr-3 w-8 h-8" /> Groups </template>
+                <template #title> <UserPlus class="mr-3 w-8 h-8" /> Groups </template>
                 <template #actions>
                     <Button
                         size="small"
                         severity="primary"
                         icon="pi pi-plus"
-                        label="New Group"
+                        label="New group"
                         @click="handleGroupCreate"
                     />
                 </template>
@@ -68,7 +68,7 @@
                             <div
                                 class="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400"
                             >
-                                <Users class="w-10 h-10 mb-4 opacity-50" />
+                                <UserPlus class="w-10 h-10 mb-4 opacity-50" />
                                 <p class="text-lg font-medium mb-2">No groups found</p>
                             </div>
                         </template>
@@ -83,7 +83,7 @@
 import { ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
-import { Users } from 'lucide-vue-next'
+import { UserPlus } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 
 import { FilterMatchMode } from '@primevue/core/api'

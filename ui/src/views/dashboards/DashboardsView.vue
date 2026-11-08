@@ -28,7 +28,7 @@
                         data-testid="dashboards-from-template"
                         @click="router.push({ name: 'dashboardTemplates' })"
                     />
-                    <Button size="small" severity="primary" icon="pi pi-plus" label="New" @click="openNew" />
+                    <Button size="small" severity="primary" icon="pi pi-plus" label="New dashboard" @click="openNew" />
                 </template>
             </ListHeader>
         </template>

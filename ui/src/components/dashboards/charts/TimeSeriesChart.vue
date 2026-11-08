@@ -30,10 +30,11 @@ import {
     seriesUnit,
     groupLabel,
     formatTileValue,
+    axisLabels,
 } from '@/components/dashboards/charts/format.js'
 import {
     ACCENT,
-    categoricalColor,
+    entityColors,
     isSeverityGrouping,
     severityColor,
     severityRank,
@@ -95,9 +96,14 @@ const lines = computed(() => {
     const items = current.map(named)
     if (severity) items.sort((a, b) => severityRank(a.group) - severityRank(b.group))
     const colors = {}
-    const result = items.map((s, idx) => {
+    // A name keeps its color in every tile; rank order only settles which of two names gets a shared slot.
+    const byName = entityColors(
+        items.map((s) => s.name),
+        theme.value,
+    )
+    const result = items.map((s) => {
         let color = defs[s.series_index]?.color || (severity ? severityColor(s.group, theme.value) : null)
-        if (!color) color = items.length === 1 ? ACCENT[theme.value] : categoricalColor(idx, theme.value)
+        if (!color) color = items.length === 1 ? ACCENT[theme.value] : byName.get(s.name)
         colors[`${s.group}|${s.series_index}`] = color
         return { ...s, color }
     })
@@ -137,14 +143,11 @@ const settings = computed(() => {
         lineWidth: props.chart.display === 'line' ? 2 : 1,
         fitColumns: true,
         plotLines: markerPlotLines(markers.value),
-        // Room on the right for the last x tick label, which sits on the plot edge.
-        padding: [14, 22, 0, 4],
         onSelect: (range) => emit('rangeSelected', range),
     })
-    const compact = (v) => formatTileValue(v, unit.value, props.chart.number_format, { compact: true })
     return {
         ...base,
-        axes: { ...base.axes, y: { values: (u, splits) => splits.map(compact) } },
+        axes: { ...base.axes, y: { values: (u, splits) => axisLabels(splits, unit.value, props.chart.number_format) } },
         cursor: { ...base.cursor, sync: SYNC_KEY },
         // A synced tile moves its crosshair but keeps its tooltip hidden.
         tooltip: { ...base.tooltip, show: (y) => !!y.plugins.tooltip?.state.pinned || y.root.matches(':hover') },

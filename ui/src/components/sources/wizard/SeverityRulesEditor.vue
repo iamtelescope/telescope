@@ -1,7 +1,7 @@
 <template>
     <div class="flex flex-col">
         <div class="flex justify-between items-center">
-            <label class="font-medium text-lg">Severity extraction rules</label>
+            <label class="font-medium">Severity extraction rules</label>
             <Button label="Add Rule" icon="pi pi-plus" size="small" text @click="addRule" />
         </div>
         <span class="text-gray-500 dark:text-gray-300 block">
@@ -29,7 +29,7 @@
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label :for="`rule-type-${index}`" class="font-medium text-lg block mb-1">Rule Type *</label>
+                    <label :for="`rule-type-${index}`" class="font-medium block mb-1">Rule Type *</label>
                     <Select
                         :id="`rule-type-${index}`"
                         v-model="rule.type"
@@ -42,7 +42,7 @@
                 </div>
             </div>
             <div v-if="rule.type === 'json'" class="flex flex-col gap-2">
-                <label class="font-medium text-lg">Path *</label>
+                <label class="font-medium">Path *</label>
                 <div class="flex gap-2">
                     <InputText
                         v-model="rule.pathInput"
@@ -57,7 +57,7 @@
             </div>
             <div v-if="rule.type === 'regex'" class="flex flex-col gap-2">
                 <div>
-                    <label :for="`rule-pattern-${index}`" class="font-medium text-lg block mb-1">Regex Pattern *</label>
+                    <label :for="`rule-pattern-${index}`" class="font-medium block mb-1">Regex Pattern *</label>
                     <InputText
                         :id="`rule-pattern-${index}`"
                         v-model="rule.pattern"
@@ -70,7 +70,7 @@
                     >
                 </div>
                 <div>
-                    <label :for="`rule-group-${index}`" class="font-medium text-lg block mb-1">Capture Group</label>
+                    <label :for="`rule-group-${index}`" class="font-medium block mb-1">Capture Group</label>
                     <InputNumber
                         :id="`rule-group-${index}`"
                         v-model="rule.group"
@@ -95,7 +95,7 @@
         </div>
         <div class="mt-4">
             <div class="flex justify-between items-center mb-2">
-                <label class="font-medium text-lg">Severity remapping (optional)</label>
+                <label class="font-medium">Severity remapping (optional)</label>
                 <Button label="Add Mapping" icon="pi pi-plus" size="small" text @click="addRemapEntry" />
             </div>
             <span class="text-gray-500 dark:text-gray-300 block">

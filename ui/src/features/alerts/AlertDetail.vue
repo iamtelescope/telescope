@@ -6,7 +6,7 @@
                     <div class="flex items-center gap-3 min-w-0">
                         <router-link
                             :to="{ name: 'alerts' }"
-                            class="text-surface-500 hover:text-primary"
+                            class="text-surface-500 dark:text-surface-400 hover:text-primary"
                             title="Alerts"
                         >
                             <Bell class="w-8 h-8" />
@@ -21,7 +21,7 @@
                     </div>
                 </template>
                 <template #subtitle>
-                    <span v-if="alert" class="text-sm text-surface-500 font-mono">
+                    <span v-if="alert" class="text-sm text-surface-500 dark:text-surface-400 font-mono">
                         {{ describeSeries(alert.series) }} {{ describeCondition(alert) }} per {{ alert.interval }}
                     </span>
                 </template>
@@ -95,7 +95,7 @@
                     <ContentBlock header="Summary" :collapsible="false">
                         <dl class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 p-4 text-sm">
                             <div>
-                                <dt class="text-surface-500">On</dt>
+                                <dt class="text-surface-500 dark:text-surface-400">On</dt>
                                 <dd>
                                     <router-link
                                         v-if="alert.kind === 'tile' && alert.dashboard"
@@ -107,15 +107,18 @@
                                         v-else
                                         :to="{ name: 'explore', params: { sourceSlug: alert.source } }"
                                         class="table-link"
-                                        ><i class="pi pi-search mr-1" />{{ alert.source }}</router-link
+                                        ><i class="pi pi-search mr-1" />{{ sourceName(alert.source) }}</router-link
                                     >
-                                    <div v-if="alert.query" class="font-mono text-xs text-surface-500 break-all">
+                                    <div
+                                        v-if="alert.query"
+                                        class="font-mono text-xs text-surface-500 dark:text-surface-400 break-all"
+                                    >
                                         {{ alert.query }}
                                     </div>
                                 </dd>
                             </div>
                             <div>
-                                <dt class="text-surface-500">Schedule</dt>
+                                <dt class="text-surface-500 dark:text-surface-400">Schedule</dt>
                                 <dd>
                                     Every {{ alert.interval }}
                                     <span v-if="alert.schedule_start_at"
@@ -130,28 +133,30 @@
                                 </dd>
                             </div>
                             <div>
-                                <dt class="text-surface-500">Notifies</dt>
+                                <dt class="text-surface-500 dark:text-surface-400">Notifies</dt>
                                 <dd data-testid="alert-detail-channels">
-                                    <span v-if="!channelNames.length" class="text-surface-500">nobody</span>
+                                    <span v-if="!channelNames.length" class="text-surface-500 dark:text-surface-400"
+                                        >nobody</span
+                                    >
                                     {{ channelNames.join(', ') }}
                                 </dd>
                             </div>
                             <div>
-                                <dt class="text-surface-500">Owner</dt>
+                                <dt class="text-surface-500 dark:text-surface-400">Owner</dt>
                                 <dd>{{ alert.owner?.username }}</dd>
                             </div>
                             <div>
-                                <dt class="text-surface-500">Last evaluated</dt>
+                                <dt class="text-surface-500 dark:text-surface-400">Last evaluated</dt>
                                 <dd>{{ alert.last_evaluated_at ? relative(alert.last_evaluated_at) : 'never' }}</dd>
                             </div>
                             <div v-if="alert.tags.length">
-                                <dt class="text-surface-500">Tags</dt>
+                                <dt class="text-surface-500 dark:text-surface-400">Tags</dt>
                                 <dd class="flex flex-wrap gap-1">
                                     <Tag v-for="t in alert.tags" :key="t" :value="t" severity="secondary" />
                                 </dd>
                             </div>
                             <div v-if="alert.note" class="md:col-span-3">
-                                <dt class="text-surface-500">Note</dt>
+                                <dt class="text-surface-500 dark:text-surface-400">Note</dt>
                                 <dd class="whitespace-pre-wrap">{{ alert.note }}</dd>
                             </div>
                         </dl>
@@ -171,7 +176,7 @@
                             />
                         </template>
                         <div class="p-4 flex flex-col gap-3">
-                            <div class="text-xs text-surface-500">
+                            <div class="text-xs text-surface-500 dark:text-surface-400">
                                 {{ fmtMs(range.from) }} – {{ fmtMs(range.to) }}
                                 <span v-if="truncated" class="text-amber-600"> (first {{ rows.length }} rows)</span>
                             </div>
@@ -187,7 +192,7 @@
                                     :data-state="seg.state || 'NONE'"
                                 />
                             </div>
-                            <div class="flex flex-wrap gap-3 text-xs text-surface-500">
+                            <div class="flex flex-wrap gap-3 text-xs text-surface-500 dark:text-surface-400">
                                 <span v-for="s in LEGEND" :key="s"
                                     ><span
                                         class="inline-block w-3 h-3 rounded-sm align-middle mr-1"
@@ -195,12 +200,15 @@
                                     />{{ STATE_LABEL[s] }}</span
                                 >
                             </div>
-                            <div v-if="historyLoading" class="h-64 flex items-center justify-center text-surface-500">
+                            <div
+                                v-if="historyLoading"
+                                class="h-64 flex items-center justify-center text-surface-500 dark:text-surface-400"
+                            >
                                 <i class="pi pi-spin pi-spinner mr-2" />Loading
                             </div>
                             <div
                                 v-else-if="!rows.length"
-                                class="h-24 flex items-center justify-center text-surface-500 text-sm"
+                                class="h-24 flex items-center justify-center text-surface-500 dark:text-surface-400 text-sm"
                                 data-testid="alert-history-empty"
                             >
                                 No evaluations in this range.
@@ -219,7 +227,7 @@
                             data-testid="alert-evaluations"
                         >
                             <template #empty>
-                                <div class="p-2 text-surface-500">
+                                <div class="p-2 text-surface-500 dark:text-surface-400">
                                     Not evaluated yet; the scheduler runs every few seconds.
                                 </div>
                             </template>
@@ -311,6 +319,11 @@ import PreviewChart from '@/features/alerts/PreviewChart.vue'
 import SilenceButton from '@/features/alerts/SilenceButton.vue'
 import { AlertService } from '@/features/alerts/service.js'
 import { STATE_LABEL, STATE_SEVERITY, describeCondition, describeSeries } from '@/features/alerts/useAlerts.js'
+import { useGetSources } from '@/composables/sources/useSourceService'
+
+// The source's name, as in the alerts list.
+const { sources } = useGetSources()
+const sourceName = (slug) => (sources.value || []).find((x) => x.slug === slug)?.name || slug
 
 const RANGES = [
     { key: '6h', label: '6h', ms: 6 * 3600_000 },

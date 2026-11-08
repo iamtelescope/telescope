@@ -81,7 +81,7 @@
         >
             <div class="mb-1">{{ legendLabel }}</div>
             <div class="h-2 w-40 rounded" :style="{ background: legendGradient(metric) }" />
-            <div class="flex justify-between mt-1 text-surface-500">
+            <div class="flex justify-between mt-1 text-surface-500 dark:text-surface-400">
                 <template v-if="metric === 'errorRate'"> <span>0</span><span>1%</span><span>5%+</span> </template>
                 <template v-else>
                     <span>0</span><span>{{ legendMax }}</span>

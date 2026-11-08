@@ -28,7 +28,7 @@
                                 data-testid="chart-edit"
                                 @click="editorVisible = true"
                             />
-                            <AddToDashboard :source="source" :tile="config" />
+                            <AddToDashboard :source="source" :tile="config" outlined />
                             <span
                                 v-tooltip.bottom="
                                     canAlert
@@ -39,7 +39,8 @@
                                 <Button
                                     label="Create alert"
                                     icon="pi pi-bell"
-                                    text
+                                    severity="secondary"
+                                    outlined
                                     size="small"
                                     :disabled="!canAlert"
                                     data-testid="chart-create-alert"
@@ -202,17 +203,7 @@ watch(() => JSON.stringify([config.value?.chart, range.value.from, range.value.t
 </script>
 
 <style scoped>
-.chart-time {
-    border: 1px solid var(--p-surface-300);
-    border-radius: var(--p-border-radius-md);
-    background: var(--p-surface-0);
-}
-.dark .chart-time {
-    border-color: var(--p-surface-700);
-    background: var(--p-surface-900);
-}
 .chart-time :deep(.p-button) {
     margin: 0;
-    color: var(--p-text-color);
 }
 </style>

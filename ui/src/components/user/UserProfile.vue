@@ -18,7 +18,7 @@
         </template>
         <template #content>
             <DataView :loadings="[loading]" :errors="[error]">
-                <div class="flex flex-col max-w-[900px]">
+                <div class="flex flex-col max-w-[1000px]">
                     <div class="flex items-center gap-3">
                         <Avatar
                             :image="user.avatarUrl || null"

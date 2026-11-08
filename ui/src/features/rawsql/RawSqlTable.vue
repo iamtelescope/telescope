@@ -18,7 +18,7 @@
                 sortable
                 :headerClass="numeric(col) ? 'text-right' : ''"
                 :bodyClass="numeric(col) ? 'text-right tabular-nums whitespace-nowrap' : 'whitespace-nowrap'"
-                :pt="numeric(col) ? { columnHeaderContent: { class: 'justify-end' } } : undefined"
+                :pt="numeric(col) ? NUMERIC_HEADER : undefined"
             >
                 <template #body="{ data: row }">
                     <span v-if="row[`c${idx}`] === null" class="italic text-surface-400">NULL</span>
@@ -40,6 +40,8 @@ const props = defineProps(['data'])
 
 const NUMERIC_RE = /^(Nullable\()?(U?Int\d+|Float\d+|Decimal)/
 const numeric = (col) => NUMERIC_RE.test(col.type)
+// The sort icon goes first, so a number column's name ends right above its digits.
+const NUMERIC_HEADER = { columnHeaderContent: { class: 'flex-row-reverse justify-start' } }
 const integer = (col) => /^(Nullable\()?U?Int\d+/.test(col.type)
 // Integers beyond 2^53 arrive as strings to keep their digits; BigInt keeps their order.
 const sortKey = (v) => (typeof v === 'string' ? BigInt(v) : v)

@@ -2,7 +2,7 @@
     <Content>
         <template #header>
             <Header>
-                <template #title> <Cable class="mr-3 w-8 h-8" /> Connections </template>
+                <template #title> <Cable class="mr-3 w-8 h-8" /> Connection </template>
             </Header>
         </template>
         <template #content>
@@ -85,17 +85,12 @@
                                         <DataRow name="Description" :copy="false">
                                             <EmptyValue :value="connection?.description" />
                                         </DataRow>
-                                        <DataRow
-                                            name="Created"
-                                            :value="formatDate(connection?.createdAt)"
-                                            :copy="false"
-                                        />
-                                        <DataRow
-                                            name="Updated"
-                                            :value="formatDate(connection?.updatedAt)"
-                                            :showBorder="false"
-                                            :copy="false"
-                                        />
+                                        <DataRow name="Created" :copy="false">
+                                            <DateTimeFormatted :value="connection?.createdAt" />
+                                        </DataRow>
+                                        <DataRow name="Updated" :showBorder="false" :copy="false">
+                                            <DateTimeFormatted :value="connection?.updatedAt" />
+                                        </DataRow>
                                     </ContentBlock>
 
                                     <ContentBlock header="Target" class="mt-6" v-if="connection?.data">
@@ -352,6 +347,7 @@ import DataView from '@/components/common/DataView'
 import DataRow from '@/components/common/DataRow.vue'
 import ContentBlock from '@/components/common/ContentBlock.vue'
 import EmptyValue from '@/components/common/EmptyValue.vue'
+import DateTimeFormatted from '@/components/common/DateTimeFormatted.vue'
 import Header from '@/components/common/Header.vue'
 import ObjectSkeleton from '@/components/common/ObjectSkeleton.vue'
 import ConnectionAccessControl from '@/components/connections/ConnectionAccessControl.vue'
@@ -372,18 +368,6 @@ const { connection, error, loading, load } = useGetConnection(connectionId)
 
 if (route.query.tab) {
     activeTab.value = route.query.tab
-}
-
-const formatDate = (dateString) => {
-    if (!dateString) return '—'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    })
 }
 
 const formatKey = (key) => {
