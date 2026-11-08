@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [main, parity, ci-cd]
+    branches: [main, parity]
     tags: ['v*']
   # A manual run builds the image for both platforms without pushing it.
   workflow_dispatch:
@@ -42,7 +42,7 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name == 'push' && github.ref != 'refs/heads/ci-cd' }}
+          push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=release
