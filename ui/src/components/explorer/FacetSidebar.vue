@@ -7,6 +7,7 @@
         <button
             class="p-2 opacity-70 hover:opacity-100"
             title="Show filters"
+            aria-label="Show filters"
             @click="setCollapsed(false)"
             data-testid="facet-toggle"
         >
@@ -21,6 +22,7 @@
                 <button
                     class="px-1 opacity-60 hover:opacity-100"
                     title="Hide filters"
+                    aria-label="Hide filters"
                     @click="setCollapsed(true)"
                     data-testid="facet-toggle"
                 >
@@ -36,18 +38,37 @@
                 <span v-if="data.sampled">Sampled {{ data.total_sampled.toLocaleString() }} newest rows</span>
                 <span v-else>{{ data.total_sampled.toLocaleString() }} rows</span>
             </div>
-            <div v-if="error" class="text-xs text-red-600 dark:text-red-400 py-1" data-testid="facet-error">
-                {{ error }}
+            <SearchError
+                v-if="error"
+                :error="error"
+                title="Facets unavailable"
+                class="my-1 text-xs"
+                data-testid="facet-error"
+            />
+            <IconField v-if="groups.length > 1" class="my-1">
+                <InputIcon class="pi pi-search" />
+                <InputText
+                    v-model="search"
+                    size="small"
+                    fluid
+                    placeholder="Search facets and values"
+                    aria-label="Search facets and values"
+                    data-testid="facet-search"
+                />
+            </IconField>
+            <div v-if="search && !shownGroups.length" class="text-xs opacity-70 py-1" data-testid="facet-search-empty">
+                No facet or value matches "{{ search }}".
             </div>
             <div v-if="!data && !loading && !error" class="text-xs opacity-70 py-2">Run a search to see values.</div>
             <div class="max-h-[70vh] overflow-y-auto overflow-x-hidden">
                 <FacetGroup
-                    v-for="facet in groups"
+                    v-for="facet in shownGroups"
                     :key="facet.id"
                     :id="facet.id"
                     :title="facet.title"
                     :kind="facet.kind"
                     :values="facet.values"
+                    :filter="titleMatches(facet) ? '' : term"
                     :total="data?.total_sampled || 0"
                     :more="facet.more"
                     :pinned="pinned.includes(facet.id)"
@@ -79,10 +100,11 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { Select } from 'primevue'
+import { Select, IconField, InputIcon, InputText } from 'primevue'
 
 import BorderCard from '@/components/common/BorderCard.vue'
 import FacetGroup from '@/components/explorer/facets/FacetGroup.vue'
+import SearchError from '@/components/explorer/results/SearchError.vue'
 import { useSourceControlsStore } from '@/stores/sourceControls'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -90,6 +112,7 @@ import {
     defaultFacetColumns,
     facetPath,
     fetchFacets,
+    formatValue,
     isMapType,
     loadCollapsed,
     loadPinned,
@@ -181,6 +204,20 @@ const groups = computed(() => {
     for (const name of columnIds.value) if (!pinned.value.includes(name)) result.push(...withKeys(name))
     return result.filter((g, i) => result.findIndex((other) => other.id === g.id) === i)
 })
+
+// The search keeps groups whose name matches (all values) or that have a matching value (only those).
+const search = ref('')
+const term = computed(() => search.value.trim().toLowerCase())
+const titleMatches = (facet) => facet.title.toLowerCase().includes(term.value)
+const shownGroups = computed(() =>
+    term.value
+        ? groups.value.filter(
+              (g) =>
+                  titleMatches(g) ||
+                  g.values.some((v) => String(formatValue(v.value)).toLowerCase().includes(term.value)),
+          )
+        : groups.value,
+)
 
 const addable = computed(() =>
     Object.keys(props.source.columns).filter(
