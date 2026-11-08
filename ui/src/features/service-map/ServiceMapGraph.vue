@@ -19,6 +19,7 @@
                     class="flex flex-col items-center gap-1 cursor-pointer"
                     :data-testid="`service-map-node-${data.service}`"
                     :data-error-level="data.level"
+                    v-tooltip.bottom="compact ? null : { value: data.tooltip, class: 'service-map-tooltip' }"
                 >
                     <Handle type="target" :position="Position.Left" class="!invisible" />
                     <div
@@ -56,6 +57,25 @@
         </VueFlow>
         <div
             v-if="!compact"
+            class="absolute bottom-2 right-2 flex flex-col overflow-hidden rounded border border-surface-200 dark:border-surface-700 bg-[var(--p-content-background)]"
+            data-testid="service-map-zoom"
+        >
+            <Button
+                v-for="c in ZOOM"
+                :key="c.label"
+                :icon="c.icon"
+                text
+                severity="secondary"
+                size="small"
+                class="!rounded-none"
+                :aria-label="c.label"
+                v-tooltip.left="c.label"
+                :data-testid="`service-map-${c.id}`"
+                @click="c.run"
+            />
+        </div>
+        <div
+            v-if="!compact"
             class="absolute top-2 right-2 rounded border border-surface-200 dark:border-surface-700 bg-[var(--p-content-background)] px-3 py-2 text-xs"
             data-testid="service-map-legend"
         >
@@ -74,6 +94,7 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
+import { Button } from 'primevue'
 import { BaseEdge, EdgeLabelRenderer, Handle, MarkerType, Position, VueFlow, getBezierPath } from '@vue-flow/core'
 import '@vue-flow/core/dist/style.css'
 
@@ -145,9 +166,20 @@ const flowNodes = computed(() =>
             colors: nodeColors(n, props.metric, max.value[props.metric]),
             size: sizes.value[n.service],
             selected: props.selected?.kind === 'node' && props.selected.id === n.service,
+            tooltip: nodeTooltip(n),
         },
     })),
 )
+
+const nodeTooltip = (n) =>
+    [
+        n.service,
+        `${volume(n.requests)} served`,
+        n.requests ? `${formatPercent(n.error_rate)} errors` : null,
+        n.p95 ? `p95 ${formatMs(n.p95)}` : null,
+    ]
+        .filter(Boolean)
+        .join('\n')
 
 const edgeId = (e) => `${e.client}->${e.server}`
 const edgeLabel = (e) =>
@@ -191,6 +223,11 @@ const legendMax = computed(() => {
 })
 
 const fit = () => flow?.fitView({ padding: props.compact ? 0.15 : 0.2 })
+const ZOOM = [
+    { id: 'zoom-in', label: 'Zoom in', icon: 'pi pi-plus', run: () => flow?.zoomIn() },
+    { id: 'zoom-out', label: 'Zoom out', icon: 'pi pi-minus', run: () => flow?.zoomOut() },
+    { id: 'zoom-fit', label: 'Fit to view', icon: 'pi pi-expand', run: () => fit() },
+]
 const onReady = (instance) => {
     flow = instance
     fit()
@@ -207,6 +244,9 @@ watch(
     background: transparent;
     border: none;
     padding: 0;
+}
+:global(.service-map-tooltip .p-tooltip-text) {
+    white-space: pre-line;
 }
 .service-map-edge-label {
     pointer-events: all;
