@@ -10,7 +10,7 @@
                 @click="emit('rowClick', row.groups || row.group)"
             >
                 <div
-                    class="w-[30%] max-w-56 shrink-0 truncate text-sm"
+                    class="w-[40%] max-w-80 shrink-0 truncate text-sm"
                     :class="
                         isEmptyGroup(row.group)
                             ? 'italic text-surface-500 dark:text-surface-400'

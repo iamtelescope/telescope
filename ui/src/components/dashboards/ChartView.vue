@@ -11,17 +11,7 @@
     <div v-else-if="validation && !validation.result && code !== 'query_failed'" class="h-full overflow-auto">
         <ValidationError :validation="validation" message="Invalid tile settings" />
     </div>
-    <div
-        v-else-if="code === 'query_failed' || error"
-        class="flex flex-col items-center justify-center gap-1.5 h-full p-2 text-center text-sm text-surface-500 dark:text-surface-400"
-    >
-        <i class="pi pi-exclamation-triangle text-xl text-red-500 dark:text-red-400"></i>
-        <span class="font-medium text-surface-700 dark:text-surface-200">Query failed</span>
-        <pre
-            class="max-w-full max-h-[50%] overflow-auto whitespace-pre-wrap break-words text-left text-xs font-mono px-2"
-            >{{ error }}</pre
-        >
-    </div>
+    <TileError v-else-if="code === 'query_failed' || error" :error="error" @retry="emit('retry')" />
     <div v-else-if="!data || data.kind !== expectedKind" class="h-full">
         <div v-if="loading" class="flex h-full gap-2 p-1" :class="skeletonLayout" data-testid="chart-skeleton">
             <template v-if="expectedKind === 'timeseries'">
@@ -92,12 +82,13 @@ import BarChart from '@/components/dashboards/charts/BarChart.vue'
 import PieChart from '@/components/dashboards/charts/PieChart.vue'
 import TextTile from '@/components/dashboards/charts/TextTile.vue'
 import HeatmapChart from '@/components/dashboards/charts/HeatmapChart.vue'
+import TileError from '@/components/dashboards/charts/TileError.vue'
 import RawSqlTable from '@/features/rawsql/RawSqlTable.vue'
 import { seriesUnit } from '@/components/dashboards/charts/format.js'
 import { isTimeseries } from '@/utils/dashboards.js'
 
 const props = defineProps(['chart', 'data', 'loading', 'error', 'code', 'validation', 'timeZone', 'explore'])
-const emit = defineEmits(['rangeSelected', 'rowClick'])
+const emit = defineEmits(['rangeSelected', 'rowClick', 'retry'])
 
 const skeletonBars = [35, 55, 45, 70, 50, 65, 40, 60, 75, 55, 45, 60]
 

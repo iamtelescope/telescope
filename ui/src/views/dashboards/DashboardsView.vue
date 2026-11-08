@@ -80,7 +80,9 @@
                                     placeholder="Search dashboards"
                                     size="small"
                                     class="w-64"
+                                    aria-label="Search dashboards"
                                     data-testid="dashboards-search"
+                                    @keydown.esc="search = ''"
                                 />
                             </IconField>
                             <SelectButton
@@ -96,18 +98,19 @@
                     </template>
                     <DataTable
                         :value="filteredRows"
-                        sortField="updatedAt"
                         removableSort
                         size="small"
-                        :sortOrder="-1"
+                        class="dash-table"
                         :paginator="filteredRows.length > 50"
                         :rows="50"
                         :rowsPerPageOptions="[10, 25, 50, 100, 1000]"
                         :row-hover="true"
                         data-testid="dashboards-table"
                     >
-                        <Column field="favorite" class="w-1 pl-2 pr-0" :sortable="true">
-                            <template #header><i class="pi pi-star opacity-60" title="Favorites"></i></template>
+                        <Column field="favorite" class="w-1 pl-2 pr-0">
+                            <template #header>
+                                <i class="pi pi-star opacity-60" title="Favorites first" aria-label="Favorites"></i>
+                            </template>
                             <template #body="{ data }">
                                 <Button
                                     :icon="data.favorite ? 'pi pi-star-fill' : 'pi pi-star'"
@@ -163,56 +166,58 @@
                         </Column>
                         <Column class="w-1 text-nowrap text-right pr-2">
                             <template #body="{ data }">
-                                <Button
-                                    icon="pi pi-external-link"
-                                    text
-                                    rounded
-                                    size="small"
-                                    severity="secondary"
-                                    v-tooltip.top="'Open'"
-                                    aria-label="Open"
-                                    @click="open(data)"
-                                />
-                                <Button
-                                    icon="pi pi-copy"
-                                    text
-                                    rounded
-                                    size="small"
-                                    severity="secondary"
-                                    v-tooltip.top="'Duplicate'"
-                                    aria-label="Duplicate"
-                                    :loading="busy === `copy:${data.slug}`"
-                                    data-testid="dashboard-duplicate"
-                                    @click="duplicate(data)"
-                                />
-                                <Button
-                                    icon="pi pi-download"
-                                    text
-                                    rounded
-                                    size="small"
-                                    severity="secondary"
-                                    v-tooltip.top="'Export JSON'"
-                                    aria-label="Export JSON"
-                                    :loading="busy === `export:${data.slug}`"
-                                    data-testid="dashboard-export"
-                                    @click="exportRow(data)"
-                                />
-                                <Button
-                                    icon="pi pi-trash"
-                                    text
-                                    rounded
-                                    size="small"
-                                    severity="danger"
-                                    v-tooltip.top="data.canDelete ? 'Delete' : 'Only the owner can delete'"
-                                    aria-label="Delete"
-                                    :disabled="!data.canDelete"
-                                    data-testid="dashboard-delete"
-                                    @click="confirmDelete(data)"
-                                />
+                                <div class="dash-row-actions">
+                                    <Button
+                                        icon="pi pi-copy"
+                                        text
+                                        rounded
+                                        size="small"
+                                        severity="secondary"
+                                        v-tooltip.top="'Duplicate'"
+                                        aria-label="Duplicate"
+                                        :loading="busy === `copy:${data.slug}`"
+                                        data-testid="dashboard-duplicate"
+                                        @click="duplicate(data)"
+                                    />
+                                    <Button
+                                        icon="pi pi-download"
+                                        text
+                                        rounded
+                                        size="small"
+                                        severity="secondary"
+                                        v-tooltip.top="'Export JSON'"
+                                        aria-label="Export JSON"
+                                        :loading="busy === `export:${data.slug}`"
+                                        data-testid="dashboard-export"
+                                        @click="exportRow(data)"
+                                    />
+                                    <Button
+                                        icon="pi pi-trash"
+                                        text
+                                        rounded
+                                        size="small"
+                                        severity="danger"
+                                        v-tooltip.top="data.canDelete ? 'Delete' : 'Only the owner can delete'"
+                                        aria-label="Delete"
+                                        :disabled="!data.canDelete"
+                                        data-testid="dashboard-delete"
+                                        @click="confirmDelete(data)"
+                                    />
+                                </div>
                             </template>
                         </Column>
                         <template #empty>
-                            <div class="flex flex-col items-center justify-center py-12 text-surface-500">
+                            <div
+                                v-if="scope === 'favorites' && !search.trim()"
+                                class="flex flex-col items-center justify-center py-12 text-surface-500"
+                                data-testid="dashboards-no-favorites"
+                            >
+                                <i class="pi pi-star text-2xl mb-3 opacity-60" />
+                                <p class="font-medium mb-1">No favorite dashboards yet</p>
+                                <p class="text-sm mb-3">Star a dashboard to keep it at the top of the list.</p>
+                                <Button label="Show all dashboards" size="small" text @click="clearFilters" />
+                            </div>
+                            <div v-else class="flex flex-col items-center justify-center py-12 text-surface-500">
                                 <i class="pi pi-search text-2xl mb-3 opacity-60" />
                                 <p class="font-medium mb-3">No dashboards match these filters</p>
                                 <Button label="Clear filters" size="small" text @click="clearFilters" />
@@ -284,8 +289,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { DateTime } from 'luxon'
 import {
@@ -323,6 +328,7 @@ import { checkDashboardFile, exportDashboard, fileSourceSlugs, remapSources } fr
 import { fieldErrorsText } from '@/utils/utils'
 import { getFavoriteDashboards, setFavoriteDashboard } from '@/features/prefs/service'
 
+const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const confirm = useConfirm()
@@ -339,8 +345,13 @@ const SCOPES = [
     { value: 'shared', label: 'Shared' },
     { value: 'favorites', label: 'Favorites' },
 ]
-const search = ref('')
-const scope = ref('all')
+// Search and scope live in the URL, so Back from a dashboard returns to the same list.
+const search = ref(String(route.query.q || ''))
+const scope = ref(SCOPES.some((s) => s.value === route.query.scope) ? route.query.scope : 'all')
+watch([search, scope], ([q, sc]) => {
+    const query = { ...route.query, q: q || undefined, scope: sc === 'all' ? undefined : sc }
+    router.replace({ query })
+})
 const busy = ref('')
 
 // Favorites are per user and stored server-side (telescope_prefs).
@@ -369,14 +380,18 @@ const rows = computed(() =>
     })),
 )
 
+// Favorites first, then the most recently updated; a column header sorts by that column instead.
+const byDefault = (a, b) => b.favorite - a.favorite || (b.updatedAt || '').localeCompare(a.updatedAt || '')
 const filteredRows = computed(() => {
     const text = search.value.trim().toLowerCase()
-    return rows.value.filter((r) => {
-        if (scope.value === 'mine' && !r.mine) return false
-        if (scope.value === 'shared' && !r.shared) return false
-        if (scope.value === 'favorites' && !r.favorite) return false
-        return !text || `${r.name} ${r.description} ${r.ownerName}`.toLowerCase().includes(text)
-    })
+    return rows.value
+        .filter((r) => {
+            if (scope.value === 'mine' && !r.mine) return false
+            if (scope.value === 'shared' && !r.shared) return false
+            if (scope.value === 'favorites' && !r.favorite) return false
+            return !text || `${r.name} ${r.description} ${r.ownerName}`.toLowerCase().includes(text)
+        })
+        .sort(byDefault)
 })
 
 const clearFilters = () => {
@@ -386,8 +401,6 @@ const clearFilters = () => {
 
 const relativeTime = (value) => DateTime.fromISO(value).toRelative()
 const fullTime = (value) => DateTime.fromISO(value).toFormat('yyyy-MM-dd HH:mm:ss ZZZZ')
-
-const open = (row) => router.push({ name: 'dashboard', params: { dashboardSlug: row.slug } })
 
 // The list carries no tile data, so row actions fetch the full dashboard first.
 const fetchFull = async (row, action) => {
@@ -519,3 +532,19 @@ const doImport = async () => {
     }
 }
 </script>
+
+<style scoped>
+.dash-row-actions {
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.dash-table :deep(tr:hover .dash-row-actions),
+.dash-row-actions:focus-within {
+    opacity: 1;
+}
+@media (hover: none) {
+    .dash-row-actions {
+        opacity: 1;
+    }
+}
+</style>

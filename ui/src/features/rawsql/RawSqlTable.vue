@@ -22,12 +22,12 @@
             >
                 <template #body="{ data: row }">
                     <span v-if="row[`c${idx}`] === null" class="italic text-surface-400">NULL</span>
-                    <span v-else>{{ show(row[`c${idx}`]) }}</span>
+                    <span v-else>{{ show(row[`c${idx}`], col) }}</span>
                 </template>
             </Column>
         </DataTable>
         <div v-if="data.truncated" class="text-xs text-surface-500 dark:text-surface-400 pt-1">
-            truncated: showing the first {{ data.rows.length }} rows
+            Showing the first {{ data.rows.length.toLocaleString() }} rows only
         </div>
     </div>
 </template>
@@ -43,7 +43,11 @@ const numeric = (col) => NUMERIC_RE.test(col.type)
 const integer = (col) => /^(Nullable\()?U?Int\d+/.test(col.type)
 // Integers beyond 2^53 arrive as strings to keep their digits; BigInt keeps their order.
 const sortKey = (v) => (typeof v === 'string' ? BigInt(v) : v)
-const show = (v) => (typeof v === 'object' ? JSON.stringify(v) : String(v))
+// DateTime values arrive in ISO form; they read like ClickHouse prints them.
+const show = (v, col) => {
+    if (typeof v === 'object') return JSON.stringify(v)
+    return /^(Nullable\()?DateTime/.test(col.type) ? String(v).replace('T', ' ') : String(v)
+}
 const rows = computed(() => props.data.rows.map((row) => Object.fromEntries(row.map((v, idx) => [`c${idx}`, v]))))
 </script>
 

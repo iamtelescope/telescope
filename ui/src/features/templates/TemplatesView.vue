@@ -3,15 +3,18 @@
         <template #header>
             <ListHeader>
                 <template #title>
-                    <div class="flex items-center gap-3">
+                    <div class="flex flex-col">
                         <router-link
                             :to="{ name: 'dashboards' }"
-                            class="text-surface-500 hover:text-primary"
-                            title="Dashboards"
+                            class="flex items-center gap-1 text-sm font-normal text-surface-500 dark:text-surface-400 hover:text-primary"
+                            data-testid="templates-back"
                         >
-                            <LayoutTemplate class="w-8 h-8" />
+                            <i class="pi pi-arrow-left text-xs" /> Dashboards
                         </router-link>
-                        Dashboard templates
+                        <div class="flex items-center gap-3">
+                            <LayoutTemplate class="w-8 h-8" />
+                            Dashboard templates
+                        </div>
                     </div>
                 </template>
             </ListHeader>
@@ -59,6 +62,8 @@
                                 size="small"
                                 label="Use template"
                                 icon="pi pi-plus"
+                                severity="secondary"
+                                outlined
                                 :disabled="!usable(t)"
                                 :data-testid="`template-use-${t.slug}`"
                                 @click="open(t)"
@@ -79,7 +84,14 @@
         <div v-if="current" class="flex flex-col gap-4" data-testid="template-dialog">
             <div class="flex flex-col gap-1">
                 <label for="template_name" class="font-medium">Name</label>
-                <InputText id="template_name" v-model="name" maxlength="255" data-testid="template-name" />
+                <InputText
+                    id="template_name"
+                    v-model="name"
+                    size="small"
+                    maxlength="255"
+                    autofocus
+                    data-testid="template-name"
+                />
             </div>
             <div v-for="r in current.roles" :key="r.name" class="flex flex-col gap-1">
                 <label :for="`role_${r.name}`" class="font-medium">

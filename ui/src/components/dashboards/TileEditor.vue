@@ -12,7 +12,9 @@
         <template #header>
             <div class="flex flex-col">
                 <span class="text-xl font-semibold">{{ isNew ? 'New tile' : 'Edit tile' }}</span>
-                <span class="text-sm text-surface-500 dark:text-surface-400"> Enter runs the preview, Esc closes </span>
+                <span class="text-sm text-surface-500 dark:text-surface-400">
+                    The preview updates as you edit; Esc closes
+                </span>
             </div>
         </template>
         <div v-if="form" class="flex flex-col lg:flex-row gap-5 lg:h-[72vh]">
@@ -38,6 +40,7 @@
                         v-model="form.description"
                         rows="1"
                         autoResize
+                        size="small"
                         maxlength="1024"
                         placeholder="Shown as a hint next to the title"
                         data-testid="tile-description-input"
@@ -663,6 +666,7 @@
                                 :code="preview.code.value"
                                 :validation="preview.validation.value"
                                 :timeZone="timeZone"
+                                @retry="runPreview"
                             />
                             <div
                                 v-else
@@ -743,7 +747,7 @@ import RawQueryEditor from '@/components/explorer/controls/RawQueryEditor.vue'
 import RawSqlFields from '@/features/rawsql/RawSqlFields.vue'
 import { RAW_SQL_EXAMPLE, rawSqlBody, useTileData } from '@/features/rawsql/service.js'
 import { durationUnit } from '@/components/dashboards/charts/heatmap.js'
-import { getDateTimeString } from '@/utils/datetimeranges'
+import { rangeText } from '@/components/dashboards/charts/format.js'
 import { SourceService } from '@/sdk/services/source'
 import {
     AGGS,
@@ -846,9 +850,7 @@ const hasUnit = computed(() => hasNumberFormat.value || timeseries.value || isHe
 const usesGroupBy = computed(() => !['number', 'heatmap'].includes(chart.value.display))
 const usesLimit = computed(() => usesGroupBy.value && !!chart.value.group_by)
 const granularityOptions = GRANULARITIES.map((g) => ({ value: g, label: g === 'auto' ? 'Auto' : g }))
-// Absolute ends arrive as epoch milliseconds.
-const rangeEnd = (v) => (/^\d+$/.test(String(v)) ? getDateTimeString(Number(v), props.timeZone || 'UTC') : v)
-const rangeLabel = computed(() => (props.range ? `${rangeEnd(props.range.from)} → ${rangeEnd(props.range.to)}` : ''))
+const rangeLabel = computed(() => (props.range ? rangeText(props.range.from, props.range.to, props.timeZone) : ''))
 
 const defaultChart = () => ({
     source: props.sources?.[0]?.slug || '',

@@ -407,7 +407,6 @@ import {
 } from 'primevue'
 import { GridLayout, GridItem } from 'grid-layout-plus'
 import { LayoutDashboard } from 'lucide-vue-next'
-import { DateTime } from 'luxon'
 
 import DataView from '@/components/common/DataView.vue'
 import DatetimePicker from '@/components/explorer/controls/DatetimePicker.vue'
@@ -415,6 +414,7 @@ import Tile from '@/components/dashboards/Tile.vue'
 import TileEditor from '@/components/dashboards/TileEditor.vue'
 import VariableBar from '@/components/dashboards/variables/VariableBar.vue'
 import VariablesEditor from '@/components/dashboards/variables/VariablesEditor.vue'
+import { rangeText } from '@/components/dashboards/charts/format.js'
 import { useGetDashboard, useSaveDashboard } from '@/composables/dashboards/useDashboardService'
 import { useGetSources } from '@/composables/sources/useSourceService'
 import { Dashboard } from '@/sdk/models/dashboard'
@@ -486,11 +486,7 @@ const refreshOptions = REFRESH_OPTIONS.map((v) => ({ value: v, label: v === 'off
 const refreshing = computed(() => queue.pending.value > 0)
 // Kiosk mode always refreshes, every minute unless the dashboard sets an interval.
 const refreshValue = computed(() => (kiosk.value && draft.value?.refresh === 'off' ? '1m' : draft.value?.refresh))
-const rangeLabel = computed(() => {
-    const fmt = (v) =>
-        typeof v === 'number' ? DateTime.fromMillis(v, { zone: timeZone.value }).toFormat('yyyy-MM-dd HH:mm') : v
-    return `${fmt(range.value.from)} → ${fmt(range.value.to)} ${timeZone.value}`
-})
+const rangeLabel = computed(() => `${rangeText(range.value.from, range.value.to, timeZone.value)} (${timeZone.value})`)
 const filterActive = computed(() => !!range.value.query && filterInput.value === range.value.query)
 const filterDirty = computed(() => filterInput.value !== range.value.query)
 const tileById = computed(() => Object.fromEntries((draft.value?.tiles || []).map((t) => [t.id, t])))

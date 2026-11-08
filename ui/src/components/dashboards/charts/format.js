@@ -1,4 +1,6 @@
 // Labels, units and number formatting shared by the dashboard chart renderers.
+import { DateTime } from 'luxon'
+
 import { metricLabel } from '@/components/dashboards/metrics/metrics.js'
 
 const LOCALE = 'en-US'
@@ -17,6 +19,9 @@ export const seriesLabel = (s) => {
 
 // The title of a single-value tile, e.g. "count of rows" or "p95 duration_ms".
 export const valueLabel = (s) => (s && !s.alias && s.agg === 'count' ? 'count of rows' : seriesLabel(s))
+
+// A map key column, e.g. ResourceAttributes.'k8s.pod.name', reads as its key.
+export const columnLabel = (name) => String(name || '').replace(/[A-Za-z_]\w*\.'([^']+)'/g, '$1')
 
 export const groupLabel = (group) => (group === '__none__' || group === '' ? '(empty)' : String(group))
 
@@ -88,4 +93,18 @@ export const formatTileValue = (value, unit, format, { compact = false } = {}) =
     const text = formatNumber(value, unit, { compact: compact || !!format?.compact, decimals })
     if (text === '–') return text
     return `${format?.prefix || ''}${text}${format?.suffix || ''}`
+}
+
+const UNIT_WORDS = { s: 'second', m: 'minute', h: 'hour', d: 'day', w: 'week' }
+
+// A time range for people: "Last 24 hours", or absolute ends to the minute (seconds only when set).
+export const rangeText = (from, to, timeZone = 'UTC') => {
+    const rel = /^now-(\d+)([smhdw])$/.exec(String(from))
+    if (rel && to === 'now') return `Last ${rel[1]} ${UNIT_WORDS[rel[2]]}${rel[1] === '1' ? '' : 's'}`
+    const end = (v) => {
+        if (!/^\d+$/.test(String(v))) return String(v)
+        const t = DateTime.fromMillis(Number(v), { zone: timeZone })
+        return t.toFormat(t.second || t.millisecond ? 'yyyy-MM-dd HH:mm:ss' : 'yyyy-MM-dd HH:mm')
+    }
+    return `${end(from)} → ${end(to)}`
 }

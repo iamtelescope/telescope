@@ -12,7 +12,7 @@
             :rowClass="() => (clickable ? 'cursor-pointer' : '')"
             @row-click="(e) => emit('rowClick', e.data.groups || e.data.group)"
         >
-            <Column v-if="groupColumn" field="group" :header="groupColumn.name" sortable>
+            <Column v-if="groupColumn" field="group" :header="columnLabel(groupColumn.name)" sortable>
                 <template #body="{ data: row }">
                     <span
                         :class="{ 'italic text-surface-500 dark:text-surface-400': isEmptyGroup(row.group) }"
@@ -52,6 +52,7 @@ import { DataTable, Column } from 'primevue'
 
 import TruncatedHint from '@/components/dashboards/charts/TruncatedHint.vue'
 import {
+    columnLabel,
     seriesLabel,
     seriesUnit,
     groupLabel,
