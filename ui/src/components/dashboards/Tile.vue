@@ -125,6 +125,7 @@
                 :explore="true"
                 @rangeSelected="onChartRange"
                 @rowClick="onRowClick"
+                @retry="reload"
             />
         </div>
         <Dialog
@@ -154,6 +155,7 @@
                     :explore="true"
                     @rangeSelected="onFullscreenRange"
                     @rowClick="onRowClick"
+                    @retry="reload"
                 />
             </div>
         </Dialog>

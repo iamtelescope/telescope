@@ -10,17 +10,7 @@
         <div v-else-if="validation && validation.result === false" class="h-full overflow-auto">
             <ValidationError :validation="validation" message="Invalid tile settings" />
         </div>
-        <div
-            v-else-if="error"
-            class="flex flex-col items-center justify-center gap-1.5 h-full p-2 text-center text-sm text-surface-500 dark:text-surface-400"
-        >
-            <i class="pi pi-exclamation-triangle text-xl text-red-500 dark:text-red-400"></i>
-            <span class="font-medium text-surface-700 dark:text-surface-200">Query failed</span>
-            <pre
-                class="max-w-full max-h-[50%] overflow-auto whitespace-pre-wrap break-words text-left text-xs font-mono px-2"
-                >{{ error }}</pre
-            >
-        </div>
+        <TileError v-else-if="error" :error="error" @retry="load" />
         <div v-else-if="!data || !source" class="flex flex-col gap-2 p-1" data-testid="chart-skeleton">
             <Skeleton v-for="idx in 6" :key="idx" height="1.25rem" :width="`${100 - idx * 8}%`" />
         </div>
@@ -83,6 +73,7 @@ import { useRouter } from 'vue-router'
 import { Button, Skeleton, useToast } from 'primevue'
 
 import ValidationError from '@/components/common/ValidationError.vue'
+import TileError from '@/components/dashboards/charts/TileError.vue'
 import ExplorerTable from '@/components/explorer/results/ExplorerTable.vue'
 import PatternTable from '@/components/explorer/patterns/PatternTable.vue'
 import PatternDrawer from '@/components/explorer/patterns/PatternDrawer.vue'
