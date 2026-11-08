@@ -3,10 +3,17 @@
         size="small"
         :severity="alert.silenced ? 'warn' : 'secondary'"
         outlined
-        :icon="alert.silenced ? 'pi pi-volume-off' : 'pi pi-volume-up'"
+        :icon="alert.silenced ? 'pi pi-bell-slash' : 'pi pi-bell'"
         :label="compact ? undefined : alert.silenced ? `Silenced until ${until}` : 'Silence'"
-        :aria-label="alert.silenced ? 'Silenced' : 'Silence'"
-        v-tooltip.top="compact && alert.silenced ? `Silenced until ${until} by ${alert.silenced.by?.username}` : null"
+        :aria-label="alert.silenced ? `Silenced until ${until}` : 'Silence notifications'"
+        aria-haspopup="menu"
+        v-tooltip.top="
+            compact
+                ? alert.silenced
+                    ? `Silenced until ${until} by ${alert.silenced.by?.username}`
+                    : 'Silence notifications'
+                : null
+        "
         :loading="busy"
         :data-testid="`alert-silence-${alert.id}`"
         @click="(e) => menu.toggle(e)"
@@ -47,6 +54,7 @@ const run = async (call) => {
     if (response.result) emit('changed', response.data)
 }
 const items = computed(() => [
+    { label: 'Silence notifications', items: [] },
     ...PRESETS.map(([label, duration]) => ({
         label: `For ${label}`,
         command: () => run(() => srv.silence(props.alert.id, DateTime.now().plus(duration).toISO())),
@@ -54,7 +62,7 @@ const items = computed(() => [
     ...(props.alert.silenced
         ? [
               { separator: true },
-              { label: 'Unsilence', icon: 'pi pi-volume-up', command: () => run(() => srv.unsilence(props.alert.id)) },
+              { label: 'Unsilence', icon: 'pi pi-bell', command: () => run(() => srv.unsilence(props.alert.id)) },
           ]
         : []),
 ])

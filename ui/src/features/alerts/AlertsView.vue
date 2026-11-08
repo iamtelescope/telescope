@@ -58,10 +58,20 @@
                 </div>
                 <ContentBlock v-else :collapsible="false">
                     <template #header_text>
-                        Alerts: {{ total
-                        }}<span v-if="firingCount" class="ml-3 text-red-600 dark:text-red-400"
-                            >{{ firingCount }} firing</span
-                        >
+                        Alerts: {{ total }}
+                        <Button
+                            v-if="firingCount || firingOnly"
+                            size="small"
+                            :severity="firingOnly ? 'danger' : 'secondary'"
+                            :outlined="!firingOnly"
+                            :label="`${firingCount} firing`"
+                            icon="pi pi-bell"
+                            class="ml-3 !py-0.5"
+                            :aria-pressed="firingOnly"
+                            v-tooltip.top="firingOnly ? 'Show all alerts' : 'Show only firing alerts'"
+                            data-testid="alerts-firing-filter"
+                            @click="firingOnly = !firingOnly"
+                        />
                     </template>
                     <template #actions>
                         <MultiSelect
@@ -100,7 +110,17 @@
                         data-testid="alerts-table"
                     >
                         <template #empty>
-                            <div class="p-2 text-surface-500">No alerts match the filter.</div>
+                            <div class="flex items-center gap-3 p-2 text-surface-500" data-testid="alerts-no-match">
+                                No alerts match the filter.
+                                <Button
+                                    size="small"
+                                    text
+                                    icon="pi pi-filter-slash"
+                                    label="Clear filters"
+                                    data-testid="alerts-clear-filters"
+                                    @click="clearFilters"
+                                />
+                            </div>
                         </template>
                         <Column field="name" header="Name" class="font-medium pl-4">
                             <template #body="{ data }">
@@ -125,10 +145,23 @@
                                 />
                                 <i
                                     v-if="data.silenced"
-                                    class="pi pi-volume-off ml-2 text-amber-600"
+                                    class="pi pi-bell-slash ml-2 text-amber-600 dark:text-amber-400"
                                     v-tooltip.top="`Silenced until ${data.silenced.until}`"
                                     :data-testid="`alert-silenced-${data.id}`"
                                 />
+                            </template>
+                        </Column>
+                        <Column header="Last fired" class="w-1 text-nowrap">
+                            <template #body="{ data }">
+                                <span
+                                    v-if="data.last_fired_window"
+                                    :title="fmtMs(data.last_fired_window)"
+                                    :data-testid="`alert-last-fired-${data.id}`"
+                                    >{{ relativeMs(data.last_fired_window) }}</span
+                                >
+                                <span v-else class="text-surface-500" :data-testid="`alert-last-fired-${data.id}`"
+                                    >never</span
+                                >
                             </template>
                         </Column>
                         <Column header="Condition">
@@ -158,7 +191,7 @@
                                     <router-link
                                         :to="{ name: 'explore', params: { sourceSlug: data.source } }"
                                         class="table-link"
-                                        >{{ data.source }}</router-link
+                                        >{{ sourceName(data.source) }}</router-link
                                     >
                                 </template>
                             </template>
@@ -221,6 +254,7 @@ import SkeletonList from '@/components/common/SkeletonList.vue'
 import SilenceButton from '@/features/alerts/SilenceButton.vue'
 import { AlertService } from '@/features/alerts/service.js'
 import { STATE_LABEL, STATE_SEVERITY, describeCondition, describeSeries } from '@/features/alerts/useAlerts.js'
+import { useGetSources } from '@/composables/sources/useSourceService'
 
 const PAGE_SIZE = 50
 const router = useRouter()
@@ -238,13 +272,17 @@ const search = ref('')
 const tags = ref([])
 const page = ref(1)
 const toggleResets = ref(0)
-const filtering = computed(() => !!search.value.trim() || tags.value.length > 0)
+const firingOnly = ref(false)
+const filtering = computed(() => !!search.value.trim() || tags.value.length > 0 || firingOnly.value)
+const { sources } = useGetSources()
+const sourceName = (slug) => (sources.value || []).find((s) => s.slug === slug)?.name || slug
 
 let seq = 0
 const load = async () => {
     const mine = ++seq
     pageLoading.value = true
     const params = { page: page.value, page_size: PAGE_SIZE, q: search.value.trim(), tags: tags.value.join(',') }
+    if (firingOnly.value) params.state = 'ALERT'
     const [response, firing] = await Promise.all([
         srv.list(params),
         srv.list({ page: 1, page_size: 1, state: 'ALERT' }),
@@ -268,7 +306,12 @@ watch(search, () => {
     searchTimer = setTimeout(() => (page.value === 1 ? load() : (page.value = 1)), 300)
 })
 onBeforeUnmount(() => clearTimeout(searchTimer))
-watch(tags, () => (page.value === 1 ? load() : (page.value = 1)))
+watch([tags, firingOnly], () => (page.value === 1 ? load() : (page.value = 1)))
+const clearFilters = () => {
+    search.value = ''
+    tags.value = []
+    firingOnly.value = false
+}
 watch(page, load)
 
 const replace = (updated) => {
@@ -282,4 +325,6 @@ const setEnabled = async (alert, enabled) => {
     else toggleResets.value++
 }
 const relative = (iso) => DateTime.fromISO(iso).toRelative()
+const relativeMs = (ms) => DateTime.fromMillis(ms).toRelative()
+const fmtMs = (ms) => DateTime.fromMillis(ms).toFormat('yyyy-MM-dd HH:mm')
 </script>
