@@ -227,7 +227,7 @@
                             <Column header="Window" class="text-nowrap pl-4">
                                 <template #body="{ data }">{{ windowText(data) }}</template>
                             </Column>
-                            <Column header="State" class="w-1">
+                            <Column header="State" class="w-1 text-nowrap">
                                 <template #body="{ data }">
                                     <Tag :value="STATE_LABEL[data.state]" :severity="STATE_SEVERITY[data.state]" />
                                 </template>
@@ -265,7 +265,7 @@
                                     <Column field="group_key" header="Group">
                                         <template #body="{ data: g }">{{ g.group_key || '(none)' }}</template>
                                     </Column>
-                                    <Column header="State" class="w-1">
+                                    <Column header="State" class="w-1 text-nowrap">
                                         <template #body="{ data: g }">
                                             <Tag :value="STATE_LABEL[g.state]" :severity="STATE_SEVERITY[g.state]" />
                                         </template>

@@ -79,7 +79,21 @@
                     class="absolute inset-0 flex items-center justify-center text-sm text-surface-500 p-6 text-center"
                     data-testid="service-map-empty"
                 >
-                    No services found. The map links services through Client spans and the Server spans they call.
+                    <div class="flex flex-col items-center gap-3">
+                        <span
+                            >No services found in this time range. The map links services through Client spans and the
+                            Server spans they call.</span
+                        >
+                        <Button
+                            v-if="range.from !== 'now-24h'"
+                            size="small"
+                            outlined
+                            icon="pi pi-history"
+                            label="Show the last 24 hours"
+                            data-testid="service-map-widen"
+                            @click="setQuery({ from: 'now-24h', to: 'now', timeZone: undefined })"
+                        />
+                    </div>
                 </div>
                 <Skeleton v-if="loading && !data" class="!absolute inset-0" height="100%" />
             </div>

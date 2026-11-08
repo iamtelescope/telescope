@@ -85,7 +85,7 @@
                                         class="mr-2"
                                         :title="slotProps.data.kind"
                                     />
-                                    {{ slotProps.data.kind.charAt(0).toUpperCase() + slotProps.data.kind.slice(1) }}
+                                    {{ kindLabel(slotProps.data.kind) }}
                                 </div>
                             </template>
                             <template #filter="{ filterModel, filterCallback }">
@@ -173,6 +173,7 @@
 </template>
 
 <script setup>
+import { kindLabel } from '@/components/connections/kinds.js'
 import { ref } from 'vue'
 import { Cable } from 'lucide-vue-next'
 import { useDark } from '@vueuse/core'

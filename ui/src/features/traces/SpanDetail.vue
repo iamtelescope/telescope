@@ -69,8 +69,10 @@
                     :key="key"
                     class="border-t border-neutral-100 dark:border-neutral-800 align-top"
                 >
-                    <td class="py-0.5 pr-3 font-mono text-neutral-600 dark:text-neutral-400 break-all w-2/5">
-                        {{ key }}
+                    <td class="py-0.5 pr-3 font-mono text-neutral-600 dark:text-neutral-400 break-words w-2/5">
+                        <template v-for="(part, i) in key.split('.')" :key="i"
+                            >{{ i ? '.' : '' }}<wbr v-if="i" />{{ part }}</template
+                        >
                     </td>
                     <td class="py-0.5 font-mono break-all">{{ value }}</td>
                 </tr>

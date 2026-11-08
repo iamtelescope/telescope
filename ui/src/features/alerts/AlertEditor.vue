@@ -80,343 +80,377 @@
                     </div>
                     <ErrorText v-if="problem" :text="problem" data-testid="alert-problem" />
 
-                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                        <ContentBlock header="What to watch" :collapsible="false">
-                            <fieldset :disabled="!canEdit" class="flex flex-col gap-4 p-4">
-                                <div class="grid grid-cols-2 gap-2" role="radiogroup">
-                                    <button
-                                        v-for="k in KINDS"
-                                        :key="k.value"
-                                        type="button"
-                                        role="radio"
-                                        :aria-checked="form.kind === k.value"
-                                        :data-testid="`alert-kind-${k.value}`"
-                                        class="flex items-start gap-2 p-3 rounded-md border text-left transition-colors"
-                                        :class="
-                                            form.kind === k.value
-                                                ? 'border-primary bg-highlight'
-                                                : 'border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800'
-                                        "
-                                        @click="form.kind = k.value"
-                                    >
-                                        <i :class="k.icon" class="mt-1" />
-                                        <span class="flex flex-col">
-                                            <span class="font-medium">{{ k.label }}</span>
-                                            <span class="text-xs text-surface-500 dark:text-surface-400">{{
-                                                k.hint
-                                            }}</span>
-                                        </span>
-                                    </button>
-                                </div>
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+                        <div class="flex flex-col gap-4 min-w-0">
+                            <ContentBlock :collapsible="false">
+                                <template #header_text><span class="step-badge">1</span>What to watch</template>
+                                <fieldset :disabled="!canEdit" class="flex flex-col gap-4 p-4">
+                                    <div class="grid grid-cols-2 gap-2" role="radiogroup">
+                                        <button
+                                            v-for="k in KINDS"
+                                            :key="k.value"
+                                            type="button"
+                                            role="radio"
+                                            :aria-checked="form.kind === k.value"
+                                            :data-testid="`alert-kind-${k.value}`"
+                                            class="flex items-start gap-2 p-3 rounded-md border text-left transition-colors"
+                                            :class="
+                                                form.kind === k.value
+                                                    ? 'border-primary bg-highlight'
+                                                    : 'border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-800'
+                                            "
+                                            @click="form.kind = k.value"
+                                        >
+                                            <i :class="k.icon" class="mt-1" />
+                                            <span class="flex flex-col">
+                                                <span class="font-medium">{{ k.label }}</span>
+                                                <span class="text-xs text-surface-500 dark:text-surface-400">{{
+                                                    k.hint
+                                                }}</span>
+                                            </span>
+                                        </button>
+                                    </div>
 
-                                <template v-if="form.kind === 'search'">
-                                    <Field label="Source" for="alert_source">
-                                        <Select
-                                            inputId="alert_source"
-                                            v-model="form.source"
-                                            :options="sources || []"
-                                            optionLabel="name"
-                                            optionValue="slug"
-                                            filter
-                                            size="small"
-                                            placeholder="Choose a source"
-                                            data-testid="alert-source"
-                                        />
-                                    </Field>
-                                    <Field label="Query" for="alert_query" hint="FlyQL filter; empty matches every row">
-                                        <InputText
-                                            id="alert_query"
-                                            v-model="form.query"
-                                            size="small"
-                                            class="font-mono"
-                                            placeholder="service='checkout' and level='ERROR'"
-                                            data-testid="alert-query"
-                                        />
-                                    </Field>
-                                    <Field
-                                        v-if="contextText"
-                                        label="Context columns"
-                                        hint="Kept from the search this alert was made from"
-                                    >
-                                        <span class="font-mono text-sm break-all" data-testid="alert-context-columns">
-                                            {{ contextText }}
-                                        </span>
-                                    </Field>
-                                    <Field v-if="source?.supportRawQuery" label="Raw SQL WHERE" for="alert_raw">
-                                        <InputText
-                                            id="alert_raw"
-                                            v-model="form.raw_query"
-                                            size="small"
-                                            class="font-mono"
-                                            data-testid="alert-raw-query"
-                                        />
-                                    </Field>
-                                    <div class="grid grid-cols-3 gap-2">
-                                        <Field label="Value" for="alert_agg">
+                                    <template v-if="form.kind === 'search'">
+                                        <Field label="Source" for="alert_source" :error="errors.source">
                                             <Select
-                                                inputId="alert_agg"
-                                                v-model="form.agg"
-                                                :options="aggOptions"
-                                                optionLabel="label"
-                                                optionValue="value"
-                                                optionDisabled="disabled"
-                                                size="small"
-                                                data-testid="alert-agg"
-                                            />
-                                        </Field>
-                                        <Field v-if="form.agg !== 'count'" label="Column" for="alert_column">
-                                            <Select
-                                                inputId="alert_column"
-                                                v-model="form.column"
-                                                :options="columnOptions"
+                                                inputId="alert_source"
+                                                :invalid="!!errors.source"
+                                                v-model="form.source"
+                                                :options="sources || []"
+                                                optionLabel="name"
+                                                optionValue="slug"
                                                 filter
                                                 size="small"
-                                                data-testid="alert-column"
+                                                placeholder="Choose a source"
+                                                data-testid="alert-source"
                                             />
                                         </Field>
-                                        <Field v-if="form.agg === 'quantile'" label="Level" for="alert_level">
+                                        <Field
+                                            label="Query"
+                                            for="alert_query"
+                                            hint="FlyQL filter; empty matches every row"
+                                        >
+                                            <InputText
+                                                id="alert_query"
+                                                v-model="form.query"
+                                                size="small"
+                                                class="font-mono"
+                                                placeholder="service='checkout' and level='ERROR'"
+                                                data-testid="alert-query"
+                                            />
+                                        </Field>
+                                        <Field
+                                            v-if="contextText"
+                                            label="Context columns"
+                                            hint="Kept from the search this alert was made from"
+                                        >
+                                            <span
+                                                class="font-mono text-sm break-all"
+                                                data-testid="alert-context-columns"
+                                            >
+                                                {{ contextText }}
+                                            </span>
+                                        </Field>
+                                        <Field v-if="source?.supportRawQuery" label="Raw SQL WHERE" for="alert_raw">
+                                            <InputText
+                                                id="alert_raw"
+                                                v-model="form.raw_query"
+                                                size="small"
+                                                class="font-mono"
+                                                data-testid="alert-raw-query"
+                                            />
+                                        </Field>
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <Field label="Value" for="alert_agg">
+                                                <Select
+                                                    inputId="alert_agg"
+                                                    v-model="form.agg"
+                                                    :options="aggOptions"
+                                                    optionLabel="label"
+                                                    optionValue="value"
+                                                    optionDisabled="disabled"
+                                                    size="small"
+                                                    data-testid="alert-agg"
+                                                />
+                                            </Field>
+                                            <Field
+                                                v-if="form.agg !== 'count'"
+                                                label="Column"
+                                                for="alert_column"
+                                                :error="errors.column"
+                                            >
+                                                <Select
+                                                    inputId="alert_column"
+                                                    :invalid="!!errors.column"
+                                                    v-model="form.column"
+                                                    :options="columnOptions"
+                                                    filter
+                                                    size="small"
+                                                    data-testid="alert-column"
+                                                />
+                                            </Field>
+                                            <Field v-if="form.agg === 'quantile'" label="Level" for="alert_level">
+                                                <Select
+                                                    inputId="alert_level"
+                                                    v-model="form.level"
+                                                    :options="QUANTILE_LEVELS"
+                                                    size="small"
+                                                />
+                                            </Field>
+                                        </div>
+                                        <Field label="Group by" for="alert_group" hint="One alert per value, top 100">
                                             <Select
-                                                inputId="alert_level"
-                                                v-model="form.level"
-                                                :options="QUANTILE_LEVELS"
+                                                inputId="alert_group"
+                                                v-model="form.group_by"
+                                                :options="groupOptions"
+                                                filter
+                                                showClear
+                                                size="small"
+                                                placeholder="No grouping"
+                                                data-testid="alert-group-by"
+                                            />
+                                        </Field>
+                                    </template>
+
+                                    <template v-else>
+                                        <Field label="Dashboard" for="alert_dashboard" :error="errors.dashboard">
+                                            <Select
+                                                inputId="alert_dashboard"
+                                                :invalid="!!errors.dashboard"
+                                                v-model="form.dashboard"
+                                                :options="dashboards"
+                                                optionLabel="name"
+                                                optionValue="slug"
+                                                filter
+                                                size="small"
+                                                placeholder="Choose a dashboard"
+                                                data-testid="alert-dashboard"
+                                            />
+                                        </Field>
+                                        <Field label="Chart" for="alert_tile" :error="errors.tile_id">
+                                            <Select
+                                                inputId="alert_tile"
+                                                :invalid="!!errors.tile_id"
+                                                v-model="form.tile_id"
+                                                :options="tileOptions"
+                                                optionLabel="label"
+                                                optionValue="id"
+                                                size="small"
+                                                placeholder="Choose a chart"
+                                                emptyMessage="This dashboard has no query tiles"
+                                                data-testid="alert-tile"
+                                            />
+                                        </Field>
+                                        <Field v-if="tileSeries.length > 1" label="Series" for="alert_series_index">
+                                            <Select
+                                                inputId="alert_series_index"
+                                                v-model="form.series_index"
+                                                :options="tileSeries"
+                                                optionLabel="label"
+                                                optionValue="index"
                                                 size="small"
                                             />
                                         </Field>
-                                    </div>
-                                    <Field label="Group by" for="alert_group" hint="One alert per value, top 100">
-                                        <Select
-                                            inputId="alert_group"
-                                            v-model="form.group_by"
-                                            :options="groupOptions"
-                                            filter
-                                            showClear
-                                            size="small"
-                                            placeholder="No grouping"
-                                            data-testid="alert-group-by"
-                                        />
-                                    </Field>
-                                </template>
+                                        <div v-if="tile" class="text-sm text-surface-500 font-mono break-all">
+                                            {{ tile.chart.source
+                                            }}<span v-if="tile.chart.query">: {{ tile.chart.query }}</span
+                                            ><span v-if="tile.chart.group_by"> by {{ tile.chart.group_by }}</span>
+                                        </div>
+                                    </template>
+                                </fieldset>
+                            </ContentBlock>
 
-                                <template v-else>
-                                    <Field label="Dashboard" for="alert_dashboard">
-                                        <Select
-                                            inputId="alert_dashboard"
-                                            v-model="form.dashboard"
-                                            :options="dashboards"
-                                            optionLabel="name"
-                                            optionValue="slug"
-                                            filter
-                                            size="small"
-                                            placeholder="Choose a dashboard"
-                                            data-testid="alert-dashboard"
-                                        />
-                                    </Field>
-                                    <Field label="Chart" for="alert_tile">
-                                        <Select
-                                            inputId="alert_tile"
-                                            v-model="form.tile_id"
-                                            :options="tileOptions"
-                                            optionLabel="label"
-                                            optionValue="id"
-                                            size="small"
-                                            placeholder="Choose a chart"
-                                            emptyMessage="This dashboard has no query tiles"
-                                            data-testid="alert-tile"
-                                        />
-                                    </Field>
-                                    <Field v-if="tileSeries.length > 1" label="Series" for="alert_series_index">
-                                        <Select
-                                            inputId="alert_series_index"
-                                            v-model="form.series_index"
-                                            :options="tileSeries"
-                                            optionLabel="label"
-                                            optionValue="index"
-                                            size="small"
-                                        />
-                                    </Field>
-                                    <div v-if="tile" class="text-sm text-surface-500 font-mono break-all">
-                                        {{ tile.chart.source
-                                        }}<span v-if="tile.chart.query">: {{ tile.chart.query }}</span
-                                        ><span v-if="tile.chart.group_by"> by {{ tile.chart.group_by }}</span>
-                                    </div>
-                                </template>
-                            </fieldset>
-                        </ContentBlock>
-
-                        <ContentBlock header="Condition and notifications" :collapsible="false">
-                            <fieldset :disabled="!canEdit" class="flex flex-col gap-4 p-4">
-                                <Field label="Name" for="alert_name">
-                                    <InputText
-                                        id="alert_name"
-                                        v-model="form.name"
-                                        size="small"
-                                        maxlength="255"
-                                        placeholder="e.g. Checkout errors"
-                                        data-testid="alert-name"
-                                    />
-                                </Field>
-                                <div class="flex flex-wrap items-end gap-3">
-                                    <Field label="Fire when the value is" for="alert_threshold_type">
-                                        <Select
-                                            inputId="alert_threshold_type"
-                                            v-model="form.threshold_type"
-                                            :options="THRESHOLD_TYPES"
-                                            optionLabel="label"
-                                            optionValue="value"
-                                            size="small"
-                                            data-testid="alert-threshold-type"
-                                        />
-                                    </Field>
-                                    <Field label="Threshold" for="alert_threshold">
-                                        <InputNumber
-                                            inputId="alert_threshold"
-                                            v-model="form.threshold"
-                                            size="small"
-                                            :maxFractionDigits="6"
-                                            :useGrouping="false"
-                                            inputClass="w-32"
-                                            data-testid="alert-threshold"
-                                        />
-                                    </Field>
-                                    <Field v-if="isRange(form.threshold_type)" label="and" for="alert_threshold_max">
-                                        <InputNumber
-                                            inputId="alert_threshold_max"
-                                            v-model="form.threshold_max"
-                                            size="small"
-                                            :maxFractionDigits="6"
-                                            :useGrouping="false"
-                                            inputClass="w-32"
-                                            data-testid="alert-threshold-max"
-                                        />
-                                    </Field>
-                                    <Field label="Every" for="alert_interval">
-                                        <Select
-                                            inputId="alert_interval"
-                                            v-model="form.interval"
-                                            :options="INTERVALS"
-                                            size="small"
-                                            data-testid="alert-interval"
-                                        />
-                                    </Field>
-                                </div>
-                                <div class="flex flex-wrap items-center gap-2 text-sm">
-                                    <span>Fire after</span>
-                                    <InputNumber
-                                        v-model="form.consecutive_windows"
-                                        :min="1"
-                                        :max="10"
-                                        size="small"
-                                        inputClass="w-14"
-                                        aria-label="Breaching windows"
-                                    />
-                                    <span>breaching windows out of the last</span>
-                                    <InputNumber
-                                        v-model="form.of_windows"
-                                        :min="1"
-                                        :max="10"
-                                        size="small"
-                                        inputClass="w-14"
-                                        aria-label="Out of windows"
-                                    />
-                                </div>
-                                <div class="flex flex-wrap items-center gap-2 text-sm">
-                                    <span>Windows start</span>
-                                    <InputNumber
-                                        v-model="form.schedule_offset_minutes"
-                                        :min="0"
-                                        :max="1439"
-                                        :disabled="!!form.schedule_start_at"
-                                        size="small"
-                                        inputClass="w-16"
-                                        aria-label="Schedule offset in minutes"
-                                        data-testid="alert-schedule-offset"
-                                    />
-                                    <span>minutes past the interval, or from</span>
-                                    <DatePicker
-                                        v-model="form.schedule_start_at"
-                                        showTime
-                                        hourFormat="24"
-                                        showButtonBar
-                                        size="small"
-                                        placeholder="any time"
-                                        inputClass="w-40"
-                                        aria-label="Schedule start"
-                                        data-testid="alert-schedule-start"
-                                    />
-                                </div>
-                                <Field label="Notify" for="alert_channels">
-                                    <MultiSelect
-                                        inputId="alert_channels"
-                                        v-model="form.channels"
-                                        :options="channels"
-                                        optionLabel="name"
-                                        optionValue="id"
-                                        display="chip"
-                                        :selectionLimit="10"
-                                        size="small"
-                                        placeholder="No channels"
-                                        emptyMessage="No channels yet"
-                                        data-testid="alert-channels"
+                            <ContentBlock :collapsible="false">
+                                <template #header_text>Preview: last 24 windows</template>
+                                <template #actions>
+                                    <span
+                                        v-if="previewSummary"
+                                        class="text-sm text-surface-500 mr-2"
+                                        data-testid="alert-preview-summary"
+                                        >{{ previewSummary }}</span
                                     >
-                                        <template #option="{ option }">
-                                            <i :class="kindIcon(option.kind)" class="mr-2 text-surface-500" />{{
-                                                option.name
-                                            }}
-                                        </template>
-                                    </MultiSelect>
-                                    <router-link :to="{ name: 'alertChannels' }" class="text-sm table-link mt-1"
-                                        >Manage channels</router-link
+                                </template>
+                                <div class="p-4" data-testid="alert-preview">
+                                    <ErrorText v-if="previewError" :text="previewError" />
+                                    <div
+                                        v-else-if="previewLoading && !previewData"
+                                        class="h-64 flex items-center justify-center text-surface-500"
                                     >
-                                </Field>
-                                <Field
-                                    label="Note"
-                                    for="alert_note"
-                                    hint="Sent with every notification, e.g. a runbook link"
-                                >
-                                    <Textarea
-                                        id="alert_note"
-                                        v-model="form.note"
-                                        rows="2"
-                                        autoResize
-                                        maxlength="4096"
-                                    />
-                                </Field>
-                                <Field label="Tags" for="alert_tags" hint="Comma separated">
-                                    <InputText
-                                        id="alert_tags"
-                                        v-model="form.tags"
-                                        size="small"
-                                        placeholder="team-payments, prod"
-                                    />
-                                </Field>
-                            </fieldset>
-                        </ContentBlock>
-                    </div>
-
-                    <ContentBlock :collapsible="false">
-                        <template #header_text>Preview: last 24 windows</template>
-                        <template #actions>
-                            <span
-                                v-if="previewSummary"
-                                class="text-sm text-surface-500 mr-2"
-                                data-testid="alert-preview-summary"
-                                >{{ previewSummary }}</span
-                            >
-                        </template>
-                        <div class="p-4" data-testid="alert-preview">
-                            <ErrorText v-if="previewError" :text="previewError" />
-                            <div
-                                v-else-if="previewLoading && !previewData"
-                                class="h-64 flex items-center justify-center text-surface-500"
-                            >
-                                <i class="pi pi-spin pi-spinner mr-2" />Evaluating
-                            </div>
-                            <PreviewChart v-else-if="previewData" :data="previewData" :alert="form" />
-                            <div v-else class="h-24 flex items-center justify-center text-surface-500 text-sm">
-                                Choose what to watch to see how the alert would have behaved.
-                            </div>
+                                        <i class="pi pi-spin pi-spinner mr-2" />Evaluating
+                                    </div>
+                                    <PreviewChart v-else-if="previewData" :data="previewData" :alert="form" />
+                                    <div v-else class="h-24 flex items-center justify-center text-surface-500 text-sm">
+                                        Choose what to watch to see how the alert would have behaved.
+                                    </div>
+                                </div>
+                            </ContentBlock>
                         </div>
-                    </ContentBlock>
+                        <div class="flex flex-col gap-4 min-w-0">
+                            <ContentBlock :collapsible="false">
+                                <template #header_text><span class="step-badge">2</span>When to fire</template>
+                                <fieldset :disabled="!canEdit" class="flex flex-col gap-4 p-4">
+                                    <div class="flex flex-wrap items-end gap-3">
+                                        <Field label="Fire when the value is" for="alert_threshold_type">
+                                            <Select
+                                                inputId="alert_threshold_type"
+                                                v-model="form.threshold_type"
+                                                :options="THRESHOLD_TYPES"
+                                                optionLabel="label"
+                                                optionValue="value"
+                                                size="small"
+                                                data-testid="alert-threshold-type"
+                                            />
+                                        </Field>
+                                        <Field label="Threshold" for="alert_threshold" :error="errors.threshold">
+                                            <InputNumber
+                                                inputId="alert_threshold"
+                                                :invalid="!!errors.threshold"
+                                                v-model="form.threshold"
+                                                size="small"
+                                                :maxFractionDigits="6"
+                                                :useGrouping="false"
+                                                inputClass="w-32"
+                                                data-testid="alert-threshold"
+                                            />
+                                        </Field>
+                                        <Field
+                                            v-if="isRange(form.threshold_type)"
+                                            label="and"
+                                            for="alert_threshold_max"
+                                            :error="errors.threshold_max"
+                                        >
+                                            <InputNumber
+                                                inputId="alert_threshold_max"
+                                                :invalid="!!errors.threshold_max"
+                                                v-model="form.threshold_max"
+                                                size="small"
+                                                :maxFractionDigits="6"
+                                                :useGrouping="false"
+                                                inputClass="w-32"
+                                                data-testid="alert-threshold-max"
+                                            />
+                                        </Field>
+                                        <Field label="Every" for="alert_interval">
+                                            <Select
+                                                inputId="alert_interval"
+                                                v-model="form.interval"
+                                                :options="INTERVALS"
+                                                size="small"
+                                                data-testid="alert-interval"
+                                            />
+                                        </Field>
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-2 text-sm">
+                                        <span>Fire after</span>
+                                        <InputNumber
+                                            v-model="form.consecutive_windows"
+                                            :min="1"
+                                            :max="10"
+                                            size="small"
+                                            inputClass="w-14"
+                                            aria-label="Breaching windows"
+                                        />
+                                        <span>breaching windows out of the last</span>
+                                        <InputNumber
+                                            v-model="form.of_windows"
+                                            :min="1"
+                                            :max="10"
+                                            size="small"
+                                            inputClass="w-14"
+                                            aria-label="Out of windows"
+                                        />
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-2 text-sm">
+                                        <span>Windows start</span>
+                                        <InputNumber
+                                            v-model="form.schedule_offset_minutes"
+                                            :min="0"
+                                            :max="1439"
+                                            :disabled="!!form.schedule_start_at"
+                                            size="small"
+                                            inputClass="w-16"
+                                            aria-label="Schedule offset in minutes"
+                                            data-testid="alert-schedule-offset"
+                                        />
+                                        <span>minutes past the interval, or from</span>
+                                        <DatePicker
+                                            v-model="form.schedule_start_at"
+                                            showTime
+                                            hourFormat="24"
+                                            showButtonBar
+                                            size="small"
+                                            placeholder="any time"
+                                            inputClass="w-40"
+                                            aria-label="Schedule start"
+                                            data-testid="alert-schedule-start"
+                                        />
+                                    </div>
+                                </fieldset>
+                            </ContentBlock>
+                            <ContentBlock :collapsible="false">
+                                <template #header_text><span class="step-badge">3</span>Name and notify</template>
+                                <fieldset :disabled="!canEdit" class="flex flex-col gap-4 p-4">
+                                    <Field label="Name" for="alert_name" :error="errors.name">
+                                        <InputText
+                                            id="alert_name"
+                                            :invalid="!!errors.name"
+                                            v-model="form.name"
+                                            size="small"
+                                            maxlength="255"
+                                            placeholder="e.g. Checkout errors"
+                                            data-testid="alert-name"
+                                        />
+                                    </Field>
+                                    <Field label="Notify" for="alert_channels">
+                                        <MultiSelect
+                                            inputId="alert_channels"
+                                            v-model="form.channels"
+                                            :options="channels"
+                                            optionLabel="name"
+                                            optionValue="id"
+                                            display="chip"
+                                            :selectionLimit="10"
+                                            size="small"
+                                            placeholder="No channels"
+                                            emptyMessage="No channels yet"
+                                            data-testid="alert-channels"
+                                        >
+                                            <template #option="{ option }">
+                                                <i :class="kindIcon(option.kind)" class="mr-2 text-surface-500" />{{
+                                                    option.name
+                                                }}
+                                            </template>
+                                        </MultiSelect>
+                                        <router-link :to="{ name: 'alertChannels' }" class="text-sm table-link mt-1"
+                                            >Manage channels</router-link
+                                        >
+                                    </Field>
+                                    <Field
+                                        label="Note"
+                                        for="alert_note"
+                                        hint="Sent with every notification, e.g. a runbook link"
+                                    >
+                                        <Textarea
+                                            id="alert_note"
+                                            v-model="form.note"
+                                            rows="2"
+                                            autoResize
+                                            maxlength="4096"
+                                        />
+                                    </Field>
+                                    <Field label="Tags" for="alert_tags" hint="Comma separated">
+                                        <InputText
+                                            id="alert_tags"
+                                            v-model="form.tags"
+                                            size="small"
+                                            placeholder="team-payments, prod"
+                                        />
+                                    </Field>
+                                </fieldset>
+                            </ContentBlock>
+                        </div>
+                    </div>
 
                     <ContentBlock v-if="stored" :collapsible="false">
                         <template #header_text>History: {{ history.length }}</template>
@@ -436,7 +470,7 @@
                                 <template #body="{ data }">{{ windowText(data) }}</template>
                             </Column>
                             <Column v-if="grouped" field="group_key" header="Group" />
-                            <Column header="State" class="w-1">
+                            <Column header="State" class="w-1 text-nowrap">
                                 <template #body="{ data }">
                                     <Tag :value="STATE_LABEL[data.state]" :severity="STATE_SEVERITY[data.state]" />
                                 </template>
@@ -510,9 +544,13 @@ const Field = (props, { slots }) =>
     h('div', { class: 'flex flex-col gap-1 min-w-0' }, [
         h('label', { for: props.for, class: 'font-medium text-sm' }, props.label),
         slots.default?.(),
-        props.hint ? h('span', { class: 'text-xs text-surface-500 dark:text-surface-400' }, props.hint) : null,
+        props.error
+            ? h('small', { class: 'text-red-600 dark:text-red-400', 'data-testid': 'alert-field-error' }, props.error)
+            : props.hint
+              ? h('span', { class: 'text-xs text-surface-500 dark:text-surface-400' }, props.hint)
+              : null,
     ])
-Field.props = ['label', 'for', 'hint']
+Field.props = ['label', 'for', 'hint', 'error']
 
 const KINDS = [
     { value: 'search', label: 'Search', hint: 'Rows matching a query in a source', icon: 'pi pi-search' },
@@ -535,6 +573,8 @@ const loading = ref(!!alertId.value)
 const loadError = ref('')
 const saving = ref(false)
 const problem = ref('')
+const attempted = ref(false)
+const serverErrors = ref({})
 const channels = ref([])
 const dashboards = ref([])
 const dashboard = ref(null)
@@ -602,6 +642,20 @@ const tileSeries = computed(() =>
     (tile.value?.chart.series || []).map((s, index) => ({ index, label: describeSeries(s) })),
 )
 const grouped = computed(() => (form.kind === 'tile' ? !!tile.value?.chart.group_by : !!form.group_by))
+// Required fields, shown inline once a save was tried; server field errors come on top.
+const missing = computed(() => {
+    const e = {}
+    if (form.kind === 'search') {
+        if (!form.source) e.source = 'Choose a source'
+        if (form.agg !== 'count' && !form.column) e.column = 'Choose a column'
+    } else if (!form.dashboard) e.dashboard = 'Choose a dashboard'
+    else if (!form.tile_id) e.tile_id = 'Choose a chart'
+    if (form.threshold === null || form.threshold === undefined) e.threshold = 'Enter a threshold'
+    if (isRange(form.threshold_type) && (form.threshold_max === null || form.threshold_max === undefined))
+        e.threshold_max = 'Enter the upper bound'
+    return e
+})
+const errors = computed(() => ({ ...serverErrors.value, ...(attempted.value ? missing.value : {}) }))
 const kindIcon = (kind) => CHANNEL_KINDS.find((k) => k.value === kind)?.icon || 'pi pi-send'
 
 const series = () => {
@@ -791,12 +845,23 @@ const previewSummary = computed(() => {
 
 const save = async () => {
     if (saving.value) return
+    attempted.value = true
+    serverErrors.value = {}
+    const first = Object.keys(missing.value)[0]
+    if (first) {
+        problem.value = 'Fill in the highlighted fields.'
+        document.getElementById(first === 'tile_id' ? 'alert_tile' : `alert_${first}`)?.focus()
+        return
+    }
     saving.value = true
     problem.value = ''
     const response = isNew.value ? await srv.create(payload()) : await srv.update(alertId.value, payload())
     saving.value = false
     if (!response.result) {
         problem.value = responseProblem(response)
+        serverErrors.value = Object.fromEntries(
+            Object.entries(response.validation?.fields || {}).map(([k, v]) => [k, [].concat(v).join(' ')]),
+        )
         return
     }
     response.sendToastMessages(toast)
@@ -833,3 +898,19 @@ const windowText = (row) =>
 const formatValue = (v) =>
     v === null || v === undefined ? '—' : Number(v).toLocaleString('en-US', { maximumFractionDigits: 4 })
 </script>
+
+<style scoped>
+.step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--p-primary-color);
+    border: 1.5px solid var(--p-primary-color);
+}
+</style>

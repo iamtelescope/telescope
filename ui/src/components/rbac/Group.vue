@@ -22,7 +22,8 @@
                                 />
                                 <ConfirmPopup></ConfirmPopup>
                                 <Button
-                                    severity="primary"
+                                    severity="danger"
+                                    outlined
                                     label="Delete"
                                     icon="pi pi-trash"
                                     @click="groupDeleteConfirm($event)"
@@ -59,7 +60,7 @@
                                         :options="addableRoles"
                                         optionLabel="name"
                                         size="small"
-                                        placeholder="&#8211;"
+                                        placeholder="Choose a role to grant..."
                                         class="w-full"
                                         filter
                                         showClear
@@ -69,7 +70,7 @@
                                     />
                                     <Button
                                         class="ml-2 pl-6 pr-6"
-                                        severity="primary"
+                                        :severity="grantButtonActive ? 'primary' : 'secondary'"
                                         label="Grant"
                                         :outlined="!grantButtonActive"
                                         @click="handleGrantGlobalRole"
@@ -87,6 +88,7 @@
                         <ContentBlock header="Group members" class="mt-3">
                             <template #actions>
                                 <Button
+                                    v-if="group.users.length"
                                     severity="danger"
                                     :label="removeBtnLabel"
                                     @click="handleRemoveUsers"
@@ -115,7 +117,7 @@
                                     />
                                     <Button
                                         class="ml-2 pl-6 pr-6"
-                                        severity="primary"
+                                        :severity="addButtonActive ? 'primary' : 'secondary'"
                                         label="Add"
                                         :outlined="!addButtonActive"
                                         @click="handleAddUser"

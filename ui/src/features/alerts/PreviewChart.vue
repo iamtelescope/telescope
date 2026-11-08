@@ -10,10 +10,8 @@
     </div>
     <div class="flex flex-wrap gap-4 mt-2 text-xs text-surface-500">
         <span
-            ><span
-                class="inline-block w-4 border-t-2 border-dashed align-middle mr-1"
-                :style="{ borderColor: THRESHOLD }"
-            />threshold</span
+            ><span class="inline-block w-4 border-t-2 align-middle mr-1" :style="{ borderColor: THRESHOLD }" />threshold
+            <span class="font-mono" data-testid="alert-preview-threshold">{{ describeCondition(alert) }}</span></span
         >
         <span
             ><span class="inline-block w-3 h-3 align-middle mr-1 rounded-sm" :style="{ background: FIRING }" />{{
@@ -32,7 +30,7 @@ import { ACCENT, categoricalColor } from '@/components/dashboards/charts/palette
 import { formatNumber, groupLabel } from '@/components/dashboards/charts/format.js'
 import { getChartSettings } from '@/utils/chartSettings.js'
 import { localTimeZone } from '@/utils/datetimeranges'
-import { isRange } from '@/features/alerts/useAlerts.js'
+import { describeCondition, isRange } from '@/features/alerts/useAlerts.js'
 
 // Threshold shading adapted from HyperDX components/AlertPreviewChart.tsx (MIT).
 const props = defineProps(['data', 'alert', 'bandLabel'])

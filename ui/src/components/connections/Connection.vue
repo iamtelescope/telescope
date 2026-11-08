@@ -59,7 +59,8 @@
                                 <ConfirmPopup></ConfirmPopup>
                                 <Button
                                     v-if="connection?.canDelete()"
-                                    severity="primary"
+                                    severity="danger"
+                                    outlined
                                     label="Delete"
                                     icon="pi pi-trash"
                                     @click="connectionDeleteConfirm($event)"
@@ -80,7 +81,7 @@
                                 <TabPanel value="overview">
                                     <ContentBlock header="General">
                                         <DataRow name="Id" :value="connection?.id" :copy="false" />
-                                        <DataRow name="Kind" :value="connection?.kind" :copy="false" />
+                                        <DataRow name="Kind" :value="kindLabel(connection?.kind)" :copy="false" />
                                         <DataRow name="Name" :value="connection?.name" :copy="false" />
                                         <DataRow name="Description" :copy="false">
                                             <EmptyValue :value="connection?.description" />
@@ -334,6 +335,7 @@
 </template>
 
 <script setup>
+import { kindLabel } from '@/components/connections/kinds.js'
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Cable } from 'lucide-vue-next'

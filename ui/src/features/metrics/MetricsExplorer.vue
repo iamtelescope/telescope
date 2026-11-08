@@ -74,10 +74,10 @@
                             <label class="font-medium">Group by</label>
                             <div class="flex items-center gap-2">
                                 <span
-                                    class="flex-1 min-w-0 truncate font-mono text-sm"
-                                    :class="state.group ? '' : 'text-surface-500'"
+                                    class="flex-1 min-w-0 truncate text-sm"
+                                    :class="state.group ? 'font-mono' : 'text-surface-500'"
                                     data-testid="metrics-group"
-                                    >{{ state.group || 'None' }}</span
+                                    >{{ state.group || (metric ? 'None: pick an attribute below' : 'None') }}</span
                                 >
                                 <Button
                                     v-if="state.group"
@@ -108,6 +108,12 @@
                         <div class="font-medium mb-2 truncate font-mono text-sm">
                             {{ metric ? metricLabel(metric) : '' }}
                             <span v-if="state.group" class="text-surface-500"> by {{ state.group }}</span>
+                            <span
+                                v-if="metric && unitText"
+                                class="ml-2 font-sans text-surface-500"
+                                data-testid="metrics-unit"
+                                >{{ unitText }}</span
+                            >
                         </div>
                         <div class="flex-1 min-h-0">
                             <ChartView
@@ -121,8 +127,13 @@
                                 timeZone="UTC"
                                 @rangeSelected="onRange"
                             />
-                            <div v-else class="flex items-center justify-center h-full text-sm text-surface-500">
-                                Choose a metric to chart it
+                            <div
+                                v-else
+                                class="flex flex-col items-center justify-center gap-2 h-full text-sm text-surface-500"
+                                data-testid="metrics-empty"
+                            >
+                                <Activity class="w-8 h-8 opacity-60" :stroke-width="1.5" />
+                                Choose a metric on the left to chart it
                             </div>
                         </div>
                     </div>
@@ -150,6 +161,7 @@ import {
     defaultMetricAgg,
     isMetricsSource,
     metricLabel,
+    useMetricNames,
 } from '@/components/dashboards/metrics/metrics'
 import DatetimePicker from '@/components/explorer/controls/DatetimePicker.vue'
 import { useChartData } from '@/composables/dashboards/useDashboardService'
@@ -172,6 +184,7 @@ const state = computed(() => {
         agg: q.agg || '',
         filter: q.filter || '',
         group: q.group || '',
+        unit: q.unit || '',
         from: toMillisOrString(q.from || 'now-1h'),
         to: toMillisOrString(q.to || 'now'),
     }
@@ -196,7 +209,35 @@ const set = (changes) => {
     for (const key of Object.keys(query)) if (query[key] === '' || query[key] == null) delete query[key]
     router.replace({ query })
 }
-const onMetric = (m) => set({ metric: m.name, type: m.type, agg: defaultMetricAgg(m.type), group: '' })
+const onMetric = (m) =>
+    set({ metric: m.name, type: m.type, agg: defaultMetricAgg(m.type), group: '', unit: m.unit || '' })
+
+// OTel UCUM units the chart formatter knows.
+const CHART_UNITS = { By: 'bytes', s: 'duration_s', ms: 'duration_ms', us: 'duration_us', ns: 'duration_ns' }
+const UNIT_NAMES = { By: 'bytes', s: 'seconds', ms: 'milliseconds', us: 'microseconds', ns: 'nanoseconds', 1: 'ratio' }
+// A link without ?unit= (e.g. an older one) looks the unit up in the metric catalog once.
+const catalog = useMetricNames()
+watch(
+    () => [state.value.source, state.value.metric, state.value.unit],
+    () => {
+        const { source, metric: name, unit, from, to } = state.value
+        if (source && name && !unit) catalog.load(source, { from, to })
+    },
+    { immediate: true },
+)
+const unit = computed(
+    () =>
+        state.value.unit ||
+        catalog.data.value.find((m) => m.name === state.value.metric && m.type === state.value.type)?.unit ||
+        '',
+)
+// The axis already shows the units it can format; others are named next to the title.
+const unitText = computed(() => {
+    if (!unit.value) return ''
+    if (CHART_UNITS[unit.value]) return metric.value?.agg === 'rate' ? 'per second' : ''
+    const name = UNIT_NAMES[unit.value] || unit.value.replace(/^\{(.*)\}$/, '$1s')
+    return metric.value?.agg === 'rate' ? `${name} per second` : name
+})
 const onRange = (r) => set({ from: String(r.from), to: String(r.to) })
 const addFilter = (condition) => {
     const filter = state.value.filter ? `${state.value.filter} and ${condition}` : condition
@@ -210,6 +251,7 @@ const chart = computed(() => {
         display: 'line',
         series: [{ agg: 'metric', metric: metric.value }],
         group_by: state.value.group,
+        number_format: { unit: CHART_UNITS[unit.value] || 'number' },
     }
 })
 

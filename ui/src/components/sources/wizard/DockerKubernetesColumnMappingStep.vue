@@ -1,6 +1,6 @@
 <template>
     <div class="flex flex-col">
-        <div class="flex justify-between mb-4">
+        <div class="flex justify-between order-last mt-6 pt-4 border-t border-surface-200 dark:border-surface-700">
             <Button label="Back" severity="secondary" size="small" icon="pi pi-arrow-left" @click="emit('prev')" />
             <Button label="Next" icon="pi pi-arrow-right" size="small" iconPos="right" @click="handleNext" />
         </div>
