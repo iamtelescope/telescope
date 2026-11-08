@@ -122,6 +122,11 @@ WSGI_APPLICATION = "base.wsgi.application"
 
 DATABASES = CONFIG["django"]["DATABASES"]
 
+# The scheduler writes beside the web workers; SQLite fails a deferred read-then-write at once.
+for _db in DATABASES.values():
+    if _db.get("ENGINE") == "django.db.backends.sqlite3":
+        _db.setdefault("OPTIONS", {}).setdefault("transaction_mode", "IMMEDIATE")
+
 CACHES = CONFIG["django"]["CACHES"]
 
 # Password validation
