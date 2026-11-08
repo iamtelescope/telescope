@@ -470,7 +470,7 @@
                                 <template #body="{ data }">{{ windowText(data) }}</template>
                             </Column>
                             <Column v-if="grouped" field="group_key" header="Group" />
-                            <Column header="State" class="w-1">
+                            <Column header="State" class="w-1 text-nowrap">
                                 <template #body="{ data }">
                                     <Tag :value="STATE_LABEL[data.state]" :severity="STATE_SEVERITY[data.state]" />
                                 </template>
@@ -910,7 +910,7 @@ const formatValue = (v) =>
     border-radius: 9999px;
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--p-primary-contrast-color);
-    background: var(--p-primary-color);
+    color: var(--p-primary-color);
+    border: 1.5px solid var(--p-primary-color);
 }
 </style>
