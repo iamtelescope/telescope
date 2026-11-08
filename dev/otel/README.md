@@ -15,8 +15,9 @@ python dev/otel/generate.py --dry-run --facts /tmp/facts.json # generate and wri
 ```
 
 Options: `--seed` (default 42), `--start` (UTC, 5-minute aligned, default `2026-01-01T00:00:00Z`), `--host`
-(127.0.0.1), `--port` (HTTP, 18123), `--user`, `--password`, `--database` (otel), `--facts` (this directory's
-`facts.json`). Each run drops and recreates the `otel_*` tables of the databases it loads, so a rerun is
+(127.0.0.1), `--port` (HTTP, 18123), `--user` (default), `--password` (empty), `--database` (otel; the other
+variants load into `<database>_exporter` and `<database>_k8s`), `--variants` (compat), `--facts` (this directory's
+`facts.json`) and `--dry-run`. Each run drops and recreates the `otel_*` tables of the databases it loads, so a rerun is
 idempotent. It never touches other tables. A run takes about 10 s to generate and 5 s per variant to load.
 
 `facts.json` is committed for the defaults. With another `--seed` or `--start`, pass `--facts` somewhere else, or
@@ -27,9 +28,9 @@ expect a diff. To see the data under "last 24 hours" in the UI, pass a recent st
 
 | Variant | Files | Database | What differs |
 |---|---|---|---|
-| `compat` | `compat_logs.sql`, `compat_traces.sql`, `compat_metrics.sql` | `otel` | HyperDX's compat seed DDL without `__hdx_*` columns or TTL; metric times are `DateTime` |
+| `compat` | `compat_logs.sql`, `compat_traces.sql`, `compat_metrics.sql` | `otel` | A widely used compat seed DDL for the exporter's tables, without its extra columns or TTL; metric times are `DateTime` |
 | `exporter` | `exporter_*.sql` | `otel_exporter` | The exporter's own defaults: `TimestampTime` and a `ServiceName`-first key on logs, `Nested` `Events`/`Links`/`Exemplars`, `DateTime64(9)` metric times, `otel_traces_trace_id_ts` + MV |
-| `k8s` | `k8s_logs.sql` + compat traces/metrics | `otel_k8s` | Logs with HyperDX's materialized `__hdx_materialized_k8s.*` columns |
+| `k8s` | `k8s_logs.sql` + compat traces/metrics | `otel_k8s` | Logs with materialized `__hdx_materialized_k8s.*` columns |
 
 `${DATABASE}` in the files is replaced by the target database. `Nested` columns are flattened to `Events.Timestamp`
 etc. under the default `flatten_nested = 1`, as with the real exporter. The exporter DDL was written to match the
@@ -43,8 +44,10 @@ The exponential histogram and summary tables are created empty.
   cart→postgres. Postgres emits `Server` spans so the DB edges show up in a client→server join.
 - About 385k logs, 70% carrying the `TraceId`/`SpanId` of a real span. Log timestamps are whole milliseconds, so some rows share
   a timestamp. Frontend request logs carry `LogAttributes` `http.method`, `http.route`, `http.status_code`.
-- Every row has `ResourceAttributes` with `service.name`, `service.version`, `k8s.cluster.name`, `k8s.namespace.name`,
-  `k8s.node.name`, `k8s.pod.name`, `k8s.pod.uid`, `k8s.container.name`, `host.name`. 3 nodes, 4 namespaces, 20 pods.
+- Every row has `ResourceAttributes` with `service.name`, `service.version`, `deployment.environment.name`,
+  `telemetry.sdk.language`, `k8s.cluster.name`, `k8s.namespace.name`, `k8s.node.name`, `k8s.pod.name`, `k8s.pod.uid`,
+  `k8s.container.name`, `k8s.deployment.name` (`k8s.statefulset.name` for postgres) and `host.name`. 3 nodes,
+  4 namespaces, 20 pods.
 - Metrics, one point a minute: `http.server.request.duration` histogram and `http.server.requests` sum (both
   cumulative, per service, method and route, derived from the server spans); `process.runtime.cpu.utilization`,
   `process.runtime.memory.usage` per pod; `k8s.pod.cpu.utilization`, `k8s.pod.memory.usage`, `k8s.container.restarts`
@@ -63,13 +66,16 @@ The exponential histogram and summary tables are created empty.
 | `counter_reset` | `http.server.requests` for `frontend` restarts from 0 at start+6h (new `StartTimeUnix`) |
 | `connection_refused` | exactly 25 `checkout` ERROR logs containing `connection refused`, within 2 minutes from start+20h |
 | `exception_log` | a payment ERROR log with `exception.type`, `exception.message`, `exception.stacktrace`; its span has an `exception` event |
-| `rows`, `content_sha256` | per-table row counts and a digest of the generated rows, for checking that a rerun is identical |
+| `rows`, `content_sha256` | per-table row counts and a digest of the generated rows of each non-empty table, for checking that a rerun is identical |
+| `seed`, `start`, `end`, `services`, `traces`, `logs_with_trace_id`, `call_graph`, `k8s` | the run's parameters and shape: services, trace and traced-log counts, the call graph edges, the cluster's nodes, namespaces and pods |
 
 ## Tests
 
-`backend/tests/integration/conftest.py` provides `ch_client`, `otel_facts` and `otel_db`. Tests marked
-`@pytest.mark.clickhouse` are skipped unless `TELESCOPE_TEST_CH_HOST` and `TELESCOPE_TEST_CH_PORT` (HTTP) are set.
-`otel_db` (database from `TELESCOPE_TEST_OTEL_DB`, default `otel`) fails if the row counts differ from `facts.json`.
+`backend/tests/integration/conftest.py` provides `ch_settings_dict`, `ch_client`, `otel_facts` and `otel_db`. Tests
+marked `@pytest.mark.clickhouse` are skipped unless `TELESCOPE_TEST_CH_HOST` and `TELESCOPE_TEST_CH_PORT` (HTTP) are
+set; `TELESCOPE_TEST_CH_USER` (default `default`) and `TELESCOPE_TEST_CH_PASSWORD` (empty) are optional.
+`otel_db` (database from `TELESCOPE_TEST_OTEL_DB`, default `otel`) fails if the row counts of the non-empty tables
+differ from `facts.json`.
 
 ```bash
 cd backend && TELESCOPE_TEST_CH_HOST=127.0.0.1 TELESCOPE_TEST_CH_PORT=18123 pytest -m clickhouse tests/integration

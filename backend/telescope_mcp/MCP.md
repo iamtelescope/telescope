@@ -2,8 +2,9 @@
 
 Telescope serves a [Model Context Protocol](https://modelcontextprotocol.io/) server at `/api/mcp`
 (streamable HTTP, stateless, JSON responses). It authenticates with a personal API token
-(Profile, `/profile`, "New API token"), sent as `Authorization: Bearer <token>` or `Authorization: Token <token>`,
-and every tool checks the same permissions as the UI and `/api/v1`.
+(Profile, "New API token", `/profile/new_api_token`; or `python manage.py create_api_token --username <user> --name
+<name>`), sent as `Authorization: Bearer <token>` or `Authorization: Token <token>`, and every tool checks the same
+permissions as the UI and `/api/v1`. It answers POST only; GET and DELETE get 405.
 
 ## Connect
 
@@ -33,6 +34,8 @@ npx @modelcontextprotocol/inspector --cli https://telescope.example.com/api/mcp 
 | `list_alerts` | read-only | Alerts on sources you can use, optionally one dashboard's tile alerts. |
 
 Responses over 50,000 characters lose items from their largest list and carry a `trimmed` note
-(`field`, `returned`, `total`); a trimmed search drops its `cursor`. Queries are tagged
-`{"surface":"mcp"}` in `system.query_log.log_comment`, and calls share the API v2 rate limit.
-A JSON-RPC batch (protocol 2025-03-26) takes at most 20 messages, each counted against that limit.
+(`field`, `returned`, `total`, `hint`); a trimmed response drops its `cursor`. Queries are tagged in
+`system.query_log.log_comment` with `"surface":"mcp"`, the source slug and the user id, for example
+`{"surface":"mcp","source":"otel-logs","user":1}`. Calls share the API v2 rate limit of 600 requests a minute per
+user, counted in each server process. A JSON-RPC batch (an array of messages) takes at most 20 messages, each counted
+against that limit.
