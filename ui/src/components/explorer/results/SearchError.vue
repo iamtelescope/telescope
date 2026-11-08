@@ -33,7 +33,12 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-const props = defineProps({ error: [String, Array, Object], title: { type: String, default: 'Search failed' } })
+// compact: a short summary for narrow places such as the facet sidebar.
+const props = defineProps({
+    error: [String, Array, Object],
+    title: { type: String, default: 'Search failed' },
+    compact: Boolean,
+})
 const open = ref(false)
 
 const text = computed(() => {
@@ -51,7 +56,8 @@ const summary = computed(() => {
         .replace(/(\(line \d+, col \d+\)):.*$/, '$1')
         .trim()
     const code = t.match(/\(([A-Z_]{3,})\)\s*$/)?.[1]
-    const short = reason.length > 300 ? reason.slice(0, 300) + '…' : reason
+    const max = props.compact ? 90 : 300
+    const short = reason.length > max ? reason.slice(0, max) + '…' : reason
     return code && !short.includes(code) ? `${short} (${code})` : short
 })
 </script>

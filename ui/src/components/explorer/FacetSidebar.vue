@@ -42,6 +42,7 @@
                 v-if="error"
                 :error="error"
                 title="Facets unavailable"
+                compact
                 class="my-1 text-xs"
                 data-testid="facet-error"
             />
