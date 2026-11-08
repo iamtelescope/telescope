@@ -24,7 +24,13 @@ import { useDark } from '@vueuse/core'
 
 import YagrChart from '@/components/common/YagrChart.vue'
 import TruncatedHint from '@/components/dashboards/charts/TruncatedHint.vue'
-import { seriesLabel, seriesUnit, groupLabel, formatTileValue } from '@/components/dashboards/charts/format.js'
+import {
+    columnLabel,
+    seriesLabel,
+    seriesUnit,
+    groupLabel,
+    formatTileValue,
+} from '@/components/dashboards/charts/format.js'
 import {
     ACCENT,
     categoricalColor,
@@ -122,10 +128,11 @@ const settings = computed(() => {
         timeZone: props.timeZone,
         theme: theme.value,
         width: wrapper.value.getBoundingClientRect().width,
-        nameLabel: props.chart.group_by || 'Series',
+        nameLabel: columnLabel(props.chart.group_by) || 'Series',
         valueLabel: 'Value',
         escape: true,
-        formatValue: (v) => formatTileValue(v, unit.value, props.chart.number_format, { compact: true }),
+        // The tooltip shows full values; only the y axis is compact.
+        formatValue: (v) => formatTileValue(v, unit.value, props.chart.number_format),
         legend: series.length > 1,
         lineWidth: props.chart.display === 'line' ? 2 : 1,
         fitColumns: true,
@@ -134,8 +141,10 @@ const settings = computed(() => {
         padding: [14, 22, 0, 4],
         onSelect: (range) => emit('rangeSelected', range),
     })
+    const compact = (v) => formatTileValue(v, unit.value, props.chart.number_format, { compact: true })
     return {
         ...base,
+        axes: { ...base.axes, y: { values: (u, splits) => splits.map(compact) } },
         cursor: { ...base.cursor, sync: SYNC_KEY },
         // A synced tile moves its crosshair but keeps its tooltip hidden.
         tooltip: { ...base.tooltip, show: (y) => !!y.plugins.tooltip?.state.pinned || y.root.matches(':hover') },

@@ -77,6 +77,13 @@ const plot = computed(() => {
 })
 
 const fmtValue = (v) => formatNumber(v, props.unit, { compact: true })
+// The round value within 1% of a bucket edge, or null.
+const roundEdge = (v) => {
+    if (!(v > 0)) return null
+    const p = 10 ** Math.floor(Math.log10(v))
+    const m = [1, 2, 5, 10].find((k) => Math.abs(v / (k * p) - 1) < 0.01)
+    return m ? m * p : null
+}
 const fmtTime = (ms, withDate) =>
     DateTime.fromMillis(ms, { zone: props.timeZone || 'local' }).toFormat(withDate ? 'MM-dd HH:mm' : 'HH:mm')
 
@@ -106,13 +113,17 @@ const draw = () => {
     ctx.lineTo(p.x - 0.5, p.y + p.h + 0.5)
     ctx.lineTo(p.x + p.w, p.y + p.h + 0.5)
     ctx.stroke()
-    // y labels on bucket edges, thinned to one per 18px.
+    // y labels on round edges (1, 2, 5 x 10^k) when there are enough, at least 18px apart.
     ctx.textAlign = 'right'
     ctx.textBaseline = 'middle'
-    const edges = props.data.y_edges
-    const every = Math.max(1, Math.ceil(18 / p.ch))
-    for (let i = 0; i < edges.length; i += every) {
-        ctx.fillText(fmtValue(edges[i]), p.x - 6, p.y + p.h - i * p.ch)
+    const edges = props.data.y_edges.map((v, i) => [i, v])
+    const nice = edges.map(([i, v]) => [i, roundEdge(v)]).filter(([, v]) => v !== null)
+    let lastY = Infinity
+    for (const [i, v] of nice.length >= 3 ? nice : edges) {
+        const y = p.y + p.h - i * p.ch
+        if (lastY - y < 18) continue
+        ctx.fillText(fmtValue(v), p.x - 6, y)
+        lastY = y
     }
     // x labels about every 110px, on bucket starts.
     ctx.textAlign = 'center'
