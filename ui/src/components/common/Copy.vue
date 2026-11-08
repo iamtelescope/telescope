@@ -1,23 +1,23 @@
 <template>
-    <UseClipboard :copiedDuring="300" v-slot="{ copy, copied, isSupported }" :source="value">
-        <i
+    <UseClipboard :copiedDuring="1200" v-slot="{ copy, copied, isSupported }" :source="value">
+        <button
             v-if="isSupported"
-            class="pi pi-copy copy-button cursor-pointer"
-            @click="copy()"
-            :class="{ faded: copied }"
-        />
+            type="button"
+            class="copy-button inline-flex items-center align-middle rounded text-surface-500 hover:text-primary dark:text-surface-400"
+            :aria-label="copied ? 'Copied' : label"
+            v-tooltip.top="copied ? 'Copied' : label"
+            @click.stop="copy()"
+        >
+            <i :class="copied ? 'pi pi-check text-green-600 dark:text-green-400' : 'pi pi-copy'" aria-hidden="true"></i>
+        </button>
     </UseClipboard>
 </template>
 
 <script setup>
 import { UseClipboard } from '@vueuse/components'
 
-const props = defineProps(['value'])
+defineProps({
+    value: { default: '' },
+    label: { type: String, default: 'Copy to clipboard' },
+})
 </script>
-
-<style scoped>
-.copy-button.faded {
-    opacity: 0.1;
-    transition: opacity 0.1s ease;
-}
-</style>
