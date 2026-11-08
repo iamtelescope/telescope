@@ -36,26 +36,21 @@
                         <SkeletonList :columns="5" :rows="8" />
                     </ContentBlock>
                 </template>
-                <div
+                <EmptyState
                     v-if="!total && !filtering"
-                    class="flex flex-col items-center justify-center text-center py-20 px-4 border border-dashed rounded-lg border-surface-300 dark:border-surface-600"
+                    card
+                    :icon="Bell"
+                    title="No alerts yet"
+                    description="Get notified in Slack, PagerDuty, email or any webhook when a search or a dashboard chart crosses a threshold."
                     data-testid="alerts-empty"
                 >
-                    <div class="flex items-center justify-center w-16 h-16 mb-5 rounded-full bg-highlight">
-                        <Bell class="w-8 h-8" :stroke-width="1.5" />
-                    </div>
-                    <div class="text-xl font-medium mb-2">No alerts yet</div>
-                    <p class="max-w-md mb-6 text-surface-500 dark:text-surface-400">
-                        Get notified in Slack, PagerDuty, email or any webhook when a search or a dashboard chart
-                        crosses a threshold.
-                    </p>
                     <Button
                         size="small"
                         icon="pi pi-plus"
                         label="New alert"
                         @click="router.push({ name: 'alertNew' })"
                     />
-                </div>
+                </EmptyState>
                 <ContentBlock v-else :collapsible="false">
                     <template #header_text>
                         Alerts: {{ total }}
@@ -249,6 +244,7 @@ import { Bell } from 'lucide-vue-next'
 import Content from '@/components/common/Content.vue'
 import ListHeader from '@/components/common/ListHeader.vue'
 import DataView from '@/components/common/DataView.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import ContentBlock from '@/components/common/ContentBlock.vue'
 import SkeletonList from '@/components/common/SkeletonList.vue'
 import SilenceButton from '@/features/alerts/SilenceButton.vue'

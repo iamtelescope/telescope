@@ -409,6 +409,7 @@ import { GridLayout, GridItem } from 'grid-layout-plus'
 import { LayoutDashboard } from 'lucide-vue-next'
 
 import DataView from '@/components/common/DataView.vue'
+import { setPageTitle } from '@/components/common/pageTitle'
 import DatetimePicker from '@/components/explorer/controls/DatetimePicker.vue'
 import Tile from '@/components/dashboards/Tile.vue'
 import TileEditor from '@/components/dashboards/TileEditor.vue'
@@ -556,6 +557,12 @@ const resetDraft = () => {
     dirty.value = false
     rebuildLayout()
 }
+
+// The browser tab names the dashboard once it loads or is renamed.
+watch(
+    () => dashboard.value?.name,
+    (name) => name && setPageTitle(name),
+)
 
 watch(dashboard, (value) => {
     if (!value) return

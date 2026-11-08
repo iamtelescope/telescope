@@ -41,18 +41,14 @@
                     <span class="font-mono">manage_alert_channels</span> permission (Admin role). You can attach these
                     channels to your alerts.
                 </div>
-                <div
+                <EmptyState
                     v-if="!rows.length"
-                    class="flex flex-col items-center justify-center text-center py-16 px-4 border border-dashed rounded-lg border-surface-300 dark:border-surface-600"
+                    card
+                    :icon="Send"
+                    title="No channels yet"
+                    description="A channel is where alerts are delivered: a Slack incoming webhook, a PagerDuty service, email addresses or any HTTP endpoint."
                     data-testid="channels-empty"
-                >
-                    <i class="pi pi-send text-3xl mb-4 text-surface-500" />
-                    <div class="text-xl font-medium mb-2">No channels yet</div>
-                    <p class="max-w-md text-surface-500 dark:text-surface-400">
-                        A channel is where alerts are delivered: a Slack incoming webhook, a PagerDuty service, email
-                        addresses or any HTTP endpoint.
-                    </p>
-                </div>
+                />
                 <ContentBlock v-else :collapsible="false" :header="`Channels: ${rows.length}`">
                     <DataTable :value="rows" size="small" :row-hover="true" data-testid="channels-table">
                         <Column field="name" header="Name" class="font-medium pl-4" />
@@ -264,11 +260,12 @@ import {
     useConfirm,
     useToast,
 } from 'primevue'
-import { Bell } from 'lucide-vue-next'
+import { Bell, Send } from 'lucide-vue-next'
 
 import Content from '@/components/common/Content.vue'
 import ListHeader from '@/components/common/ListHeader.vue'
 import DataView from '@/components/common/DataView.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import ContentBlock from '@/components/common/ContentBlock.vue'
 import SkeletonList from '@/components/common/SkeletonList.vue'
 import ErrorText from '@/components/common/ErrorText.vue'

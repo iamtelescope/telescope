@@ -207,21 +207,18 @@
                             </template>
                         </Column>
                         <template #empty>
-                            <div
+                            <EmptyState
                                 v-if="scope === 'favorites' && !search.trim()"
-                                class="flex flex-col items-center justify-center py-12 text-surface-500"
+                                :icon="Star"
+                                title="No favorite dashboards yet"
+                                description="Star a dashboard to keep it at the top of the list."
                                 data-testid="dashboards-no-favorites"
                             >
-                                <i class="pi pi-star text-2xl mb-3 opacity-60" />
-                                <p class="font-medium mb-1">No favorite dashboards yet</p>
-                                <p class="text-sm mb-3">Star a dashboard to keep it at the top of the list.</p>
                                 <Button label="Show all dashboards" size="small" text @click="clearFilters" />
-                            </div>
-                            <div v-else class="flex flex-col items-center justify-center py-12 text-surface-500">
-                                <i class="pi pi-search text-2xl mb-3 opacity-60" />
-                                <p class="font-medium mb-3">No dashboards match these filters</p>
+                            </EmptyState>
+                            <EmptyState v-else :icon="Search" title="No dashboards match these filters">
                                 <Button label="Clear filters" size="small" text @click="clearFilters" />
-                            </div>
+                            </EmptyState>
                         </template>
                     </DataTable>
                 </ContentBlock>
@@ -308,11 +305,12 @@ import {
     useConfirm,
     useToast,
 } from 'primevue'
-import { LayoutDashboard } from 'lucide-vue-next'
+import { LayoutDashboard, Search, Star } from 'lucide-vue-next'
 
 import Content from '@/components/common/Content.vue'
 import ListHeader from '@/components/common/ListHeader.vue'
 import DataView from '@/components/common/DataView.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import ContentBlock from '@/components/common/ContentBlock.vue'
 import SkeletonList from '@/components/common/SkeletonList.vue'
 import EmptyValue from '@/components/common/EmptyValue.vue'

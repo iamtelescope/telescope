@@ -76,14 +76,14 @@
                 />
                 <div
                     v-else-if="data"
-                    class="absolute inset-0 flex items-center justify-center text-sm text-surface-500 p-6 text-center"
+                    class="absolute inset-0 flex items-center justify-center"
                     data-testid="service-map-empty"
                 >
-                    <div class="flex flex-col items-center gap-3">
-                        <span
-                            >No services found in this time range. The map links services through Client spans and the
-                            Server spans they call.</span
-                        >
+                    <EmptyState
+                        :icon="Network"
+                        title="No services found in this time range"
+                        description="The map links services through Client spans and the Server spans they call."
+                    >
                         <Button
                             v-if="range.from !== 'now-24h'"
                             size="small"
@@ -93,7 +93,7 @@
                             data-testid="service-map-widen"
                             @click="setQuery({ from: 'now-24h', to: 'now', timeZone: undefined })"
                         />
-                    </div>
+                    </EmptyState>
                 </div>
                 <Skeleton v-if="loading && !data" class="!absolute inset-0" height="100%" />
             </div>
@@ -116,6 +116,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Button, InputText, Message, Select, SelectButton, Skeleton } from 'primevue'
 import { Network } from 'lucide-vue-next'
 
+import EmptyState from '@/components/common/EmptyState.vue'
 import Error from '@/components/common/Error.vue'
 import DatetimePicker from '@/components/explorer/controls/DatetimePicker.vue'
 import { useGetSources } from '@/composables/sources/useSourceService'
