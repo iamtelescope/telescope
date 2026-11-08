@@ -3,52 +3,56 @@
         <template #header>
             <Header>
                 <template #title>
-                    <i class="pi pi-key mr-3 text-3xl"></i>
-                    API Tokens
+                    <KeyRound class="mr-3 w-8 h-8" aria-hidden="true" />
+                    New API token
                 </template>
             </Header>
         </template>
         <template #content>
-            <div class="max-w-7xl">
-                <Header>
-                    <template #title>New</template>
-                </Header>
-                <div class="border radius-lg p-6 dark:border-neutral-600 mt-4">
-                    <div class="flex flex-col gap-6">
-                        <div class="flex flex-col">
-                            <FloatLabel variant="on">
-                                <InputText
-                                    id="name"
-                                    v-model="tokenData.name"
-                                    fluid
-                                    :invalid="createFieldErrors.name != ''"
-                                    @keyup.enter="handleCreate"
-                                />
-                                <label for="name">Name</label>
-                            </FloatLabel>
-                            <ErrorText :text="createFieldErrors.name" />
-                        </div>
+            <form class="max-w-[640px]" @submit.prevent="handleCreate" novalidate>
+                <div class="border rounded-lg p-6 dark:border-neutral-600 flex flex-col gap-6">
+                    <div class="flex flex-col gap-1">
+                        <FloatLabel variant="on">
+                            <InputText
+                                id="name"
+                                ref="nameInput"
+                                v-model="tokenData.name"
+                                fluid
+                                autofocus
+                                maxlength="255"
+                                :invalid="!!createFieldErrors.name"
+                                aria-describedby="name-help name-error"
+                                @input="createFieldErrors.name = ''"
+                            />
+                            <label for="name">Name</label>
+                        </FloatLabel>
+                        <ErrorText id="name-error" role="alert" :text="createFieldErrors.name" />
+                        <span id="name-help" class="text-sm text-surface-500 dark:text-surface-400">
+                            A name you will recognise later, e.g. the script or host that uses it.
+                        </span>
+                    </div>
 
-                        <div class="flex justify-end gap-2">
-                            <Button
-                                severity="secondary"
-                                label="Cancel"
-                                icon="pi pi-times"
-                                @click="router.push({ name: 'userProfile' })"
-                                size="small"
-                            />
-                            <Button
-                                severity="primary"
-                                label="Create"
-                                icon="pi pi-check"
-                                @click="handleCreate"
-                                :loading="createButtonLoading"
-                                size="small"
-                            />
-                        </div>
+                    <div class="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            severity="secondary"
+                            outlined
+                            label="Cancel"
+                            @click="router.push({ name: 'userProfile' })"
+                            size="small"
+                        />
+                        <Button
+                            type="submit"
+                            severity="primary"
+                            label="Create token"
+                            icon="pi pi-check"
+                            :loading="createButtonLoading"
+                            size="small"
+                            data-testid="token-create"
+                        />
                     </div>
                 </div>
-            </div>
+            </form>
         </template>
     </Content>
 </template>
@@ -57,6 +61,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
+import { KeyRound } from 'lucide-vue-next'
 
 import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
@@ -80,18 +85,24 @@ const createButtonLoading = ref(false)
 const authSrv = new AuthService()
 
 const handleCreate = async () => {
+    if (!tokenData.value.name.trim()) {
+        createFieldErrors.value.name = 'Enter a name for the token.'
+        return
+    }
     createButtonLoading.value = true
-    let response = await authSrv.createAPIToken({ name: tokenData.value.name })
+    let response = await authSrv.createAPIToken({ name: tokenData.value.name.trim() })
     createButtonLoading.value = false
+    // Field errors go under the field, not into a toast as raw serializer output.
+    const columns = response.validation?.columns
+    if (columns && Object.keys(columns).length) {
+        for (const column in columns) {
+            createFieldErrors.value[column] = [].concat(columns[column]).join(', ')
+        }
+        return
+    }
     response.sendToast(toast)
     if (response.result) {
-        if (!response.validation.result) {
-            for (const column in response.validation.columns) {
-                createFieldErrors.value[column] = response.validation.columns[column].join(', ')
-            }
-        } else {
-            router.push({ name: 'userProfile' })
-        }
+        router.push({ name: 'userProfile' })
     }
 }
 </script>
