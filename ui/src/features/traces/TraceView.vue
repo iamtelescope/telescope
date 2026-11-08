@@ -19,6 +19,13 @@
             <Message v-if="!trace.found" severity="warn" :closable="false" data-testid="trace-not-found">
                 No spans with this trace ID between {{ formatTime(trace.window[0]) }} and
                 {{ formatTime(trace.window[1]) }}.
+                <router-link
+                    v-if="searchRoute"
+                    :to="searchRoute"
+                    class="font-medium underline ml-1"
+                    data-testid="trace-not-found-search"
+                    >Search {{ source.name }} for it over the last 7 days</router-link
+                >
             </Message>
             <template v-else>
                 <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm" data-testid="trace-summary">
@@ -39,7 +46,19 @@
                         ><span class="font-medium" data-testid="trace-service-count">{{ trace.services.length }}</span>
                         services</span
                     >
-                    <span :class="trace.error_count ? 'text-red-600 dark:text-red-400' : ''"
+                    <button
+                        v-if="errorIndexes.length"
+                        type="button"
+                        class="inline-flex items-center gap-1 text-red-600 dark:text-red-400 hover:underline"
+                        title="Select the next error span"
+                        data-testid="trace-next-error"
+                        @click="nextError"
+                    >
+                        <i class="pi pi-exclamation-circle text-xs" />
+                        <span class="font-medium" data-testid="trace-error-count">{{ trace.error_count }}</span>
+                        {{ trace.error_count === 1 ? 'error' : 'errors' }} <i class="pi pi-arrow-down text-xs" />
+                    </button>
+                    <span v-else
                         ><span class="font-medium" data-testid="trace-error-count">{{ trace.error_count }}</span>
                         {{ trace.error_count === 1 ? 'error' : 'errors' }}</span
                     >
@@ -142,6 +161,22 @@ const selectById = (spanId) => {
 }
 
 const colors = computed(() => serviceColors(trace.value?.services || []))
+const errorIndexes = computed(() =>
+    (trace.value?.spans || []).filter((s) => s.error && !s.synthetic).map((s) => s.index),
+)
+const nextError = () => {
+    const list = errorIndexes.value
+    selected.value = list.find((i) => i > (selected.value ?? -1)) ?? list[0]
+}
+const searchRoute = computed(() => {
+    const column = source.value?.otelRole('trace_id')
+    if (!column) return null
+    return {
+        name: 'explore',
+        params: { sourceSlug: slug },
+        query: { query: `${column} = '${traceId.value}'`, from: 'now-7d', to: 'now' },
+    }
+})
 const spanColor = (span) => (span.error ? ERROR_COLOR : colors.value[span.service] || '#6b7280')
 const formatTime = (ms) => DateTime.fromMillis(ms, { zone: timeZone.value }).toFormat('yyyy-MM-dd HH:mm:ss.SSS')
 

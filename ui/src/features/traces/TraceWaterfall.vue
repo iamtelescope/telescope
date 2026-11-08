@@ -105,12 +105,26 @@
             </div>
         </div>
 
-        <div class="overflow-auto" :class="maxHeightClass" data-testid="trace-rows">
+        <div
+            ref="rowsRef"
+            class="overflow-auto"
+            :class="maxHeightClass"
+            role="tree"
+            aria-label="Spans"
+            data-testid="trace-rows"
+            @keydown="onKey"
+        >
             <div
                 v-for="span in rows"
                 :key="span.index"
-                class="flex h-7 cursor-pointer border-b border-neutral-100 dark:border-neutral-800"
+                class="flex h-7 cursor-pointer border-b border-neutral-100 dark:border-neutral-800 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
                 :class="rowClass(span)"
+                role="treeitem"
+                :aria-level="span.depth + 1"
+                :aria-expanded="span.children ? !collapsed.has(span.index) : undefined"
+                :aria-selected="span.index === selected"
+                :tabindex="span.index === focusIndex ? 0 : -1"
+                @focus="focused = span.index"
                 :data-testid="`span-row-${span.index}`"
                 :data-span-id="span.id"
                 :data-depth="span.depth"
@@ -126,6 +140,7 @@
                     <button
                         v-if="span.children"
                         type="button"
+                        tabindex="-1"
                         class="w-4 shrink-0 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
                         :aria-label="collapsed.has(span.index) ? 'Expand' : 'Collapse'"
                         :data-testid="`span-toggle-${span.index}`"
@@ -147,9 +162,14 @@
                         <span class="font-medium shrink-0 text-neutral-800 dark:text-neutral-200">{{
                             span.service
                         }}</span>
-                        <span class="truncate text-neutral-600 dark:text-neutral-400" :title="span.name">{{
-                            span.name
-                        }}</span>
+                        <span
+                            class="truncate"
+                            :class="
+                                span.error ? 'text-red-600 dark:text-red-400' : 'text-neutral-600 dark:text-neutral-400'
+                            "
+                            :title="span.name"
+                            >{{ span.name }}</span
+                        >
                     </template>
                     <i
                         v-if="span.error"
@@ -198,7 +218,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { Button } from 'primevue'
 
 import {
@@ -224,6 +244,8 @@ const collapsed = ref(new Set())
 const view = ref({ from: 0, to: 0 })
 const drag = ref(null)
 const minimapRef = ref(null)
+const rowsRef = ref(null)
+const focused = ref(null)
 
 const total = computed(() => Math.max(props.trace.duration_ns, 1))
 const colors = computed(() => serviceColors(props.trace.services))
@@ -242,6 +264,48 @@ watch(
         resetZoom()
     },
     { immediate: true },
+)
+
+// One row is tabbable (roving tabindex): the focused one, else the selected one, else the first.
+const focusIndex = computed(() => {
+    const visible = new Set(rows.value.map((r) => r.index))
+    if (visible.has(focused.value)) return focused.value
+    return visible.has(props.selected) ? props.selected : rows.value[0]?.index
+})
+const rowEl = (index) => rowsRef.value?.querySelector(`[data-testid="span-row-${index}"]`)
+const onKey = (event) => {
+    const at = rows.value.findIndex((r) => r.index === focusIndex.value)
+    const span = rows.value[at]
+    if (!span) return
+    const move = { ArrowDown: 1, ArrowUp: -1, Home: -at, End: rows.value.length - 1 - at }[event.key]
+    if (move !== undefined) {
+        const next = rows.value[Math.min(Math.max(at + move, 0), rows.value.length - 1)]
+        rowEl(next.index)?.focus()
+    } else if (event.key === 'Enter' || event.key === ' ') emit('select', span.index)
+    else if (event.key === 'ArrowRight' && span.children && collapsed.value.has(span.index)) toggle(span.index)
+    else if (event.key === 'ArrowLeft' && span.children && !collapsed.value.has(span.index)) toggle(span.index)
+    else return
+    event.preventDefault()
+}
+
+// A span selected from outside (an error jump, a log row) gets its ancestors expanded and is scrolled to.
+watch(
+    () => props.selected,
+    async (index) => {
+        const spans = props.trace.spans
+        if (index === null || !spans[index]) return
+        const next = new Set(collapsed.value)
+        let depth = spans[index].depth
+        for (let i = index - 1; i >= 0 && depth > 0; i--) {
+            if (spans[i].depth < depth) {
+                next.delete(spans[i].index)
+                depth = spans[i].depth
+            }
+        }
+        if (next.size !== collapsed.value.size) collapsed.value = next
+        await nextTick()
+        rowEl(index)?.scrollIntoView({ block: 'nearest' })
+    },
 )
 
 const toggle = (index) => {
