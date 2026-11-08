@@ -141,6 +141,7 @@
                             interactive
                             @columnsChanged="onColumnsChanged"
                             @emptyAction="onEmptyAction"
+                            @searchRequest="controlsRef.handleSearch()"
                         />
                         <div
                             v-if="showLoadMore"

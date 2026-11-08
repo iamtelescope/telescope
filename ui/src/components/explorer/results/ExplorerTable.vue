@@ -19,7 +19,14 @@
             ></Row>
         </template>
     </Drawer>
-    <div class="overflow-x-auto" v-if="rows && rows.length > 0" data-testid="explorer-table" ref="tableRef">
+    <ContextMenu ref="cellMenu" :model="cellMenuItems" data-testid="cell-menu" />
+    <div
+        class="overflow-x-auto"
+        v-if="rows && rows.length > 0"
+        data-testid="explorer-table"
+        ref="tableRef"
+        title="Click a row for details; right-click a value to copy or filter"
+    >
         <table class="w-full min-w-full text-sm">
             <thead>
                 <tr>
@@ -116,9 +123,10 @@
                         <pre>{{ getTime(row.time) }}<span v-if="precision" class="text-neutral-500 dark:text-neutral-400">{{ fraction(row.time) }}</span></pre>
                     </td>
                     <td
-                        class="relative group/cell pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300"
+                        class="pt-1 pb-1 pl-2 pr-2 font-mono border-l border-b border-neutral-200 dark:border-neutral-700 dark:text-neutral-300"
                         v-for="column in shownColumns"
                         :key="column.name"
+                        @contextmenu="openCellMenu($event, column, row)"
                     >
                         <div
                             :class="wrap ? 'whitespace-pre-wrap break-words' : 'truncate whitespace-pre'"
@@ -135,16 +143,6 @@
                             <span v-else-if="cell(column, row.data).isHtml" v-html="cell(column, row.data).value" />
                             <template v-else>{{ display(cell(column, row.data).value) }}</template>
                         </div>
-                        <button
-                            v-if="rawText(column, row.data)"
-                            class="absolute right-1 top-0.5 hidden group-hover/cell:inline-flex focus:inline-flex items-center justify-center w-6 h-6 rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:text-primary"
-                            :aria-label="`Copy ${column.name} value`"
-                            title="Copy value"
-                            @click.stop="copyValue(rawText(column, row.data, false))"
-                            data-testid="cell-copy"
-                        >
-                            <i class="pi pi-copy text-xs"></i>
-                        </button>
                     </td>
                 </tr>
             </tbody>
@@ -202,7 +200,7 @@
 import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 
 import Drawer from 'primevue/drawer'
-import { Button, useToast } from 'primevue'
+import { Button, ContextMenu, useToast } from 'primevue'
 import { useClipboard } from '@vueuse/core'
 
 import Row from '@/components/explorer/results/Row.vue'
@@ -213,6 +211,7 @@ import { columnValue } from '@/utils/explorerPaging.js'
 import { useSourceControlsStore } from '@/stores/sourceControls'
 import { removeColumn, swapColumns } from '@/components/explorer/results/columnsText.js'
 import { DateTime } from 'luxon'
+import { Operator as FlyQLOperator } from 'flyql'
 
 // interactive: the explorer's own table (column edits, empty-state actions); dashboard tiles leave it off.
 const props = defineProps({
@@ -223,7 +222,7 @@ const props = defineProps({
     interactive: Boolean,
     wrap: Boolean,
 })
-const emit = defineEmits(['columnsChanged', 'emptyAction'])
+const emit = defineEmits(['columnsChanged', 'emptyAction', 'searchRequest'])
 const store = useSourceControlsStore()
 const toast = useToast()
 const { copy } = useClipboard({ legacy: true })
@@ -334,8 +333,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 
 const cell = (column, data) => applyColumnPipeline(column, columnValue(column, data))
 
-const rawText = (column, data, clip = true) => {
-    const value = columnValue(column, data)
+const rawText = (column, data, clip = true, raw = undefined) => {
+    const value = raw !== undefined ? raw : columnValue(column, data)
     if (value === null || value === undefined) return ''
     const text = typeof value === 'object' ? JSON.stringify(value) : String(value)
     return clip && text.length > 2000 ? text.slice(0, 2000) + '…' : text
@@ -362,6 +361,53 @@ const copyValue = async (text) => {
 }
 
 const emitColumns = (text) => emit('columnsChanged', text)
+
+// Right-click on a value: copy it anywhere; in the explorer also filter on it or drop its column.
+const cellMenu = ref(null)
+const menuTarget = ref(null)
+const openCellMenu = (event, column, row) => {
+    if (window.getSelection()?.toString()) return
+    menuTarget.value = { column, value: columnValue(column, row.data) }
+    cellMenu.value.show(event)
+}
+const filterOn = (operator) => {
+    const { column, value } = menuTarget.value
+    store.addQueryExpression(column.name, operator, value)
+    emit('searchRequest')
+}
+const cellMenuItems = computed(() => {
+    const target = menuTarget.value
+    if (!target) return []
+    const items = [
+        {
+            label: 'Copy value',
+            icon: 'pi pi-copy',
+            disabled: target.value === null || target.value === undefined || target.value === '',
+            command: () => copyValue(rawText(target.column, null, false, target.value)),
+        },
+    ]
+    if (!props.interactive) return items
+    const scalar = target.value !== null && typeof target.value !== 'object' && !target.column.transformers?.length
+    if (scalar)
+        items.push(
+            {
+                label: 'Filter for this value',
+                icon: 'pi pi-search-plus',
+                command: () => filterOn(FlyQLOperator.EQUALS),
+            },
+            {
+                label: 'Exclude this value',
+                icon: 'pi pi-search-minus',
+                command: () => filterOn(FlyQLOperator.NOT_EQUALS),
+            },
+        )
+    items.push({
+        label: 'Remove column',
+        icon: 'pi pi-times',
+        command: () => emitColumns(removeColumn(store.columns, target.column.name)),
+    })
+    return items
+})
 
 // Column widths are a per-browser convenience, kept per source.
 const widthsKey = computed(() => `telescope.columnWidths.${props.source.slug}`)
