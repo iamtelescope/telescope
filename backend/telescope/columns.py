@@ -118,14 +118,8 @@ def parse_columns(source: Source, text: str) -> list[ParsedColumn]:
             )
 
         source_column = source._columns[source_column_name]
-        titled_name = (
-            flyql_col.name.title() if ":" not in flyql_col.name else flyql_col.name
-        )
-        display_name = (
-            flyql_col.alias
-            if flyql_col.alias
-            else source_column.display_name or titled_name
-        )
+        # Without an alias or a configured display name, show the column as the user typed it.
+        display_name = flyql_col.alias or source_column.display_name or flyql_col.name
 
         parsed_columns.append(
             ParsedColumn(
