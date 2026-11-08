@@ -1,0 +1,45 @@
+<!-- ClickHouse server for the backend tests in CI: HTTP on 18123, as dev/otel/generate.py and the tests expect. -->
+<clickhouse>
+    <logger>
+        <level>warning</level>
+        <console>true</console>
+    </logger>
+    <listen_host>127.0.0.1</listen_host>
+    <http_port>18123</http_port>
+    <tcp_port>19000</tcp_port>
+    <timezone>UTC</timezone>
+    <mlock_executable>false</mlock_executable>
+    <query_log>
+        <database>system</database>
+        <table>query_log</table>
+        <flush_interval_milliseconds>3000</flush_interval_milliseconds>
+    </query_log>
+    <metric_log>
+        <database>system</database>
+        <table>metric_log</table>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+        <collect_interval_milliseconds>1000</collect_interval_milliseconds>
+    </metric_log>
+    <users>
+        <default>
+            <password></password>
+            <networks>
+                <ip>127.0.0.1</ip>
+            </networks>
+            <profile>default</profile>
+            <quota>default</quota>
+            <access_management>1</access_management>
+        </default>
+    </users>
+    <profiles>
+        <default/>
+    </profiles>
+    <quotas>
+        <default/>
+    </quotas>
+    <user_directories>
+        <users_xml>
+            <path>config.xml</path>
+        </users_xml>
+    </user_directories>
+</clickhouse>

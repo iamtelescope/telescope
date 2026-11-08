@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      CLICKHOUSE_VERSION: 26.10.2.103
+      TELESCOPE_TEST_CH_HOST: 127.0.0.1
+      TELESCOPE_TEST_CH_PORT: 18123
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+      - name: Install dependencies
+        run: pip install -r backend/requirements-dev.txt
+      - name: Black
+        run: black --check backend dev
+      - name: Install ClickHouse
+        working-directory: ${{ runner.temp }}
+        run: |
+          name="clickhouse-common-static-$CLICKHOUSE_VERSION-amd64.tgz"
+          url="https://github.com/ClickHouse/ClickHouse/releases/download/v$CLICKHOUSE_VERSION-stable/$name"
+          curl -fsSL -O "$url" -O "$url.sha512"
+          sha512sum -c "$name.sha512"
+          tar xzf "$name"
+          echo "$RUNNER_TEMP/clickhouse-common-static-$CLICKHOUSE_VERSION/usr/bin" >> "$GITHUB_PATH"
+      - name: Start ClickHouse
+        run: |
+          mkdir -p "$RUNNER_TEMP/clickhouse"
+          nohup clickhouse server --config-file="$GITHUB_WORKSPACE/.github/clickhouse/config.xml" \
+            -- --path="$RUNNER_TEMP/clickhouse/" > "$RUNNER_TEMP/clickhouse.log" 2>&1 &
+          for _ in $(seq 60); do
+            curl -sf "http://127.0.0.1:$TELESCOPE_TEST_CH_PORT/ping" && exit 0
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/clickhouse.log"
+          exit 1
+      - name: Load OTel test data
+        # Facts go to a temp file so the tests check the rows against the committed facts.json.
+        run: python dev/otel/generate.py --variants compat,exporter,k8s --facts "$RUNNER_TEMP/facts.json"
+      - name: Pytest
+        working-directory: backend
+        run: pytest
+
+  ui:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci
+      - name: Prettier
+        run: npx prettier --check src
+      - run: npm run build
+
+  helm:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v4.3.1
+      - run: helm lint helm
+      - run: helm template telescope helm > /dev/null
+
+  docker:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

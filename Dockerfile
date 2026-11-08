@@ -1,4 +1,5 @@
-FROM node:20 AS frontend
+# The built UI is platform independent, so it is built once on the native platform.
+FROM --platform=$BUILDPLATFORM node:20 AS frontend
 
 WORKDIR /opt/telescope/ui
 

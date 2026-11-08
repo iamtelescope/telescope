@@ -4,11 +4,11 @@ App-wide building blocks owned by the app shell. Reuse these instead of hand-rol
 
 ## States
 
-| Component | Props | Use for |
-|---|---|---|
-| `EmptyState.vue` | `icon` (lucide component), `title`, `description` (or `#description` slot), `compact` (smaller paddings, for panels and tables), `card` (bordered, max 600px), `role` (default `status`). Default slot: action buttons. | Empty lists, "no results", not found. |
-| `ErrorState.vue` | `title` (default "Something went wrong"), `description`, `error` (string or array, shown monospace), `retry` (shows "Try again", emits `retry`), `compact`, `card`. Default slot: extra actions. | A failed load. Renders `role="alert"`, `data-testid="error-state"`. |
-| `LoadingState.vue` | `label` (visible text; without it screen readers still hear "Loading"), `compact`. | A first load with nothing to show yet. Prefer `SkeletonList` for tables. |
+| Component          | Props                                                                                                                                                                                                                   | Use for                                                                  |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `EmptyState.vue`   | `icon` (lucide component), `title`, `description` (or `#description` slot), `compact` (smaller paddings, for panels and tables), `card` (bordered, max 600px), `role` (default `status`). Default slot: action buttons. | Empty lists, "no results", not found.                                    |
+| `ErrorState.vue`   | `title` (default "Something went wrong"), `description`, `error` (string or array, shown monospace), `retry` (shows "Try again", emits `retry`), `compact`, `card`. Default slot: extra actions.                        | A failed load. Renders `role="alert"`, `data-testid="error-state"`.      |
+| `LoadingState.vue` | `label` (visible text; without it screen readers still hear "Loading"), `compact`.                                                                                                                                      | A first load with nothing to show yet. Prefer `SkeletonList` for tables. |
 
 ```vue
 <EmptyState :icon="Bell" title="No alerts yet" description="Alerts notify a channel when a query crosses a threshold.">

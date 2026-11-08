@@ -157,17 +157,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import {
-    MultiSelect,
-    InputText,
-    ToggleSwitch,
-    FloatLabel,
-    Button,
-    Dialog,
-    DataTable,
-    Column,
-    Popover,
-} from 'primevue'
+import { MultiSelect, InputText, ToggleSwitch, FloatLabel, Button, Dialog, DataTable, Column, Popover } from 'primevue'
 import { useDark } from '@vueuse/core'
 import { ColumnSchema } from 'flyql'
 import { FlyqlEditor } from 'flyql-vue'
