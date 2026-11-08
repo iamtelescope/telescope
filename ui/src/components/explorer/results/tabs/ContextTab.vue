@@ -101,7 +101,7 @@
                         <th class="w-1"></th>
                         <th class="px-2 text-left font-medium">Time</th>
                         <th class="px-2 text-right font-medium">Offset</th>
-                        <th v-for="column in columns" :key="column.name" class="px-2 text-left font-medium">
+                        <th v-for="column in shownColumns" :key="column.name" class="px-2 text-left font-medium">
                             {{ column.display_name }}
                         </th>
                     </tr>
@@ -135,7 +135,7 @@
                             {{ index === currentIndex ? 'this row' : formatOffset(item.time) }}
                         </td>
                         <td
-                            v-for="column in columns"
+                            v-for="column in shownColumns"
                             :key="column.name"
                             class="px-2 py-1 font-mono border-t border-neutral-200 dark:border-neutral-700 dark:text-neutral-300"
                         >
@@ -192,6 +192,12 @@ const props = defineProps(['source', 'row', 'timeZone'])
 const router = useRouter()
 const store = useSourceControlsStore()
 const { rows, columns, error, loading, validation, load, controller } = useGetSourceData()
+// Time is its own column, so a plain copy of the source time column is not repeated.
+const shownColumns = computed(() =>
+    (columns.value || []).filter(
+        (c) => !(c.name === props.source.timeColumn && c.display_name === c.name && !c.transformers?.length),
+    ),
+)
 
 const rootRef = ref(null)
 const scrollRef = ref(null)
