@@ -1,6 +1,9 @@
 <template>
     <div class="flex flex-col">
-        <div class="flex mb-4" :class="showBack ? 'justify-between' : 'justify-end'">
+        <div
+            class="flex order-last mt-6 pt-4 border-t border-surface-200 dark:border-surface-700"
+            :class="showBack ? 'justify-between' : 'justify-end'"
+        >
             <Button
                 v-if="showBack"
                 label="Back"
