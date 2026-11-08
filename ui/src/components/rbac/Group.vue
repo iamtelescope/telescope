@@ -20,13 +20,12 @@
                                     size="small"
                                     :disabled="groupLoading"
                                 />
-                                <ConfirmPopup></ConfirmPopup>
                                 <Button
                                     severity="danger"
                                     outlined
                                     label="Delete"
                                     icon="pi pi-trash"
-                                    @click="groupDeleteConfirm($event)"
+                                    @click="groupDeleteConfirm"
                                     :loading="deleteButtonLoading"
                                     size="small"
                                     :disabled="groupLoading"
@@ -172,9 +171,8 @@ import { Users } from 'lucide-vue-next'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useToast } from 'primevue/usetoast'
-import { useConfirm } from 'primevue'
 import Chip from 'primevue/chip'
-import ConfirmPopup from 'primevue/confirmpopup'
+import { useConfirmDestructive } from '@/components/common/confirm'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -202,7 +200,7 @@ const deleteButtonLoading = ref(false)
 const removeButtonLoading = ref(false)
 const grantButtonActive = ref(false)
 const grantButtonLoading = ref(false)
-const confirm = useConfirm()
+const confirmDestructive = useConfirmDestructive()
 const globalRoles = [{ name: 'admin' }, { name: 'connection_manager' }, { name: 'source_manager' }]
 const selectedGlobalRole = ref(null)
 const selectGlobalRoleDisabled = ref(false)
@@ -287,20 +285,10 @@ const handleRevokeGlobalRole = async (roleName) => {
     }
 }
 
-const groupDeleteConfirm = (event) => {
-    confirm.require({
-        target: event.currentTarget,
-        message: 'Are you sure?',
-        icon: 'pi pi-info-circle',
-        rejectProps: {
-            label: 'Cancel',
-            severity: 'secondary',
-            outlined: true,
-        },
-        acceptProps: {
-            label: 'Yes, delete',
-            severity: 'danger',
-        },
+const groupDeleteConfirm = () => {
+    confirmDestructive({
+        header: 'Delete group?',
+        message: `Delete the group ${group.value.name}? This cannot be undone.`,
         accept: async () => {
             deleteButtonLoading.value = true
             let response = await groupSrv.deleteGroup(group.value.id)

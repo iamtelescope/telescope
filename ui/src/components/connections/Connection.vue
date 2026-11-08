@@ -56,14 +56,13 @@
                                     :disabled="!connection || loading"
                                     size="small"
                                 />
-                                <ConfirmPopup></ConfirmPopup>
                                 <Button
                                     v-if="connection?.canDelete()"
                                     severity="danger"
                                     outlined
                                     label="Delete"
                                     icon="pi pi-trash"
-                                    @click="connectionDeleteConfirm($event)"
+                                    @click="connectionDeleteConfirm"
                                     :loading="connectionDeleteButtonLoading"
                                     :disabled="!connection || loading"
                                     size="small"
@@ -340,10 +339,9 @@ import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Cable } from 'lucide-vue-next'
 import { useDark } from '@vueuse/core'
-import { useConfirm } from 'primevue'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
-import ConfirmPopup from 'primevue/confirmpopup'
+import { useConfirmDestructive } from '@/components/common/confirm'
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from 'primevue'
 
 import { useGetConnection } from '@/composables/connections/useConnectionService'
@@ -362,7 +360,7 @@ const route = useRoute()
 const router = useRouter()
 const isDark = useDark()
 const toast = useToast()
-const confirm = useConfirm()
+const confirmDestructive = useConfirmDestructive()
 
 const connectionSrv = new ConnectionService()
 const connectionDeleteButtonLoading = ref(false)
@@ -399,20 +397,10 @@ const handleConnectionEdit = () => {
     router.push({ name: 'connectionEdit', params: { connectionId: connectionId } })
 }
 
-const connectionDeleteConfirm = (event) => {
-    confirm.require({
-        target: event.currentTarget,
-        message: 'Are you sure?',
-        icon: 'pi pi-info-circle',
-        rejectProps: {
-            label: 'Cancel',
-            severity: 'secondary',
-            outlined: true,
-        },
-        acceptProps: {
-            label: 'Yes, delete',
-            severity: 'danger',
-        },
+const connectionDeleteConfirm = () => {
+    confirmDestructive({
+        header: 'Delete connection?',
+        message: `Delete the connection ${connection.value.name}? This cannot be undone.`,
         accept: async () => {
             connectionDeleteButtonLoading.value = true
             let response = await connectionSrv.deleteConnection(connection.value.id)

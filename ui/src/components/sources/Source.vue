@@ -31,13 +31,12 @@
                                     size="small"
                                     :disabled="loading"
                                 />
-                                <ConfirmPopup></ConfirmPopup>
                                 <Button
                                     severity="danger"
                                     outlined
                                     label="Delete"
                                     icon="pi pi-trash"
-                                    @click="sourceDeleteConfirm($event)"
+                                    @click="sourceDeleteConfirm"
                                     :loading="sourceDeleteButtonLoading"
                                     size="small"
                                     :disabled="loading"
@@ -336,10 +335,9 @@ import { kindLabel } from '@/components/connections/kinds.js'
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useConfirm } from 'primevue'
 import { useToast } from 'primevue/usetoast'
 import ToggleSwitch from 'primevue/toggleswitch'
-import ConfirmPopup from 'primevue/confirmpopup'
+import { useConfirmDestructive } from '@/components/common/confirm'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Tabs from 'primevue/tabs'
@@ -368,7 +366,7 @@ import { useGetUsableConnections } from '@/composables/connections/useConnection
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const confirm = useConfirm()
+const confirmDestructive = useConfirmDestructive()
 
 const sourceSrv = new SourceService()
 const activeTab = ref('overview')
@@ -423,20 +421,10 @@ const handleSourceEdit = () => {
     router.push({ name: 'sourceEdit', params: { sourceSlug: source.value.slug } })
 }
 
-const sourceDeleteConfirm = (event) => {
-    confirm.require({
-        target: event.currentTarget,
-        message: 'Are you sure?',
-        icon: 'pi pi-info-circle',
-        rejectProps: {
-            label: 'Cancel',
-            severity: 'secondary',
-            outlined: true,
-        },
-        acceptProps: {
-            label: 'Yes, delete',
-            severity: 'danger',
-        },
+const sourceDeleteConfirm = () => {
+    confirmDestructive({
+        header: 'Delete source?',
+        message: `Delete the source ${source.value.name || source.value.slug}? This cannot be undone.`,
         accept: async () => {
             sourceDeleteButtonLoading.value = true
             let response = await sourceSrv.deleteSource(source.value.slug)
