@@ -66,7 +66,10 @@
                             class="w-40 text-nowrap"
                         >
                             <template #body="{ data }">
-                                {{ data.displayFirstName }} {{ data.displayLastName }}
+                                <span v-if="data.firstName || data.lastName"
+                                    >{{ data.firstName }} {{ data.lastName }}</span
+                                >
+                                <span v-else class="text-surface-500">&#8211;</span>
                             </template>
                             <template #filter="{ filterModel, filterCallback }">
                                 <InputText
@@ -208,7 +211,7 @@ const usersWithGroupNames = computed(() => {
         const userWithGroupNames = Object.create(Object.getPrototypeOf(user))
         Object.assign(userWithGroupNames, user)
         userWithGroupNames.groupNames = user.groups.map((group) => group.name)
-        userWithGroupNames.fullName = `${user.displayFirstName} ${user.displayLastName}`.trim()
+        userWithGroupNames.fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim()
         return userWithGroupNames
     })
 })

@@ -33,7 +33,8 @@
                                 />
                                 <ConfirmPopup></ConfirmPopup>
                                 <Button
-                                    severity="primary"
+                                    severity="danger"
+                                    outlined
                                     label="Delete"
                                     icon="pi pi-trash"
                                     @click="sourceDeleteConfirm($event)"
@@ -74,7 +75,7 @@
                                                 <span v-else>Connection {{ connectionDisplay.id }}</span>
                                             </div>
                                         </DataRow>
-                                        <DataRow name="Kind" :value="source.kind" :copy="false" />
+                                        <DataRow name="Kind" :value="kindLabel(source.kind)" :copy="false" />
                                         <DataRow name="Slug" :value="source.slug" :copy="false" />
                                         <DataRow name="Name" :value="source.name" :copy="false" />
                                         <DataRow
@@ -331,6 +332,7 @@
     </Content>
 </template>
 <script setup>
+import { kindLabel } from '@/components/connections/kinds.js'
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
