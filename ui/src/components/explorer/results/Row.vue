@@ -4,17 +4,61 @@
         :style="{ borderColor: getColor(row.severity) }"
     >
         <div class="flex flex-col">
-            <div class="p-4" v-if="source.severityColumn.length != 0">
+            <div
+                class="sticky top-0 z-20 flex items-center gap-2 px-4 py-2 border-b border-neutral-200 dark:border-neutral-700 bg-surface-0 dark:bg-surface-900"
+                data-testid="row-panel-header"
+            >
                 <Tag
-                    value="Primary"
+                    v-if="source.severityColumn.length != 0"
                     :style="{
                         backgroundColor: getColor(row.severity),
                         color: getContrastColor(getColor(row.severity)),
                     }"
-                    class="text-gray-900 mr-2 text-bold"
+                    class="text-bold"
                     >{{ source.severityColumn }}: {{ row.severity }}
                 </Tag>
-                <span class="font-mono">{{ dateTimeString }}</span>
+                <span class="font-mono text-sm" data-testid="row-panel-time">{{ dateTimeString }}</span>
+                <span class="flex-1"></span>
+                <span v-if="count" class="text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">
+                    {{ index + 1 }} of {{ count }}
+                </span>
+                <template v-if="count">
+                    <Button
+                        icon="pi pi-chevron-up"
+                        text
+                        rounded
+                        size="small"
+                        severity="secondary"
+                        aria-label="Previous row"
+                        v-tooltip.bottom="'Previous row (Up or k)'"
+                        :disabled="index <= 0"
+                        @click="emit('prev')"
+                        data-testid="row-prev"
+                    />
+                    <Button
+                        icon="pi pi-chevron-down"
+                        text
+                        rounded
+                        size="small"
+                        severity="secondary"
+                        aria-label="Next row"
+                        v-tooltip.bottom="'Next row (Down or j)'"
+                        :disabled="index >= count - 1"
+                        @click="emit('next')"
+                        data-testid="row-next"
+                    />
+                </template>
+                <Button
+                    icon="pi pi-times"
+                    text
+                    rounded
+                    size="small"
+                    severity="secondary"
+                    aria-label="Close"
+                    v-tooltip.bottom="'Close (Esc)'"
+                    @click="emit('close')"
+                    data-testid="row-close"
+                />
             </div>
             <DetailsExtras
                 v-if="detailsExtrasAvailable(source, row)"
@@ -36,54 +80,88 @@
                         <OverviewTab :source="source" :row="row" :timeZone="timeZone" />
                     </TabPanel>
                     <TabPanel value="0">
-                        <DataTable :value="flattenRow" :row-hover="true" removableSort>
-                            <Column field="path" header="PATH" sortable class="font-medium text-nowrap">
+                        <DataTable :value="flattenRow" :row-hover="true" removableSort size="small">
+                            <Column field="path" header="Field" sortable class="font-medium text-nowrap">
                                 <template #body="slotProps">
-                                    <Button
-                                        size="small"
-                                        class="mr-2"
-                                        :label="FlyQLOperator.EQUALS"
-                                        severity="secondary"
-                                        @click="
-                                            updateQuery(
-                                                FlyQLOperator.EQUALS,
-                                                formatPathForQuery(slotProps.data.path),
-                                                slotProps.data.value,
-                                            )
-                                        "
-                                    ></Button>
-                                    <Button
-                                        size="small"
-                                        class="mr-2"
-                                        :label="FlyQLOperator.NOT_EQUALS"
-                                        severity="secondary"
-                                        @click="
-                                            updateQuery(
-                                                FlyQLOperator.NOT_EQUALS,
-                                                formatPathForQuery(slotProps.data.path),
-                                                slotProps.data.value,
-                                            )
-                                        "
-                                    ></Button>
-                                    <span
-                                        class="pr-2 cursor-pointer text-xl"
-                                        :class="{
-                                            'text-blue-400': selectedColumns.includes(
-                                                formatPathForDisplay(slotProps.data.path),
-                                            ),
-                                        }"
-                                    ></span>
-                                    <span class="font-mono">{{ formatPathForDisplay(slotProps.data.path) }}</span>
+                                    <div class="flex items-center gap-1">
+                                        <Button
+                                            size="small"
+                                            text
+                                            severity="secondary"
+                                            :label="FlyQLOperator.EQUALS"
+                                            :aria-label="`Filter ${formatPathForDisplay(slotProps.data.path)} equals this value`"
+                                            v-tooltip.top="'Filter for this value'"
+                                            @click="
+                                                updateQuery(
+                                                    FlyQLOperator.EQUALS,
+                                                    formatPathForQuery(slotProps.data.path),
+                                                    slotProps.data.value,
+                                                )
+                                            "
+                                        ></Button>
+                                        <Button
+                                            size="small"
+                                            text
+                                            severity="secondary"
+                                            :label="FlyQLOperator.NOT_EQUALS"
+                                            :aria-label="`Exclude ${formatPathForDisplay(slotProps.data.path)} with this value`"
+                                            v-tooltip.top="'Exclude this value'"
+                                            @click="
+                                                updateQuery(
+                                                    FlyQLOperator.NOT_EQUALS,
+                                                    formatPathForQuery(slotProps.data.path),
+                                                    slotProps.data.value,
+                                                )
+                                            "
+                                        ></Button>
+                                        <Button
+                                            v-if="explorerColumns"
+                                            size="small"
+                                            text
+                                            :severity="isShown(slotProps.data.path) ? 'info' : 'secondary'"
+                                            :icon="
+                                                isShown(slotProps.data.path)
+                                                    ? 'pi pi-minus-circle'
+                                                    : 'pi pi-plus-circle'
+                                            "
+                                            :aria-label="
+                                                (isShown(slotProps.data.path) ? 'Remove column ' : 'Add column ') +
+                                                formatPathForDisplay(slotProps.data.path)
+                                            "
+                                            v-tooltip.top="
+                                                isShown(slotProps.data.path) ? 'Remove column' : 'Add as column'
+                                            "
+                                            @click="explorerColumns.toggle(formatPathForQuery(slotProps.data.path))"
+                                            :data-testid="`row-column-toggle-${formatPathForDisplay(slotProps.data.path)}`"
+                                        ></Button>
+                                        <span class="font-mono pl-1">{{
+                                            formatPathForDisplay(slotProps.data.path)
+                                        }}</span>
+                                    </div>
                                 </template>
                             </Column>
-                            <Column field="value" header="VALUE" sortable>
+                            <Column field="value" header="Value" sortable>
                                 <template #body="slotProps">
-                                    <span v-if="slotProps.data.value">
+                                    <div class="flex items-start gap-1 group/value">
                                         <pre
+                                            v-if="slotProps.data.value !== null && slotProps.data.value !== ''"
+                                            class="flex-1"
                                             style="white-space: pre-wrap; word-wrap: break-all; word-break: break-all"
                                             >{{ slotProps.data.value }}</pre
-                                        ></span
-                                    ><span v-else>&ndash;</span>
+                                        >
+                                        <span v-else class="flex-1">&ndash;</span>
+                                        <Button
+                                            v-if="slotProps.data.value !== null && slotProps.data.value !== ''"
+                                            icon="pi pi-copy"
+                                            size="small"
+                                            text
+                                            severity="secondary"
+                                            class="invisible group-hover/value:visible focus:visible"
+                                            :aria-label="`Copy ${formatPathForDisplay(slotProps.data.path)}`"
+                                            @click="copyValue(String(slotProps.data.value))"
+                                            data-testid="row-value-copy"
+                                        />
+                                    </div>
                                 </template>
                             </Column>
                         </DataTable>
@@ -110,7 +188,9 @@
     </div>
 </template>
 <script setup>
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
+import { useClipboard } from '@vueuse/core'
+import { useToast } from 'primevue'
 
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
@@ -136,17 +216,29 @@ import DetailsExtras, {
 
 const sourceControlsStore = useSourceControlsStore()
 
-const props = defineProps(['source', 'row', 'timeZone'])
+const props = defineProps(['source', 'row', 'timeZone', 'index', 'count'])
+const emit = defineEmits(['prev', 'next', 'close'])
+// Provided by the explorer only: dashboard tiles have no columns to edit.
+const explorerColumns = inject('explorerColumns', null)
+const toast = useToast()
+const { copy } = useClipboard({ legacy: true })
+
+const isShown = (path) => explorerColumns?.has(formatPathForQuery(path))
+
+const copyValue = async (text) => {
+    try {
+        await copy(text)
+        toast.add({ severity: 'success', summary: 'Copied', detail: 'Value copied to clipboard', life: 2000 })
+    } catch {
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to copy to clipboard', life: 6000 })
+    }
+}
 
 const dateTimeString = computed(() => {
     const dateTime = DateTime.fromMillis(props.row.time.unixtime, { zone: props.timeZone }).toFormat(
         'yyyy-MM-dd HH:mm:ss',
     )
-    return `${dateTime}.${props.row.time.microseconds}`
-})
-
-const selectedColumns = computed(() => {
-    return sourceControlsStore.parsedColumns(props.source)
+    return `${dateTime}.${props.row.time.microseconds} ${props.timeZone}`
 })
 
 const formatPathForQuery = (pathArray) => {

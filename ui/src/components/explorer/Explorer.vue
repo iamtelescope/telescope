@@ -21,11 +21,11 @@
                 <BorderCard
                     class="mb-2"
                     :loading="graphLoading"
-                    v-if="sourceControlsStore.showGraph && !showInitialMessage"
+                    v-if="sourceControlsStore.showGraph && !showInitialMessage && !(error && graphError)"
                     data-testid="explorer-graph"
                 >
                     <Skeleton v-if="graphLoading && graphData === null" width="100%" height="235px"></Skeleton>
-                    <Error v-if="graphError" :error="graphError"></Error>
+                    <SearchError v-if="graphError" :error="graphError" title="Chart failed" />
                     <ValidationError
                         v-if="graphValidation && !graphValidation.result"
                         :validation="graphValidation"
@@ -36,6 +36,8 @@
                         :stats="graphData"
                         :source="source"
                         @rangeSelected="onHistogrammRangeSelected"
+                        :canUndoZoom="zoomHistory.length > 0"
+                        @undoZoom="onUndoZoom"
                         :rows="rows"
                         :timeZone="displayTimeZone"
                         :groupByLabel="sourceControlsStore.graphGroupBy"
@@ -47,17 +49,51 @@
                     @mouseenter="liveTail.hovering.value = sourceControlsStore.live"
                     @mouseleave="liveTail.hovering.value = false"
                 >
-                    <SelectButton
-                        v-if="resultsModes.length > 1"
-                        v-model="resultsMode"
-                        :options="resultsModes"
-                        optionLabel="label"
-                        optionValue="value"
-                        :allowEmpty="false"
-                        size="small"
-                        class="mb-2"
-                        data-testid="explorer-results-mode"
-                    />
+                    <div class="flex flex-wrap items-center gap-3 mb-2">
+                        <SelectButton
+                            v-if="resultsModes.length > 1"
+                            v-model="resultsMode"
+                            :options="resultsModes"
+                            optionLabel="label"
+                            optionValue="value"
+                            :allowEmpty="false"
+                            size="small"
+                            data-testid="explorer-results-mode"
+                        />
+                        <span class="flex-1"></span>
+                        <span
+                            v-if="sourceControlsStore.live"
+                            class="inline-flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300"
+                            role="status"
+                            data-testid="explorer-live-badge"
+                        >
+                            <span class="relative flex w-2.5 h-2.5">
+                                <span
+                                    v-if="!liveTail.paused.value"
+                                    class="absolute inline-flex w-full h-full rounded-full bg-green-500 opacity-75 animate-ping"
+                                ></span>
+                                <span
+                                    class="relative inline-flex w-2.5 h-2.5 rounded-full"
+                                    :class="liveTail.paused.value ? 'bg-amber-500' : 'bg-green-500'"
+                                ></span>
+                            </span>
+                            <span class="font-semibold">{{ liveTail.paused.value ? 'Live paused' : 'Live' }}</span>
+                            <span>every {{ sourceControlsStore.liveInterval }}s</span>
+                            <span v-if="lastUpdate">· updated {{ lastUpdate }}</span>
+                        </span>
+                        <label
+                            v-if="resultsMode === 'rows'"
+                            class="inline-flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300 cursor-pointer"
+                        >
+                            <ToggleSwitch
+                                v-model="wrapLines"
+                                class="scale-75"
+                                aria-label="Wrap long values"
+                                data-testid="explorer-wrap-toggle"
+                            />
+                            Wrap lines
+                        </label>
+                    </div>
                     <PatternsView
                         v-if="resultsMode === 'patterns' && patternsAvailable(source)"
                         :source="source"
@@ -74,7 +110,7 @@
                     />
                     <template v-else>
                         <Skeleton v-if="loading && rows === null" width="100%" height="400px"></Skeleton>
-                        <Error v-if="error" :error="error"></Error>
+                        <SearchError v-if="error" :error="error" />
                         <ValidationError
                             v-if="validation && !validation.result"
                             :validation="validation"
@@ -101,6 +137,10 @@
                             :rows="rows"
                             :columns="columns"
                             :timeZone="displayTimeZone"
+                            :wrap="wrapLines"
+                            interactive
+                            @columnsChanged="onColumnsChanged"
+                            @emptyAction="onEmptyAction"
                         />
                         <div
                             v-if="showLoadMore"
@@ -152,11 +192,11 @@
 </template>
 
 <script setup>
-import { ref, onBeforeMount, onMounted, computed, watch } from 'vue'
+import { ref, onBeforeMount, onMounted, computed, watch, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useToast } from 'primevue'
-import { Skeleton, SelectButton, Button } from 'primevue'
+import { Skeleton, SelectButton, Button, ToggleSwitch } from 'primevue'
 import { useSourceControlsStore } from '@/stores/sourceControls'
 import {
     useGetSourceData,
@@ -166,7 +206,7 @@ import {
 
 import Controls from '@/components/explorer/controls/Controls.vue'
 import BorderCard from '@/components/common/BorderCard.vue'
-import Error from '@/components/common/Error.vue'
+import SearchError from '@/components/explorer/results/SearchError.vue'
 import ValidationError from '@/components/common/ValidationError.vue'
 import FlyqlDiagnostics from '@/components/common/FlyqlDiagnostics.vue'
 import ExplorerTable from '@/components/explorer/results/ExplorerTable.vue'
@@ -180,6 +220,8 @@ import { localTimeZone } from '@/utils/datetimeranges'
 import { SourceService } from '@/sdk/services/source'
 import { useLiveTail } from '@/composables/useLiveTail'
 import { resolveTime, mergeLiveRows, toCsv, downloadFile, supportsPaging } from '@/utils/explorerPaging'
+import { addColumn, hasColumn, removeColumn } from '@/components/explorer/results/columnsText'
+import { DateTime } from 'luxon'
 
 const controlsRef = ref(null)
 
@@ -482,9 +524,78 @@ const onPatternFilter = () => {
     controlsRef.value.handleSearch()
 }
 
+// Brush-to-zoom keeps the ranges it replaced, so "Undo zoom" can step back.
+const zoomHistory = ref([])
 const onHistogrammRangeSelected = (params) => {
+    zoomHistory.value = [...zoomHistory.value, { from: sourceControlsStore.from, to: sourceControlsStore.to }]
     sourceControlsStore.setFrom(params.from)
     sourceControlsStore.setTo(params.to)
+    controlsRef.value.handleSearch()
+}
+const onUndoZoom = () => {
+    const previous = zoomHistory.value[zoomHistory.value.length - 1]
+    if (!previous) return
+    zoomHistory.value = zoomHistory.value.slice(0, -1)
+    sourceControlsStore.setFrom(previous.from)
+    sourceControlsStore.setTo(previous.to)
+    controlsRef.value.handleSearch()
+}
+
+// Wrapping long values is a per-browser preference.
+const WRAP_KEY = 'telescope.explorer.wrapLines'
+const readWrap = () => {
+    try {
+        return localStorage.getItem(WRAP_KEY) === '1'
+    } catch {
+        return false
+    }
+}
+const wrapLines = ref(readWrap())
+watch(wrapLines, (value) => {
+    try {
+        localStorage.setItem(WRAP_KEY, value ? '1' : '0')
+    } catch {
+        // storage unavailable: the choice lasts for this page only
+    }
+})
+
+const lastUpdate = ref(null)
+watch(rows, (value) => {
+    if (value) lastUpdate.value = DateTime.now().setZone(displayTimeZone.value).toFormat('HH:mm:ss')
+})
+
+// Column edits from the table header and the row panel run the search again.
+const onColumnsChanged = (text) => {
+    sourceControlsStore.setFields(text)
+    controlsRef.value.handleSearch()
+}
+provide('explorerColumns', {
+    has: (name) => hasColumn(sourceControlsStore.columns, name),
+    toggle: (name) =>
+        onColumnsChanged(
+            hasColumn(sourceControlsStore.columns, name)
+                ? removeColumn(sourceControlsStore.columns, name)
+                : addColumn(sourceControlsStore.columns, name),
+        ),
+})
+
+const RELATIVE = /^now-(\d+)([dhms])$/
+const onEmptyAction = (action) => {
+    if (action === 'clearQuery') sourceControlsStore.setQuery('')
+    else if (action === 'clearText') sourceControlsStore.setText('')
+    else if (action === 'widen') {
+        const { from, to } = sourceControlsStore
+        const match = typeof from === 'string' && to === 'now' ? RELATIVE.exec(from) : null
+        if (match) sourceControlsStore.setFrom(`now-${parseInt(match[1]) * 4}${match[2]}`)
+        else {
+            const now = Date.now()
+            const start = resolveTime(from, now)
+            const end = resolveTime(to, now)
+            const pad = Math.round((end - start) * 1.5)
+            sourceControlsStore.setFrom(start - pad)
+            sourceControlsStore.setTo(typeof to === 'string' ? to : Math.min(now, end + pad))
+        }
+    }
     controlsRef.value.handleSearch()
 }
 
