@@ -71,9 +71,13 @@ const useGetSourceData = () => {
     const controller = ref(null)
 
     const load = async (sourceSlug, params) => {
+        // A new load replaces a running one; only the latest updates the state.
+        controller.value?.abort()
+        const own = new AbortController()
+        controller.value = own
         loading.value = true
-        controller.value = new AbortController()
-        let response = await srv.getData(sourceSlug, params, controller.value.signal)
+        let response = await srv.getData(sourceSlug, params, own.signal)
+        if (controller.value !== own) return
         if (!response.aborted) {
             if (response.result) {
                 rows.value = response.data.rows
@@ -101,9 +105,13 @@ const useGetSourceGraphData = () => {
     const controller = ref(null)
 
     const load = async (sourceSlug, params) => {
+        // A new load replaces a running one; only the latest updates the state.
+        controller.value?.abort()
+        const own = new AbortController()
+        controller.value = own
         loading.value = true
-        controller.value = new AbortController()
-        let response = await srv.getGraphData(sourceSlug, params, controller.value.signal)
+        let response = await srv.getGraphData(sourceSlug, params, own.signal)
+        if (controller.value !== own) return
         if (!response.aborted) {
             if (response.result) {
                 data.value = response.data
@@ -203,9 +211,13 @@ const useGetSourceDataAndGraph = () => {
     const controller = ref(null)
 
     const load = async (sourceSlug, params) => {
+        // A new load replaces a running one; only the latest updates the state.
+        controller.value?.abort()
+        const own = new AbortController()
+        controller.value = own
         loading.value = true
-        controller.value = new AbortController()
-        let response = await srv.getDataAndGraph(sourceSlug, params, controller.value.signal)
+        let response = await srv.getDataAndGraph(sourceSlug, params, own.signal)
+        if (controller.value !== own) return
         if (!response.aborted) {
             if (response.result) {
                 rows.value = response.data.rows

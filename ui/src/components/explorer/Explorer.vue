@@ -20,7 +20,7 @@
                 :source="source"
                 :searchSeq="searchSeq"
                 :queryInvalid="flyqlDiagnostics.length > 0"
-                @searchRequest="controlsRef.handleSearch()"
+                @searchRequest="controlsRef.runSearch()"
             />
             <div class="flex-1 min-w-0">
                 <BorderCard
@@ -123,7 +123,7 @@
                         :source="source"
                         :searchSeq="searchSeq"
                         :timeZone="displayTimeZone"
-                        @searchRequest="controlsRef.handleSearch()"
+                        @searchRequest="controlsRef.runSearch()"
                     />
                     <template v-else>
                         <Skeleton v-if="loading && rows === null" width="100%" height="400px"></Skeleton>
@@ -158,7 +158,7 @@
                             interactive
                             @columnsChanged="onColumnsChanged"
                             @emptyAction="onEmptyAction"
-                            @searchRequest="controlsRef.handleSearch()"
+                            @searchRequest="controlsRef.runSearch()"
                         />
                         <div
                             v-if="showLoadMore"
@@ -539,7 +539,7 @@ onMounted(() => {
 
 const onPatternFilter = () => {
     resultsMode.value = 'rows'
-    controlsRef.value.handleSearch()
+    controlsRef.value.runSearch()
 }
 
 // Brush-to-zoom keeps the ranges it replaced, so "Undo zoom" can step back.
@@ -548,7 +548,7 @@ const onHistogrammRangeSelected = (params) => {
     zoomHistory.value = [...zoomHistory.value, { from: sourceControlsStore.from, to: sourceControlsStore.to }]
     sourceControlsStore.setFrom(params.from)
     sourceControlsStore.setTo(params.to)
-    controlsRef.value.handleSearch()
+    controlsRef.value.runSearch()
 }
 const onUndoZoom = () => {
     const previous = zoomHistory.value[zoomHistory.value.length - 1]
@@ -556,7 +556,7 @@ const onUndoZoom = () => {
     zoomHistory.value = zoomHistory.value.slice(0, -1)
     sourceControlsStore.setFrom(previous.from)
     sourceControlsStore.setTo(previous.to)
-    controlsRef.value.handleSearch()
+    controlsRef.value.runSearch()
 }
 
 // Wrapping long values is a per-browser preference.
@@ -585,7 +585,7 @@ watch(rows, (value) => {
 // Column edits from the table header and the row panel run the search again.
 const onColumnsChanged = (text) => {
     sourceControlsStore.setFields(text)
-    controlsRef.value.handleSearch()
+    controlsRef.value.runSearch()
 }
 provide('explorerColumns', {
     has: (name) => hasColumn(sourceControlsStore.columns, name),
@@ -614,7 +614,7 @@ const onEmptyAction = (action) => {
             sourceControlsStore.setTo(typeof to === 'string' ? to : Math.min(now, end + pad))
         }
     }
-    controlsRef.value.handleSearch()
+    controlsRef.value.runSearch()
 }
 
 onBeforeMount(() => {

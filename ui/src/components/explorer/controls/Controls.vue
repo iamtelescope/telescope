@@ -306,12 +306,16 @@ const onSavedViewChanged = (view) => {
     sourceControlsStore.setView(view)
 }
 
+// The Execute button cancels a running search; runSearch starts a new one that replaces it.
+const runSearch = () => {
+    rememberQuery(sourceControlsStore.query)
+    emit('searchRequest')
+}
 const handleSearch = () => {
     if (props.loading) {
         emit('searchCancel')
     } else {
-        rememberQuery(sourceControlsStore.query)
-        emit('searchRequest')
+        runSearch()
     }
 }
 
@@ -349,7 +353,7 @@ const historyItems = computed(() => {
             query,
             command: () => {
                 sourceControlsStore.setQuery(query)
-                handleSearch()
+                runSearch()
             },
         })),
         { separator: true },
@@ -365,11 +369,11 @@ const handleShareURL = () => {
 // Context columns are already loaded before Explorer opens
 onMounted(() => {
     if (props.source.executeQueryOnOpen) {
-        handleSearch()
+        runSearch()
     }
 })
 
-defineExpose({ onRangeSelect, handleSearch })
+defineExpose({ onRangeSelect, runSearch })
 
 watch(
     () => sourceControlsStore.limit,
