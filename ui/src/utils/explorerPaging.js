@@ -1,5 +1,7 @@
 // Explorer helpers for load more, live tail, bare-text search and CSV export (P1.2).
 
+import getCSRFToken from '@/utils/csrf'
+
 export const LIVE_INTERVALS = [2, 5, 10]
 export const LIVE_MAX_ROWS = 5000
 const TEXT_SEARCH_KINDS = ['clickhouse', 'starrocks']
@@ -101,4 +103,37 @@ export function downloadFile(content, type, filename) {
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
+}
+
+// Posts a form into a hidden frame, so the browser streams the response to disk as a download.
+// A download never loads the frame; a load is an error page, whose text goes to onError.
+export function postDownload(url, params, onError) {
+    const frame = document.createElement('iframe')
+    frame.name = `download-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    frame.style.display = 'none'
+    document.body.appendChild(frame)
+    frame.addEventListener('load', () => {
+        let text = ''
+        try {
+            if (frame.contentWindow.location.href === 'about:blank') return
+            text = frame.contentDocument?.body?.textContent || ''
+        } catch (err) {}
+        onError(text)
+        frame.remove()
+    })
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = url
+    form.target = frame.name
+    const fields = { params: JSON.stringify(params), csrfmiddlewaretoken: getCSRFToken() || '' }
+    for (const [name, value] of Object.entries(fields)) {
+        const input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = name
+        input.value = value
+        form.appendChild(input)
+    }
+    document.body.appendChild(form)
+    form.submit()
+    form.remove()
 }

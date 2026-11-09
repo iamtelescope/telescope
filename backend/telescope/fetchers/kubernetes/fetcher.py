@@ -453,7 +453,7 @@ class Fetcher(BaseFetcher):
         rows = rows[: request.limit]
 
         message = None
-        if total_rows > request.limit:
+        if request.limit is not None and total_rows > request.limit:
             message = f"Displaying limited results: Only {request.limit} out of {total_rows} matching entries are shown."
 
         return DataResponse(rows=rows, message=message)

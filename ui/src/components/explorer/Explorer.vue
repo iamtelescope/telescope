@@ -237,7 +237,7 @@ import { validateFlyqlInputs } from '@/sdk/flyql-validator'
 import { localTimeZone } from '@/utils/datetimeranges'
 import { SourceService } from '@/sdk/services/source'
 import { useLiveTail } from '@/composables/useLiveTail'
-import { resolveTime, mergeLiveRows, toCsv, downloadFile, supportsPaging } from '@/utils/explorerPaging'
+import { resolveTime, mergeLiveRows, toCsv, downloadFile, postDownload, supportsPaging } from '@/utils/explorerPaging'
 import { addColumn, hasColumn, removeColumn } from '@/components/explorer/results/columnsText'
 import { DateTime } from 'luxon'
 
@@ -342,6 +342,7 @@ const onSearchRequest = () => {
     }
     flyqlDiagnostics.value = []
     searchSeq.value++
+    exportParams.value = sourceControlsStore.dataRequestParams
     const now = Date.now()
     searchParams.value = {
         ...sourceControlsStore.dataRequestParams,
@@ -436,18 +437,38 @@ const onShareURL = () => {
         })
 }
 
-const onDownload = (format) => {
-    if (format === 'csv') {
+const onDownload = (format, scope) => {
+    if (scope === 'all') {
+        // The last search, with a relative range resolved by the server when the request arrives.
+        const { limit, ...params } = exportParams.value || sourceControlsStore.dataRequestParams
+        postDownload(`ui/v1/sources/${props.source.slug}/export`, { ...params, format }, onDownloadError)
+        toast.add({
+            severity: 'info',
+            summary: 'Download requested',
+            detail: 'The file appears in your browser downloads once the first rows arrive.',
+            life: 4000,
+        })
+    } else if (format === 'csv') {
         downloadFile(toCsv(columns.value || [], rows.value || []), 'text/csv;charset=utf-8', 'telescope_data.csv')
     } else {
         downloadFile(JSON.stringify(rows.value, null, 2), 'application/json', 'telescope_data.json')
     }
 }
 
+const onDownloadError = (text) => {
+    let detail = text.trim().slice(0, 500) || 'The server did not send the file'
+    try {
+        const data = JSON.parse(text)
+        detail = data.errors?.join(', ') || JSON.stringify(data.validation?.columns ?? {})
+    } catch (err) {}
+    toast.add({ severity: 'error', summary: 'Download failed', detail, life: 8000 })
+}
+
 // ---- Load more (keyset paging) and live tail
 const srv = new SourceService()
 const rootRef = ref(null)
 const searchParams = ref(null)
+const exportParams = ref(null)
 const loadingMore = ref(false)
 let loadMoreSeq = 0
 let lastLiveGraph = 0

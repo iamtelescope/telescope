@@ -1,3 +1,4 @@
+import copy
 import csv
 import os
 import logging
@@ -41,6 +42,9 @@ from telescope.fetchers.search import body_column, next_cursor
 from telescope.utils import convert_to_base_sr, get_telescope_column
 
 logger = logging.getLogger("telescope.fetchers.starrocks")
+
+# Rows per page of an export, read with the keyset cursor of load more.
+EXPORT_PAGE_ROWS = 10000
 
 CHART_AGGS = {
     "count": "count(*)",
@@ -591,6 +595,18 @@ class Fetcher(BaseFetcher):
             rows=rows,
             cursor=next_cursor(source, keys, request.limit, request.before),
         )
+
+    @classmethod
+    def stream_data(cls, request: DataRequest, tz: Optional[zoneinfo.ZoneInfo] = None):
+        """Every row of the request, a page at a time by the load-more keyset cursor."""
+        page = copy.copy(request)
+        page.limit = EXPORT_PAGE_ROWS
+        while True:
+            response = cls.fetch_data(page, tz=tz)
+            yield from response.rows
+            if response.cursor is None:
+                return
+            page.before = response.cursor
 
     @classmethod
     def fetch_chart_data(cls, request: ChartDataRequest) -> ChartDataResponse:

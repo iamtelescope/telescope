@@ -4,6 +4,7 @@ from django.urls import include, path, re_path
 import telescope.views.index as index
 import telescope.views.rbac.views as rbac
 import telescope.views.source.views as source
+import telescope.views.source.export as source_export
 import telescope.views.connection.views as connection
 import telescope.views.auth.views as auth
 import telescope.views.dashboard.views as dashboard
@@ -75,6 +76,7 @@ urlpatterns = [
         source.SourceSavedViewView.as_view(),
     ),
     path("ui/v1/sources/<slug:slug>/data", source.SourceDataView.as_view()),
+    path("ui/v1/sources/<slug:slug>/export", source_export.SourceExportView.as_view()),
     path("ui/v1/sources/<slug:slug>/graphData", source.SourceGraphDataView.as_view()),
     path("ui/v1/sources/<slug:slug>/chartData", source.SourceChartDataView.as_view()),
     path(

@@ -39,7 +39,7 @@
                     severity="secondary"
                     outlined
                     aria-label="Download"
-                    v-tooltip.bottom="'Download the rows shown'"
+                    v-tooltip.bottom="'Download all matching rows'"
                     size="small"
                     @click="(event) => downloadMenu.toggle(event)"
                     :disabled="loading"
@@ -254,8 +254,19 @@ const limit = ref(sourceControlsStore.limit)
 const limits = ref(getLimits(sourceControlsStore.limit))
 const downloadMenu = ref(null)
 const downloadItems = [
-    { label: 'JSON', icon: 'pi pi-code', command: () => emit('download', 'json') },
-    { label: 'CSV (visible columns)', icon: 'pi pi-file', command: () => emit('download', 'csv') },
+    { label: 'All matching rows as JSON', icon: 'pi pi-code', command: () => emit('download', 'json', 'all') },
+    {
+        label: 'All matching rows as CSV (visible columns)',
+        icon: 'pi pi-file',
+        command: () => emit('download', 'csv', 'all'),
+    },
+    { separator: true },
+    { label: 'Rows shown as JSON', icon: 'pi pi-code', command: () => emit('download', 'json', 'shown') },
+    {
+        label: 'Rows shown as CSV (visible columns)',
+        icon: 'pi pi-file',
+        command: () => emit('download', 'csv', 'shown'),
+    },
 ]
 const liveIntervals = LIVE_INTERVALS.map((value) => ({ label: `Every ${value}s`, value }))
 const textColumn = computed(() => bodyColumn(props.source))

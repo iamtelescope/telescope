@@ -2,6 +2,7 @@ import os
 import re
 import logging
 import tempfile
+import uuid
 from typing import Dict, Optional
 import zoneinfo
 
@@ -85,13 +86,45 @@ ESCAPE_CHARS_MAP = {
 }
 
 
-def _client_query(client, sql, **kw):
+def _client_query(client, sql, stream=False, **kw):
     # Every ClickHouse query goes through here and is tagged with its log_comment.
     query_attribution.record(sql)
     settings = query_attribution.query_settings(kw.get("settings"))
     if settings is not None:
         kw["settings"] = settings
+    if stream:
+        return client.query_row_block_stream(sql, **kw)
     return client.query(sql, **kw)
+
+
+# An overflow mode of 'break' would end an export early without an error;
+# small blocks keep the rows a worker holds at once few.
+EXPORT_SETTINGS = {
+    "max_block_size": 8192,
+    "timeout_overflow_mode": "throw",
+    "read_overflow_mode": "throw",
+    "result_overflow_mode": "throw",
+    "sort_overflow_mode": "throw",
+}
+
+
+def stream_complete(response) -> bool:
+    """Whether urllib3 read the whole HTTP body; the driver ends a cut stream without an error."""
+    if response.chunked:
+        return response.chunk_left == 0
+    return response.length_remaining == 0
+
+
+def kill_query(conn_data: dict, query_id: str):
+    try:
+        with ClickhouseConnect(conn_data) as c:
+            _client_query(
+                c.client,
+                "KILL QUERY WHERE query_id = {query_id:String} ASYNC",
+                parameters={"query_id": query_id},
+            )
+    except Exception as err:
+        logger.warning("failed to kill query %s: %s", query_id, err)
 
 
 def escape_param(item: str) -> str:
@@ -617,11 +650,8 @@ class Fetcher(BaseFetcher):
         )
 
     @classmethod
-    def fetch_data(
-        cls,
-        request: DataRequest,
-        tz: Optional[zoneinfo.ZoneInfo] = None,
-    ):
+    def _data_query(cls, request: DataRequest):
+        """The rows SELECT, its parameters and column names; no LIMIT when request.limit is None."""
         source = request.source
         if request.query:
             parser = parse(request.query)
@@ -698,17 +728,26 @@ class Fetcher(BaseFetcher):
         if source.data.get("settings"):
             settings_clause = f" SETTINGS {source.data['settings']}"
 
-        limit_clause = f"LIMIT {request.limit}"
+        limit_clause = "" if request.limit is None else f"LIMIT {request.limit}"
         if offset:
             limit_clause += f" OFFSET {offset}"
         select_query = f"SELECT generateUUIDv4(),{columns_to_select} FROM {from_db_table} WHERE {where_clause} {order_by_clause} {limit_clause}{settings_clause}"
+        selected_columns = [source._record_pseudo_id_column] + columns_names
+        return select_query, params, selected_columns
 
+    @classmethod
+    def fetch_data(
+        cls,
+        request: DataRequest,
+        tz: Optional[zoneinfo.ZoneInfo] = None,
+    ):
+        source = request.source
+        select_query, params, selected_columns = cls._data_query(request)
         rows = []
         keys = []
 
         assert source.conn
         with ClickhouseConnect(source.conn.data) as c:
-            selected_columns = [source._record_pseudo_id_column] + columns_names
             result = _client_query(c.client, select_query, parameters=params or None)
             for item in result.result_rows:
                 keys.append((item[-2], item[-1]))
@@ -724,6 +763,41 @@ class Fetcher(BaseFetcher):
             rows=rows,
             cursor=next_cursor(source, keys, request.limit, request.before),
         )
+
+    @classmethod
+    def stream_data(cls, request: DataRequest, tz: Optional[zoneinfo.ZoneInfo] = None):
+        """Every row of the request, read block by block from one query."""
+        source = request.source
+        select_query, params, selected_columns = cls._data_query(request)
+        query_id = str(uuid.uuid4())
+        assert source.conn
+        with ClickhouseConnect(source.conn.data) as c:
+            stream = _client_query(
+                c.client,
+                select_query,
+                stream=True,
+                parameters=params or None,
+                settings={**EXPORT_SETTINGS, "query_id": query_id},
+            )
+            with stream:
+                # The urllib3 response under QueryResult, ResponseBuffer and ResponseSource.
+                response = stream.source.source.source.response
+                try:
+                    for block in stream:
+                        for item in block:
+                            yield Row(
+                                source=source,
+                                selected_columns=selected_columns,
+                                values=item[:-2],
+                                tz=tz or UTC_ZONE,
+                            )
+                    if not stream_complete(response):
+                        raise ConnectionError("ClickHouse ended the result early")
+                except BaseException:
+                    # Closed unread, the driver does not read the rest of the result on exit.
+                    response.close()
+                    kill_query(source.conn.data, query_id)
+                    raise
 
     @classmethod
     def fetch_chart_data(cls, request: ChartDataRequest) -> ChartDataResponse:

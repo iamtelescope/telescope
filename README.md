@@ -41,7 +41,7 @@ You can log in via GitHub to explore the core features of the system from an end
 - Follow new rows with **live tail**, every 2, 5 or 10 seconds.
 - Open any row in the **row panel**: flattened fields, JSON, the surrounding records in **context**, the row's trace and its pod or node metrics.
 - Group similar messages into **patterns**, and compare a dragged selection of a **heatmap** against the rest of the data with **event deltas**.
-- Export the visible rows as **CSV** or JSON, rerun queries from the **query history**, and keep **saved views** with tags and favorites.
+- Download every row matching the query, streamed by the server, or only the rows shown, as **CSV** or JSON; rerun queries from the **query history**, and keep **saved views** with tags and favorites.
 - Enjoy a clean, minimalist design that keeps the focus on your log data, ensuring a seamless and distraction-free analysis experience.
 
 ### 🔭 OpenTelemetry

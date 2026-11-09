@@ -13,7 +13,7 @@ from telescope.rbac.manager import RBACManager
 FIELDS = ["surface", "dashboard", "tile", "alert", "source"]
 MAX_FIELD_LENGTH = 128
 UNSAFE = re.compile(r"[^A-Za-z0-9_.:/@-]")
-SEARCH_ACTIONS = {"data", "graphData", "dataAndGraph"}
+SEARCH_ACTIONS = {"data", "graphData", "dataAndGraph", "export"}
 
 _tags = ContextVar("telescope_query_attribution", default=None)
 _statements = ContextVar("telescope_query_statements", default=None)

@@ -1,5 +1,6 @@
-from typing import Any, Optional
+from typing import Any, Iterator, Optional
 import zoneinfo
+from telescope.fetchers.models import Row
 from telescope.fetchers.request import (
     AutocompleteRequest,
     DataRequest,
@@ -39,6 +40,16 @@ class BaseFetcher:
         cls, request: DataRequest, tz: Optional[zoneinfo.ZoneInfo] = None
     ) -> DataResponse:
         raise NotImplementedError
+
+    @classmethod
+    def stream_data(
+        cls, request: DataRequest, tz: Optional[zoneinfo.ZoneInfo] = None
+    ) -> Iterator[Row]:
+        """Every row of the request (limit None); here one fetch_data, which reads all logs anyway."""
+        response = cls.fetch_data(request, tz=tz)
+        if response.error:
+            raise ValueError(response.error)
+        yield from response.rows
 
     @classmethod
     def fetch_graph_data(cls, request: GraphDataRequest) -> GraphDataResponse:
